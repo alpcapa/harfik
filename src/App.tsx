@@ -565,8 +565,30 @@ export default function App() {
   // silerdi.
   useEffect(() => {
     if (state.phase === 'play' && !state.isGameOver) {
+      // Girişli kullanıcıda giriş ÖNCESİNDEN kalmış olabilecek misafir
+      // kaydını her hâlükârda temizle — sunucu tek doğruluk kaynağı.
+      if (user && isSupabaseConfigured) clearGameState();
+      // ⚠ HENÜZ BAŞLAMAMIŞ OYUN (turnCount<2) HİÇ KALICILAŞTIRILMAZ.
+      // 31 Ağustos 2026, bir kullanıcı bildirdi: *"oyundayken hiç hamle
+      // yapmadan giriş yaparsan YZ oyunlar 1 gösteriyor ve oyun orada
+      // bekliyor"*. Öncesinde bu effect turnCount'a BAKMADAN yazıyordu ve
+      // hiç oynanmamış kaydı silmek `handleLogoClick`e bırakılmıştı — yani
+      // TEK bir çıkış yolunda yapılan telafi edici bir eylemdi. Başka her
+      // çıkış (yeniden yükleme, sekme/uygulama kapatma, giriş yapıp farklı
+      // gezinme) hayalet bir "Devam Eden Oyun" bırakıyordu.
+      // ÖLÇÜLDÜ — misafir yolu Playwright'ta birebir üretildi: oyunda
+      // localStorage'a `turnCount: 0` yazılıyor, sayfa yeniden yüklenince
+      // kayıt duruyor, Setup "Devam Eden…" satırını ve "Yapay Zeka ile 1"
+      // rozetini gösteriyor. Bulut yolu üretim verisinde doğrulandı: 83
+      // kaydın 5'i turnCount<2, 5 ayrı kullanıcıda, en eskisi 31 Temmuz.
+      // Yazmamak telafiyi gereksiz kılıyor — her çıkış yolu kendiliğinden
+      // doğru oluyor. Kaybedilen tek şey "insan ilk hamlesini yaptı, YZ
+      // henüz cevap vermedi" penceresi; bu proje o durumu ZATEN atılabilir
+      // sayıyor (`handleLogoClick` onu siliyor, 7 günlük -2 cezası da
+      // `turnCount<2` kayıtlara hiç uygulanmıyor). Eşik projenin her yerde
+      // kullandığı "gerçekten başladı" eşiğiyle AYNI.
+      if (state.turnCount < 2) return;
       if (user && isSupabaseConfigured) {
-        clearGameState();
         if (!activeSaveIdRef.current) activeSaveIdRef.current = crypto.randomUUID();
         const id = activeSaveIdRef.current;
         const uid = user.id;

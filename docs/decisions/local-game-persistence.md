@@ -1,5 +1,61 @@
 # Yerel Oyunun Kalıcılığı, Terk Edilmesi ve Offline Kuyruğu
 
+## ⚠ HENÜZ BAŞLAMAMIŞ OYUN (turnCount<2) HİÇ KALICILAŞTIRILMAZ — 31 Ağustos 2026
+
+Bir kullanıcı bildirdi: *"Girişsiz setup'da YZ oyuna girip hiç hamle yapmadan
+geri çıkınca oyun siliniyor ama oyundayken hiç hamle yapmadan giriş yaparsan
+YZ oyunlar 1 gösteriyor ve oyun orada bekliyor."*
+
+**Kök sebep bir TASARIM kusuruydu, tek bir dal değil:** autosave effect'i
+`turnCount`'a BAKMADAN yazıyordu ve hiç oynanmamış kaydı silmek
+`handleLogoClick`e bırakılmıştı — yani **TEK bir çıkış yolunda** yapılan
+*telafi edici* bir eylemdi. Başka her çıkış hayalet bir "Devam Eden Oyun"
+bırakıyordu: sayfa yenileme, sekme/uygulama kapatma, giriş yapıp farklı
+gezinme, çökme.
+
+**ÖLÇÜLDÜ — iki bağımsız kanıt:**
+
+1. **Misafir yolu, Playwright'ta birebir üretildi:** oyuna girip hiç hamle
+   yapmadan `localStorage`'a `turnCount: 0` yazılıyor; sayfa yenilenince
+   kayıt duruyor, Setup "Devam Eden…" satırını ve **"Yapay Zeka ile 1"**
+   rozetini gösteriyor — kullanıcının tarif ettiğinin aynısı.
+2. **Bulut yolu, ÜRETİM verisinde:** `local_game_saves`'teki 83 kaydın
+   **5'i** `turnCount<2`, **5 ayrı kullanıcıda**, en eskisi **31 Temmuz** —
+   yani süreklilik arz eden bir sızıntı. İkisinde `created_at == updated_at`
+   (bir kez yazılmış, bir daha dokunulmamış).
+
+**DÜZELTME — telafi etmek yerine hiç yazmamak.** Autosave effect'inin İKİ
+dalının da (bulut ve localStorage) ÖNÜNE tek bir kapı kondu:
+`if (state.turnCount < 2) return;`. Böylece telafiye gerek kalmıyor, her
+çıkış yolu kendiliğinden doğru oluyor.
+
+**Kaybedilen tek şey** "insan ilk hamlesini yaptı, YZ henüz cevap vermedi"
+penceresi — ve bu proje o durumu ZATEN atılabilir sayıyor: `handleLogoClick`
+onu siliyor ve 7 günlük -2 cezası `turnCount<2` kayıtlara hiç uygulanmıyor
+(`App.tsx`, `if (abandoned.turnCount < 2) return`). Eşik, projenin her yerde
+kullandığı "gerçekten başladı" eşiğiyle AYNI.
+
+**Yan fayda:** misafirin tek slotu artık korunuyor. Öncesinde gerçek bir
+kaydı olan misafir yeni bir oyun başlatıp hiç oynamadan çıkarsa, yeni oyunun
+`turnCount: 0` yazımı ESKİ gerçek kaydı eziyordu.
+
+**`handleLogoClick`'teki `turnCount<2` silme dalı DURUYOR** — yeni oyunlar
+için artık ulaşılamaz, ama düzeltmeden önce yazılmış eski kayıtlar
+sürdürülüp terk edilince onları temizliyor.
+
+**Regresyon testi:** `tests/smoke.spec.ts` → *"hiç başlamamış oyun İZ
+BIRAKMAZ, başlamış oyun kaydedilir"*. İKİ iddiayı birlikte ölçüyor — yalnızca
+birincisi olsaydı kaydı tamamen kapatan bir "düzeltme" de testi geçerdi.
+Negatif eş doğrulandı: kapı kaldırılınca test `Received: 0` ile düşüyor.
+
+**Bulut yolu bu ortamda test EDİLEMİYOR** (Supabase yok); koruma iki dalın da
+önündeki tek kapı olduğundan misafir yolu onu birebir aynı şekilde geçiyor.
+
+⚠ **Üretimde kalan 5 eski satır bu düzeltmeyle SİLİNMİYOR** — her biri,
+sahibi Setup'ı bir sonraki açışında 7 günlük süpürmeye takılır. Daha hızlısı
+isteniyorsa tek seferlik bir temizlik sorgusu gerekir.
+
+
 > Kök `CLAUDE.md`'den ayrıldı (24 Ağustos 2026, doküman boyutu bütçesi —
 > bkz. o dosyadaki "Doküman Boyutu Bütçesi"). Tek bir konunun tarihli
 > "neden böyle" anlatısı; kural/değişmez değil, o yüzden her turda
