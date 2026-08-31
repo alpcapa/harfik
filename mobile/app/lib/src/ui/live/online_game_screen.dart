@@ -979,6 +979,12 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   Future<void> _handleConfirmSwap() async {
     final me = _me;
     if (!_canAct || _busy || me == null || state.swapSelection.isEmpty) return;
+    // ⚠ Aynı sınıf yarış: `swapSelection` seçildiği andaki rafın
+    // indeksleri. Aradan sunucudan bir durum güncellemesi geçtiyse (ör.
+    // zaman aşımı teslimi) indeks sınır dışına düşebilir. Eksik harfle
+    // göndermek YANLIŞ olurdu — o yüzden filtrelemiyoruz, gönderimi
+    // İPTAL ediyoruz; kullanıcı güncel rafta yeniden seçer.
+    if (state.swapSelection.any((i) => i < 0 || i >= me.rack.length)) return;
     final letters = [for (final i in state.swapSelection) me.rack[i].letter];
     setState(() => _busy = true);
     try {
@@ -1749,11 +1755,22 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                                                       as _RackSource)
                                                                   .index
                                                               : null,
-                                                      onTilePointerDown: (i, e) =>
-                                                          _beginTileDrag(
-                                                              _RackSource(
-                                                                  i, me.rack[i]),
-                                                              e),
+                                                      onTilePointerDown: (i, e) {
+                                                        // ⚠ game_screen.dart'takiyle AYNI
+                                                        // yarış ve aynı gerekçe (26 Ağustos
+                                                        // 2026 saha çökmesi). Burada risk
+                                                        // DAHA YÜKSEK: yerel oyunda rafı
+                                                        // yalnızca sen kısaltırsın, Canlı
+                                                        // oyunda sunucudan gelen realtime
+                                                        // güncelleme parmağın altında
+                                                        // kısaltabilir.
+                                                        if (i < 0 ||
+                                                            i >= me.rack.length) {
+                                                          return;
+                                                        }
+                                                        _beginTileDrag(
+                                                            _RackSource(i, me.rack[i]), e);
+                                                      },
                                                       onTilePointerMove:
                                                           _moveTileDrag,
                                                       onTilePointerUp: _endTileDrag,
