@@ -64,7 +64,29 @@ Yani maddeleri "konu"ya göre değil **paketlenebilirliğe** göre grupladım.
 Sonuç: kalan HER ŞEY **iki sürüm turuna** sığıyor — bildirim işinin yarısı
 sunucu tarafında olduğu için sürüm beklemiyor.
 
-### 🚀 1.0.3 SÜRÜM TURU — BAŞLADI (31 Ağustos 2026)
+### Kalan işlerin tamamı — tek bakışta (31 Ağustos 2026)
+
+⚠ **Asıl bloker kod DEĞİL.** Play production'a başvurmak için kişisel
+hesaplarda **12 tester'ın 14 gün kesintisiz kayıtlı** kalması gerekiyor;
+sayaç kapalı testle işliyor ve o bitene kadar yayın açılamıyor. Aşağıdaki
+her şey o pencerenin içinde ya da yanında duruyor.
+
+| Kova | Ne | Durum |
+|---|---|---|
+| **Sayaç** | 12 tester × 14 gün · Android developer verification | ⏳ işliyor, aksiyon yok |
+| **Console (elle)** | Data deletion formunda "uygulama içi yol VAR" seçimi · kategori (Oyunlar → Kelime) · iletişim e-postası · web sitesi | ⬜ kullanıcıda |
+| **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) | ✅ `main`'de, sürüm bekliyor |
+| **Cihazda denenmemiş** | §3c bildirime dokunma → tahta · GA4 DebugView | ⏳ 1.0.3 sahada, fırsat bekliyor |
+| **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) | ⬜ |
+| **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
+| **İsteğe bağlı** | #5 k-lig grafiği · #6 `/nasil-oynanir` · #9 admin filtre · #10 hata hız sınırı · #11 platform filtresi · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor |
+| **iOS/APNs** | Apple Developer üyeliğine bloke; iş "APNs anahtarını yükle + Push capability" kadar | 🔒 |
+
+⚠ **1.0.4 için acil bir durum YOK** (kullanıcı kararı, 31 Ağustos 2026):
+*"Tüm işlerle (bundan sonraki) toplu çıkartırız."* Sürüm numarası bilerek
+1.0.3'te bırakıldı.
+
+### 🚀 1.0.3 SÜRÜM TURU — ✅ **TAMAMLANDI** (31 Ağustos 2026)
 
 `appVersion` (`config/env.dart`) ve `pubspec.yaml` **birlikte** 1.0.2 → 1.0.3
 yapıldı (`app_version_parity_test` ayrışmayı yakalıyor). `+N` build numarası
@@ -87,10 +109,11 @@ asset'te doğrulandı; `meanings.db` de yeniden üretilmişti.
 **SIRA KURALI** (`mobile/CLAUDE.md` → "Güncelleme"), atlanamaz:
 
 1. ✅ `appVersion` + `pubspec` birlikte artırıldı.
-2. ⏳ Derle, Play'e yükle.
-3. ⏳ **Yeni sürümün gerçekten İNDİRİLEBİLİR olduğunu doğrula** — Play'de
-   "Published" ile testçinin telefonuna inmesi AYNI ŞEY DEĞİL.
-4. ⏳ Acil fren gerekiyorsa ANCAK BUNDAN SONRA eşiği yükselt.
+2. ✅ Derlendi (koşu #449, sha `c1c0437`, versionCode 449) ve Play kapalı
+   teste yüklendi.
+3. ✅ **İndirilebilirlik doğrulandı** — kullanıcı cihazında Kurulum
+   ekranındaki teşhis satırı `Derleme c1c0437` gösterdi.
+4. ✅ Eşiğe DOKUNULMADI (bilinçli — aşağıdaki uyarı).
 
 ⚠ Kapı **fail-open**, yani asıl risk ağ değil SIRA: 4'ü 3'ten önce yapmak
 herkesi indirilemeyen bir güncellemeye yönlendirmek demek.
@@ -106,7 +129,25 @@ doğrulandı), GA4 DebugView olayları, ve **ilk gerçek In-App Update testi**
 (yalnızca Play'den kurulmuş pakette çalışır, yan yüklenmiş `.apk`da sessizce
 `bilinmiyor` döner).
 
-### Faz 1 — bekleyen paket · **1 sürüm** · ✅ DALDA TAMAM, yayın bekliyor
+✅ **TUR KAPANDI (31 Ağustos 2026).** `.aab` Play'e yüklendi, duyuru
+gönderildi, testçiler indirdi.
+
+⚠ **In-App Update'in İLK SAHA KANITI GELDİ** — kullanıcı bildirdi:
+*"Kelimeki'yi tekrar açınca uyarı geldi ve oradan güncelledim."* Yani
+Immediate akışı Play'den kurulmuş gerçek pakette uçtan uca çalışıyor; bu
+madde artık "yazıldı ama denenmedi" değil.
+
+⏳ **Cihazda HÂLÂ denenmemiş tek parça §3c** (bildirime dokununca tahtanın
+açılması) — bir "sıra sende" bildirimi beklendiğinde bakılacak. §3d'nin
+sunucu tarafı zaten doğrulanmıştı.
+
+⚠ **`mobile-latest` prerelease'i artık 1.0.3'ü TAŞIMIYOR.** O release her
+mobil derlemede üzerine yazılıyor; 31 Ağustos'taki merge'ler versionName'i
+1.0.3'te bırakıp versionCode'u artırdı. **Play'e o paketleri yükleme** —
+versionCode arttığı için herkes gereksiz bir güncelleme uyarısı alır.
+1.0.3 için yüklenen tek paket koşu #449'unki.
+
+### Faz 1 — bekleyen paket · ✅ **SAHADA** (1.0.3 ile, 31 Ağustos 2026)
 
 Altı maddenin altısı da `claude/kelimeki-phase-1-remaining-*` dalında bitti;
 kalan tek iş **merge + sürüm turu** (kullanıcı "şimdi gönder" diyene kadar
@@ -175,7 +216,7 @@ derleyicisiyle dördü de temiz ayrıştı; deploy sonrası `list_edge_functions
 ile dört sürüm ve dört `verify_jwt` değeri tek tek doğrulandı. **Gerçek
 kanıt sahadan gelecek:** üç yanıt da artık `pushed` sayacı döndürüyor.
 
-### Faz dışı — kart/ikon cilası + bir hata (30 Ağustos 2026) · web ANINDA, port 1.0.3'te
+### Faz dışı — kart/ikon cilası + bir hata (30 Ağustos 2026) · web ANINDA, port ✅ 1.0.3'le SAHADA
 
 Faz 2'yle aynı dalda gitti ama fazın parçası DEĞİL: Canlı/Setup oyun
 kartlarının metin-punto-işaret düzeni (`SIRA SENDE` + yeşil üçgen ↔
@@ -187,7 +228,7 @@ diyordu. Gerekçeler/ölçümler: `docs/decisions/live-game.md`,
 `docs/decisions/components-account.md`, `mobile/docs/parca-log.md` Parça
 172-173.
 
-### Faz 3 — deep link + bildirime dokunma + Analytics · ✅ **KOD TAMAM** (30 Ağustos 2026) · 1.0.3'le çıkar
+### Faz 3 — deep link + bildirime dokunma + Analytics · ✅ **SAHADA** (1.0.3 ile, 31 Ağustos 2026)
 
 İstemci tarafının tamamı yazıldı ve 652 testle yeşil; kullanıcıya ancak bir
 SONRAKİ sürümle ulaşır (Faz 1'in "kod hangi sürümdeyse o sürümden itibaren"
@@ -329,7 +370,7 @@ yakalanamazdı. Cihaz listesi: `mobile/docs/testing-bildirimler.md` §3e —
 orada "rozet 0 oldu" ARANMIYOR, aranan şey rozetin bekleyen AYRI İŞ
 sayısını göstermesi.
 
-### Faz 6 — rozet sıfırlama (#15) + "kaç kişi hangi sürümde" (#12) · **KOD TAMAM** (31 Ağustos 2026)
+### Faz 6 — rozet sıfırlama (#15) + "kaç kişi hangi sürümde" (#12) · sunucu ✅ CANLIDA, istemci ⏳ **1.0.4 BEKLİYOR** (31 Ağustos 2026)
 
 ⚠ **SÜRÜM ÇIKARILMADI.** Kullanıcı kararı (31 Ağustos 2026): *"Yap ama henüz
 yeni versiyon çıkarmıyoruz. Tüm işlerle (bundan sonraki) toplu çıkartırız."*
@@ -387,7 +428,7 @@ görür ama yalnızca YZ oyunlarını ve OYUN AÇILIŞI sayar; "Kurulu Sürümle
 (`push_tokens`) KİŞİ sayar ve oyun beklemez ama yalnızca giriş yapmış +
 bildirim izni vermiş kişileri görür.
 
-### Faz 7 — telemetriden çıkan iki çökme · **KOD TAMAM** (31 Ağustos 2026)
+### Faz 7 — telemetriden çıkan iki çökme · ⏳ **1.0.4 BEKLİYOR** (31 Ağustos 2026)
 
 Kullanıcı isteği: *"Admin Hatalar bölümündeki loglara bakıp önemli bir
 şeyler var mı kontrol et."* 30 günde 31 kayıt vardı; ikisi gerçek hataydı.
@@ -453,7 +494,8 @@ olay) Instagram'ın uygulama içi tarayıcısından, bizim kodumuz değil.
 ### Sonra / bloke
 
 **#8** (FAZ A1 Bölüm 6 — Paylaşma, iPad popover), **#11** (hata panelinde
-platform filtresi), **#12** (sürüm dağılımı kapsamı — izleme).
+platform filtresi). **#12** (sürüm dağılımı kapsamı) ✅ **KAPANDI**
+31 Ağustos 2026 — bkz. Faz 6.
 **#15 — uygulama öne gelince bildirim panelini temizle** → ✅ **KOD TAMAM**
 (31 Ağustos 2026), sıradaki mobil sürümle çıkar. Ayrıntı aşağıda "Faz 6".
 **iOS/APNs** Apple Developer üyeliğine takılı; tasarım bilerek FCM üzerinden
@@ -472,8 +514,8 @@ koddan ölçülen hâl:
 | `push_notifications_enabled` tercihi (e-postadan bağımsız) | ✅ |
 | **Teslim uyarısı push'u** | ✅ canlıda (`notify-deadline-warnings` v12) |
 | Oyun daveti · arkadaş daveti push kanalı | ✅ canlıda (30 Ağustos) |
-| Bildirime dokununca yönlendirme | ✅ kod tamam (30 Ağustos) — 1.0.3'le çıkar |
-| Firebase Analytics olayları | ✅ kod tamam (30 Ağustos) — 1.0.3'le çıkar |
+| Bildirime dokununca yönlendirme | ✅ **1.0.3'le SAHADA** (31 Ağustos) — cihaz testi §3c bekliyor |
+| Firebase Analytics olayları | ✅ **1.0.3'le SAHADA** (31 Ağustos) — GA4 DebugView bekliyor |
 | "Sıra sende" olayı | ✅ canlıda (30 Ağustos) |
 | Play Data safety formu | ✅ (29 Ağustos) |
 
@@ -1228,7 +1270,34 @@ web ile karışmaya başladığı gün.
 
 ---
 
-## 12. Sürüm dağılımının KAPSAMI — ölç, gerekirse genişlet — **İZLEME**
+## 12. Sürüm dağılımının KAPSAMI — ✅ **KAPANDI** (31 Ağustos 2026)
+
+✅ **Kapanış:** kullanıcı 1.0.3 duyurusundan sonra *"kaç kişi yenide
+görebiliyor musun?"* diye sordu ve cevaplanamadı — aşağıdaki sınır tam da
+o gün canlı bir soruya çarptı. Çözüm **`push_tokens.app_version`**: satır
+`user_id` ile anahtarlı ve token her uygulama açılışında hizalandığından
+oyun oynanması gerekmiyor. Admin panelinde ayrı bir tablo:
+Büyüme > Kullanıcı → **"Kurulu Sürümler — Kişi"**. Ayrıntı: ROADMAP Faz 6.
+
+⚠ **Aşağıdaki iki seçeneğin İKİSİ DE seçilmedi ve bu bilinçli.**
+`online_game_clients`e kolon eklemek yalnızca Canlı tarafı kapsardı;
+heartbeat olayı ise **yeni bir kişisel veri** sayılıp `PrivacyModal` +
+portun `legal_modals.dart`'ını gerektirirdi. `push_tokens` üçüncü bir yol:
+zaten var olan bir satıra bir kolon, yeni veri toplama YOK.
+
+⚠ **Yerine geçmiyor, YANINA geliyor.** Eski "Sürüm Dağılımı" tablosu
+(`game_starts`) duruyor ve hâlâ gerekli — o misafir dahil herkesi görür ama
+oyun açılışı sayar; yenisi kişi sayar ama bildirim izni ister. İkisi farklı
+soru cevaplıyor.
+
+⚠ **Damga geriye dönük doldurulamaz:** bir cihaz 1.0.4+ ile açılana kadar
+"—" kalır. Yani ilk günlerde "—" çoğunluk olacak — bu kolonun doğum tarihi,
+arıza değil. Yan fayda: o satır aynı zamanda "kaç kişi eski sürümde kaldı"
+sorusunu da cevaplıyor.
+
+---
+
+### Aşağısı kapanmadan önceki hâli (tarihçe)
 
 Kod işi değil, bir **karar noktası.** 23 Ağustos 2026'da eklenen
 `admin_app_version_breakdown` (Büyüme > Kullanıcı → "Sürüm Dağılımı")
