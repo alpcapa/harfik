@@ -1027,6 +1027,49 @@ test('/nasil-oynanir/ JS OLMADAN okunabilir ve kendi meta\'sını taşır', asyn
   );
 });
 
+// Paylaşım kartı. `/nasil-oynanir/` paylaşılabilir bir sayfa (karşılama
+// katmanı ona link veriyor) ve 31 Ağustos 2026'da Bing Webmaster Tools'un
+// markup raporu `/` için "JSON-LD + OpenGraph" derken bu sayfa için HİÇBİR
+// şey demiyordu — çünkü statik üretici `<head>`e OG etiketi hiç yazmıyordu.
+//
+// ⚠ İKİ sayfa birden okunuyor: tek sayfa test edilse sabit (hardcode) bir
+// başlık/URL de testi geçerdi. Değerlerin sayfaya GÖRE değiştiği kanıtlanmalı.
+for (const [yol, baslikParcasi] of [
+  ['/nasil-oynanir/', 'Nasıl Oynanır'],
+  ['/gizlilik/', 'Gizlilik Politikası'],
+] as const) {
+  test(`${yol} paylaşım kartı etiketlerini taşıyor`, async ({ page }) => {
+    await page.goto(yol);
+
+    await expect(page.locator('meta[property="og:url"]')).toHaveAttribute(
+      'content',
+      `https://kelimeki.com${yol}`,
+    );
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+      'content',
+      new RegExp(baslikParcasi),
+    );
+    // Açıklama sayfanın KENDİ description'ıyla aynı olmalı — kartta genel bir
+    // site açıklaması çıkarsa link paylaşan kişi yanlış sayfayı tarif eder.
+    const aciklama = await page
+      .locator('meta[name="description"]')
+      .getAttribute('content');
+    expect(aciklama && aciklama.length > 40).toBe(true);
+    await expect(page.locator('meta[property="og:description"]')).toHaveAttribute(
+      'content',
+      aciklama!,
+    );
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+      'content',
+      'https://kelimeki.com/og-image.png',
+    );
+    await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
+      'content',
+      'summary_large_image',
+    );
+  });
+}
+
 test('/nasil-oynanir/ kurallar metnini GERÇEKTEN taşıyor (boş kabuk değil)', async ({ page }) => {
   await page.goto('/nasil-oynanir/');
   const metin = (await page.locator('main').innerText()).replace(/\s+/g, ' ');
