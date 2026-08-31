@@ -220,16 +220,54 @@ function Kabuk({ sayfa }: { sayfa: Sayfa }) {
   );
 }
 
+// Metni HTML ATTRIBUTE bağlamına güvenli sokar. Şu anki başlık/açıklamaların
+// hiçbirinde kaçış gerektiren karakter YOK (`×` ve `—` bu listede değil, çıktı
+// bire bir aynı kalıyor) — ama bu değerler artık DÖRT ayrı etikete birden
+// yazılıyor ve ileride biri tırnak/`&` içerirse hata sessiz olurdu: sayfa
+// açılır, yalnızca paylaşım kartı bozulur.
+function oz(metin: string): string {
+  return metin
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Sayfanın `<head>`i. Paylaşım kartı (OG + Twitter) 31 Ağustos 2026'da
+// eklendi: `/nasil-oynanir/` paylaşılabilir bir sayfa (karşılama katmanı ona
+// link veriyor, Bing/GSC'ye ayrıca gönderildi) ama OG etiketi olmadığından
+// WhatsApp/X'te çıplak URL olarak çıkıyordu. Görsel kök sayfayla ORTAK
+// (`npm run generate-og-image`) — başlık/açıklama zaten sayfaya özel.
+//
+// ⚠ Gövde bir TEMPLATE LITERAL: içine yazılacak açıklama BURAYA yazılır,
+// dizenin içine DEĞİL. Aynı gün bir HTML yorumuna backtick yazıldı ve dize
+// erken kapanıp derleme düştü (TS1005) — üstelik o yorum üretilen DÖRT
+// sayfanın da HTML'ine gereksizce giriyordu.
 export function renderLegalPage(sayfa: Sayfa, cssHref: string): string {
+  const baslik = `${sayfa.baslik} — Kelimeki`;
   return `<!doctype html>
 <html lang="tr">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${sayfa.baslik} — Kelimeki</title>
-<meta name="description" content="${sayfa.aciklama}" />
+<title>${oz(baslik)}</title>
+<meta name="description" content="${oz(sayfa.aciklama)}" />
 <link rel="canonical" href="${SITE}${sayfa.yol}" />
 <meta name="robots" content="index,follow" />
+
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="Kelimeki" />
+<meta property="og:url" content="${SITE}${sayfa.yol}" />
+<meta property="og:title" content="${oz(baslik)}" />
+<meta property="og:description" content="${oz(sayfa.aciklama)}" />
+<meta property="og:image" content="${SITE}/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="tr_TR" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="${oz(baslik)}" />
+<meta name="twitter:description" content="${oz(sayfa.aciklama)}" />
+<meta name="twitter:image" content="${SITE}/og-image.png" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="${cssHref}" />
 <style>html,body{height:auto;overflow:visible;position:static;background:#EEF1F5}</style>

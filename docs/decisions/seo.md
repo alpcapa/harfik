@@ -53,3 +53,52 @@ konusunda, o test neyi arıyorsa onu yorumda örneklemekten kaçın.**
 **Kalan SEO borcu:** footer'daki hukuki bağlantılar hâlâ `<button>` — o üç
 sayfa yalnızca sitemap üzerinden keşfediliyor. Bu maddede bilerek
 dokunulmadı (SPA penceresini açma davranışı ayrı bir karar).
+
+## 31 Ağustos 2026 — Statik sayfaların paylaşım kartı (OG) yoktu
+
+Sayfa canlıya çıkıp GSC/Bing'e gönderildikten sonra Bing Webmaster Tools'un
+markup raporu okundu. `/` için **"2 Markup types found: JSON-LD,
+OpenGraph"** yazıyordu — bu bir uyarı değil, bilgi satırı; ikisinin de
+bulunması istenen durum (`index.html`'de schema.org `WebApplication` bloğu
++ `og:*` etiketleri). **Asıl bulgu raporun DEMEDİĞİ şeydi:** aynı rapor
+`/nasil-oynanir/` için hiçbir markup göstermiyordu, çünkü
+`renderLegalPage` (`src/legal/render.tsx`) `<head>`e yalnızca
+charset/viewport/title/description/canonical/robots yazıyordu.
+
+Hukuki sayfalar için bu boşluk zararsızdı — kimse gizlilik politikasını
+paylaşmıyor. Ama `/nasil-oynanir/` **paylaşılmak için var**: karşılama
+katmanı ona link veriyor ve tanıtım yaparken doğrudan atılacak adres o.
+OG'siz hâlde WhatsApp/X'te çıplak URL olarak çıkıyordu. Dört statik sayfaya
+birden `og:*` + `twitter:*` eklendi; görsel kök sayfayla ORTAK
+(`/og-image.png`), başlık/açıklama zaten sayfaya özel.
+
+**JSON-LD bilerek EKLENMEDİ.** Doğal aday `HowTo` şemasıydı, ama Google
+2023'te `HowTo` zengin sonuçlarını tamamen kaldırdı; `FAQPage` de artık
+yalnızca resmi/sağlık sitelerinde gösteriliyor. Yani bakım maliyeti
+karşılığında görünür bir kazanç beklenmiyor. Beklenti değişirse burası
+yeniden değerlendirilsin.
+
+**`sitemap.xml`'in `lastmod` kuralı GENİŞLEDİ.** Bu dosyanın yukarısındaki
+kural "anlamlı bir meta/açıklama/başlık değişikliği" diyordu. Yeni sayfayı
+ekleyen PR `/`'ın `lastmod`'una dokunmamıştı — oysa `/` DEĞİŞMİŞTİ (yeni
+sayfaya giden bağlantı oraya eklendi). Sonuç çelişkili bir sinyaldi:
+panelden "şu sayfayı yeniden tara" derken sitemap "o sayfa değişmedi"
+diyordu. Kural artık şu: **bir sayfanın ÇIKAN BAĞLANTILARI değiştiyse o
+sayfanın da `lastmod`'u güncellenir** — özellikle yeni bir sayfanın tek
+keşif yolu o bağlantıysa.
+
+**Bir hata daha, aynı sınıftan (açıklama yorumu kodu bozdu).** OG bloğunu
+anlatan yorum HTML yorumu olarak **template literal'in İÇİNE** yazıldı ve
+içindeki backtick'ler dizeyi erken kapattı → `TS1005`, derleme düştü.
+Üstelik yorum üretilen dört sayfanın da HTML'ine giriyordu. Açıklama
+fonksiyonun üstündeki TS yorumuna taşındı. Bu, bir gün önceki parite-testi
+olayının kardeşi: **açıklama metni, açıkladığı mekanizmanın içine
+yazılmaz.**
+
+**Regresyon:** duman testi 44 → **46**. Yeni test İKİ sayfayı birden
+okuyor (`/nasil-oynanir/` + `/gizlilik/`) — tek sayfa yeterli olsaydı
+sabit yazılmış bir başlık/URL de testi geçerdi; değerlerin sayfaya GÖRE
+değiştiği kanıtlanmalı. Ayrıca `og:description` sayfanın kendi
+`description`'ıyla KARŞILAŞTIRILIYOR, sabitle değil. Negatif eşler: `og:url`
+satırı silinince 2 test düşüyor, `og:description` genel bir metne
+çevrilince 2 test düşüyor.
