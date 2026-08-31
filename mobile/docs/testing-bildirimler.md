@@ -251,6 +251,29 @@ derlemesiyle koşulmalı ki üretimdekiyle aynı imza/kanal zinciri sınansın.
       aynı akışları gez — hiçbir ekran takılmamalı (fire-and-forget
       sözleşmesi; olaylar Firebase'in kendi kuyruğunda bekler).
 
+### 31 Ağustos 2026 — sahada doğrulandı (1.0.3, kullanıcı cihazı)
+
+Bir OYUN bildirimi (davet değil) iki yoldan da denendi ve **ikisinde de
+Canlı tahta doğrudan açıldı**:
+
+- **Uygulama arka plandayken** dokunuldu → öne geldi, oyuna gitti.
+- **Uygulama KAPALIYKEN** (görev yöneticisinden atılmış) dokunuldu →
+  uygulama açıldı ve oyuna gitti. Soğuk başlangıç ayrı bir API yolu
+  (`getInitialMessage`) olduğundan asıl kıymetli olan bu — listenin
+  "sıcak akış çalışıyor diye ATLANMAZ" uyarısı karşılandı.
+
+⚠ **Yukarıdaki kutular yine de işaretlenMEDİ:** onlar DAVET bildirimini ve
+"Arkadaşınla sekmesi açılmalı" beklentisini tarif ediyor; burada denenen
+bildirim aktif bir oyuna aitti ve hedefi tahtaydı. Yani yönlendirme
+zincirinin kendisi (FCM `data.link` → uygulama → doğru ekran) hem sıcak hem
+soğuk yolda kanıtlandı, ama davete özgü dallar ve girişsiz/teslim-uyarısı
+maddeleri hâlâ açık.
+
+⚠ **Bu, 1.0.4'te bekleyen `onUnknownRoute` korumasını GEREKSİZ KILMAZ** —
+o koruma başka bir giriş yolunu (Android App Links / platform route push'u)
+hedefliyor; FCM dokunuşu o yoldan geçmiyor. Çökme yaşanmaması beklenen
+davranış, çelişki değil.
+
 ## 3d. "Sıra sende" bildirimi (Faz 4 — SUNUCU; deploy edildiyse her sürümde çalışır)
 
 Tetikleyici sunucuda (trigger + `notify-your-turn`), yani 1.0.1/1.0.2 dahil
