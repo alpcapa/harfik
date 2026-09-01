@@ -101,8 +101,26 @@
        BİLİNÇLİ bir port farkı** (backlog'daki "karar verilmeli" sorusunun
        cevabı): masaüstünde tarayıcı zoom'u var, dokunmatik web kitlesi
        küçük; istek mobil testçiden geldi.
-     - **Doğrulama:** 14 yeni test (`board_zoom_test.dart`: 3 birim +
-       11 widget) + tam takım **681 test yeşil**, `dart analyze` temiz
+     - **İKİNCİ APK TURU (aynı gün) — cihazda bulunan iki bulgu:**
+       (1) *"Bölge çizgisi kenarlarda inceliyor"* — dış hat stroke'u (2.5)
+       yolun merkezinde çizildiğinden ızgara kutusunun dışına yarım
+       kalınlık taşıyor; zoom'dan önce kırpma OLMADIĞI için taşma 10 px'lik
+       dolguya çiziliyordu, ClipRect tam kutudan kırpınca kenar çizgisi
+       yarıya indi. Düzeltme: `_ZoomClipSlackClipper` — görünür kare
+       zoom'lu taşmayı (2.5·2/2 + AA = 3.5 px) kapsayacak kadar payla
+       kırpar; bedeli zoom'da kenarın 3.5 px geç kesilmesi (seçilemiyor).
+       (2) *"Zoom sadece karelerde çalışıyor, kenarlar da dahil olmalı"* —
+       dokunma yüzeyi yalnızca hücre GestureDetector'larıydı; Listener
+       10 px'lik dolgunun DIŞINA taşındı (Padding artık `_zoomWrap`ın
+       içinde) ve ekranlar hücre kutusuna DÜŞMEYEN dokunuşları
+       (`_pointHitsCellBox` — boşluk/çerçeve) tahta dokunuşu sayıyor.
+       ⚠ Ölçülen tuzak: karar İNİŞ noktasına göre verilmeli — parmak
+       hücrede inip boşlukta kalkarsa hücre tanıyıcısı YİNE ateşler;
+       kalkışa bakan ilk taslak aynı jesti İKİ kez sayıp tek dokunuşu
+       "çift" yapardı (testi: "hücreye inen dokunuş tahta dinleyicisinde
+       SAYILMAZ").
+     - **Doğrulama:** 19 yeni test (`board_zoom_test.dart`: 3 birim +
+       16 widget) + tam takım **686 test yeşil**, `dart analyze` temiz
        (tek info main'de de olan eski `tap_target_test` satırı).
        **Doğrulama SINIRI:** widget testleri cihaz hissini (çift dokunuş
        ritmi, pan akıcılığı, gerçek parmakla ıskalama) KANITLAMAZ —

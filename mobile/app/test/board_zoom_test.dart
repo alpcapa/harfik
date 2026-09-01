@@ -336,6 +336,88 @@ void main() {
     expect(controller.state.players[0].rack, hasLength(7));
   });
 
+  // ── Kenarlar/boşluklar (1 Eylül 2026, APK'dan gelen iki bulgu) ────────
+
+  testWidgets(
+      'ÇERÇEVEDEN (ızgara dışı, dolgu içi) çift dokunuş zoom açar — '
+      '"kenarlar da zoom\'a dahil olmalı"', (tester) async {
+    final controller = await pumpZoomGame(tester);
+    // Hücre (0,0) kutusunun 6 px sol-üstü: ızgaranın DIŞI, 10 px'lik
+    // dolgunun İÇİ. Eski yapıda burada hiçbir dinleyici yoktu.
+    final p0 = tester.getRect(boardCell(0, 0)).topLeft - const Offset(6, 6);
+    await doubleTapAt(tester, p0);
+    expect(isZoomedIn(tester), isTrue,
+        reason: 'tahtanın çerçevesi de çift dokunuş yüzeyi olmalı');
+    // Kapatma da çerçeveden çalışır.
+    await doubleTapAt(tester, p0);
+    expect(isZoomedIn(tester), isFalse);
+    expect(controller.state.placed, isEmpty);
+  });
+
+  testWidgets('hücre ARALIĞINA (boşluk) çift dokunuş zoom açar',
+      (tester) async {
+    final controller = await pumpZoomGame(tester);
+    final sol = tester.getRect(boardCell(6, 6));
+    final sag = tester.getRect(boardCell(6, 7));
+    // İki hücre kutusunun tam arası — 3 px'lik boşluğun ortası.
+    final gap = Offset((sol.right + sag.left) / 2, sol.center.dy);
+    expect(sag.left - sol.right, closeTo(3.0, 0.6),
+        reason: 'boşluk 3 px değilse bu test yanlış noktayı ölçüyor');
+    await doubleTapAt(tester, gap);
+    expect(isZoomedIn(tester), isTrue,
+        reason: 'hücreler arası boşluk da çift dokunuş yüzeyi olmalı');
+    expect(controller.state.placed, isEmpty);
+  });
+
+  testWidgets(
+      'boşluğa/çerçeveye TEK dokunuş hiçbir şey yapmaz — harf seçiliyken '
+      'bile (taş konmaz, seçim düşmez)', (tester) async {
+    final controller = await pumpZoomGame(tester);
+    await tester.tap(rackTile(0)); // K seçili
+    await tester.pump();
+    final sol = tester.getRect(boardCell(6, 6));
+    final sag = tester.getRect(boardCell(6, 7));
+    await tester.tapAt(Offset((sol.right + sag.left) / 2, sol.center.dy));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester
+        .tapAt(tester.getRect(boardCell(0, 0)).topLeft - const Offset(6, 6));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(controller.state.placed, isEmpty);
+    expect(controller.state.selectedTile, 0, reason: 'seçim korunmalı');
+    expect(isZoomedIn(tester), isFalse);
+  });
+
+  testWidgets(
+      'hücreye inen dokunuş tahta dinleyicisinde SAYILMAZ (çift kayıt '
+      'olsaydı tek dokunuş zoom açardı)', (tester) async {
+    final controller = await pumpZoomGame(tester);
+    // Boş hücreye TEK dokunuş: hem hücre GestureDetector'ı hem tahta
+    // Listener'ı aynı jesti görür — yalnızca BİRİ kaydetmeli, yoksa
+    // ikinci kayıt ilkiyle "çift" oluşturup zoom'u anında açar.
+    await tester.tap(boardCell(6, 6));
+    await tester.pump();
+    expect(isZoomedIn(tester), isFalse,
+        reason: 'tek dokunuş çift sayılmış: aynı jest iki kez kaydedilmiş');
+    expect(controller.state.placed, isEmpty);
+  });
+
+  testWidgets(
+      'görünür karenin kırpma payı bölge çizgisinin taşmasını kapsar — '
+      '"bölge çizgisi kenarlarda inceliyor" düzeltmesi', (tester) async {
+    await pumpZoomGame(tester);
+    final clip = tester.widget<ClipRect>(find.byWidgetPredicate(
+        (w) => w is ClipRect && w.clipper != null));
+    final r = clip.clipper!.getClip(const Size(100, 100));
+    // Dış hat stroke'u (2.5) yolun merkezinde: kutu dışına yarım kalınlık,
+    // zoom'da ×2 → 2.5 px taşar. Pay bunu (+AA) kapsamalı, yoksa kenardaki
+    // çizgi yarıya iner (kullanıcı cihazda gördü).
+    const beklenenTasma = 2.5;
+    expect(r.left, lessThanOrEqualTo(-beklenenTasma));
+    expect(r.top, lessThanOrEqualTo(-beklenenTasma));
+    expect(r.right, greaterThanOrEqualTo(100 + beklenenTasma));
+    expect(r.bottom, greaterThanOrEqualTo(100 + beklenenTasma));
+  });
+
   testWidgets('pan: zoom açıkken parmak tahtayı kaydırır ve sınırda durur',
       (tester) async {
     final controller = await pumpZoomGame(tester);

@@ -312,6 +312,11 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   final BoardZoomController _zoom = BoardZoomController();
   final GlobalKey _viewportKey = GlobalKey();
   BoardPanRef? _panRef;
+
+  /// Tahta dokunuş ADAYI: `_dragRef` yokken inen parmağın konumu. Eşik
+  /// aşılırsa (pan/scroll/sürükleme) düşer; kalkışta hücre kutusu DIŞINA
+  /// düşen dokunuşlar zoom'un çift dokunuş jestine sayılır.
+  Offset? _boardTapDown;
   DateTime _swallowTapsUntil = DateTime.fromMillisecondsSinceEpoch(0);
   _DragRef? _dragRef;
 
@@ -1254,13 +1259,22 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     return state.board[r][c] == null && state.placed[cellKey(r, c)] == null;
   }
 
-  // ── Tahta pan'i (yalnızca zoom açıkken) — game_screen.dart ile aynı ───
+  // ── Tahta pan'i + kenar/boşluk dokunuşları — game_screen.dart ile aynı ─
   void _boardPointerDown(PointerDownEvent e) {
-    if (_dragRef != null || !_zoom.zoomed || _panRef != null) return;
+    if (_dragRef != null) return;
+    // Dokunuş adayı: hücre dışına (boşluk/çerçeve) düşen dokunuşlar da
+    // zoom jestine sayılır — gerekçe game_screen.dart'ın aynı dalında.
+    _boardTapDown = e.position;
+    if (!_zoom.zoomed || _panRef != null) return;
     setState(() => _panRef = BoardPanRef(e.position));
   }
 
   void _boardPointerMove(PointerMoveEvent e) {
+    final down = _boardTapDown;
+    if (down != null &&
+        (e.position - down).distance >= _dragThresholdFor(e.kind)) {
+      _boardTapDown = null;
+    }
     final p = _panRef;
     if (p == null) return;
     if (!p.moved) {
@@ -1272,9 +1286,22 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     _zoom.panBy(e.delta, grid.size);
   }
 
-  void _boardPointerUp(PointerUpEvent e) => _endBoardPan();
+  void _boardPointerUp(PointerUpEvent e) {
+    final down = _boardTapDown;
+    _boardTapDown = null;
+    _endBoardPan();
+    if (down == null) return;
+    // Karar İNİŞ noktasına göre: hücrenin tap tanıyıcısı jestin sahibi
+    // olup olmadığına inişte karar verir — parmak hücrede inip boşlukta
+    // kalkarsa hücre tanıyıcısı YİNE ateşler; burada kalkış noktasına
+    // bakılsaydı aynı dokunuş iki kez sayılır, tek dokunuş "çift" olurdu.
+    if (_pointHitsCellBox(down)) return;
+    if (_registerZoomTap(down)) return;
+    _zoom.registerPairableTap(down);
+  }
 
   void _endBoardPan() {
+    _boardTapDown = null;
     final p = _panRef;
     if (p == null) return;
     setState(() => _panRef = null);
@@ -1282,6 +1309,26 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
       _swallowTapsUntil = clock.now().add(const Duration(milliseconds: 120));
       _zoom.markUnpairableTap();
     }
+  }
+
+  /// Hücrenin gerçek dokunma kutusu mu (boşluk/çerçeve hariç)? —
+  /// game_screen.dart'taki eşinin aynısı, gerekçesi orada.
+  bool _pointHitsCellBox(Offset global) {
+    final grid = _boxOf(_gridKey);
+    if (grid == null) return true;
+    final local = grid.globalToLocal(global);
+    if (local.dx < 0 ||
+        local.dy < 0 ||
+        local.dx >= grid.size.width ||
+        local.dy >= grid.size.height) {
+      return false;
+    }
+    const gap = 3.0;
+    final strideX = (grid.size.width + gap) / boardSize;
+    final strideY = (grid.size.height + gap) / boardSize;
+    const eps = 0.5;
+    return (local.dx % strideX) < strideX - gap + eps &&
+        (local.dy % strideY) < strideY - gap + eps;
   }
 
   void _beginTileDrag(_DragSource source, PointerDownEvent e) {
