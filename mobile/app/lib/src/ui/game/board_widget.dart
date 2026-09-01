@@ -132,6 +132,11 @@ class BoardWidget extends StatelessWidget {
   /// zoom'da değişmeden doğru kalmasının sebebi tam olarak bu.
   final GlobalKey? gridKey;
 
+  /// Zoom tanıtım balonu (1 Eylül 2026, kullanıcı isteği) — MERKEZ kareyi
+  /// işaret eden tek seferlik ipucu. Ne zaman çizileceğine ekranlar karar
+  /// verir (`FlagsStore.shouldShowZoomHint`); burada yalnızca çizim var.
+  final bool zoomHint;
+
   /// Tahta yakınlaştırması (1.0.5). Verilmezse davranış eski hâliyle
   /// birebir aynı — hiçbir sarmalayıcı kurulmaz.
   final BoardZoomController? zoom;
@@ -287,6 +292,7 @@ class BoardWidget extends StatelessWidget {
     this.onTilePointerCancel,
     this.dragListenable,
     this.gridKey,
+    this.zoomHint = false,
     this.zoom,
     this.viewportKey,
     this.onBoardPointerDown,
@@ -459,7 +465,24 @@ class BoardWidget extends StatelessWidget {
                         child: CustomPaint(painter: _OutlinesPainter(outlines)),
                       ),
                     ),
-                    if (startHint != null)
+                    // Zoom tanıtım balonu — MERKEZ kareyi işaret eder. Ayrı bir
+                // katman: "Buradan başla"dan bağımsız (ikisi aynı anda
+                // görünebilir, farklı köşelerdeler) ve sürükleme başlayınca
+                // ikisi de kaybolur.
+                if (zoomHint)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: dragListenable == null
+                          ? _zoomHintBubble(screenWidth)
+                          : ValueListenableBuilder<Object?>(
+                              valueListenable: dragListenable!,
+                              builder: (context, drag, _) => drag != null
+                                  ? const SizedBox.shrink()
+                                  : _zoomHintBubble(screenWidth),
+                            ),
+                    ),
+                  ),
+                if (startHint != null)
                       Positioned.fill(
                         child: IgnorePointer(
                           child: dragListenable == null
@@ -502,6 +525,82 @@ class BoardWidget extends StatelessWidget {
     if (p.isAI || p.surrendered || p.corners.isEmpty) return null;
     final cc = cornerCell(p.corners.first);
     return (cc.$1, cc.$2, _colorOfIndex(state.current), cc.$2 < boardSize / 2);
+  }
+
+  /// Zoom tanıtım balonu: tahtanın MERKEZ karesinin (6,6) hemen ÜSTÜNDE,
+  /// kuyruğu aşağı (kareye) bakan çok satırlı bir kutu.
+  ///
+  /// "Buradan başla"dan üç farkı var ve üçü de bilinçli: (1) metin uzun,
+  /// tek satıra sığmaz → kutu genişliği tahtanın %78'iyle sınırlı ve metin
+  /// sarılıyor; (2) oyuncuya özgü değil → renk oyuncu rengi değil `kAccent`;
+  /// (3) hedefi ev karesi değil merkez, çünkü ipucu "herhangi bir boş kare"
+  /// hakkında ve merkez her düzende görünür.
+  ///
+  /// Konum yine HÜCRE GEOMETRİSİYLE (yüzdeyle DEĞİL) — `_startHint`teki
+  /// aynı `stride = (en + gap)/13` formülü.
+  Widget _zoomHintBubble(double screenWidth) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 3.0;
+        const merkez = boardSize ~/ 2; // 6 — X3 karesi
+        // Yalnızca DİKEY stride gerekiyor: balon yatayda ortalanıyor
+        // (`left: 0, right: 0`), tek bir hücreye yaslanmıyor.
+        final strideY = (constraints.maxHeight + gap) / boardSize;
+        return Stack(
+          children: [
+            Positioned(
+              // Merkez karenin ÜST kenarı; balon kendi yüksekliği kadar
+              // yukarı çekiliyor (punto akışkan, yükseklik önceden bilinmez).
+              top: merkez * strideY,
+              left: 0,
+              right: 0,
+              child: FractionalTranslation(
+                translation: const Offset(0, -1),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      constraints: BoxConstraints(
+                          maxWidth: constraints.maxWidth * 0.78),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: kAccent,
+                        borderRadius: BorderRadius.circular(9),
+                        boxShadow: const [
+                          BoxShadow(
+                              color: Color(0x470F172A),
+                              offset: Offset(0, 2),
+                              blurRadius: 6),
+                        ],
+                      ),
+                      child: Text(
+                        'Boş kareye veya çerçevesine çift tıklama tahtayı '
+                        'büyütür. Hemen dene!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'SpaceGrotesk',
+                          fontWeight: FontWeight.bold,
+                          height: 1.25,
+                          fontSize: fluidSize(screenWidth, 9, 0, 2.4, 13),
+                        ),
+                      ),
+                    ),
+                    // Kuyruk: merkez kareye bakan küçük üçgen.
+                    CustomPaint(
+                      size: const Size(10, 6),
+                      painter: const _HintTailDownPainter(kAccent),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   /// Balonun kendisi. Konum HÜCRE GEOMETRİSİYLE hesaplanıyor, yüzdeyle
@@ -1385,6 +1484,27 @@ class _HelpIconPainter extends CustomPainter {
 }
 
 /// "Buradan başla" balonunun ev karesine bakan kuyruğu.
+/// Aşağı bakan kuyruk (zoom tanıtım balonu) — `_HintTailPainter`ın dikey
+/// eşi; ayrı bir sınıf, çünkü o yataydaki iki yönü parametreliyor ve üçüncü
+/// bir yön eklemek onun okunurluğunu bozardı.
+class _HintTailDownPainter extends CustomPainter {
+  final Color color;
+  const _HintTailDownPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..close();
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_HintTailDownPainter old) => old.color != color;
+}
+
 class _HintTailPainter extends CustomPainter {
   final Color color;
   final bool toRight;

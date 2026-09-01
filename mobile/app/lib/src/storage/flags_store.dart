@@ -14,6 +14,8 @@ class FlagsStore {
   static const _seenIntro = 'seen_intro';
   static const _seenQuickstart = 'seen_quickstart';
   static const _seenChatIntro = 'seen_chat_intro';
+  static const _zoomHintShown = 'zoom_hint_shown';
+  static const _zoomTried = 'zoom_tried';
   static const _anonId = 'anon_id';
   static const _anonVisitDate = 'anon_visit_date';
   static const _utmSource = 'utm_source';
@@ -31,6 +33,24 @@ class FlagsStore {
 
   bool get seenChatIntro => prefs.getBool(_seenChatIntro) ?? false;
   Future<void> markChatIntroSeen() => prefs.setBool(_seenChatIntro, true);
+
+  /// Tahta zoom'u tanıtım balonu (1 Eylül 2026, kullanıcı isteği) — İKİ
+  /// değer, çünkü kural iki şeye birden bakıyor: *"Deneyip büyütenlere bir
+  /// daha gösterme. Hiç denememişse bir daha sefer tekrar göster."*
+  ///   • `zoomHintShown`: balon kaç oyun açılışında GÖSTERİLDİ (tavan 2).
+  ///   • `zoomTried`: kullanıcı çift dokunuşla zoom'u BİR KEZ bile yaptı mı
+  ///     — yaptıysa balon bir daha hiç çıkmaz (sayaç ne olursa olsun).
+  /// Web ikizi: `src/utils/onboarding.ts` (`kelimeki:zoom-hint-shown` /
+  /// `kelimeki:zoom-tried`) — davranış birebir aynı olmalı.
+  int get zoomHintShown => prefs.getInt(_zoomHintShown) ?? 0;
+  Future<void> bumpZoomHintShown() =>
+      prefs.setInt(_zoomHintShown, zoomHintShown + 1);
+
+  bool get zoomTried => prefs.getBool(_zoomTried) ?? false;
+  Future<void> markZoomTried() => prefs.setBool(_zoomTried, true);
+
+  /// Balon gösterilsin mi? Tek karar noktası — iki ekran da bunu sorar.
+  bool get shouldShowZoomHint => !zoomTried && zoomHintShown < 2;
 
   /// Anonim ziyaretçi kimliği — ilk erişimde bir kez üretilir, sonra sabit
   /// (web visitTracking.ts anon-id davranışı).

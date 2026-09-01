@@ -818,6 +818,9 @@ class _SetupScreenState extends State<SetupScreen>
         words: words,
         meanings: widget.services.meanings,
         auth: widget.services.auth,
+        // Zoom tanıtım balonunun bayrakları (1 Eylül 2026) — verilmezse
+        // balon hiç çıkmaz, yani bu satır özelliğin AÇMA anahtarı.
+        storage: widget.services.storage,
         stats: widget.services.stats,
         games: widget.services.games,
         feedback: widget.services.feedback,

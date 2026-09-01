@@ -20,6 +20,44 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 176 — zoom tanıtım balonu (1 Eylül 2026; YENİ dosya
+     `test/zoom_hint_test.dart`; değişen: `flags_store.dart`,
+     `board_widget.dart`, `game_screen.dart`, `online_game_screen.dart`,
+     `setup_screen.dart`):**
+     - **Kullanıcı isteği (birebir):** *"Sadece İlk oyun açılışında, açan
+       kişide ve karşıdaki kişilerde 1 kereye mahsus bir balon çıksın.
+       Tahtanın ortasında bir yerde boş kareye işaret eden bir balon…
+       Deneyip büyütenlere bir daha gösterme. Hiç denememişse bir daha
+       sefer tekrar göster. Deneme gösterimi bitirir."*
+     - **Kural İKİ değere birden bakıyor**, tek bayrak yetmez:
+       `zoomHintShown` (kaç açılışta gösterildi, tavan 2) + `zoomTried`
+       (bir kez bile zoom yapıldı mı → sayaç ne olursa olsun bir daha
+       çıkmaz). Karar tek noktada: `FlagsStore.shouldShowZoomHint`.
+       "Gösterim", balonun EKRANA GELMESİDİR — nasıl kapandığı sayacı
+       etkilemez; sayaç karar anında artıyor.
+     - **Cihaz-yerel bayrak = "açan kişide ve karşıdaki kişilerde"**
+       kendiliğinden sağlanıyor: sunucuya bir şey yazılmıyor, her cihaz
+       kendi ilk açılışında görüyor.
+     - **Balon "Buradan başla"nın kardeşi ama üç farkla:** metin uzun →
+       kutu genişliği tahtanın %78'i ve metin sarılıyor; oyuncuya özgü
+       değil → renk `kAccent`; hedef ev karesi değil MERKEZ (ipucu
+       "herhangi bir boş kare" hakkında). Kuyruk aşağı bakıyor
+       (`_HintTailDownPainter` — yataydaki ikiliyi üçe çıkarmak yerine
+       ayrı sınıf). Konum yine hücre geometrisiyle (yüzdeyle DEĞİL).
+     - **`GameScreen`e `storage` prop'u eklendi** (Canlı ekranda zaten
+       vardı) — verilmezse balon hiç çıkmaz, yani testlerin/önizlemelerin
+       yolu değişmedi ve `setup_screen.dart`'taki tek satır özelliğin açma
+       anahtarı.
+     - **Ölçülen tuzak:** `testWidgets` İÇİNDE `AppStorage.open`u beklemek
+       testi ASTI (sahte zonda gerçek I/O tamamlanmıyor) — `tester.runAsync`
+       ile açıldı. Bu, `mobile/CLAUDE.md`'nin tarama listesindeki
+       "await newRepo(" kuralının aynısı; yeni dosya o kurala uyuyor.
+     - **Doğrulama:** 6 yeni test (ilk açılış, ikinci açılış, tavan,
+       denenmişse hiç, denenince anında kapanma + kalıcı bayrak, storage
+       yokken sessizlik) + tam takım **693 test yeşil**, `dart analyze`
+       temiz. Cihaz listesi: `mobile/TESTING.md` § 24 → "Tanıtım balonu".
+       **Doğrulama SINIRI:** balonun dar telefonda taşıp taşmadığı widget
+       testiyle KANITLANMADI — cihaz listesinde ayrı madde.
    - ✅ **Parça 175 — tahta zoom'u: çift dokunuşla 2× büyüt/küçült +
      parmakla pan (1 Eylül 2026; YENİ dosyalar
      `ui/game/board_zoom.dart`, `test/board_zoom_test.dart`; değişen:
