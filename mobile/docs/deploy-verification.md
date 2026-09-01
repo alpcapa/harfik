@@ -157,6 +157,18 @@ testçinin telefonunda".
 
 ## Güncelleme modeli — 1.0.1 ölçümü ve 1.0.0 kitlesinin süpürülmesi
 
+### ✅ SAHADA DOĞRULANDI (1 Eylül 2026) — In-App Update gerçek bir sürümle çalıştı
+
+`467 (1.0.4)` Play'e yüklenip yayınlandıktan hemen sonra kullanıcı kendi
+cihazında bildirdi: *"cihazda app'i açınca güncelleme uyarısı çıktı ve
+anında yaptım."* Yani zincirin tamamı — Play yeni sürümü biliyor → açılışta
+`store_update.dart` soruyor → Immediate akışı tam ekran güncelletiyor —
+ilk kez GERÇEK bir yayın turuyla, gerçek cihazda doğrulandı. Bu, aşağıdaki
+"1.0.1 iki gün yayında kaldı, kitle 1.0.0'da takılıydı" ölçümünün tersine
+dönmüş hâli ve mekanizmanın kendi doğrulama sınırının ("yalnızca Play'den
+kurulmuş pakette test edilebilir, o da ancak bir SONRAKİ sürüm çıkınca")
+kapanışıdır.
+
 ### 1.0.0 kitlesini bir kereye mahsus süpürmek
 
 1.0.2 yayınlanıp **indirilebilir olduğu doğrulandıktan SONRA** eşik 1.0.2'ye
