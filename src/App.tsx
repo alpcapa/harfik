@@ -1001,7 +1001,12 @@ export default function App() {
   // Tahta yakınlaştırması (1 Eylül 2026, kullanıcı kararı: "her yerde aynı
   // deneyim"). Sürükleme sürerken pan HİÇ başlamaz — `dragRef` bayrağı
   // portun hit-test sırasının web karşılığı (bkz. useBoardZoom).
-  const boardZoom = useBoardZoom(() => dragRef.current !== null);
+  // İkinci argüman: tahta ŞU AN ekranda mı — `App` Setup'ı da render
+  // ettiğinden tanıtım balonunun sayacı orada artmamalı (bkz. useBoardZoom).
+  const boardZoom = useBoardZoom(
+    () => dragRef.current !== null,
+    state.phase !== 'setup',
+  );
   const dragRef = useRef<{
     source: DragSource;
     startX: number;

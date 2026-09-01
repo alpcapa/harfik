@@ -1599,6 +1599,21 @@ test.describe('tahta zoom', () => {
     );
   }
 
+  // ⚠ REGRESYON (1 Eylül 2026, kullanıcı preview'da fark etti: *"misafirde
+  // çalışmıyor mu?"*): sayaç Setup ekranında da artıyordu — `App` bileşeni
+  // Setup'ı DA render ettiğinden hook orada mount oluyor ve balon tahta HİÇ
+  // GÖRÜNMEDEN "gösterildi" sayılıyordu. Siteyi iki kez açıp oyun açmayan
+  // kullanıcıda tavan doluyor, balon bir daha hiç çıkmıyordu. (Misafir/
+  // girişli ayrımı DEĞİLDİ — herkeste vardı. Portta yok: orada oyun ekranı
+  // ayrı bir route.) Ölçüldü: Setup'ta `kelimeki:zoom-hint-shown` = "1".
+  test('Setup ekranında sayaç ARTMAZ — gösterim tahta görününce sayılır',
+      async ({ page }) => {
+    await donenKullanici(page);
+    await page.goto('/');
+    await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();
+    expect(await sayac(page)).toBe(0);
+  });
+
   test('ilk oyun açılışında balon ÇIKAR, sayaç 1 olur', async ({ page }) => {
     await oyunEkrani(page);
     await expect(page.getByText(HINT)).toBeVisible();

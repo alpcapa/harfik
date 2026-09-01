@@ -54,7 +54,22 @@ export type BoardZoom = {
  *   taşın kendi handler'ına gittiğinden aynı sıra geçerli, ama bayrağı
  *   AÇIKÇA sormak daha okunur.)
  */
-export function useBoardZoom(dragActive: () => boolean): BoardZoom {
+/**
+ * @param boardVisible Tahta ŞU AN ekranda mı — tanıtım balonunun gösterim
+ *   sayacı yalnızca tahta görünürken artmalı. **Ölçüldü (1 Eylül 2026,
+ *   kullanıcı preview'da fark etti: "misafirde çalışmıyor mu?"):** `App`
+ *   bileşeni Setup ekranını da render ettiğinden hook Setup'ta da mount
+ *   oluyordu ve sayaç tahta HİÇ GÖRÜNMEDEN 1 oluyordu; siteyi iki kez açıp
+ *   oyun açmayan kullanıcıda tavan doluyor, balon bir daha hiç çıkmıyordu.
+ *   Sorun misafir/girişli ayrımı DEĞİLDİ — herkeste vardı. Portta bu hata
+ *   yok, çünkü `GameScreen` ayrı bir route ve karar `initState`'te veriliyor
+ *   (tahta zaten görünür); web'de o "ekran sınırı" olmadığından açıkça
+ *   sormak gerekiyor.
+ */
+export function useBoardZoom(
+  dragActive: () => boolean,
+  boardVisible = true,
+): BoardZoom {
   const [zoom, setZoom] = useState<ZoomState>(ZOOM_OFF);
   // Tanıtım balonu (1 Eylül 2026, kullanıcı isteği) — karar EKRAN AÇILIRKEN
   // bir kez veriliyor ve o an sayaç artıyor: "gösterim" balonun ekrana
@@ -68,12 +83,14 @@ export function useBoardZoom(dragActive: () => boolean): BoardZoom {
   // (`migratingSavedGameRef`); sayaç artıran her effect buna muhtaç.
   const hintDecided = useRef(false);
   useEffect(() => {
-    if (hintDecided.current) return;
+    // Tahta görünene kadar KARAR VERİLMEZ: "gösterim" balonun ekrana
+    // gelmesidir (yukarıdaki `boardVisible` notu — ölçülmüş hata).
+    if (!boardVisible || hintDecided.current) return;
     hintDecided.current = true;
     if (!shouldShowZoomHint()) return;
     bumpZoomHintShown();
     setHint(true);
-  }, []);
+  }, [boardVisible]);
   const [panning, setPanning] = useState(false);
   const detector = useRef(new DoubleTapDetector());
   const panRef = useRef<{ x: number; y: number; moved: boolean } | null>(null);
