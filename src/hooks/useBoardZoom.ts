@@ -16,6 +16,11 @@ import {
   type ZoomState,
 } from '../utils/boardZoom';
 import { swallowNextClick } from '../utils/ghostClick';
+import {
+  bumpZoomHintShown,
+  markZoomTried,
+  shouldShowZoomHint,
+} from '../utils/onboarding';
 
 export type BoardZoom = {
   zoom: ZoomState;
@@ -38,6 +43,8 @@ export type BoardZoom = {
   reset: () => void;
   /** Pan sürerken sayfanın kaymaması için (dokunmatik). */
   panning: boolean;
+  /** Tanıtım balonu bu açılışta gösterilsin mi (bkz. utils/onboarding). */
+  hint: boolean;
 };
 
 /**
@@ -49,6 +56,24 @@ export type BoardZoom = {
  */
 export function useBoardZoom(dragActive: () => boolean): BoardZoom {
   const [zoom, setZoom] = useState<ZoomState>(ZOOM_OFF);
+  // Tanıtım balonu (1 Eylül 2026, kullanıcı isteği) — karar EKRAN AÇILIRKEN
+  // bir kez veriliyor ve o an sayaç artıyor: "gösterim" balonun ekrana
+  // gelmesidir, nasıl kapandığı sayacı etkilemez. Port ikizi: iki oyun
+  // ekranının `_zoomHintKarariVer`i.
+  const [hint, setHint] = useState(false);
+  // ⚠ MÜKERRER-ÇALIŞMA KİLİDİ: React StrictMode dev'de effect'i İKİ KEZ
+  // çalıştırıyor ve sayaç bir açılışta 2 artıyordu — Playwright ölçtü
+  // (beklenen 1, gelen 2), yani balon ilk oyunda tavana çarpıp ikinci
+  // gösterimi kaybediyordu. Aynı kilit deseni App.tsx'te de var
+  // (`migratingSavedGameRef`); sayaç artıran her effect buna muhtaç.
+  const hintDecided = useRef(false);
+  useEffect(() => {
+    if (hintDecided.current) return;
+    hintDecided.current = true;
+    if (!shouldShowZoomHint()) return;
+    bumpZoomHintShown();
+    setHint(true);
+  }, []);
   const [panning, setPanning] = useState(false);
   const detector = useRef(new DoubleTapDetector());
   const panRef = useRef<{ x: number; y: number; moved: boolean } | null>(null);
@@ -77,6 +102,10 @@ export function useBoardZoom(dragActive: () => boolean): BoardZoom {
       detector.current.reset();
       return toggleZoom(z, localX, localY, r.width, r.height);
     });
+    // Kullanıcı zoom'u DENEDİ: balon anında kapanır ve kalıcı olarak susar
+    // (kullanıcı isteği: "Deneme gösterimi bitirir").
+    setHint(false);
+    markZoomTried();
   }, []);
 
   const registerCellTap = useCallback(
@@ -182,5 +211,6 @@ export function useBoardZoom(dragActive: () => boolean): BoardZoom {
     markUnpairable: () => detector.current.markUnpairable(),
     reset,
     panning,
+    hint,
   };
 }

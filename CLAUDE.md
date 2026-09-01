@@ -401,6 +401,15 @@ mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
   ⚠ Kabul edilen tek yan etki: taş konduktan sonra 300 ms İÇİNDE aynı
   bölgeye (40 px) yapılan dokunuş çift sayılır, yani geri alma yerine zoom
   açar — insan ritminde erişilmiyor, testler bu yüzden araya 350 ms koyuyor.
+  **Tanıtım balonu (1 Eylül 2026):** oyun ekranı açılışında merkez kareyi
+  işaret eden tek seferlik ipucu — *"Boş kareye veya çerçevesine çift
+  tıklama tahtayı büyütür. Hemen dene!"*. Kural İKİ değere birden bakıyor
+  (`src/utils/onboarding.ts` → `shouldShowZoomHint`): gösterim sayacı
+  (tavan 2) VE "denedi mi" — zoom bir kez denenirse balon anında kapanır ve
+  bir daha hiç çıkmaz, hiç denenmezse ikinci bir açılışta bir kez daha
+  çıkar. Bayraklar cihaz-yerel, yani Canlı oyunda hem açan hem karşı taraf
+  kendi ilk açılışında görür. Port ikizi: `FlagsStore.shouldShowZoomHint`;
+  metin iki tarafta BİREBİR aynı olmalı.
 - **Joker (`?`):** 2 adet, 0 puan, oynanırken herhangi bir Türkçe harfe dönüşür. **Tahtaya konmuş bir jokerin `0` puanı KIRMIZI yazılır** (token `red`/`kRed`, 28 Ağustos 2026 kullanıcı isteği) — jokerin nereye harcandığı tahtada görünsün diye; RAF taşı bilinçli olarak dışarıda (orada ★ zaten ayırt ediyor). `Tile.tsx` ↔ `tile_widget.dart`, ikisi de testli. Tahtaya bu turda konmuş (henüz "Oyna" ile onaylanmamış) bir jokere tekrar dokunmak artık onu geri almaz — `WildcardModal` tekrar açılır (başlık "Jokeri Hangi Harfe Çevir?") ve seçilen yeni harf `SET_WILD_LETTER` action'ıyla (`src/game/gameReducer.ts`) hücredeki `wildLetter`'ı günceller; taş geri alınmaz. Geri alma bu modda hâlâ iki yoldan mümkün: modaldeki "Geri Al" butonu (`RECALL_CELL` dispatch eder) ya da taşı doğrudan rafa sürükleyerek (mevcut sürükle-bırak `RECALL_CELL` yolu, dokunmadan ayrışır — sürükleme hâlâ eski davranışı korur, yalnızca hareketsiz dokunuş/tık yeni davranışa geçti). Sıradan (joker olmayan) yerleştirilmiş bir taşa dokunmak hâlâ doğrudan geri alır, davranış değişmedi. `App.tsx` (yerel/YZ oyun) ve `OnlineGameScreen.tsx` (Canlı oyun) aynı deseni birebir paylaşıyor (`pendingWild.editing` bayrağı) — biri değişirse diğeri de güncellenmeli.
   **BULUNAN HATA (22 Ağustos 2026, bir kullanıcı bildirdi — DOKUNMATİKTE bu
   düzenleme yolu baştan beri kırıktı):** *"Tahtaya joker koyup değiştirmek

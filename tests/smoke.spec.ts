@@ -1572,6 +1572,84 @@ test.describe('tahta zoom', () => {
     return (await page.locator(`[data-cell="${r},${c}"]`).boundingBox())!;
   }
 
+  // ── Tanıtım balonu (1 Eylül 2026, kullanıcı isteği) ─────────────────
+  // Kural İKİ değere birden bakıyor: gösterim sayacı (tavan 2) VE "denedi
+  // mi". Port ikizi: `mobile/app/test/zoom_hint_test.dart` — metin ikisinde
+  // de BİREBİR aynı olmalı.
+  const HINT = 'Boş kareye veya çerçevesine çift tıklama tahtayı büyütür. Hemen dene!';
+
+  /** Balon bayraklarını oyun açılmadan ÖNCE tohumlar. */
+  async function tohumla(page: Page, v: { shown?: number; tried?: boolean }) {
+    await page.addInitScript((val) => {
+      const o = val as { shown?: number; tried?: boolean };
+      try {
+        if (o.shown !== undefined) {
+          localStorage.setItem('kelimeki:zoom-hint-shown', String(o.shown));
+        }
+        if (o.tried) localStorage.setItem('kelimeki:zoom-tried', '1');
+      } catch {
+        // depolama kapalıysa test zaten balonu beklemiyor
+      }
+    }, v);
+  }
+
+  async function sayac(page: Page): Promise<number> {
+    return page.evaluate(
+      () => Number(localStorage.getItem('kelimeki:zoom-hint-shown') ?? '0'),
+    );
+  }
+
+  test('ilk oyun açılışında balon ÇIKAR, sayaç 1 olur', async ({ page }) => {
+    await oyunEkrani(page);
+    await expect(page.getByText(HINT)).toBeVisible();
+    expect(await sayac(page)).toBe(1);
+  });
+
+  test('hiç denemeyene İKİNCİ açılışta bir kez daha çıkar, üçüncüde çıkmaz',
+      async ({ page }) => {
+    await tohumla(page, { shown: 1 });
+    await oyunEkrani(page);
+    await expect(page.getByText(HINT)).toBeVisible();
+    expect(await sayac(page)).toBe(2);
+  });
+
+  test('tavana ulaşınca (2) balon çıkmaz', async ({ page }) => {
+    await tohumla(page, { shown: 2 });
+    await oyunEkrani(page);
+    await expect(page.getByText(HINT)).toHaveCount(0);
+    expect(await sayac(page)).toBe(2);
+  });
+
+  test('zoom DENEYENE bir daha çıkmaz (sayaç 0 olsa bile)', async ({ page }) => {
+    await tohumla(page, { tried: true });
+    await oyunEkrani(page);
+    await expect(page.getByText(HINT)).toHaveCount(0);
+    expect(await sayac(page)).toBe(0);
+  });
+
+  test('zoom denenince balon anında kapanır ve bayrak kalıcı yazılır',
+      async ({ page }) => {
+    await oyunEkrani(page);
+    await expect(page.getByText(HINT)).toBeVisible();
+
+    const b = await hucreKutusu(page, 6, 6);
+    await ciftDokun(page, b.x + b.width / 2, b.y + b.height / 2);
+    expect(await olcek(page)).toBeCloseTo(2, 1);
+    await expect(page.getByText(HINT)).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem('kelimeki:zoom-tried')))
+      .toBe('1');
+  });
+
+  test('balon tahtadan TAŞMAZ (dar telefonda metin sarılır)', async ({ page }) => {
+    await oyunEkrani(page);
+    const balon = (await page.locator('[data-zoom-hint]').boundingBox())!;
+    const vp = (await page.locator('[data-board-viewport]').boundingBox())!;
+    expect(balon.x).toBeGreaterThanOrEqual(vp.x - 1);
+    expect(balon.x + balon.width).toBeLessThanOrEqual(vp.x + vp.width + 1);
+    // Ve gerçekten sarılmış olmalı: tek satır olsaydı bu metin taşardı.
+    expect(balon.height).toBeGreaterThan(24);
+  });
+
   test('boş kareye çift dokunuş zoom açar, tekrarı kapatır', async ({ page }) => {
     await oyunEkrani(page);
     expect(await olcek(page)).toBeCloseTo(1, 2);

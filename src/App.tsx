@@ -1760,6 +1760,7 @@ export default function App() {
         onTilePointerMove={moveDrag}
         onTilePointerUp={endDrag}
         onTilePointerCancel={cancelDrag}
+        zoomHint={boardZoom.hint}
         zoom={boardZoom.zoom}
         viewportRef={boardZoom.viewportRef}
         onBoardPointerDown={boardZoom.onPointerDown}

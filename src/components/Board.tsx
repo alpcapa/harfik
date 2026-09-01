@@ -90,6 +90,10 @@ interface BoardProps {
   zoom?: ZoomState;
   /** Görünür kare (kırpma kutusu) — hook'un ölçüm/odak referansı. */
   viewportRef?: React.RefObject<HTMLDivElement>;
+  /** Zoom tanıtım balonu (1 Eylül 2026) — merkez kareyi işaret eden tek
+      seferlik ipucu. Gösterilip gösterilmeyeceğine `useBoardZoom` karar
+      verir (`utils/onboarding.ts`); burada yalnızca çizim var. */
+  zoomHint?: boolean;
   onBoardPointerDown?: (e: React.PointerEvent) => void;
   onBoardPointerMove?: (e: React.PointerEvent) => void;
   onBoardPointerUp?: () => void;
@@ -181,6 +185,7 @@ export function Board({
   compact = false,
   zoom = ZOOM_OFF,
   viewportRef,
+  zoomHint = false,
   onBoardPointerDown,
   onBoardPointerMove,
   onBoardPointerUp,
@@ -630,6 +635,51 @@ export function Board({
           </svg>
 
         </div>
+
+        {/* Zoom tanıtım balonu — MERKEZ karenin üstünde, kuyruğu aşağı
+            (kareye) bakan çok satırlı kutu. `inset-[10px]`: aşağıdaki
+            "Buradan başla" ile aynı gerekçe (grid'in kendi dolgusuyla
+            eşleşmezse yüzde koordinatları hücre alanından kayar).
+            Sürükleme başlayınca kaybolur — `tileLifted`, "Buradan başla"nın
+            aynı davranışı. Port ikizi: `board_widget.dart`
+            `_zoomHintBubble`; METİN İKİSİNDE DE BİREBİR aynı olmalı. */}
+        {zoomHint && !tileLifted && (
+          <div className="pointer-events-none absolute inset-[10px] z-20">
+            <div
+              data-zoom-hint=""
+              className="absolute left-0 right-0 flex flex-col items-center"
+              style={{
+                // Merkez karenin ÜST kenarı; kutu kendi yüksekliği kadar
+                // yukarı çekiliyor (punto akışkan, yükseklik bilinmiyor).
+                top: `calc(${CELL_W} * ${Math.floor(SIZE / 2)} + ${Math.floor(SIZE / 2) * GRID_GAP}px)`,
+                transform: 'translateY(-100%)',
+              }}
+            >
+              <div
+                className="font-bold leading-snug text-center rounded-[9px] text-white"
+                style={{
+                  maxWidth: '78%',
+                  background: '#2563EB',
+                  fontSize: 'clamp(9px, 2.4vw, 13px)',
+                  padding: '7px 10px',
+                  boxShadow: '0 2px 6px rgba(15,23,42,0.28)',
+                }}
+              >
+                Boş kareye veya çerçevesine çift tıklama tahtayı büyütür. Hemen dene!
+              </div>
+              {/* Kuyruk: merkez kareye bakan küçük üçgen. */}
+              <span
+                style={{
+                  width: 0,
+                  height: 0,
+                  borderLeft: '5px solid transparent',
+                  borderRight: '5px solid transparent',
+                  borderTop: '6px solid #2563EB',
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* "Buradan başla" balonu. `inset-[10px]`: köşe filigranındaki aynı
             gerekçe — absolute konumlanan bir grid öğesinin containing block'u

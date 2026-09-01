@@ -75,4 +75,57 @@ export function markChatRead(gameId: string, lastMessageAt: string): void {
 // PAYLAŞILIYOR — kapı script'i HTML'e gömülü düz JS olduğundan bu modülü
 // import EDEMEZ; adı orada elle tekrarlanıyor ve bu sabitle senkron
 // tutulmak zorunda (eklentinin kendi yorumunda da yazılı).
+// Tahta zoom'u tanıtım balonu (1 Eylül 2026, kullanıcı isteği) — port
+// ikizi: `FlagsStore.zoomHintShown` / `zoomTried` / `shouldShowZoomHint`.
+// Kural İKİ değere birden bakıyor, tek bayrak yetmez: *"Deneyip
+// büyütenlere bir daha gösterme. Hiç denememişse bir daha sefer tekrar
+// göster."* — yani gösterim sayacı (tavan 2) VE "denedi mi" ayrı ayrı.
+const ZOOM_HINT_SHOWN_KEY = 'kelimeki:zoom-hint-shown';
+const ZOOM_TRIED_KEY = 'kelimeki:zoom-tried';
+
+/** Balonun görüneceği en fazla oyun açılışı sayısı. */
+export const ZOOM_HINT_MAX_SHOWS = 2;
+
+function zoomHintShown(): number {
+  try {
+    return Number(localStorage.getItem(ZOOM_HINT_SHOWN_KEY) ?? '0') || 0;
+  } catch {
+    // Depolama kapalıysa "tavana ulaşıldı" varsayılır — aynı balonu her
+    // açılışta göstermek, hiç göstermemekten kötü (quickstart ile aynı ilke).
+    return ZOOM_HINT_MAX_SHOWS;
+  }
+}
+
+function zoomTried(): boolean {
+  try {
+    return localStorage.getItem(ZOOM_TRIED_KEY) === '1';
+  } catch {
+    return true;
+  }
+}
+
+/** Balon bu açılışta gösterilsin mi? (Port `shouldShowZoomHint`.) */
+export function shouldShowZoomHint(): boolean {
+  return !zoomTried() && zoomHintShown() < ZOOM_HINT_MAX_SHOWS;
+}
+
+/** Gösterime KARAR VERİLDİĞİNDE çağrılır — "gösterim" balonun ekrana
+ *  gelmesidir, nasıl kapandığı sayacı etkilemez. */
+export function bumpZoomHintShown(): void {
+  try {
+    localStorage.setItem(ZOOM_HINT_SHOWN_KEY, String(zoomHintShown() + 1));
+  } catch {
+    // yoksay
+  }
+}
+
+/** Kullanıcı zoom'u DENEDİ — balon bir daha hiç gösterilmez. */
+export function markZoomTried(): void {
+  try {
+    localStorage.setItem(ZOOM_TRIED_KEY, '1');
+  } catch {
+    // yoksay
+  }
+}
+
 export const SEEN_INTRO_KEY = 'kelimeki:seen-intro';
