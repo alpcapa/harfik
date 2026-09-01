@@ -131,12 +131,15 @@ kodu yok.
 
 ## ✅ YAPILDI — Tahtada çift dokunuşla yakınlaştırma (26 Ağustos 2026, testçi isteği → 1 Eylül 2026'da yapıldı)
 
-1 Eylül 2026'da uygulandı (1.0.5, `ui/game/board_zoom.dart`) — karar
-kaydı ve buradaki "dikkat edilecekler" listesinin tek tek nasıl
-karşılandığı (koordinat çevrimi Transform'la kökten çözüldü, jest ayrımı
-`_dragRef` önceliğiyle, iki ekran aynı PR'da, web'de YOK kararı bilinçli
-port farkı olarak verildi): `mobile/docs/parca-log.md` → Parça 175.
-Cihaz kontrol listesi: `mobile/TESTING.md` § 24.
+1 Eylül 2026'da önce PORTA uygulandı (1.0.5, `ui/game/board_zoom.dart`),
+AYNI GÜN kullanıcı kararıyla WEB'e de taşındı (*"web'e de uygulama kararı
+aldım. Her yerde aynı deneyim olsun."*) — yani buradaki "web'de mi, yoksa
+bilinçli port farkı mı" sorusunun cevabı: **iki yüzeyde de var.**
+Web kaynağı `src/utils/boardZoom.ts` + `src/hooks/useBoardZoom.ts`;
+"dikkat edilecekler" listesinin tek tek nasıl karşılandığı ve portun
+ölçümleri: `mobile/docs/parca-log.md` → Parça 175. Cihaz kontrol listesi:
+`mobile/TESTING.md` § 24; web tarafının kapıları `tests/smoke.spec.ts` →
+"tahta zoom" (6 test).
 
 ## (arşiv) Tahta çiziminin önbelleğe alınması — özgün kayıt (24 Ağustos 2026)
 

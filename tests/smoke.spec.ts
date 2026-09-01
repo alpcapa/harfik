@@ -776,6 +776,12 @@ test.describe('dokunmatik jestler', () => {
     await page.locator('[data-cell="0,0"]').click();
     expect(await dolu('[data-cell="0,0"]')).toBe(true);
 
+    // ⏱ 1 Eylül 2026'dan beri gerçek jest ritmi ŞART: taş konduktan sonra
+    // 300 ms İÇİNDE aynı bölgeye (40 px) yapılan ikinci dokunuş artık tanım
+    // gereği ÇİFT DOKUNUŞTUR (tahta zoom'u — `src/utils/boardZoom.ts`) ve
+    // hücre işlemi bilerek yutulur. Testler Playwright hızında koştuğundan
+    // araya insan ritmi konuyor; ölçülen davranış DEĞİŞMEDİ.
+    await page.waitForTimeout(350);
     // ISKALAMA: bir alt hücre (1,0) — BOŞ. Seçim de yok (taş konunca düşer).
     await page.locator('[data-cell="1,0"]').click();
     expect(
@@ -832,6 +838,12 @@ test.describe('dokunmatik jestler', () => {
 
     const oncesi = await rafSayisi();
 
+    // ⏱ 1 Eylül 2026'dan beri gerçek jest ritmi ŞART: taş konduktan sonra
+    // 300 ms İÇİNDE aynı bölgeye (40 px) yapılan ikinci dokunuş artık tanım
+    // gereği ÇİFT DOKUNUŞTUR (tahta zoom'u — `src/utils/boardZoom.ts`) ve
+    // hücre işlemi bilerek yutulur. Testler Playwright hızında koştuğundan
+    // araya insan ritmi konuyor; ölçülen davranış DEĞİŞMEDİ.
+    await page.waitForTimeout(350);
     // >>> Bildirilen jest: taslak taşa TEK DOKUNUŞ.
     await page.locator('[data-cell="0,1"]').tap();
 
@@ -914,6 +926,9 @@ test.describe('dokunmatik jestler', () => {
 
       // 2) Konmuş taşa titreşimli dokunuş → geri alınmalı. Düzeltmeden önce
       //    burada HİÇBİR ŞEY olmuyordu.
+      // ⏱ Araya insan ritmi: 300 ms içindeki ikinci dokunuş artık çift
+      //    dokunuştur (zoom, bkz. `src/utils/boardZoom.ts`).
+      await page.waitForTimeout(350);
       await sloppyTap(page, cell, JITTER);
       expect(
         await harfi(cell),
@@ -942,6 +957,9 @@ test.describe('dokunmatik jestler', () => {
     expect(await harfi(cell)).toBe('M');
 
     // 3) Konmuş taşa titreşimli dokunuş → rafa geri alınmalı.
+    // ⏱ Araya insan ritmi: 300 ms içindeki ikinci dokunuş artık çift
+    //    dokunuştur (zoom, bkz. `src/utils/boardZoom.ts`).
+    await page.waitForTimeout(350);
     await sloppyTap(page, cell, JITTER);
     expect(await harfi(cell)).toBe('');
 
@@ -1469,4 +1487,188 @@ test('dokunma hedefleri: modal ✕ görsel kutusunun dışından da kapanır, ra
   // Ve asıl iddia: görsel kutunun 8 px ALTINA tıklamak modalı kapatır.
   await page.mouse.click(k.x + k.width / 2, k.y + k.height + 8);
   await expect(baslik).toHaveCount(0);
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// TAHTA YAKINLAŞTIRMASI (1 Eylül 2026) — kullanıcı kararı: *"web'e de
+// uygulama kararı aldım. Her yerde aynı deneyim olsun."* Davranış portla
+// birebir; kararlar `src/utils/boardZoom.ts` başlığında.
+//
+// Dokunmatik bağlam ŞART: jest CDP dokunuş olaylarıyla üretiliyor (fare
+// çift tıklaması farklı bir olay zinciri).
+// ═══════════════════════════════════════════════════════════════════════
+test.describe('tahta zoom', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+
+  /** Yarım kalmış bir yerel oyun (rafı sabit) — zoom testleri taş koyup
+   *  geri alabilsin diye. `dokunmatik jestler` bloğundaki fikstürün aynısı,
+   *  orada `describe`a kapalı olduğundan burada tekrar kuruluyor. */
+  async function kayit(): Promise<string> {
+    const { gameReducer, createInitialState } = await import('../src/game/gameReducer');
+    const { TILE_DATA } = await import('../src/data/tiles');
+    let s = gameReducer(createInitialState(), {
+      type: 'START',
+      players: [
+        { name: 'Misafir', isAI: false },
+        { name: 'Yapay Zeka', isAI: true },
+      ],
+    });
+    const rack = ['K', 'E', 'L', 'İ', 'M', 'E', '?'].map((letter) =>
+      letter === '?'
+        ? { letter: '?', pts: 0, wild: true }
+        : { letter, pts: TILE_DATA[letter].pts },
+    );
+    s = { ...s, current: 0, players: s.players.map((p, i) => (i === 0 ? { ...p, rack } : p)) };
+    return JSON.stringify({ version: 1, state: s, savedAt: Date.now() });
+  }
+
+  async function oyunEkrani(page: Page): Promise<void> {
+    await donenKullanici(page);
+    await page.addInitScript((payload) => {
+      localStorage.setItem('kelimeki:game-state', payload as string);
+    }, await kayit());
+    await page.goto('/');
+    await page.getByRole('button', { name: /SIRA SENDE/i }).click();
+    const quickstartHeading = page.getByRole('heading', { name: /hızlı başlangıç/i });
+    if (await quickstartHeading.isVisible().catch(() => false)) {
+      await page.locator('button[aria-label="Kapat"]').last().click();
+    }
+    await expect(page.locator('[data-board-grid]')).toBeVisible();
+  }
+
+  /** Tek dokunuş — ham CDP (Playwright `tap()` locator ister, biz KOORDİNAT
+   *  dokunuşu yapıyoruz: hücreler arası boşluk ve çerçeve de test ediliyor). */
+  async function dokun(page: Page, x: number, y: number): Promise<void> {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await cdp.detach();
+  }
+
+  /** Çift dokunuş: pencere (300 ms) İÇİNDE aynı noktaya iki dokunuş. */
+  async function ciftDokun(page: Page, x: number, y: number): Promise<void> {
+    await dokun(page, x, y);
+    await page.waitForTimeout(60);
+    await dokun(page, x, y);
+    // Aç/kapa animasyonu (180 ms) + pay.
+    await page.waitForTimeout(280);
+  }
+
+  /** Izgaranın uygulanmış ölçeği (transform matrisinden). */
+  async function olcek(page: Page): Promise<number> {
+    return page.locator('[data-board-grid]').evaluate((el) => {
+      const t = getComputedStyle(el).transform;
+      if (!t || t === 'none') return 1;
+      return new DOMMatrixReadOnly(t).a;
+    });
+  }
+
+  /** Hücrede taş var mı — mevcut testlerin `dolu` deseni (innerText). */
+  async function doluMu(page: Page, cell: string): Promise<boolean> {
+    return (await page.locator(`[data-cell="${cell}"]`).innerText()).trim().length > 0;
+  }
+
+  async function hucreKutusu(page: Page, r: number, c: number) {
+    return (await page.locator(`[data-cell="${r},${c}"]`).boundingBox())!;
+  }
+
+  test('boş kareye çift dokunuş zoom açar, tekrarı kapatır', async ({ page }) => {
+    await oyunEkrani(page);
+    expect(await olcek(page)).toBeCloseTo(1, 2);
+
+    const b = await hucreKutusu(page, 6, 6);
+    await ciftDokun(page, b.x + b.width / 2, b.y + b.height / 2);
+    expect(await olcek(page)).toBeCloseTo(2, 1);
+
+    await ciftDokun(page, b.x + b.width / 2, b.y + b.height / 2);
+    expect(await olcek(page)).toBeCloseTo(1, 2);
+  });
+
+  test('TEK dokunuş anında taş koyar — gecikme YOK', async ({ page }) => {
+    await oyunEkrani(page);
+    await page.locator('[data-rack-tile="0"]').tap();
+    const b = await hucreKutusu(page, 0, 0);
+    await dokun(page, b.x + b.width / 2, b.y + b.height / 2);
+    // Ek bekleme YOK: taş çift dokunuş penceresi kadar geciktirilemez.
+    expect(await doluMu(page, '0,0')).toBe(true);
+    expect(await olcek(page)).toBeCloseTo(1, 2);
+  });
+
+  test('harf seçiliyken çift dokunuş: taş KONUR ve KALIR, zoom açılır', async ({ page }) => {
+    await oyunEkrani(page);
+    await page.locator('[data-rack-tile="0"]').tap();
+    const b = await hucreKutusu(page, 0, 0);
+    await ciftDokun(page, b.x + b.width / 2, b.y + b.height / 2);
+
+    expect(await olcek(page)).toBeCloseTo(2, 1);
+    // Kullanıcı kararı: "taşı geri almadan, koyduğu yerde bırakarak".
+    expect(await doluMu(page, '0,0')).toBe(true);
+  });
+
+  test('KENARDAN (kareler dışı) çift dokunuş da zoom açar', async ({ page }) => {
+    await oyunEkrani(page);
+    const vp = (await page.locator('[data-board-viewport]').boundingBox())!;
+    const ilk = await hucreKutusu(page, 0, 0);
+    // Görünür karenin İÇİ ama hücrelerin DIŞI: 10 px'lik çerçeve dolgusu.
+    const x = vp.x + (ilk.x - vp.x) / 2;
+    const y = ilk.y + ilk.height / 2;
+    expect(x).toBeLessThan(ilk.x); // gerçekten hücre dışında
+    await ciftDokun(page, x, y);
+    expect(await olcek(page)).toBeCloseTo(2, 1);
+  });
+
+  test('ZOOM AÇIKKEN sürükle-bırak nişan alınan kareye iner', async ({ page }) => {
+    await oyunEkrani(page);
+    // Sol üst köşeye odaklı zoom (hedef hücre görünür kalsın).
+    const k00 = await hucreKutusu(page, 0, 0);
+    await ciftDokun(page, k00.x + 2, k00.y + 2);
+    expect(await olcek(page)).toBeCloseTo(2, 1);
+
+    // Zoom SONRASI konumlar — `boundingBox` transform'u yansıtır.
+    const raf = (await page.locator('[data-rack-tile="0"]').boundingBox())!;
+    const hedef = await hucreKutusu(page, 1, 1);
+    const cdp = await page.context().newCDPSession(page);
+    const nokta = (x: number, y: number) => [{ x, y }];
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: nokta(raf.x + raf.width / 2, raf.y + raf.height / 2),
+    });
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: nokta(raf.x + raf.width / 2, raf.y - 40),
+    });
+    // Bırakma noktası 30 px KALDIRILIYOR (DRAG_LIFT) — parmak hedefin altına.
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: nokta(hedef.x + hedef.width / 2, hedef.y + hedef.height / 2 + 30),
+    });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await cdp.detach();
+
+    // Asıl iddia: `elementFromPoint` transform'u kendisi çözdüğünden taş
+    // NİŞAN ALINAN hücreye iner (portta bunun için ayrı geometri gerekmişti).
+    expect(await doluMu(page, '1,1')).toBe(true);
+  });
+
+  test('hamle puanı rozeti kırpma katmanının DIŞINDA', async ({ page }) => {
+    await oyunEkrani(page);
+    await page.locator('[data-rack-tile="0"]').tap();
+    const b = await hucreKutusu(page, 0, 0);
+    await dokun(page, b.x + b.width / 2, b.y + b.height / 2);
+    await expect(page.locator('[data-board-badge-layer]')).toHaveCount(1);
+
+    // YAPISAL kanıt: rozet katmanı, kırpan görünür karenin İÇİNDE olmamalı
+    // (portta bu hata cihazda görüldü: kenardaki rozetin bir yanı kesiliyor).
+    const icerde = await page.evaluate(() => {
+      const vp = document.querySelector('[data-board-viewport]');
+      const badge = document.querySelector('[data-board-badge-layer]');
+      return !!(vp && badge && vp.contains(badge));
+    });
+    expect(icerde).toBe(false);
+
+    // Ve rozet gerçekten hücre alanının dışına taşıyor olmalı — aksi hâlde
+    // bu test hiçbir şey kanıtlamazdı.
+    const rozet = (await page.locator('[data-board-badge-layer] > div > div').boundingBox())!;
+    expect(rozet.x).toBeLessThan(b.x);
+  });
 });
