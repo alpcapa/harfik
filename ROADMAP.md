@@ -99,6 +99,28 @@ yapılacak iş olmadığı anlaşıldı. Tek tek:
 kâğıdı) biri kapanırken öteki kapanmıyor. Bu tablo bir İNDEKS — bir kova
 kapandığında kaynağı `console-formlari.md`'dir, karar oradan okunur.
 
+### 🚀 1.0.5 SÜRÜM TURU — ⏳ dalda hazır, KAPILI (1 Eylül 2026)
+
+**Tek içerik: tahta zoom'u** — çift dokunuşla 2× büyütme + parmakla pan,
+yalnızca tahtanın içi; tek dokunuşlar birebir korunuyor (kullanıcı isteği,
+kapalı testteki "kareleri tutturamıyorum" şikâyetinin çözümü). Karar/ölçüm:
+`mobile/docs/parca-log.md` → Parça 175 · cihaz listesi `mobile/TESTING.md`
+§ 24 · backlog kaydı kapatıldı (`docs/decisions/product-backlog.md`).
+
+`appVersion` + `pubspec` birlikte 1.0.4 → 1.0.5 yapıldı (aynı dalda).
+13 yeni test (`board_zoom_test.dart`), tam takım 680 yeşil.
+
+**Kapılar, SIRAYLA — kullanıcı kararı:** *"Bunu apk ile test edip sorunsuz
+olduğundan emin olmadan aab yapılmayacak."*
+
+1. ⏳ **467 (1.0.4) Play'e yüklenmeden bu dal merge EDİLMEZ** ("Yüklenene
+   kadar duruyoruz") — merge, `mobile-latest`'teki 1.0.4 paketini 1.0.5'le
+   ezer ve 1.0.4'ün "yüklenmemiş sürüm her merge'i toplar" dersi aynen
+   tekrarlanır.
+2. ⬜ Merge → CI yeni `.apk` + `.aab` üretir → kullanıcı **`.apk`'yı
+   cihazda** § 24 listesiyle dener.
+3. ⬜ Ancak onaydan sonra `.aab` Play'e gider.
+
 ### 🚀 1.0.4 SÜRÜM TURU — 31 Ağustos 2026
 
 `appVersion` (`config/env.dart`) ve `pubspec.yaml` **birlikte** 1.0.3 → 1.0.4

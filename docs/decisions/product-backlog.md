@@ -129,30 +129,14 @@ kodu yok.
 
 ---
 
-## Tahtada çift dokunuşla yakınlaştırma (26 Ağustos 2026, testçi isteği)
+## ✅ YAPILDI — Tahtada çift dokunuşla yakınlaştırma (26 Ağustos 2026, testçi isteği → 1 Eylül 2026'da yapıldı)
 
-Kapalı testteki bir kullanıcı bildirdi (kullanıcının aktardığı sözlerle):
-*"ekran küçük olduğu için kareleri tutturmakta zorlandığını söyledi.
-Kelimelik'te board'a çift tıklama zoom yapıyor, tekrar çift tık geri zoom
-yapıyor. Bu özelliğin iyi olacağını söyledi."*
-
-**Ertelendi, sebebi net:** o gün asıl sorun sürüklemenin akıcılığıydı
-(Parça 144) ve kullanıcı ikisini ayırdı — *"bu iş için ayrıca bakmamız
-lazım. Şimdi asıl sorun taşların akıcı hareketini çözmek."* Akıcılık
-düzeldiğine göre "tutturamama" şikâyetinin ne kadarının hızdan, ne
-kadarının gerçekten hücre boyutundan geldiği ARTIK BİLİNMİYOR — önce
-yeni paketle tekrar sorulmalı, sonra yapılmalı.
-
-**Yapılırsa dikkat edilecekler (bu projede ölçülmüş tuzaklar):**
-- Yakınlaştırma sürükle-bırakın koordinat çevrimini bozar: `game_screen`
-  global noktayı hücreye `stride = (en + gap)/13` ile çeviriyor; ölçek
-  devreye girerse o formül ve `_nearbyDraftCell` birlikte güncellenmeli.
-- Çift dokunuş, mevcut jest ayrımıyla (dokunuş ↔ sürükleme eşiği, fare 6 /
-  parmak 10) çakışmamalı.
-- İki oyun ekranı bu deseni paylaşıyor (`game_screen` ↔
-  `online_game_screen`) — biri değişirse öteki de.
-- Web'de karşılığı YOK; önce web'de mi yapılacak, yoksa bilinçli bir port
-  farkı mı olacak — karar verilmeli (kural: kaynak web'dir).
+1 Eylül 2026'da uygulandı (1.0.5, `ui/game/board_zoom.dart`) — karar
+kaydı ve buradaki "dikkat edilecekler" listesinin tek tek nasıl
+karşılandığı (koordinat çevrimi Transform'la kökten çözüldü, jest ayrımı
+`_dragRef` önceliğiyle, iki ekran aynı PR'da, web'de YOK kararı bilinçli
+port farkı olarak verildi): `mobile/docs/parca-log.md` → Parça 175.
+Cihaz kontrol listesi: `mobile/TESTING.md` § 24.
 
 ## (arşiv) Tahta çiziminin önbelleğe alınması — özgün kayıt (24 Ağustos 2026)
 

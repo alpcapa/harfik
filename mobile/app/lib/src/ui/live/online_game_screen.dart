@@ -34,6 +34,7 @@
 // kelimeyi web oynayabilir, mobil oynayamaz.
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -54,6 +55,7 @@ import '../chat/chat_modal.dart';
 import '../chat/chat_settings_modal.dart';
 import '../feedback/feedback_modal.dart';
 import '../game/board_widget.dart';
+import '../game/board_zoom.dart';
 import '../game/dialog_shell.dart';
 import '../game/game_header.dart';
 import '../game/game_over_modal.dart';
@@ -304,6 +306,13 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   final GlobalKey _gridKey = GlobalKey();
   final GlobalKey _rackKey = GlobalKey();
   final GlobalKey _stackKey = GlobalKey();
+
+  // ── Tahta yakınlaştırması (1.0.5) — game_screen.dart ile bilinçli aynı;
+  // tasarımın tamamı board_zoom.dart'ta. ────────────────────────────────
+  final BoardZoomController _zoom = BoardZoomController();
+  final GlobalKey _viewportKey = GlobalKey();
+  BoardPanRef? _panRef;
+  DateTime _swallowTapsUntil = DateTime.fromMillisecondsSinceEpoch(0);
   _DragRef? _dragRef;
 
   /// Sürüklenen kaynak — YALNIZCA eşik aşıldığında/bittiğinde değişir
@@ -406,6 +415,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     _controller.dispose();
     _chatState.dispose();
     _dragNotifier.dispose();
+    _zoom.dispose();
     super.dispose();
   }
 
@@ -1036,16 +1046,30 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   Future<void> _tapPlacedTile(int r, int c, Tile placedTile) async {
     if (!_canEdit) return;
     if (placedTile.wild) {
-      final choice = await showWildLetterSheet(context, editing: true);
-      if (choice == null) return;
-      if (choice.recallRequested) {
-        _controller.dispatch(RecallCellAction(r: r, c: c));
-      } else if (choice.letter != null) {
-        _controller.dispatch(
-            SetWildLetterAction(r: r, c: c, wildLetter: choice.letter!));
-      }
+      // Modal açan dokunuş çift dokunuş penceresi kadar ertelenir —
+      // gerekçe game_screen.dart'ın aynı dalında (board_zoom.dart direk 2).
+      _zoom.recordTapEffect(const ZoomTapDeferredModal());
+      _zoom.deferModal(() => unawaited(_editPlacedWild(r, c)));
     } else {
+      final priorSelection = state.selectedTile;
       _controller.dispatch(RecallCellAction(r: r, c: c));
+      _zoom.recordTapEffect(ZoomTapRecalled(r, c,
+          wildLetter: null, priorSelection: priorSelection));
+    }
+  }
+
+  /// Ertelenmiş joker düzenleme penceresi (`_tapPlacedTile` wild dalı).
+  Future<void> _editPlacedWild(int r, int c) async {
+    if (!mounted || !_canEdit) return;
+    final t = state.placed[cellKey(r, c)];
+    if (t == null || !t.wild) return;
+    final choice = await showWildLetterSheet(context, editing: true);
+    if (choice == null) return;
+    if (choice.recallRequested) {
+      _controller.dispatch(RecallCellAction(r: r, c: c));
+    } else if (choice.letter != null) {
+      _controller.dispatch(
+          SetWildLetterAction(r: r, c: c, wildLetter: choice.letter!));
     }
   }
 
@@ -1106,6 +1130,13 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
   Future<void> _handleCellTap(int r, int c, Offset global) async {
     final k = cellKey(r, c);
+    // Çift dokunuşla zoom — kapsam/gerekçe game_screen.dart'ın aynı dalında.
+    if (state.board[r][c] == null) {
+      if (_registerZoomTap(global)) return;
+      _zoom.recordTapEffect(const ZoomTapNone());
+    } else {
+      _zoom.markUnpairableTap();
+    }
     if (state.board[r][c] != null) {
       // Taslak hamle sürerken anlam penceresi AÇILMAZ, onun yerine
       // ıskalama kurtarma çalışır — gerekçe ve kullanıcının bildirimi
@@ -1153,29 +1184,81 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
         ? me.rack[selIdx]
         : null;
     if (sel != null && sel.letter == '?') {
-      final choice = await showWildLetterSheet(context);
-      if (choice?.letter == null) return;
-      _controller
-          .dispatch(PlaceTileAction(r: r, c: c, wildLetter: choice!.letter));
+      // Joker penceresi ertelenir; rackIndex ŞİMDİ yakalanır — gerekçe
+      // game_screen.dart'ın aynı dalında.
+      final jokerIdx = selIdx!;
+      _zoom.recordTapEffect(const ZoomTapDeferredModal());
+      _zoom.deferModal(() => unawaited(_placeWildDeferred(r, c, jokerIdx)));
       return;
     }
     _controller.dispatch(PlaceTileAction(r: r, c: c));
+    if (selIdx != null) {
+      _zoom.recordTapEffect(ZoomTapPlaced(r, c, priorSelection: selIdx));
+    }
+  }
+
+  /// Ertelenmiş joker YERLEŞTİRME penceresi (`_handleCellTap` joker dalı).
+  Future<void> _placeWildDeferred(int r, int c, int rackIndex) async {
+    if (!mounted || !_canEdit) return;
+    final me = _me;
+    if (me == null || rackIndex < 0 || rackIndex >= me.rack.length) return;
+    if (me.rack[rackIndex].letter != '?') return;
+    if (state.board[r][c] != null || state.placed.containsKey(cellKey(r, c))) {
+      return;
+    }
+    final choice = await showWildLetterSheet(context);
+    if (choice?.letter == null) return;
+    _controller.dispatch(PlaceTileAction(
+        r: r, c: c, wildLetter: choice!.letter, rackIndex: rackIndex));
+  }
+
+  /// Çift dokunuş kontrolü — game_screen.dart'taki eşinin aynısı.
+  bool _registerZoomTap(Offset global) {
+    if (clock.now().isBefore(_swallowTapsUntil)) return true;
+    if (!_zoom.registerTap(global)) return false;
+    final undo = _zoom.takePendingUndo();
+    if (undo != null) {
+      applyZoomTapUndo(undo,
+          dispatch: _controller.dispatch,
+          rack: () => state.players[state.current].rack);
+    }
+    _toggleZoomAt(global);
+    return true;
+  }
+
+  void _toggleZoomAt(Offset global) {
+    final grid = _boxOf(_gridKey);
+    if (grid == null) return;
+    _zoom.toggleAt(grid.globalToLocal(global), grid.size);
   }
 
   RenderBox? _boxOf(GlobalKey key) =>
       key.currentContext?.findRenderObject() as RenderBox?;
 
   double _liftedY(double y) {
-    final grid = _boxOf(_gridKey);
+    // Görünür kare varsa ONUN üstüne kırp (zoom — bkz. game_screen.dart).
+    final box = _boxOf(_viewportKey) ?? _boxOf(_gridKey);
     final lifted = y - _dragLift;
-    if (grid == null) return lifted;
-    final top = grid.localToGlobal(Offset.zero).dy;
+    if (box == null) return lifted;
+    final top = box.localToGlobal(Offset.zero).dy;
     return lifted < top + 1 ? top + 1 : lifted;
   }
 
   (int, int)? _cellAtGlobal(Offset global) {
     final grid = _boxOf(_gridKey);
     if (grid == null) return null;
+    // ZOOM KAPISI — gerekçe game_screen.dart'ın aynı dalında: görünür kare
+    // dışına düşen nokta hücre DEĞİLDİR (raf-üstü bırakma tuzağı).
+    final vp = _boxOf(_viewportKey);
+    if (vp != null) {
+      final vLocal = vp.globalToLocal(global);
+      if (vLocal.dx < 0 ||
+          vLocal.dy < 0 ||
+          vLocal.dx >= vp.size.width ||
+          vLocal.dy >= vp.size.height) {
+        return null;
+      }
+    }
     final local = grid.globalToLocal(global);
     if (local.dx < 0 ||
         local.dy < 0 ||
@@ -1200,6 +1283,36 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   bool _isCellFreeFor(_DragSource source, int r, int c) {
     if (source is _PlacedSource && source.r == r && source.c == c) return false;
     return state.board[r][c] == null && state.placed[cellKey(r, c)] == null;
+  }
+
+  // ── Tahta pan'i (yalnızca zoom açıkken) — game_screen.dart ile aynı ───
+  void _boardPointerDown(PointerDownEvent e) {
+    if (_dragRef != null || !_zoom.zoomed || _panRef != null) return;
+    setState(() => _panRef = BoardPanRef(e.position));
+  }
+
+  void _boardPointerMove(PointerMoveEvent e) {
+    final p = _panRef;
+    if (p == null) return;
+    if (!p.moved) {
+      if ((e.position - p.start).distance < _dragThresholdFor(e.kind)) return;
+      p.moved = true;
+    }
+    final grid = _boxOf(_gridKey);
+    if (grid == null) return;
+    _zoom.panBy(e.delta, grid.size);
+  }
+
+  void _boardPointerUp(PointerUpEvent e) => _endBoardPan();
+
+  void _endBoardPan() {
+    final p = _panRef;
+    if (p == null) return;
+    setState(() => _panRef = null);
+    if (p.moved) {
+      _swallowTapsUntil = clock.now().add(const Duration(milliseconds: 120));
+      _zoom.markUnpairableTap();
+    }
   }
 
   void _beginTileDrag(_DragSource source, PointerDownEvent e) {
@@ -1256,7 +1369,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     if (d == null) return;
 
     if (!d.moved) {
-      await _dokunusOlarakIsle(d.source);
+      await _dokunusOlarakIsle(d.source, e.position);
       return;
     }
 
@@ -1268,10 +1381,12 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     final rafinUstunde = s is _RackSource && _rackContains(e.position);
     if (rafinUstunde ||
         (e.position - d.start).distance < _tapSlopOnRelease) {
-      await _dokunusOlarakIsle(s);
+      await _dokunusOlarakIsle(s, e.position);
       return;
     }
 
+    // Gerçek sürükleme tamamlandı — önceki dokunuş kaydı bayat.
+    _zoom.markUnpairableTap();
     if (!d.enabled) return;
 
     final lifted = Offset(e.position.dx, _liftedY(e.position.dy));
@@ -1299,8 +1414,10 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
   /// Sürükleme değil DOKUNUŞ olarak işle — iki dal da buradan geçer
   /// (`game_screen.dart`'taki aynı ortaklaştırma).
-  Future<void> _dokunusOlarakIsle(_DragSource s) async {
+  Future<void> _dokunusOlarakIsle(_DragSource s, Offset globalPos) async {
     if (s is _RackSource) {
+      // Raf dokunuşu tahta çifti oluşturamaz (zoom kapsamı yalnızca tahta).
+      _zoom.markUnpairableTap();
       if (state.swapMode) {
         // Taş değiştirme gerçekten sıra gerektirir (sunucuya gider).
         if (!_canAct) return;
@@ -1310,6 +1427,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
         _controller.dispatch(SelectTileAction(s.index));
       }
     } else if (s is _PlacedSource) {
+      // Taslak taşlar zoom kapsamında (game_screen.dart'taki aynı kural).
+      if (_registerZoomTap(globalPos)) return;
       await _tapPlacedTile(s.r, s.c, s.tile);
     }
   }
@@ -1363,12 +1482,17 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     const gap = 3.0;
     final strideX = (grid.size.width + gap) / boardSize;
     final strideY = (grid.size.height + gap) / boardSize;
-    final gridOrigin = stack.globalToLocal(grid.localToGlobal(Offset.zero));
+    // Köşeler ızgaranın YEREL uzayından `localToGlobal` ile — zoom
+    // transformu ne olursa olsun doğru (game_screen.dart'taki aynı düzeltme).
+    final tl = stack.globalToLocal(
+        grid.localToGlobal(Offset(c * strideX, r * strideY)));
+    final br = stack.globalToLocal(grid.localToGlobal(Offset(
+        c * strideX + (strideX - gap), r * strideY + (strideY - gap))));
     return Positioned(
-      left: gridOrigin.dx + c * strideX,
-      top: gridOrigin.dy + r * strideY,
-      width: strideX - gap,
-      height: strideY - gap,
+      left: tl.dx,
+      top: tl.dy,
+      width: br.dx - tl.dx,
+      height: br.dy - tl.dy,
       child: IgnorePointer(
         child: CustomPaint(
           painter: DashedBorderPainter(
@@ -1604,7 +1728,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                           // Aktif bir taş sürüklemesi varken kaydırma kilitleniyor
                           // — game_screen.dart'taki aynı düzeltme (bkz. orada,
                           // "Listener jest arenasına katılmıyor" notu).
-                          physics: (_dragRef?.enabled ?? false)
+                          physics: ((_dragRef?.enabled ?? false) ||
+                                  _panRef != null)
                               ? const NeverScrollableScrollPhysics()
                               : null,
                           // İçerik sütunu web'in her bölümdeki
@@ -1642,6 +1767,12 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                               ),
                                         onCellTap: _handleCellTap,
                                         gridKey: _gridKey,
+                                        zoom: _zoom,
+                                        viewportKey: _viewportKey,
+                                        onBoardPointerDown: _boardPointerDown,
+                                        onBoardPointerMove: _boardPointerMove,
+                                        onBoardPointerUp: _boardPointerUp,
+                                        onBoardPointerCancel: _endBoardPan,
                                         onOpenHistory: () => showMoveHistoryModal(
                                             context, _historyState),
                                         onOpenHelp: () => showHelpModal(context),
