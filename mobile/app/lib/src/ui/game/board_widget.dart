@@ -11,6 +11,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
+import 'board_zoom.dart';
+
 import 'count_badge.dart';
 import 'fluid.dart';
 import 'neo_box.dart';
@@ -102,7 +104,31 @@ class BoardWidget extends StatelessWidget {
   /// Izgara alanının (Stack) geometrisine dışarıdan erişim — ekran katmanı
   /// global noktayı hücreye çevirirken kullanır (web elementFromPoint'in
   /// geometri tabanlı eşleniği).
+  ///
+  /// ⚠ ZOOM AÇIKKEN bu kutunun `globalToLocal`ı transformu da tersine
+  /// çevirir (SANAL ızgara uzayı) — ekranlardaki stride matematiğinin
+  /// zoom'da değişmeden doğru kalmasının sebebi tam olarak bu.
   final GlobalKey? gridKey;
+
+  /// Tahta yakınlaştırması (1.0.5). Verilmezse davranış eski hâliyle
+  /// birebir aynı — hiçbir sarmalayıcı kurulmaz.
+  final BoardZoomController? zoom;
+
+  /// Izgaranın GÖRÜNÜR karesi (ClipRect) — zoom'luyken sanal ızgara bu
+  /// karenin dışına taştığından, ekran katmanı bırakma noktalarını hücreye
+  /// çevirmeden ÖNCE bu kutuyla kapılıyor (rafın üstüne bırakılan taşın
+  /// ters transform yüzünden "görünmez bir hücreye" inmesini önler —
+  /// board_zoom_test bunu kilitliyor).
+  final GlobalKey? viewportKey;
+
+  /// Tahta alanının HAM pointer akışı (pan + çift dokunuş altyapısı).
+  /// Translucent Listener: çocuk taş Listener'ları hit-test sırasında ÖNCE
+  /// çalışır, yani ekran katmanı `_dragRef`e bakarak taş sürüklemesiyle
+  /// pan'i ayırt edebilir.
+  final void Function(PointerDownEvent e)? onBoardPointerDown;
+  final void Function(PointerMoveEvent e)? onBoardPointerMove;
+  final void Function(PointerUpEvent e)? onBoardPointerUp;
+  final VoidCallback? onBoardPointerCancel;
 
 
   /// Alt bilgi şeridindeki "Hamleler" linki — verilmezse link çizilmez
@@ -138,6 +164,55 @@ class BoardWidget extends StatelessWidget {
   /// (verilmezse — önizlemeler, testlerin çoğu — uyarı hiç çizilmez).
   final OnlineStatus? onlineStatus;
 
+  /// Zoom sarmalayıcısı (1.0.5): ızgara Stack'i ClipRect + Transform +
+  /// translucent Listener ile sarılır. `zoom` verilmemişse ESKİ DAVRANIŞ
+  /// BİREBİR — hiçbir sarmalayıcı kurulmaz (salt-okunur önizlemeler,
+  /// mevcut testler).
+  ///
+  /// Perf: `AnimatedBuilder.child` ızgarayı BİR kez inşa eder; pan/zoom her
+  /// karede yalnızca Transform'u yeniler — 169 hücre pan sırasında yeniden
+  /// inşa edilmez (Parça 23 / `_dragNotifier` kuralının aynısı). Pahalı
+  /// blur'lar NeoBox'ın raster önbelleğinde olduğundan kaydırma karesi ucuz;
+  /// bilinçli olarak RepaintBoundary KONMUYOR — konsaydı harfler 2×'te
+  /// bitmap gibi bulanıklaşırdı (metin, transform altında vektörel kalmalı).
+  Widget _zoomWrap(Widget grid) {
+    final z = zoom;
+    if (z == null) {
+      return viewportKey == null
+          ? grid
+          : KeyedSubtree(key: viewportKey, child: grid);
+    }
+    Widget w = AnimatedBuilder(
+      animation: z,
+      child: grid,
+      builder: (context, child) => TweenAnimationBuilder<Matrix4>(
+        tween: Matrix4Tween(begin: Matrix4.identity(), end: z.matrix),
+        duration: z.animate ? kZoomAnimDuration : Duration.zero,
+        curve: Curves.easeOutCubic,
+        // ValueKey testler için: zoom matrisinin ekrana GERÇEKTEN
+        // uygulandığı tek yer burası.
+        builder: (context, m, c) => Transform(
+            key: const ValueKey('board-zoom-transform'),
+            transform: m,
+            child: c),
+        child: child,
+      ),
+    );
+    // ClipRect = görünür kare; anahtarı ekran katmanının bırakma kapısı
+    // kullanıyor (bkz. viewportKey dokümantasyonu).
+    w = ClipRect(key: viewportKey, child: w);
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: onBoardPointerDown,
+      onPointerMove: onBoardPointerMove,
+      onPointerUp: onBoardPointerUp,
+      onPointerCancel: onBoardPointerCancel == null
+          ? null
+          : (_) => onBoardPointerCancel!(),
+      child: w,
+    );
+  }
+
   const BoardWidget({
     super.key,
     required this.state,
@@ -151,6 +226,12 @@ class BoardWidget extends StatelessWidget {
     this.onTilePointerCancel,
     this.dragListenable,
     this.gridKey,
+    this.zoom,
+    this.viewportKey,
+    this.onBoardPointerDown,
+    this.onBoardPointerMove,
+    this.onBoardPointerUp,
+    this.onBoardPointerCancel,
     this.onOpenHistory,
     this.onOpenMessaging,
     this.unreadMessageCount = 0,
@@ -270,7 +351,7 @@ class BoardWidget extends StatelessWidget {
             aspectRatio: 1,
             child: Padding(
               padding: const EdgeInsets.all(10),
-              child: Stack(
+              child: _zoomWrap(Stack(
                 key: gridKey,
                 children: [
                   GridView.count(
@@ -335,7 +416,7 @@ class BoardWidget extends StatelessWidget {
                       ),
                     ),
                 ],
-              ),
+              )),
             ),
           ),
           if (!hideFooter) _footer(),

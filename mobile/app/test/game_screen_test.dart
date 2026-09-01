@@ -179,6 +179,10 @@ void main() {
     expect(hucre.height, lessThan(30),
         reason: 'hücre büyüdüyse bu kurtarmanın gerekçesini gözden geçir');
 
+    // 300 ms içinde aynı noktaya ikinci dokunuş artık ÇİFT DOKUNUŞTUR
+    // (zoom, board_zoom.dart) ve hücre işlemi yutulur — geri alma AYRI bir
+    // jest olmalı, gerçek ritmi kur.
+    await tester.pump(const Duration(milliseconds: 350));
     // ISKALAMA: bir alt hücrenin (BOŞ) merkezine dokun.
     await tester.tapAt(tester.getRect(boardCell(1, 0)).center);
     await tester.pumpAndSettle();
@@ -247,6 +251,10 @@ void main() {
 
     final oncesi = controller.state.players[0].rack.length;
 
+    // 300 ms içinde aynı noktaya ikinci dokunuş artık ÇİFT DOKUNUŞTUR
+    // (zoom, board_zoom.dart) ve hücre işlemi yutulur — geri alma AYRI bir
+    // jest olmalı, gerçek ritmi kur.
+    await tester.pump(const Duration(milliseconds: 350));
     // >>> Bildirilen jest: taslak taşa TEK DOKUNUŞ.
     await tester.tap(boardCell(0, 1));
     await tester.pumpAndSettle();
@@ -280,6 +288,9 @@ void main() {
       await tester.tap(boardCell(0, 0));
       await tester.pump();
       expect(controller.state.placed.keys, ['0,0']);
+      // Koymadan 300 ms sonra: aynı noktaya hemen ikinci dokunuş artık
+      // ÇİFT DOKUNUŞTUR (zoom) ve yutulur — geri alma ayrı bir jest.
+      await tester.pump(const Duration(milliseconds: 350));
 
       final h = tester.getRect(boardCell(0, 0));
       final g = await tester.startGesture(h.center);
@@ -380,6 +391,10 @@ void main() {
     expect(words.contains('km'), isFalse);
     expect(find.text('"KM" geçerli bir kelime değil.'), findsOneWidget);
 
+    // 300 ms içinde aynı noktaya ikinci dokunuş artık ÇİFT DOKUNUŞTUR
+    // (zoom, board_zoom.dart) ve hücre işlemi yutulur — geri alma AYRI bir
+    // jest olmalı, gerçek ritmi kur.
+    await tester.pump(const Duration(milliseconds: 350));
     // Joker olmayan yerleştirilmiş taşa dokunmak geri alır (web davranışı).
     await tester.tap(boardCell(0, 1));
     await tester.pump();

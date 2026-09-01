@@ -20,6 +20,95 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 175 — tahta zoom'u: çift dokunuşla 2× büyüt/küçült +
+     parmakla pan (1 Eylül 2026; YENİ dosyalar
+     `ui/game/board_zoom.dart`, `test/board_zoom_test.dart`; değişen:
+     `board_widget.dart`, `game_screen.dart`, `online_game_screen.dart`,
+     `pubspec.yaml` → `clock`):**
+     - **Kullanıcı isteği (spec, birebir):** *"Sadece board'un içi çift tık
+       yapılınca büyüyecek ve board'u elinle sürükleyebiliceksin. Diğer
+       bütün alanlar sabit kalacak. Çift tıkla eski haline dönecek. Zoom
+       halindeyken taş sürükleme bırakma, tek tıkla taş koyma/geri alma,
+       vb mükemmel çalışmalı."* + iterasyonla kilitlenen kararlar:
+       (a) *"mevcut tek dokunuşlar aynen kalmalı"* — tek dokunuş
+       GECİKTİRİLMEZ (Flutter'ın `onDoubleTap`'i her tek dokunuşa ~300 ms
+       ekler → reddedildi, elle algılayıcı yazıldı); (b) çiftin İKİNCİ
+       dokunuşu yutulur, İLKİNİN yaptığı iş — koyulan taş dahil —
+       OLDUĞU GİBİ KALIR: *"taşı geri almadan, koyduğu yerde bırakarak
+       zoomlamak lazım."* Çift yalnızca BOŞ kareye dokunuşla başlar; taşa
+       dokunuş (taslak geri alma / onaylı anlam penceresi) çift
+       BAŞLATAMAZ ama İKİNCİ dokunuş olarak yutulabilir — ilk dokunuş
+       taşı koyduysa parmağın altındaki hücre artık boş değildir, ikinci
+       vuruş o taşı geri almasın.
+     - **DÜZELTME DERSİ (aynı gün, kullanıcı reddetti):** ilk sürüm
+       "dokunuş-1'in etkisini GERİ SAR" (`ZoomTapEffect` kayıtları +
+       `applyZoomTapUndo`) ve "joker penceresini ~330 ms ERTELE"
+       (`deferModal`) mekanizmalarını taşıyordu — kullanıcı ikisini de
+       gereksiz buldu: *"taşı geri almadan, koyduğu yerde bırakarak"* ve
+       *"joker tablosu... Bunun zoom olayıyla ne ilgisi var."* İkisi de
+       SİLİNDİ; joker penceresi eskisi gibi ANINDA açılır (pencere
+       açıkken ikinci dokunuş zaten tahtaya değil pencereye düşer) ve
+       `game_screen_test.dart` origin/main ile BAYT BAYT aynıya döndü —
+       "tek dokunuşlar aynen kaldı" iddiasının kanıtı. Tek kabul edilen
+       davranış farkı: koyduktan sonra 300 ms İÇİNDE aynı noktaya ikinci
+       dokunuş artık tanım gereği çift dokunuştur (geri alma değil zoom);
+       koy→geri-al dizen dört test bu yüzden araya gerçekçi bir 350 ms
+       koydu. Ders: bir jest özelliği eklerken "durumu bozmamak" için
+       kurulan telafi mekanizması, kullanıcının zihinsel modelinden daha
+       karmaşıksa muhtemelen yanlış katmandadır — önce sor.
+     - **Mimari: layout değil PAINT matrisi** — `Transform` +
+       `ClipRect` (görünür kare). `RenderBox.globalToLocal` ata
+       transform'ları kendisi tersine çevirdiğinden mevcut stride
+       matematiği (`_cellAtGlobal`, `_nearbyDraftCell`) DEĞİŞMEDEN doğru
+       kaldı — backlog'un "koordinat çevrimi bozulur" endişesi bu yolla
+       kökten çözüldü; widget testi bunu kanıtlıyor ("zoom altında
+       sürükle-bırak nişan alınan hücreye iner").
+     - **Ölçülen tuzak — görünmez hücre:** zoom'luyken rafın üstündeki bir
+       nokta ters transform'da SANAL ızgara sınırları içine düşüyor; kapı
+       (`_cellAtGlobal`'ın ClipRect kutusu kontrolü) olmasa rafa bırakılan
+       taslak "görünmez bir hücreye" iner, rafa dönemezdi. Kapı + testi
+       (`board_zoom_test` "RAFA sürüklemek") birlikte girdi.
+     - **Ölçülen tuzak — `DateTime.now()` sahte saatte İLERLEMEZ:** çift
+       dokunuş penceresi önce `DateTime.now()` ile yazıldı; `flutter test`
+       ortamında `tester.pump` sahte saati ilerlettiği hâlde gerçek saat
+       milisaniyeler içinde kaldığından üçüncü dokunuş ikinciyle
+       "çift" sayılıp joker penceresini yuttu (GERÇEK test düşüşü).
+       Çözüm `package:clock` → `clock.now()` (fake_async'e uyar);
+       pubspec'e `clock: ^1.1.1` bu gerekçeyle girdi.
+     - **Ölçülen tuzak — test tarafında iki düşüş:** (1)
+       `TweenAnimationBuilder` hedefi pump edilen KAREDE değişir ve
+       animasyon o karede t=0'dan başlar — tek `pump(100ms)` 180 ms'lik
+       kapanışın ortasında (scale 1.0924) assert ediyordu; `doubleTapAt`
+       artık pencereyi VE animasyon süresini ayrı ayrı ilerletiyor. (2)
+       odak (3,3)'te offset −96 px ve hücre (1,1)'in MERKEZİ görünür
+       karenin soluna taşıyor (ölçüldü: LTRB(-13.6, 62.4, …)) — dokunuş
+       kırpılmış alana düşüp taşı hiç tutamıyordu; test odağı (0,0)'a
+       alındı. Ders: zoom'lu bir testte `getCenter` transform SONRASI
+       konumu verir ama o noktanın ClipRect İÇİNDE olduğunu ayrıca
+       düşünmek gerekir.
+     - **Jest ayrımı:** pan ham `Listener`'la (ev deseni, jest arenası
+       yok); hit-test sırası çocuk→ata olduğundan taş sürüklemesi
+       `_dragRef`i pan'den ÖNCE doldurur, doluysa pan hiç başlamaz. Pan
+       bitince 120 ms'lik dokunuş-yutma penceresi (bayrak değil süre —
+       ghost-click dersi: 10-18 px'lik pan'ler compat dokunuşu hâlâ
+       üretir). ONAYLI taş zoom'a hiç karışmaz (anlam penceresi anında).
+     - **Perf:** `AnimatedBuilder` prebuilt `child` ile — 169 hücre pan
+       sırasında YENİDEN İNŞA EDİLMEZ (Parça 23 kuralı);
+       `RepaintBoundary` bilinçli YOK (2×'te metin vektör-keskin
+       kalmalı; blur'lar zaten NeoBox raster önbelleğinde).
+     - **İki ekran birden** (`game_screen` ↔ `online_game_screen`) aynı
+       PR'da, paylaşılan desen kuralı gereği. **Web'de karşılığı YOK ve bu
+       BİLİNÇLİ bir port farkı** (backlog'daki "karar verilmeli" sorusunun
+       cevabı): masaüstünde tarayıcı zoom'u var, dokunmatik web kitlesi
+       küçük; istek mobil testçiden geldi.
+     - **Doğrulama:** 14 yeni test (`board_zoom_test.dart`: 3 birim +
+       11 widget) + tam takım **681 test yeşil**, `dart analyze` temiz
+       (tek info main'de de olan eski `tap_target_test` satırı).
+       **Doğrulama SINIRI:** widget testleri cihaz hissini (çift dokunuş
+       ritmi, pan akıcılığı, gerçek parmakla ıskalama) KANITLAMAZ —
+       kullanıcı kararı: *"Bunu apk ile test edip sorunsuz olduğundan emin
+       olmadan aab yapılmayacak."* Cihaz listesi: `mobile/TESTING.md`
+       § 24.
    - ✅ **Parça 174 — Faz 3: bildirime dokununca doğru yere gitme +
      Analytics'in ilk altı olayı (30 Ağustos 2026; YENİ dosyalar
      `data/push_taps.dart`, `data/game_link_inbox.dart`,

@@ -8,6 +8,7 @@
 // Tahtadaki onaylanmış bir taşa dokunmak, o hücreden geçen kelimelerin
 // anlamını gösterir (meanings deposu verilmişse).
 import 'dart:async' show unawaited;
+import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -23,6 +24,7 @@ import '../feedback/feedback_modal.dart';
 import '../../game/game_controller.dart';
 import '../../game/move_status.dart';
 import 'board_widget.dart';
+import 'board_zoom.dart';
 import 'dialog_shell.dart';
 import 'game_header.dart';
 import 'game_over_modal.dart';
@@ -170,6 +172,24 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   final GlobalKey _gridKey = GlobalKey();
   final GlobalKey _rackKey = GlobalKey();
   final GlobalKey _stackKey = GlobalKey();
+
+  // ── Tahta yakınlaştırması (1.0.5) — tasarımın tamamı: board_zoom.dart ──
+  final BoardZoomController _zoom = BoardZoomController();
+
+  /// Izgaranın GÖRÜNÜR karesi (BoardWidget'ın ClipRect'i). Zoom'luyken
+  /// sanal ızgara bu karenin dışına taşar — bırakma noktaları hücreye
+  /// çevrilmeden önce bu kutuyla KAPILANIR (bkz. `_cellAtGlobal`).
+  final GlobalKey _viewportKey = GlobalKey();
+
+  BoardPanRef? _panRef;
+
+  /// Pan jestinin ARTIĞI olan hücre dokunuşunu yutma penceresi: 10-18 px
+  /// arası bir pan, GestureDetector'ın tap slop'unun (18) altında
+  /// kaldığından ayrıca bir onTapUp üretir. Bayrak yerine ZAMAN — 18 px
+  /// üstü panlarda tap hiç gelmez ve bir bayrak asılı kalıp SONRAKİ gerçek
+  /// dokunuşu yerdi (web'in ghost-click dersi: yutmanın kapsamı davranış
+  /// varsayımına bağlanmaz).
+  DateTime _swallowTapsUntil = DateTime.fromMillisecondsSinceEpoch(0);
   // `_dragRef`in kendisi web dragRef gibi salt veri taşır, ama artık
   // SingleChildScrollView'ın `physics`i buna bağlı olduğundan (bkz. build())
   // her değişiklik setState içinde yapılmak ZORUNDA.
@@ -270,6 +290,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     // kalmasın — route animasyonu bu State'ten uzun yaşıyor.
     _routeAnim?.removeStatusListener(_onRouteAnim);
     _dragNotifier.dispose();
+    _zoom.dispose();
     super.dispose();
   }
 
@@ -293,6 +314,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   /// geri alınır; joker seçiciyi 'editing' modunda yeniden açar (web).
   Future<void> _tapPlacedTile(int r, int c, Tile placedTile) async {
     if (!_canAct) return;
+    // Taşa dokunuş çift BAŞLATAMAZ (yalnızca bir çiftin İKİNCİSİ olarak
+    // yutulabilir — o kapı çağıranlarda): zinciri kır. Joker penceresinin
+    // zoom'la İLİŞKİSİ YOK (kullanıcı kararı, 1 Eylül 2026): eskisi gibi
+    // ANINDA açılır.
+    _zoom.markUnpairableTap();
     if (placedTile.wild) {
       final choice = await showWildLetterSheet(context, editing: true);
       if (choice == null) return;
@@ -364,6 +390,19 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   Future<void> _handleCellTap(int r, int c, Offset global) async {
     final k = cellKey(r, c);
+    // ── Çift dokunuşla zoom (1.0.5, board_zoom.dart) ────────────────────
+    // Dokunuşun işleminden ÖNCE sorulur: bir çiftin İKİNCİSİYSE işlem
+    // yutulur ve zoom değişir — ilk dokunuşun yaptığı iş (koyulan taş
+    // dahil) OLDUĞU GİBİ KALIR (kullanıcı kararı, 1 Eylül 2026: "taşı geri
+    // almadan, koyduğu yerde bırakarak zoomlamak lazım"). Çift yalnızca
+    // BOŞ kareye dokunuşla başlar; taşa dokunuşlar zinciri kırar (taslak
+    // taşınki `_tapPlacedTile`ın kendi içinde, onaylınınki burada).
+    if (state.board[r][c] == null) {
+      if (_registerZoomTap(global)) return;
+      if (state.placed[k] == null) _zoom.registerPairableTap(global);
+    } else {
+      _zoom.markUnpairableTap();
+    }
     if (state.board[r][c] != null) {
       // Tahtada duran (onaylanmış) bir taş: o hücreden geçen yatay ve dikey
       // kelimelerin anlamı gösterilir (web handleCellClick'in ilk dalı).
@@ -444,6 +483,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         : null;
     if (sel != null && sel.letter == '?') {
       // Joker: harf seçilene kadar taş konmaz (web pendingWild akışı).
+      // Zoom'la İLİŞKİSİ YOK (kullanıcı kararı, 1 Eylül 2026): pencere
+      // eskisi gibi ANINDA açılır — pencere açıkken gelen ikinci dokunuş
+      // tahtaya değil pencereye/perdeye düşer. Modal açıldı → zincir kır.
+      _zoom.markUnpairableTap();
       final choice = await showWildLetterSheet(context);
       if (choice?.letter == null) return;
       controller
@@ -451,6 +494,25 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       return;
     }
     controller.dispatch(PlaceTileAction(r: r, c: c));
+  }
+
+  /// Çift dokunuş kontrolü — `true` dönerse dokunuşun kendi işlemi
+  /// YUTULMALI: ya pan artığıydı ya da bir çiftin ikincisi (zoom değişti;
+  /// ilk dokunuşun yaptığı iş — koyulan taş dahil — OLDUĞU GİBİ KALIR).
+  bool _registerZoomTap(Offset global) {
+    if (clock.now().isBefore(_swallowTapsUntil)) return true;
+    if (!_zoom.tryCompletePair(global)) return false;
+    _toggleZoomAt(global);
+    return true;
+  }
+
+  void _toggleZoomAt(Offset global) {
+    final grid = _boxOf(_gridKey);
+    if (grid == null) return;
+    // Zoom KAPALIYKEN transform birim matristir → `globalToLocal` ölçeksiz
+    // yerel noktayı verir (toggleAt'in beklediği uzay). Açıkken odak zaten
+    // kullanılmaz — kapanış offset'i sıfırlar.
+    _zoom.toggleAt(grid.globalToLocal(global), grid.size);
   }
 
   Future<void> _handlePlay(MoveStatus? moveStatus) async {
@@ -494,6 +556,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       for (final p in state.players) PlayerSetup(name: p.name, isAI: p.isAI),
     ]));
     setState(() => _gameOverShown = false);
+    _zoom.reset();
     // Anonim başlangıç sayacı — Setup'taki "Oyunu Başlat" ile AYNI olay
     // (web'de ikisi de tek bir `startLocalGame` yardımcısından geçiyor).
     unawaited(_logGameStart(playerCount));
@@ -532,10 +595,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   /// hücresine bırakılamama hatasının önlemi; görsel taş ve bırakma hedefi
   /// hep aynı noktayı kullanır).
   double _liftedY(double y) {
-    final grid = _boxOf(_gridKey);
+    // Görünür kare varsa ONUN üstüne kırp: zoom'luyken sanal ızgaranın üstü
+    // (grid.localToGlobal) görünür alanın DIŞINA çıkabilir.
+    final box = _boxOf(_viewportKey) ?? _boxOf(_gridKey);
     final lifted = y - _dragLift;
-    if (grid == null) return lifted;
-    final top = grid.localToGlobal(Offset.zero).dy;
+    if (box == null) return lifted;
+    final top = box.localToGlobal(Offset.zero).dy;
     return lifted < top + 1 ? top + 1 : lifted;
   }
 
@@ -545,6 +610,21 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   (int, int)? _cellAtGlobal(Offset global) {
     final grid = _boxOf(_gridKey);
     if (grid == null) return null;
+    // ZOOM KAPISI: zoom'luyken SANAL ızgara görünür karenin (ClipRect)
+    // dışına taşar. Kapı olmasa rafın üstüne bırakılan taş, ters transform
+    // yüzünden "görünmez bir hücreye" inerdi — `_endTileDrag` hücre
+    // kontrolünü raftan ÖNCE yaptığından taş rafa dönemezdi
+    // (board_zoom_test kilitliyor).
+    final vp = _boxOf(_viewportKey);
+    if (vp != null) {
+      final vLocal = vp.globalToLocal(global);
+      if (vLocal.dx < 0 ||
+          vLocal.dy < 0 ||
+          vLocal.dx >= vp.size.width ||
+          vLocal.dy >= vp.size.height) {
+        return null;
+      }
+    }
     final local = grid.globalToLocal(global);
     if (local.dx < 0 ||
         local.dy < 0 ||
@@ -571,6 +651,47 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       return false;
     }
     return state.board[r][c] == null && state.placed[cellKey(r, c)] == null;
+  }
+
+  // ── Tahta pan'i (yalnızca zoom açıkken) ────────────────────────────────
+  //
+  // Ham Listener, jest arenası YOK (taş sürüklemeyle aynı dil). Hit-test
+  // sırası çocuk → ata olduğundan taslak taşın Listener'ı `_dragRef`i BU
+  // çağrıdan ÖNCE doldurur — doluysa pan hiç başlamaz.
+  void _boardPointerDown(PointerDownEvent e) {
+    if (_dragRef != null || !_zoom.zoomed || _panRef != null) return;
+    // setState şart: scroll kilidi `_panRef`e bağlı (taş sürüklemedeki
+    // physics deseninin aynısı).
+    setState(() => _panRef = BoardPanRef(e.position));
+  }
+
+  void _boardPointerMove(PointerMoveEvent e) {
+    final p = _panRef;
+    if (p == null) return;
+    if (!p.moved) {
+      if ((e.position - p.start).distance < _dragThresholdFor(e.kind)) return;
+      p.moved = true;
+    }
+    final grid = _boxOf(_gridKey);
+    if (grid == null) return;
+    // grid.size LAYOUT boyutudur (transform boyutu değiştirmez) — clamp
+    // matematiği ölçeksiz kare üzerinden.
+    _zoom.panBy(e.delta, grid.size);
+  }
+
+  void _boardPointerUp(PointerUpEvent e) => _endBoardPan();
+
+  void _endBoardPan() {
+    final p = _panRef;
+    if (p == null) return;
+    setState(() => _panRef = null);
+    if (p.moved) {
+      // 10-18 px arası bir pan GestureDetector'ın tap'ini de üretir —
+      // artığı zaman penceresiyle yut (bkz. `_swallowTapsUntil` gerekçesi).
+      _swallowTapsUntil =
+          clock.now().add(const Duration(milliseconds: 120));
+      _zoom.markUnpairableTap();
+    }
   }
 
   void _beginTileDrag(_DragSource source, PointerDownEvent e) {
@@ -623,13 +744,20 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   /// Sürükleme değil DOKUNUŞ olarak işle — hem "hiç kıpırdamadı" dalı hem
   /// titreşimli dokunuş dalı buradan geçer, davranışları AYRIŞMASIN diye.
-  Future<void> _dokunusOlarakIsle(_DragSource s) async {
+  Future<void> _dokunusOlarakIsle(_DragSource s, Offset globalPos) async {
     if (s is _RackSource) {
+      // Raf dokunuşu tahta çifti oluşturamaz (zoom kapsamı yalnızca tahta).
+      _zoom.markUnpairableTap();
       if (!_canAct) return;
       controller.dispatch(state.swapMode
           ? ToggleSwapTileAction(s.index)
           : SelectTileAction(s.index));
     } else if (s is _PlacedSource) {
+      // Bu dokunuş bir çiftin İKİNCİSİYSE geri alma YUTULUR ve zoom
+      // değişir — ilk dokunuş taşı KOYDUYSA parmağın altındaki hücre artık
+      // boş değildir; ikinci vuruş o taşı geri almasın (kullanıcı kararı:
+      // taş koyduğu yerde kalır). Çift değilse normal geri alma.
+      if (_registerZoomTap(globalPos)) return;
       await _tapPlacedTile(s.r, s.c, s.tile);
     }
   }
@@ -645,7 +773,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
     if (!d.moved) {
       // Hareket yok: sıradan dokunuş — eski davranış (web endDrag !moved).
-      await _dokunusOlarakIsle(d.source);
+      await _dokunusOlarakIsle(d.source, e.position);
       return;
     }
 
@@ -678,10 +806,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     final gittigiMesafe = (e.position - d.start).distance;
     final rafinUstunde = s is _RackSource && _rackContains(e.position);
     if (rafinUstunde || gittigiMesafe < _tapSlopOnRelease) {
-      await _dokunusOlarakIsle(s);
+      await _dokunusOlarakIsle(s, e.position);
       return;
     }
 
+    // Gerçek bir sürükleme tamamlandı — önceki dokunuş kaydı bayatladı,
+    // sonraki dokunuş onunla çift oluşturmasın.
+    _zoom.markUnpairableTap();
     if (!d.enabled) return;
 
     final lifted = Offset(e.position.dx, _liftedY(e.position.dy));
@@ -787,12 +918,20 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     const gap = 3.0;
     final strideX = (grid.size.width + gap) / boardSize;
     final strideY = (grid.size.height + gap) / boardSize;
-    final gridOrigin = stack.globalToLocal(grid.localToGlobal(Offset.zero));
+    // Hücrenin İKİ köşesi ızgaranın YEREL uzayında hesaplanıp
+    // `localToGlobal` ile geçirilir — zoom transformu ne olursa olsun doğru
+    // (eski "origin + c·stride" biçimi origin'i transform'dan geçirip
+    // stride'ı ölçeksiz bırakıyordu; zoom'da çerçeve yanlış hücreye/boyuta
+    // düşerdi).
+    final tl = stack.globalToLocal(
+        grid.localToGlobal(Offset(c * strideX, r * strideY)));
+    final br = stack.globalToLocal(grid.localToGlobal(Offset(
+        c * strideX + (strideX - gap), r * strideY + (strideY - gap))));
     return Positioned(
-      left: gridOrigin.dx + c * strideX,
-      top: gridOrigin.dy + r * strideY,
-      width: strideX - gap,
-      height: strideY - gap,
+      left: tl.dx,
+      top: tl.dy,
+      width: br.dx - tl.dx,
+      height: br.dy - tl.dy,
       child: IgnorePointer(
         child: CustomPaint(
           painter: DashedBorderPainter(
@@ -968,7 +1107,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                           // sanıp kazanıyordu — kullanıcı bunu web derlemesinde
                           // bizzat bulup bildirdi (raf taşını çekerken ekran da
                           // kayıyordu).
-                          physics: (_dragRef?.enabled ?? false)
+                          physics: ((_dragRef?.enabled ?? false) ||
+                                  _panRef != null)
                               ? const NeverScrollableScrollPhysics()
                               : null,
                           // İçerik sütunu web'in her bölümdeki
@@ -1006,6 +1146,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                               ),
                                         onCellTap: _handleCellTap,
                                         gridKey: _gridKey,
+                                        zoom: _zoom,
+                                        viewportKey: _viewportKey,
+                                        onBoardPointerDown: _boardPointerDown,
+                                        onBoardPointerMove: _boardPointerMove,
+                                        onBoardPointerUp: _boardPointerUp,
+                                        onBoardPointerCancel: _endBoardPan,
                                         onOpenHistory: () =>
                                             showMoveHistoryModal(context, state),
                                         onOpenHelp: () => showHelpModal(context),

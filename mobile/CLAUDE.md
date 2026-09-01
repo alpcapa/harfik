@@ -346,7 +346,8 @@ onu bilmez.
 **Grep'e girmeyen ama aynı sınıftan bir değişmez — İKİ oyun ekranı aynı
 deseni paylaşıyor:** `ui/game/game_screen.dart` (yerel/YZ) ve
 `ui/live/online_game_screen.dart` (Canlı) sürükle-bırak katmanını, joker
-akışını ve mesaj satırı kuralını BİLİNÇLİ olarak ayrı ayrı taşıyor — web'in
+akışını, mesaj satırı kuralını ve tahta zoom'unu (çift dokunuş + pan,
+`board_zoom.dart` — Parça 175) BİLİNÇLİ olarak ayrı ayrı taşıyor — web'in
 App.tsx ↔ OnlineGameScreen.tsx ayrımının birebir eşleniği (kök CLAUDE.md o
 ikisi için de "ikisi deseni paylaşıyor, biri değişirse diğeri de" diyor).
 Bu dosyalardan birinde sürükleme/joker/mesaj davranışı değişirse ÖTEKİ de
@@ -452,6 +453,7 @@ Bütçeyi `npm run check-doc-size` ölçüyor, sınıra gelince yeni cilt açıl
 | **Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar — Parça günlüğü** (DÖRT cilt, yukarıdaki tabloya bak) | `mobile/docs/parca-log.md` + `-110-138` + `-49-109` + `-1-48` |
 | FAZ A1 — cihaz testi tur durumu | `mobile/docs/cihaz-testi-log.md` |
 | Cihaz testi — Arkadaşlar + Canlı oyun bölümleri (iki gerçek oturum ister) | `mobile/docs/testing-arkadaslar-canli.md` |
+| Cihaz testi — web ile yan yana GÖRSEL karşılaştırma (parite denetimi, §0.5) | `mobile/docs/testing-gorsel-karsilastirma.md` |
 | Cihaz testi — push bildirimleri + derin bağlantılar + **güncelleme** (çoğu Play imzalı derleme ister) | `mobile/docs/testing-bildirimler.md` |
 | Deploy doğrulaması — tarihli post-mortem'ler (dal hijyeni, "koşu yok" filtresi, PR #267, sınıf 2 risk kütüğü) **+ 31 Ağustos 2026'da buradan taşınan gerekçeler: 15/29 Ağustos deploy vakaları, güncelleme modelinin 1.0.1 ölçümü ve 1.0.0 süpürmesi, yazı boyutu envanteri** | `mobile/docs/deploy-verification.md` |
 | Sonraya bırakılan mobil işler (karar verildi, henüz yapılmadı — KGP uyarısı, iOS borçları) | `mobile/docs/sonraya-birakilanlar.md` |
@@ -627,7 +629,10 @@ mobile/
                              #     şekiller — Icons.* iki platformda FARKLI
                              #     vektör demek olurdu)
       ui/game/               # tahta/raf/header/modaller (oyun ekranının
-                             # tamamı) + PAYLAŞILAN küçük parçalar:
+                             # tamamı) + board_zoom.dart (çift dokunuşla 2×
+                             # zoom + pan; algılayıcı `clock.now()` kullanır
+                             # — DateTime.now() sahte saatte ilerlemez,
+                             # bkz. Parça 175) + PAYLAŞILAN küçük parçalar:
                              # modal_shell (KModal — başlıklı 360px pencere),
                              # dialog_shell (KDialogCard — 384px onay/uyarı
                              # kartı; İKİSİ AYRI, web'de de öyle),

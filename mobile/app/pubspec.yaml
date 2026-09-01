@@ -7,7 +7,7 @@ publish_to: none
 # Sürüm ayrıca lib/src/config/env.dart'taki appVersion sabitinde tutulur
 # (mobile_min_supported_version karşılaştırması için) — release'te ikisi
 # BİRLİKTE artırılmalı, bkz. mobile/CLAUDE.md "Sürüm disiplini".
-version: 1.0.4+1
+version: 1.0.5+1
 
 environment:
   sdk: ^3.4.0
@@ -15,6 +15,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Zaten flutter_test'in transitive bağımlılığı — tahta zoom'unun çift
+  # dokunuş algılayıcısı için doğrudan bağımlılığa alındı (board_zoom.dart):
+  # `clock.now()` testlerde fake_async'in sahte saatini izler, yani
+  # `tester.pump(duration)` algılayıcı penceresini de ilerletir.
+  # `DateTime.now()` bunu YAPMAZ ve dokunuş çifti testlerde ölçülemez olurdu
+  # (1 Eylül 2026'da gerçek bir test düşüşüyle bulundu).
+  clock: ^1.1.1
   # Zaten supabase_flutter'ın transitive bağımlılığı — arkadaş daveti
   # linklerini (kelimeki://davet/...) dinlemek için doğrudan bağımlılığa
   # alındı (FriendInviteInbox); sürüm kısıtı supabase_flutter'ınkiyle uyumlu.
