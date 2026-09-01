@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/auth_service.dart';
+import '../../storage/app_storage.dart';
 import '../../data/chat_api.dart';
 import '../../data/feedback_api.dart';
 import '../../data/friends_api.dart';
@@ -57,6 +58,11 @@ class GameScreen extends StatefulWidget {
   /// (testler) hesap kontrolü çizilmez (web offline davranışı).
   final AuthService? auth;
 
+  /// Yerel bayraklar (zoom tanıtım balonu) — verilmezse balon hiç çıkmaz;
+  /// testlerin ve önizlemelerin yolu bu. `OnlineGameScreen` aynı prop'u
+  /// zaten taşıyordu.
+  final Future<AppStorage>? storage;
+
   /// Hesap menüsündeki k-lig/Skor Kartı için (GameHeader'a iletilir).
   final StatsRepo? stats;
 
@@ -86,6 +92,7 @@ class GameScreen extends StatefulWidget {
     required this.words,
     this.meanings,
     this.auth,
+    this.storage,
     this.stats,
     this.games,
     this.feedback,
@@ -147,6 +154,10 @@ class _Ghost {
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   GameController get controller => widget.controller;
   GameState get state => controller.state;
+
+  /// Zoom tanıtım balonu (1 Eylül 2026) — açılışta bir kez karar verilir;
+  /// zoom denenirse ANINDA kapanır ve bir daha hiç gösterilmez.
+  bool _zoomHint = false;
 
   /// GameOver modalı bu isGameOver geçişi için zaten gösterildi mi
   /// (web gameOverDismissed'in eşleniği — kapatınca tahta görünür kalır).
@@ -258,6 +269,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    unawaited(_zoomHintKarariVer());
     // `ModalRoute` yalnızca ilk kare SONRASI okunabilir (initState'te
     // context henüz ağaca bağlı değil).
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -511,7 +523,32 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     return true;
   }
 
+
+  /// Balon gösterilsin mi — kararı `FlagsStore` veriyor (tek kaynak, web
+  /// `onboarding.ts` ile aynı kural: denenmişse asla, denenmemişse en çok
+  /// iki oyun açılışında). Gösterime KARAR VERİLDİĞİ anda sayaç artıyor:
+  /// "gösterim" balonun ekrana gelmesidir, kapanma biçimi değil.
+  Future<void> _zoomHintKarariVer() async {
+    final storageFuture = widget.storage;
+    if (storageFuture == null) return;
+    final storage = await storageFuture;
+    final flags = storage.flags;
+    if (!mounted || !flags.shouldShowZoomHint) return;
+    await flags.bumpZoomHintShown();
+    if (!mounted) return;
+    setState(() => _zoomHint = true);
+  }
+
+  /// Kullanıcı zoom'u DENEDİ — balon kapanır ve kalıcı olarak susar.
+  void _zoomDenendiIsaretle() {
+    if (_zoomHint) setState(() => _zoomHint = false);
+    final storageFuture = widget.storage;
+    if (storageFuture == null) return;
+    unawaited(storageFuture.then((s) => s.flags.markZoomTried()));
+  }
+
   void _toggleZoomAt(Offset global) {
+    _zoomDenendiIsaretle();
     final grid = _boxOf(_gridKey);
     if (grid == null) return;
     // Zoom KAPALIYKEN transform birim matristir → `globalToLocal` ölçeksiz
@@ -1202,6 +1239,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                               ),
                                         onCellTap: _handleCellTap,
                                         gridKey: _gridKey,
+                                        zoomHint: _zoomHint,
                                         zoom: _zoom,
                                         viewportKey: _viewportKey,
                                         onBoardPointerDown: _boardPointerDown,

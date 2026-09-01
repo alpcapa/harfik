@@ -1657,6 +1657,24 @@ penceresini anında açmaya devam eder). İki ekranda da (YZ oyunu + Canlı).
       şekilde kaymaz (offset sınırda durur).
 - [ ] **Rövanş / yeni oyun** → zoom sıfırlanmış açılır.
 
+### Tanıtım balonu (1 Eylül 2026)
+
+Kural: balon **en çok iki oyun açılışında** çıkar ve zoom bir kez
+denenirse bir daha ASLA çıkmaz. Bayraklar cihaz-yerel, yani Canlı oyunda
+hem açan hem karşı taraf kendi ilk açılışında görür.
+
+- [ ] **Uygulamayı ilk kez kurup oyun aç** → tahtanın ortasında, merkez
+      kareyi işaret eden mavi balon: **"Boş kareye veya çerçevesine çift
+      tıklama tahtayı büyütür. Hemen dene!"** Balon tahtadan taşmamalı,
+      metin sığmalı (dar telefonda 2-3 satır).
+- [ ] **Çift dokunup zoom yap** → balon ANINDA kaybolmalı.
+- [ ] **Oyundan çık, yeni oyun aç** → balon bir daha ÇIKMAMALI (denendi).
+- [ ] **(Temiz kurulumla)** balonu görüp zoom yapMADAN çık, yeni oyun aç →
+      balon İKİNCİ kez çıkar; üçüncü açılışta artık çıkmaz.
+- [ ] **Raftan taş kaldır (sürükle)** → balon kaybolur, bırakınca döner
+      ("Buradan başla" ile aynı davranış).
+- [ ] **Canlı oyun** ekranında da aynı balon aynı kurallarla.
+
 ### Tek dokunuşlar DEĞİŞMEDİ (en kritik grup)
 
 - [ ] **Harf seç + boş hücreye TEK dokun** → taş ANINDA konur, gecikme

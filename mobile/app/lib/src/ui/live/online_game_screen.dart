@@ -313,6 +313,9 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   final GlobalKey _viewportKey = GlobalKey();
   BoardPanRef? _panRef;
 
+  /// Zoom tanıtım balonu (1 Eylül 2026) — `game_screen.dart` ile aynı kural.
+  bool _zoomHint = false;
+
   /// Tahta dokunuş ADAYI: `_dragRef` yokken inen parmağın konumu. Eşik
   /// aşılırsa (pan/scroll/sürükleme) düşer; kalkışta hücre kutusu DIŞINA
   /// düşen dokunuşlar zoom'un çift dokunuş jestine sayılır.
@@ -354,6 +357,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
   @override
   void initState() {
     super.initState();
+    unawaited(_zoomHintKarariVer());
     // NÖBETÇİ (27 Ağustos 2026) — 27 Ağustos'ta `list_my_online_games` bir
     // slotu ÇOĞALTIYORDU (`friend_requests` karşılıklı çift → `jsonb_agg`
     // aynı slotu iki kez yazıyordu) ve sonraki TÜM koltuk indeksleri
@@ -1200,7 +1204,27 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     return true;
   }
 
+  /// Zoom tanıtım balonu — kural/gerekçe `game_screen.dart`'ın aynı
+  /// dalında (iki ekran deseni paylaşıyor).
+  Future<void> _zoomHintKarariVer() async {
+    final storageFuture = widget.storage;
+    if (storageFuture == null) return;
+    final flags = (await storageFuture).flags;
+    if (!mounted || !flags.shouldShowZoomHint) return;
+    await flags.bumpZoomHintShown();
+    if (!mounted) return;
+    setState(() => _zoomHint = true);
+  }
+
+  void _zoomDenendiIsaretle() {
+    if (_zoomHint) setState(() => _zoomHint = false);
+    final storageFuture = widget.storage;
+    if (storageFuture == null) return;
+    unawaited(storageFuture.then((s) => s.flags.markZoomTried()));
+  }
+
   void _toggleZoomAt(Offset global) {
+    _zoomDenendiIsaretle();
     final grid = _boxOf(_gridKey);
     if (grid == null) return;
     _zoom.toggleAt(grid.globalToLocal(global), grid.size);
@@ -1784,7 +1808,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
                                               ),
                                         onCellTap: _handleCellTap,
                                         gridKey: _gridKey,
-                                        zoom: _zoom,
+                                        zoomHint: _zoomHint,
+          zoom: _zoom,
                                         viewportKey: _viewportKey,
                                         onBoardPointerDown: _boardPointerDown,
                                         onBoardPointerMove: _boardPointerMove,
