@@ -179,21 +179,31 @@ void main() {
   });
 
   testWidgets(
-      'kullanıcının birebir senaryosu: taşı koy, BAŞKA boş bir kareye çift '
-      'dokun — taş yerinde kalır, zoom açılır', (tester) async {
+      'kullanıcının birebir senaryosu: BİRDEN FAZLA taş koy, BAŞKA boş bir '
+      'kareye çift dokun — taşların HEPSİ yerinde kalır, zoom açılır',
+      (tester) async {
     final controller = await pumpZoomGame(tester);
     await tester.tap(rackTile(0)); // K
     await tester.pump();
     await tester.tap(boardCell(5, 5));
     await tester.pump(const Duration(milliseconds: 400)); // ayrı bir jest
-    expect(controller.state.placed['5,5'], isNotNull);
+    await tester.tap(rackTile(0)); // E (K düşünce raf kaydı)
+    await tester.pump();
+    await tester.tap(boardCell(5, 6));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(controller.state.placed.keys.toSet(), {'5,5', '5,6'});
 
     await doubleTapAt(tester, tester.getCenter(boardCell(8, 8)));
 
     expect(isZoomedIn(tester), isTrue);
-    expect(controller.state.placed['5,5'], isNotNull,
-        reason: 'çift dokunuş koyulmuş taşa DOKUNMAZ');
-    expect(controller.state.placed, hasLength(1));
+    expect(controller.state.placed.keys.toSet(), {'5,5', '5,6'},
+        reason: 'çift dokunuş koyulmuş taşların HİÇBİRİNE dokunmaz');
+    expect(controller.state.players[0].rack, hasLength(5));
+
+    // Kapatma çift dokunuşu da taşlara dokunmaz.
+    await doubleTapAt(tester, tester.getCenter(boardCell(8, 8)));
+    expect(isZoomedIn(tester), isFalse);
+    expect(controller.state.placed.keys.toSet(), {'5,5', '5,6'});
   });
 
   testWidgets(
