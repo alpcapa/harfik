@@ -84,6 +84,7 @@ class MoveOverlay {
 
 class BoardWidget extends StatelessWidget {
   final GameState state;
+
   /// Dokunuşun GLOBAL noktası da veriliyor — ekran katmanı taslak
   /// sürerken ıskalanan dokunuşu en yakın taslak taşına yönlendirirken
   /// kullanıyor (bkz. `game_screen.dart` → `_nearbyDraftCell`).
@@ -151,7 +152,6 @@ class BoardWidget extends StatelessWidget {
   final void Function(PointerUpEvent e)? onBoardPointerUp;
   final VoidCallback? onBoardPointerCancel;
 
-
   /// Alt bilgi şeridindeki "Hamleler" linki — verilmezse link çizilmez
   /// (web'de zorunlu prop; burada ileride salt-okunur önizleme için
   /// opsiyonel).
@@ -196,8 +196,33 @@ class BoardWidget extends StatelessWidget {
   /// blur'lar NeoBox'ın raster önbelleğinde olduğundan kaydırma karesi ucuz;
   /// bilinçli olarak RepaintBoundary KONMUYOR — konsaydı harfler 2×'te
   /// bitmap gibi bulanıklaşırdı (metin, transform altında vektörel kalmalı).
-  Widget _zoomWrap(Widget grid) {
+  /// [unclipped]: ızgarayla AYNI matrisi alan ama KIRPILMAYAN katman —
+  /// bugün yalnızca hamle puanı rozeti. Rozet, konumlandığı hücrenin sol
+  /// üstüne `FractionalTranslation(-0.35,-0.35)` ile taşar, yani ızgara
+  /// kutusunun DIŞINA çıkıp 10 px'lik dolguya çizilir (eski davranış).
+  /// Kırpılan katmanda bıraksaydık kenardaki rozetin bir kenarı kesilirdi —
+  /// 1 Eylül 2026'da APK'da tam bu oldu, kullanıcı bildirdi: *"kenarda
+  /// kalan deneme sayıları kesiliyor"*. Kırpma payını rozeti kapsayacak
+  /// kadar (zoom'da ~22 px) büyütmek YANLIŞ çözüm olurdu: aynı pay kadar
+  /// zoom'lu ızgara da taşar ve kartın gövdesine sızardı.
+  Widget _zoomWrap(Widget grid, {Widget? unclipped}) {
     final z = zoom;
+    // Kırpılan gövde + kırpılmayan rozet TEK matrisi paylaşır (iki ayrı
+    // tween ikisini animasyon boyunca ayrıştırırdı).
+    Widget katmanla(Widget govde, Matrix4? m) {
+      final u = unclipped;
+      if (u == null) return govde;
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          govde,
+          IgnorePointer(
+            child: m == null ? u : Transform(transform: m, child: u),
+          ),
+        ],
+      );
+    }
+
     // 10 px'lik iç dolgu ARTIK bu sarmalayıcının içinde: dokunma yüzeyi
     // (aşağıdaki Listener) çerçeveyi de kapsasın diye (1 Eylül 2026,
     // kullanıcı APK'da bildirdi: "zoom sadece karelerde çalışıyor,
@@ -206,9 +231,11 @@ class BoardWidget extends StatelessWidget {
     if (z == null) {
       return Padding(
           padding: pad,
-          child: viewportKey == null
-              ? grid
-              : KeyedSubtree(key: viewportKey, child: grid));
+          child: katmanla(
+              viewportKey == null
+                  ? grid
+                  : KeyedSubtree(key: viewportKey, child: grid),
+              null));
     }
     Widget w = AnimatedBuilder(
       animation: z,
@@ -217,28 +244,32 @@ class BoardWidget extends StatelessWidget {
         tween: Matrix4Tween(begin: Matrix4.identity(), end: z.matrix),
         duration: z.animate ? kZoomAnimDuration : Duration.zero,
         curve: Curves.easeOutCubic,
-        // ValueKey testler için: zoom matrisinin ekrana GERÇEKTEN
-        // uygulandığı tek yer burası.
-        builder: (context, m, c) => Transform(
-            key: const ValueKey('board-zoom-transform'),
-            transform: m,
-            child: c),
+        // ValueKey testler için: zoom matrisinin ızgaraya GERÇEKTEN
+        // uygulandığı tek yer burası. ClipRect = görünür kare; anahtarını
+        // ekran katmanının bırakma kapısı kullanıyor (bkz. viewportKey
+        // dokümantasyonu — kapı kutunun BOYUTUNU okur, clipper'ın payı onu
+        // değiştirmez).
+        builder: (context, m, c) => katmanla(
+          ClipRect(
+            key: viewportKey,
+            clipper: const _ZoomClipSlackClipper(),
+            child: Transform(
+                key: const ValueKey('board-zoom-transform'),
+                transform: m,
+                child: c),
+          ),
+          m,
+        ),
         child: child,
       ),
     );
-    // ClipRect = görünür kare; anahtarı ekran katmanının bırakma kapısı
-    // kullanıyor (bkz. viewportKey dokümantasyonu — kapı kutunun BOYUTUNU
-    // okur, clipper'ın payı onu değiştirmez).
-    w = ClipRect(
-        key: viewportKey, clipper: const _ZoomClipSlackClipper(), child: w);
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: onBoardPointerDown,
       onPointerMove: onBoardPointerMove,
       onPointerUp: onBoardPointerUp,
-      onPointerCancel: onBoardPointerCancel == null
-          ? null
-          : (_) => onBoardPointerCancel!(),
+      onPointerCancel:
+          onBoardPointerCancel == null ? null : (_) => onBoardPointerCancel!(),
       child: Padding(padding: pad, child: w),
     );
   }
@@ -379,72 +410,74 @@ class BoardWidget extends StatelessWidget {
         children: [
           AspectRatio(
             aspectRatio: 1,
-            child: _zoomWrap(Stack(
-                key: gridKey,
-                children: [
-                  GridView.count(
-                    crossAxisCount: boardSize,
-                    mainAxisSpacing: 3,
-                    crossAxisSpacing: 3,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: [
-                      for (var r = 0; r < boardSize; r++)
-                        for (var c = 0; c < boardSize; c++)
-                          _buildCell(r, c, territoryOwner, homeCellColor,
-                              lastMoveSet, currentColor, screenWidth),
-                    ],
-                  ),
-                  // KATMAN SIRASI web'in z-index'lerinden geliyor (Board.tsx):
-                  // hücre arka planları → filigran (z-auto) → TAŞLAR
-                  // (`relative z-[5]`) → dış hatlar (`z-10`). Flutter'da
-                  // z-index yok, sıra boyama sırasıdır; filigran ızgaradan
-                  // SONRA çizildiğinden taşların üstüne biniyordu (kullanıcı
-                  // 17 Ağustos 2026'da iki ekranı yan yana koyup bildirdi).
-                  // Taşları ayrı bir katmana taşımak yerine filigran, taş
-                  // bulunan hücreler KESİLEREK çiziliyor — sonuç "taşın
-                  // altında" ile görsel olarak aynı, ızgara tek geçişte
-                  // kalıyor (169 hücre iki kez inşa edilmiyor).
-                  if (!compact)
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: ClipPath(
-                          key: const ValueKey('board-watermarks'),
-                          clipper: _WatermarkClipper(occupiedCells),
-                          child: _watermarks(
-                              cornerColor, cornerNumber, screenWidth),
+            child: _zoomWrap(
+                unclipped: moveOverlay != null && moveOverlay!.cells.isNotEmpty
+                    ? _moveBadge()
+                    : null,
+                Stack(
+                  key: gridKey,
+                  children: [
+                    GridView.count(
+                      crossAxisCount: boardSize,
+                      mainAxisSpacing: 3,
+                      crossAxisSpacing: 3,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        for (var r = 0; r < boardSize; r++)
+                          for (var c = 0; c < boardSize; c++)
+                            _buildCell(r, c, territoryOwner, homeCellColor,
+                                lastMoveSet, currentColor, screenWidth),
+                      ],
+                    ),
+                    // KATMAN SIRASI web'in z-index'lerinden geliyor (Board.tsx):
+                    // hücre arka planları → filigran (z-auto) → TAŞLAR
+                    // (`relative z-[5]`) → dış hatlar (`z-10`). Flutter'da
+                    // z-index yok, sıra boyama sırasıdır; filigran ızgaradan
+                    // SONRA çizildiğinden taşların üstüne biniyordu (kullanıcı
+                    // 17 Ağustos 2026'da iki ekranı yan yana koyup bildirdi).
+                    // Taşları ayrı bir katmana taşımak yerine filigran, taş
+                    // bulunan hücreler KESİLEREK çiziliyor — sonuç "taşın
+                    // altında" ile görsel olarak aynı, ızgara tek geçişte
+                    // kalıyor (169 hücre iki kez inşa edilmiyor).
+                    if (!compact)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: ClipPath(
+                            key: const ValueKey('board-watermarks'),
+                            clipper: _WatermarkClipper(occupiedCells),
+                            child: _watermarks(
+                                cornerColor, cornerNumber, screenWidth),
+                          ),
                         ),
                       ),
-                    ),
-                  // Bölge/hamle dış hatları — ızgara alanının tamamını kaplayan
-                  // tek katman (web'deki tek SVG'nin eşleniği), dokunuşları
-                  // engellemez. Web'de `z-10`, yani taşların VE filigranın
-                  // üstünde; bu yüzden filigrandan SONRA geliyor.
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: CustomPaint(painter: _OutlinesPainter(outlines)),
-                    ),
-                  ),
-                  if (moveOverlay != null && moveOverlay!.cells.isNotEmpty)
-                    Positioned.fill(child: IgnorePointer(child: _moveBadge())),
-                  if (startHint != null)
+                    // Bölge/hamle dış hatları — ızgara alanının tamamını kaplayan
+                    // tek katman (web'deki tek SVG'nin eşleniği), dokunuşları
+                    // engellemez. Web'de `z-10`, yani taşların VE filigranın
+                    // üstünde; bu yüzden filigrandan SONRA geliyor.
                     Positioned.fill(
                       child: IgnorePointer(
-                        child: dragListenable == null
-                            ? _startHint(startHint, screenWidth)
-                            : ValueListenableBuilder<Object?>(
-                                valueListenable: dragListenable!,
-                                // Sürükleme başlayınca balon kaybolur.
-                                // Yalnızca BU katman dinliyor — tahtanın
-                                // kendisi sürükleme boyunca hiç yeniden
-                                // inşa edilmiyor (Parça 23).
-                                builder: (context, drag, _) => drag != null
-                                    ? const SizedBox.shrink()
-                                    : _startHint(startHint, screenWidth),
-                              ),
+                        child: CustomPaint(painter: _OutlinesPainter(outlines)),
                       ),
                     ),
-                ],
-              )),
+                    if (startHint != null)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: dragListenable == null
+                              ? _startHint(startHint, screenWidth)
+                              : ValueListenableBuilder<Object?>(
+                                  valueListenable: dragListenable!,
+                                  // Sürükleme başlayınca balon kaybolur.
+                                  // Yalnızca BU katman dinliyor — tahtanın
+                                  // kendisi sürükleme boyunca hiç yeniden
+                                  // inşa edilmiyor (Parça 23).
+                                  builder: (context, drag, _) => drag != null
+                                      ? const SizedBox.shrink()
+                                      : _startHint(startHint, screenWidth),
+                                ),
+                        ),
+                      ),
+                  ],
+                )),
           ),
           if (!hideFooter) _footer(),
         ],
@@ -598,28 +631,28 @@ class BoardWidget extends StatelessWidget {
                 TapTarget(
                   onTap: onOpenHistory,
                   child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        DocumentIcon(),
-                        SizedBox(width: 4),
-                        Text(
-                          'Hamleler',
-                          style: TextStyle(
-                            fontFamily: 'SpaceMono',
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                            color: kAccent,
-                          ),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DocumentIcon(),
+                      SizedBox(width: 4),
+                      Text(
+                        'Hamleler',
+                        style: TextStyle(
+                          fontFamily: 'SpaceMono',
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          color: kAccent,
                         ),
+                      ),
                     ],
                   ),
                 ),
               if (onOpenMessaging != null) ...[
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 6),
-                  child: Text('·',
-                      style: TextStyle(fontSize: 12, color: kMuted)),
+                  child:
+                      Text('·', style: TextStyle(fontSize: 12, color: kMuted)),
                 ),
                 TapTarget(
                   onTap: onOpenMessaging,
@@ -627,44 +660,44 @@ class BoardWidget extends StatelessWidget {
                   // kutusuna çapalı — TapTarget çocuğu ORTALADIĞI için
                   // (dolgu eklemediği için) rozetin çapası bozulmuyor.
                   child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _ChatBubbleIcon(),
-                            SizedBox(width: 4),
-                            Text(
-                              'Mesajlaşma',
-                              style: TextStyle(
-                                fontFamily: 'SpaceMono',
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                                color: kAccent,
-                              ),
-                            ),
-                          ],
-                        ),
-                        // Konum web'de ölçülerek seçildi (`-top-1 -right-1`):
-                        // rozet satır içi olsaydı şeride ~20px eklerdi ve dar
-                        // telefonlarda "Nasıl Oynanır?" ile çakışırdı. Beyaz
-                        // halka web'in `ring-2 ring-panel`i — rozet altındaki
-                        // mavi etiketten ayrışsın diye.
-                        if (unreadMessageCount > 0)
-                          Positioned(
-                            top: -4,
-                            right: -4,
-                            child: Container(
-                              key: const ValueKey('chat-unread-badge'),
-                              padding: const EdgeInsets.all(2),
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                              child: CountBadge(count: unreadMessageCount),
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _ChatBubbleIcon(),
+                          SizedBox(width: 4),
+                          Text(
+                            'Mesajlaşma',
+                            style: TextStyle(
+                              fontFamily: 'SpaceMono',
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: kAccent,
                             ),
                           ),
+                        ],
+                      ),
+                      // Konum web'de ölçülerek seçildi (`-top-1 -right-1`):
+                      // rozet satır içi olsaydı şeride ~20px eklerdi ve dar
+                      // telefonlarda "Nasıl Oynanır?" ile çakışırdı. Beyaz
+                      // halka web'in `ring-2 ring-panel`i — rozet altındaki
+                      // mavi etiketten ayrışsın diye.
+                      if (unreadMessageCount > 0)
+                        Positioned(
+                          top: -4,
+                          right: -4,
+                          child: Container(
+                            key: const ValueKey('chat-unread-badge'),
+                            padding: const EdgeInsets.all(2),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: CountBadge(count: unreadMessageCount),
+                          ),
+                        ),
                     ],
                   ),
                 ),

@@ -119,8 +119,24 @@
        kalkışa bakan ilk taslak aynı jesti İKİ kez sayıp tek dokunuşu
        "çift" yapardı (testi: "hücreye inen dokunuş tahta dinleyicisinde
        SAYILMAZ").
-     - **Doğrulama:** 19 yeni test (`board_zoom_test.dart`: 3 birim +
-       16 widget) + tam takım **686 test yeşil**, `dart analyze` temiz
+     - **ÜÇÜNCÜ APK TURU (aynı gün) — kırpmanın ikinci kurbanı:** kullanıcı
+       *"kenarda kalan deneme sayıları kesiliyor"* dedi (iki telefonun yan
+       yana fotoğrafı: yayındaki 1.0.4'te `+6` rozeti tam, test
+       derlemesinde `+7`nin sol kenarı düz kesik). Sebep bir önceki turun
+       payı DEĞİL, kırpmanın KAPSAMI: hamle rozeti `FractionalTranslation
+       (-0.35,-0.35)` ile ızgara kutusunun ~10 px dışına taşıyor (zoom'da
+       ~22 px) ve ClipRect'in İÇİNDEYDİ. Pay büyütmek yanlış çözüm olurdu —
+       aynı pay kadar zoom'lu ızgara da taşıp kartın gövdesine sızardı.
+       **Düzeltme:** `_zoomWrap` artık bir `unclipped` katmanı alıyor;
+       rozet ızgarayla AYNI matrisi (tek tween — ikiye bölmek animasyon
+       boyunca ayrıştırırdı) ama kırpmayı ALMIYOR. Ders: bir ağaca kırpma
+       eklerken "kutunun dışına bilerek taşan" her katmanı say — bu tahtada
+       ikisi vardı (dış hat çizgisi ve rozet), ilk turda yalnız biri
+       görüldü. Testi YAPISAL (piksel değil): rozetin üstünde kırpıcılı
+       ClipRect bulunmamalı + rozet gerçekten ızgaranın dışına taşmalı;
+       negatif eşi koşuldu (rozet kırpmanın içine alınınca test düşüyor).
+     - **Doğrulama:** 20 yeni test (`board_zoom_test.dart`: 3 birim +
+       17 widget) + tam takım **687 test yeşil**, `dart analyze` temiz
        (tek info main'de de olan eski `tap_target_test` satırı).
        **Doğrulama SINIRI:** widget testleri cihaz hissini (çift dokunuş
        ritmi, pan akıcılığı, gerçek parmakla ıskalama) KANITLAMAZ —

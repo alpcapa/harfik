@@ -418,6 +418,54 @@ void main() {
     expect(r.bottom, greaterThanOrEqualTo(100 + beklenenTasma));
   });
 
+  testWidgets(
+      'hamle puanı rozeti KIRPILMAZ — kenardaki rozet kesilmesin '
+      '(1 Eylül 2026, kullanıcı APK\'da bildirdi)', (tester) async {
+    final controller = await pumpZoomGame(tester);
+    // Sol ÜST köşedeki hücreye taş koy: rozet o hücrenin sol üstüne
+    // (-0.35,-0.35) taşar, yani ızgara kutusunun DIŞINA çıkar. Kırpılan
+    // katmanda kalsaydı sol kenarı kesilirdi.
+    await tester.tap(rackTile(0));
+    await tester.pump();
+    await tester.tap(boardCell(0, 0));
+    await tester.pump();
+
+    final rozet = find.byWidgetPredicate(
+        (w) => w is Text && (w.data ?? '').startsWith('+'));
+    expect(rozet, findsOneWidget, reason: 'hamle rozeti hiç çizilmemiş');
+
+    // Kanıt YAPISAL: rozetin üstünde kırpıcılı ClipRect (görünür kare)
+    // OLMAMALI. Piksel karşılaştırması bu ortamda kırpmayı göstermez —
+    // getRect kırpılmış widget'ın da tam kutusunu döndürür.
+    expect(
+      find.ancestor(
+          of: rozet,
+          matching: find.byWidgetPredicate(
+              (w) => w is ClipRect && w.clipper != null)),
+      findsNothing,
+      reason: 'rozet görünür karenin İÇİNDE kalmış — kenarda kesilir',
+    );
+
+    // Ve rozet gerçekten ızgaranın dışına taşıyor olmalı (test aksi hâlde
+    // hiçbir şey kanıtlamazdı).
+    final grid = tester.getRect(boardCell(0, 0));
+    expect(tester.getRect(rozet).left, lessThan(grid.left),
+        reason: 'rozet ızgara kutusunun dışına taşmıyorsa kırpma da '
+            'sorun olmazdı — fikstür kurulumu bozulmuş');
+
+    // Zoom AÇILINCA da kırpılmamalı (aynı matrisi alır, kırpmayı almaz).
+    await doubleTapAt(tester, tester.getCenter(boardCell(6, 6)));
+    expect(isZoomedIn(tester), isTrue);
+    expect(
+      find.ancestor(
+          of: rozet,
+          matching: find.byWidgetPredicate(
+              (w) => w is ClipRect && w.clipper != null)),
+      findsNothing,
+    );
+    expect(controller.state.placed, hasLength(1));
+  });
+
   testWidgets('pan: zoom açıkken parmak tahtayı kaydırır ve sınırda durur',
       (tester) async {
     final controller = await pumpZoomGame(tester);
