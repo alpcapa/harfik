@@ -301,9 +301,14 @@ yanlış bir şeyi doğrulamaya devam ederdi.
 **Negatif eş ölçüldü:** `pencereyiKaydir` çağrısı kaldırılınca üç kontrol,
 `t <= simdi` kaldırılınca bir kontrol GERÇEKTEN düşüyor.
 
-⚠ **Saf istemci kodu — sürüm turu bekliyor (1.0.5).** Sunucuda değişen bir
-şey yok, yani bu düzeltme merge edilse bile sahadaki cihazlarda ancak yeni
-paketle görünür.
+⚠ **Saf istemci kodu** — sunucuda değişen bir şey yok, yani sahadaki
+cihazlarda ancak yeni bir paketle görünür. **1 Eylül 2026'da o paket
+1.0.4 OLDU:** bu satır önce "1.0.5'e biner" diyordu, ama #393 merge edilince
+`mobile-build` `main`'de koşup `mobile-latest`'teki `.aab`'yi üzerine yazdı
+— `pubspec` hâlâ 1.0.4 olduğundan yeni paket 1.0.4 kaldı (versionCode
+461 → 467) ve bu düzeltme onun içine girdi. Paketten doğrulandı: gömülü
+`BUILD_SHA` = merge commit'i `cec6cbc`, o ağaçta `_maxPerWindow`/`_windowMs`
+duruyor.
 
 ## Hata panelinde platform filtresi (31 Ağustos 2026)
 

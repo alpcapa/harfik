@@ -75,7 +75,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 |---|---|---|
 | **Sayaç** | 12 tester × 14 gün | ⏳ işliyor, aksiyon yok · *Android developer verification* ✅ **BİTTİ** (Console'dan doğrulandı 31 Ağustos: `com.kelimeki.kelimeki` Registered, 3 anahtar, Identity dolu) |
 | **Console (elle)** | — | ✅ **KAPANDI** (bu satır 31 Ağustos'a kadar bayat kaldı; ayrıntı aşağıda) |
-| **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) | ✅ **1.0.4 ile çıktı** (31 Ağustos 2026) |
+| **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) · **+ #10 hata hız sınırı** (1 Eylül'de eklendi) | ✅ **1.0.4 (467) hazır**, yükleme kullanıcıda |
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); kalanlar bekliyor |
 | **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) | ⬜ |
 | **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
@@ -106,8 +106,9 @@ yapıldı (`app_version_parity_test` ayrışmayı yakalıyor). `+N` build numara
 bağlayıcı değil — CI onu `--build-number=${{ github.run_number }}` ile eziyor.
 
 Gün içinde "acil bir durum yok, toplu çıkarırız" denmişti; aynı gün akşam
-toplu çıkarma kararı verildi. Sürümün taşıdığı İKİ PR var, ikisi de zaten
-`main`'deydi ve yalnızca sürüm numarası bekliyordu:
+toplu çıkarma kararı verildi. Sürüm İKİ PR ile tanımlandı; **1 Eylül'de
+ÜÇÜNCÜSÜ eklendi — aşağıdaki nota bak.** İlk ikisi zaten `main`'deydi ve
+yalnızca sürüm numarası bekliyordu:
 
 | PR | Ne | Neden sürüm gerekiyordu |
 |---|---|---|
@@ -115,6 +116,28 @@ toplu çıkarma kararı verildi. Sürümün taşıdığı İKİ PR var, ikisi de
 | **#383** | Telemetriden çıkan iki çökme: derin bağlantı rotası (11 cihaz) + rafta sınır dışı erişim | İkisi de saf istemci kodu |
 
 Toplam 14 dosya, +572/−20 (`mobile/app/` altında).
+
+⚠ **1 Eylül 2026 — SÜRÜM YÜKLENMEDEN ÖNCE İÇERİĞİ BÜYÜDÜ (#393 merge'i).**
+1.0.4 paketi 31 Ağustos 20:17'de derlendi (**versionCode 461**) ama Play'e
+yüklenmedi; kullanıcı "her gün update tester'da 'çok hata var' algısı
+yaratır" diye ertesi güne bıraktı. O arada #393 merge edildi, `mobile-build`
+`main`'de koştu ve **`mobile-latest`'teki `.aab`'yi üzerine yazdı**:
+
+| | 461 | **467** |
+|---|---|---|
+| versionName | 1.0.4 | 1.0.4 (aynı) |
+| Derleme kimliği | `72278c3` | **`cec6cbc`** |
+| İçerik | #382 + #383 | #382 + #383 **+ ROADMAP #10** |
+
+Yani yüklenecek paket **`467 (1.0.4)`** ve hız sınırı düzeltmesi de içinde.
+Paketten doğrulandı (manifest + gömülü `BUILD_SHA` + o sha'nın ağacındaki
+`_maxPerWindow`), tahmin edilmedi. 461 paketi artık release'te YOK.
+
+**Ders:** `mobile-latest` her mobil derlemede üzerine yazıldığından, **henüz
+Play'e yüklenmemiş bir sürüm numarası, merge edilen her yeni işi kendine
+toplar.** "Bu iş şu sürüme biner" cümlesi ancak o sürüm SAHAYA ÇIKTIKTAN
+sonra sabitlenir. Yükleme öncesi versionCode kontrolü (aşağıdaki uyarı) tam
+da bu yüzden var — ve 1 Eylül'de gerçekten işe yaradı.
 
 ⚠ **Çakıştırma etiketi (#381) bu sürümde DEĞİL** — o sunucu tarafıydı ve
 uygulandığı gün canlıya girdi. Bildirimlerin panelde BİRİKMESİNİ o durdurdu;
@@ -1317,8 +1340,24 @@ eskimezdi — yani düzeltmenin bedeli tam da kapatmaya çalıştığı körlük
 olurdu. Koşula `t <= simdi` eklendi; testi var ve o satır kaldırılınca test
 GERÇEKTEN düşüyor (ölçüldü).
 
-**Zamanlama:** saf istemci kodu, yani bir sürüm turu bekliyor — 1.0.5'e
-biner. Sunucu tarafında değişen bir şey YOK.
+**Zamanlama — bu satır 1 Eylül'de DEĞİŞTİ, sebebi kayda değer.** Yazıldığında
+"saf istemci kodu, bir sürüm turu bekliyor, 1.0.5'e biner" diyordu; doğruydu
+ama **merge onu geçersiz kıldı.** #393 `main`'e girince `mobile-build`
+`main`'de koştu ve `mobile-latest` release'indeki `.aab`'yi ÜZERİNE YAZDI —
+`pubspec` hâlâ 1.0.4 dediğinden yeni paket de **1.0.4**, yalnızca
+versionCode 461 → **467** oldu ve #10 içine girdi. Yani #10 bir sürüm turu
+BEKLEMEDİ, henüz yüklenmemiş olan 1.0.4'e bindi.
+
+**1.0.5 diye bir paket hiç var olmadı** — yalnızca bu cümlede bir plandı.
+Numara boş; bundan sonraki ilk iş ona biner.
+
+⚠ **Genel ders: "şu sürüme biner" cümlesi, o sürüm YÜKLENMEDİYSE merge ile
+değişir.** `mobile-latest` her mobil derlemede üzerine yazıldığından, henüz
+Play'e çıkmamış bir sürüm numarası merge edilen her yeni işi kendine
+toplar. Sürüm planı yazarken sorulacak soru "hangi numara sırada" değil,
+**"o numaralı paket sahaya ÇIKTI mı"**.
+
+Sunucu tarafında değişen bir şey YOK (bu madde tamamen istemci).
 
 **Doğrulama:** `npm run verify-error-reporting` 30 → **35 kontrol** (yeni
 beşi: imza pencere geçince yeniden gönderilir · pencere başına 10 · pencere
