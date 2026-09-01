@@ -37,6 +37,27 @@ int debugBoardBuildCountForTests = 0;
 const double _outlineRadius = 0.16;
 const double _outlineStroke = 2.5;
 
+/// Görünür karenin kırpma PAYI (1 Eylül 2026, kullanıcı APK'da gördü:
+/// *"Bölge çizgisi kenarlarda inceliyor"*): bölge dış hattının yolu hücre
+/// sınırının ÜZERİNDE, yani ızgara kutusunun dış kenarında stroke'un yarısı
+/// (2.5/2) kutunun DIŞINA taşar ve zoom'da bu taşma ×2 olur (2.5 px).
+/// ClipRect tam kutudan kırptığında kenardaki çizgi yarıya iniyordu — zoom
+/// ÖNCESİNDE hiç kırpma olmadığından taşma 10 px'lik tahta dolgusuna
+/// çiziliyordu ve özgün görünüm buydu. Pay = zoom'lu taşma + AA; dolgunun
+/// içinde kalır. Zoom'la kenar ortadan kesilirken pay kadar fazla hücre
+/// içeriği görünür — 3.5 px, gözle seçilemiyor ve alternatifi (pay yok)
+/// kullanıcının bildirdiği inceltme.
+const double _zoomClipSlack = _outlineStroke * kBoardZoomScale / 2 + 1;
+
+class _ZoomClipSlackClipper extends CustomClipper<Rect> {
+  const _ZoomClipSlackClipper();
+  @override
+  Rect getClip(Size size) => Rect.fromLTRB(-_zoomClipSlack, -_zoomClipSlack,
+      size.width + _zoomClipSlack, size.height + _zoomClipSlack);
+  @override
+  bool shouldReclip(covariant CustomClipper<Rect> oldClipper) => false;
+}
+
 const Color _boardBg = Color(0xFFDDE4EE);
 
 const LinearGradient _goldZone = LinearGradient(
@@ -177,10 +198,17 @@ class BoardWidget extends StatelessWidget {
   /// bitmap gibi bulanıklaşırdı (metin, transform altında vektörel kalmalı).
   Widget _zoomWrap(Widget grid) {
     final z = zoom;
+    // 10 px'lik iç dolgu ARTIK bu sarmalayıcının içinde: dokunma yüzeyi
+    // (aşağıdaki Listener) çerçeveyi de kapsasın diye (1 Eylül 2026,
+    // kullanıcı APK'da bildirdi: "zoom sadece karelerde çalışıyor,
+    // kenarlar da dahil olmalı"). zoom verilmemişken ağaç ESKİSİYLE aynı.
+    const pad = EdgeInsets.all(10);
     if (z == null) {
-      return viewportKey == null
-          ? grid
-          : KeyedSubtree(key: viewportKey, child: grid);
+      return Padding(
+          padding: pad,
+          child: viewportKey == null
+              ? grid
+              : KeyedSubtree(key: viewportKey, child: grid));
     }
     Widget w = AnimatedBuilder(
       animation: z,
@@ -199,8 +227,10 @@ class BoardWidget extends StatelessWidget {
       ),
     );
     // ClipRect = görünür kare; anahtarı ekran katmanının bırakma kapısı
-    // kullanıyor (bkz. viewportKey dokümantasyonu).
-    w = ClipRect(key: viewportKey, child: w);
+    // kullanıyor (bkz. viewportKey dokümantasyonu — kapı kutunun BOYUTUNU
+    // okur, clipper'ın payı onu değiştirmez).
+    w = ClipRect(
+        key: viewportKey, clipper: const _ZoomClipSlackClipper(), child: w);
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: onBoardPointerDown,
@@ -209,7 +239,7 @@ class BoardWidget extends StatelessWidget {
       onPointerCancel: onBoardPointerCancel == null
           ? null
           : (_) => onBoardPointerCancel!(),
-      child: w,
+      child: Padding(padding: pad, child: w),
     );
   }
 
@@ -349,9 +379,7 @@ class BoardWidget extends StatelessWidget {
         children: [
           AspectRatio(
             aspectRatio: 1,
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: _zoomWrap(Stack(
+            child: _zoomWrap(Stack(
                 key: gridKey,
                 children: [
                   GridView.count(
@@ -417,7 +445,6 @@ class BoardWidget extends StatelessWidget {
                     ),
                 ],
               )),
-            ),
           ),
           if (!hideFooter) _footer(),
         ],

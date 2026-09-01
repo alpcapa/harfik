@@ -1642,6 +1642,13 @@ penceresini anında açmaya devam eder). İki ekranda da (YZ oyunu + Canlı).
 
 - [ ] **Boş bir hücreye çift dokun** → tahta dokunulan noktaya odaklı
       büyür (animasyonlu); raf/başlık/butonlar YERİNDEN OYNAMAZ.
+- [ ] **KENARDAN çift dokun** (karelerin dışı ama tahtanın içi — çerçeve
+      şeridi ya da iki kare arasındaki boşluk) → zoom yine açılır/kapanır
+      (1 Eylül'de APK'da bulunan eksik: yalnızca karelerde çalışıyordu).
+- [ ] **Bölge çizgisi kenarlarda İNCELMEMELİ** — hem zoom kapalıyken hem
+      zoom açık tahta duvara dayalıyken, tahta kenarındaki bölge çizgisi
+      ortadakilerle aynı kalınlıkta (1 Eylül'de APK'da bulunan kırpma
+      hatası: kenarda yarıya iniyordu).
 - [ ] **Tekrar çift dokun** → eski hâline döner.
 - [ ] **Kenara yakın çift dokunuş** → tahta kenardan "boşluk gösterecek"
       şekilde kaymaz (offset sınırda durur).

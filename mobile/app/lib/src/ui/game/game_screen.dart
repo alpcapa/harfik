@@ -183,6 +183,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   BoardPanRef? _panRef;
 
+  /// Tahta dokunuş ADAYI: `_dragRef` yokken inen parmağın konumu. Eşik
+  /// aşılırsa (pan/scroll/sürükleme) düşer; kalkışta hücre kutusu DIŞINA
+  /// düşen dokunuşlar zoom'un çift dokunuş jestine sayılır.
+  Offset? _boardTapDown;
+
   /// Pan jestinin ARTIĞI olan hücre dokunuşunu yutma penceresi: 10-18 px
   /// arası bir pan, GestureDetector'ın tap slop'unun (18) altında
   /// kaldığından ayrıca bir onTapUp üretir. Bayrak yerine ZAMAN — 18 px
@@ -659,13 +664,26 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   // sırası çocuk → ata olduğundan taslak taşın Listener'ı `_dragRef`i BU
   // çağrıdan ÖNCE doldurur — doluysa pan hiç başlamaz.
   void _boardPointerDown(PointerDownEvent e) {
-    if (_dragRef != null || !_zoom.zoomed || _panRef != null) return;
+    if (_dragRef != null) return; // taş jesti sahiplendi (çocuk Listener önce)
+    // Dokunuş ADAYI: hücre kutusuna DÜŞMEYEN dokunuşlar (3 px'lik hücre
+    // araları + 10 px'lik çerçeve dolgusu) da zoom'un çift dokunuş jestine
+    // sayılsın (1 Eylül 2026, kullanıcı APK'da bildirdi: "zoom sadece
+    // karelerde çalışıyor, kenarlar da dahil olmalı"). Hücrelerin üstüne
+    // düşenleri hücrenin kendi GestureDetector'ı işler — `_boardPointerUp`
+    // geometriyle ayıklar, çift işleme olmaz.
+    _boardTapDown = e.position;
+    if (!_zoom.zoomed || _panRef != null) return;
     // setState şart: scroll kilidi `_panRef`e bağlı (taş sürüklemedeki
     // physics deseninin aynısı).
     setState(() => _panRef = BoardPanRef(e.position));
   }
 
   void _boardPointerMove(PointerMoveEvent e) {
+    final down = _boardTapDown;
+    if (down != null &&
+        (e.position - down).distance >= _dragThresholdFor(e.kind)) {
+      _boardTapDown = null; // hareket etti: dokunuş adayı düştü
+    }
     final p = _panRef;
     if (p == null) return;
     if (!p.moved) {
@@ -679,9 +697,24 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _zoom.panBy(e.delta, grid.size);
   }
 
-  void _boardPointerUp(PointerUpEvent e) => _endBoardPan();
+  void _boardPointerUp(PointerUpEvent e) {
+    final down = _boardTapDown;
+    _boardTapDown = null;
+    _endBoardPan();
+    if (down == null) return;
+    // Hücre kutusuna düşen dokunuş hücrenin GestureDetector'ının işi —
+    // burada da sayılsaydı algılayıcıya İKİ kez yazılır, tek dokunuş "çift"
+    // sanılırdı. Karar İNİŞ noktasına göre: tap tanıyıcısı jestin sahibi
+    // olup olmadığına inişte karar verir; parmak hücrede inip boşlukta
+    // kalkarsa hücre tanıyıcısı YİNE ateşler — kalkışa bakmak aynı çift
+    // saymayı geri getirirdi. Boşluğa/çerçeveye inen ise tahta dokunuşudur.
+    if (_pointHitsCellBox(down)) return;
+    if (_registerZoomTap(down)) return;
+    _zoom.registerPairableTap(down);
+  }
 
   void _endBoardPan() {
+    _boardTapDown = null;
     final p = _panRef;
     if (p == null) return;
     setState(() => _panRef = null);
@@ -692,6 +725,29 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           clock.now().add(const Duration(milliseconds: 120));
       _zoom.markUnpairableTap();
     }
+  }
+
+  /// Nokta bir HÜCRE kutusunun içinde mi (hücre araları ve çerçeve HARİÇ)?
+  /// `_cellAtGlobal`dan farkı tam bu: o, boşluğa düşen noktayı komşu
+  /// hücreye SAYAR (bırakma toleransı); burada ise hücrenin gerçek dokunma
+  /// kutusu ölçülüyor. Sınırda tereddüt = HÜCRE say (çift işlemektense hiç
+  /// işlememek: hücre detector'ı zaten çalışacak).
+  bool _pointHitsCellBox(Offset global) {
+    final grid = _boxOf(_gridKey);
+    if (grid == null) return true;
+    final local = grid.globalToLocal(global);
+    if (local.dx < 0 ||
+        local.dy < 0 ||
+        local.dx >= grid.size.width ||
+        local.dy >= grid.size.height) {
+      return false; // çerçeve/dolgu
+    }
+    const gap = 3.0;
+    final strideX = (grid.size.width + gap) / boardSize;
+    final strideY = (grid.size.height + gap) / boardSize;
+    const eps = 0.5;
+    return (local.dx % strideX) < strideX - gap + eps &&
+        (local.dy % strideY) < strideY - gap + eps;
   }
 
   void _beginTileDrag(_DragSource source, PointerDownEvent e) {
