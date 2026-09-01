@@ -1045,31 +1045,20 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
   Future<void> _tapPlacedTile(int r, int c, Tile placedTile) async {
     if (!_canEdit) return;
+    // Taşa dokunuş çift BAŞLATAMAZ; joker penceresi ANINDA açılır —
+    // gerekçe game_screen.dart'ın aynı dalında.
+    _zoom.markUnpairableTap();
     if (placedTile.wild) {
-      // Modal açan dokunuş çift dokunuş penceresi kadar ertelenir —
-      // gerekçe game_screen.dart'ın aynı dalında (board_zoom.dart direk 2).
-      _zoom.recordTapEffect(const ZoomTapDeferredModal());
-      _zoom.deferModal(() => unawaited(_editPlacedWild(r, c)));
+      final choice = await showWildLetterSheet(context, editing: true);
+      if (choice == null) return;
+      if (choice.recallRequested) {
+        _controller.dispatch(RecallCellAction(r: r, c: c));
+      } else if (choice.letter != null) {
+        _controller.dispatch(
+            SetWildLetterAction(r: r, c: c, wildLetter: choice.letter!));
+      }
     } else {
-      final priorSelection = state.selectedTile;
       _controller.dispatch(RecallCellAction(r: r, c: c));
-      _zoom.recordTapEffect(ZoomTapRecalled(r, c,
-          wildLetter: null, priorSelection: priorSelection));
-    }
-  }
-
-  /// Ertelenmiş joker düzenleme penceresi (`_tapPlacedTile` wild dalı).
-  Future<void> _editPlacedWild(int r, int c) async {
-    if (!mounted || !_canEdit) return;
-    final t = state.placed[cellKey(r, c)];
-    if (t == null || !t.wild) return;
-    final choice = await showWildLetterSheet(context, editing: true);
-    if (choice == null) return;
-    if (choice.recallRequested) {
-      _controller.dispatch(RecallCellAction(r: r, c: c));
-    } else if (choice.letter != null) {
-      _controller.dispatch(
-          SetWildLetterAction(r: r, c: c, wildLetter: choice.letter!));
     }
   }
 
@@ -1130,10 +1119,12 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
   Future<void> _handleCellTap(int r, int c, Offset global) async {
     final k = cellKey(r, c);
-    // Çift dokunuşla zoom — kapsam/gerekçe game_screen.dart'ın aynı dalında.
+    // Çift dokunuşla zoom — kapsam/gerekçe game_screen.dart'ın aynı
+    // dalında: çiftin İKİNCİSİ yutulur, İLKİNİN yaptığı iş kalır; çift
+    // yalnızca boş kareye dokunuşla başlar.
     if (state.board[r][c] == null) {
       if (_registerZoomTap(global)) return;
-      _zoom.recordTapEffect(const ZoomTapNone());
+      if (state.placed[k] == null) _zoom.registerPairableTap(global);
     } else {
       _zoom.markUnpairableTap();
     }
@@ -1184,44 +1175,22 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
         ? me.rack[selIdx]
         : null;
     if (sel != null && sel.letter == '?') {
-      // Joker penceresi ertelenir; rackIndex ŞİMDİ yakalanır — gerekçe
-      // game_screen.dart'ın aynı dalında.
-      final jokerIdx = selIdx!;
-      _zoom.recordTapEffect(const ZoomTapDeferredModal());
-      _zoom.deferModal(() => unawaited(_placeWildDeferred(r, c, jokerIdx)));
+      // Joker penceresi ANINDA açılır, zoom'la ilişkisi yok — gerekçe
+      // game_screen.dart'ın aynı dalında. Modal açıldı → zincir kır.
+      _zoom.markUnpairableTap();
+      final choice = await showWildLetterSheet(context);
+      if (choice?.letter == null) return;
+      _controller
+          .dispatch(PlaceTileAction(r: r, c: c, wildLetter: choice!.letter));
       return;
     }
     _controller.dispatch(PlaceTileAction(r: r, c: c));
-    if (selIdx != null) {
-      _zoom.recordTapEffect(ZoomTapPlaced(r, c, priorSelection: selIdx));
-    }
-  }
-
-  /// Ertelenmiş joker YERLEŞTİRME penceresi (`_handleCellTap` joker dalı).
-  Future<void> _placeWildDeferred(int r, int c, int rackIndex) async {
-    if (!mounted || !_canEdit) return;
-    final me = _me;
-    if (me == null || rackIndex < 0 || rackIndex >= me.rack.length) return;
-    if (me.rack[rackIndex].letter != '?') return;
-    if (state.board[r][c] != null || state.placed.containsKey(cellKey(r, c))) {
-      return;
-    }
-    final choice = await showWildLetterSheet(context);
-    if (choice?.letter == null) return;
-    _controller.dispatch(PlaceTileAction(
-        r: r, c: c, wildLetter: choice!.letter, rackIndex: rackIndex));
   }
 
   /// Çift dokunuş kontrolü — game_screen.dart'taki eşinin aynısı.
   bool _registerZoomTap(Offset global) {
     if (clock.now().isBefore(_swallowTapsUntil)) return true;
-    if (!_zoom.registerTap(global)) return false;
-    final undo = _zoom.takePendingUndo();
-    if (undo != null) {
-      applyZoomTapUndo(undo,
-          dispatch: _controller.dispatch,
-          rack: () => state.players[state.current].rack);
-    }
+    if (!_zoom.tryCompletePair(global)) return false;
     _toggleZoomAt(global);
     return true;
   }
@@ -1427,7 +1396,8 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
         _controller.dispatch(SelectTileAction(s.index));
       }
     } else if (s is _PlacedSource) {
-      // Taslak taşlar zoom kapsamında (game_screen.dart'taki aynı kural).
+      // Çiftin İKİNCİSİYSE geri alma yutulur (ilk dokunuşun koyduğu taş
+      // kalır) — game_screen.dart'taki aynı kural.
       if (_registerZoomTap(globalPos)) return;
       await _tapPlacedTile(s.r, s.c, s.tile);
     }

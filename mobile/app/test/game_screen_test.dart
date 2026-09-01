@@ -23,7 +23,6 @@ import 'package:kelimeki/src/util/online_status.dart';
 import 'package:kelimeki/src/ui/game/rack_widget.dart';
 import 'package:kelimeki/src/ui/game/remaining_tiles_modal.dart';
 import 'package:kelimeki/src/ui/game/tile_widget.dart';
-import 'package:kelimeki/src/ui/game/board_zoom.dart' show kDoubleTapWindow;
 import 'package:kelimeki/src/ui/game/wild_letter_sheet.dart';
 import 'package:kelimeki/src/ui/game/dialog_shell.dart' show KDialogCard;
 import 'package:kelimeki/src/ui/game/neo_box.dart'
@@ -180,6 +179,10 @@ void main() {
     expect(hucre.height, lessThan(30),
         reason: 'hücre büyüdüyse bu kurtarmanın gerekçesini gözden geçir');
 
+    // 300 ms içinde aynı noktaya ikinci dokunuş artık ÇİFT DOKUNUŞTUR
+    // (zoom, board_zoom.dart) ve hücre işlemi yutulur — geri alma AYRI bir
+    // jest olmalı, gerçek ritmi kur.
+    await tester.pump(const Duration(milliseconds: 350));
     // ISKALAMA: bir alt hücrenin (BOŞ) merkezine dokun.
     await tester.tapAt(tester.getRect(boardCell(1, 0)).center);
     await tester.pumpAndSettle();
@@ -248,6 +251,10 @@ void main() {
 
     final oncesi = controller.state.players[0].rack.length;
 
+    // 300 ms içinde aynı noktaya ikinci dokunuş artık ÇİFT DOKUNUŞTUR
+    // (zoom, board_zoom.dart) ve hücre işlemi yutulur — geri alma AYRI bir
+    // jest olmalı, gerçek ritmi kur.
+    await tester.pump(const Duration(milliseconds: 350));
     // >>> Bildirilen jest: taslak taşa TEK DOKUNUŞ.
     await tester.tap(boardCell(0, 1));
     await tester.pumpAndSettle();
@@ -281,6 +288,9 @@ void main() {
       await tester.tap(boardCell(0, 0));
       await tester.pump();
       expect(controller.state.placed.keys, ['0,0']);
+      // Koymadan 300 ms sonra: aynı noktaya hemen ikinci dokunuş artık
+      // ÇİFT DOKUNUŞTUR (zoom) ve yutulur — geri alma ayrı bir jest.
+      await tester.pump(const Duration(milliseconds: 350));
 
       final h = tester.getRect(boardCell(0, 0));
       final g = await tester.startGesture(h.center);
@@ -381,6 +391,10 @@ void main() {
     expect(words.contains('km'), isFalse);
     expect(find.text('"KM" geçerli bir kelime değil.'), findsOneWidget);
 
+    // 300 ms içinde aynı noktaya ikinci dokunuş artık ÇİFT DOKUNUŞTUR
+    // (zoom, board_zoom.dart) ve hücre işlemi yutulur — geri alma AYRI bir
+    // jest olmalı, gerçek ritmi kur.
+    await tester.pump(const Duration(milliseconds: 350));
     // Joker olmayan yerleştirilmiş taşa dokunmak geri alır (web davranışı).
     await tester.tap(boardCell(0, 1));
     await tester.pump();
@@ -413,9 +427,6 @@ void main() {
     await tester.tap(rackTile(5)); // '?' (K düştü, indeks kaydı)
     await tester.pump();
     await tester.tap(boardCell(0, 1));
-    // Joker penceresi 1.0.5'ten beri çift dokunuş penceresi kadar ERTELİ
-    // (board_zoom.dart, deferModal) — süreyi geçir ki zamanlayıcı ateşlensin.
-    await tester.pump(kDoubleTapWindow + const Duration(milliseconds: 50));
     await tester.pumpAndSettle();
     await tester.tap(find.text('B').first);
     await tester.pumpAndSettle();
@@ -478,8 +489,6 @@ void main() {
     await tester.tap(rackTile(6)); // '?' (rafta ★)
     await tester.pump();
     await tester.tap(boardCell(1, 0));
-    // Pencere 1.0.5'ten beri çift dokunuş süresi kadar ERTELİ (board_zoom).
-    await tester.pump(kDoubleTapWindow + const Duration(milliseconds: 50));
     await tester.pumpAndSettle();
     expect(find.text('JOKER HANGİ HARF OLSUN?'), findsOneWidget);
     // Kontur katmanı her taş harfini iki Text yapar (stroke+dolgu, aynı taş)
@@ -491,10 +500,8 @@ void main() {
     expect(placed!.wild, isTrue);
     expect(placed.wildLetter, 'B');
 
-    // Yerleştirilmiş jokere dokunmak taşı GERİ ALMAZ — seçici yeniden açılır
-    // (o da erteli).
+    // Yerleştirilmiş jokere dokunmak taşı GERİ ALMAZ — seçici yeniden açılır.
     await tester.tap(boardCell(1, 0));
-    await tester.pump(kDoubleTapWindow + const Duration(milliseconds: 50));
     await tester.pumpAndSettle();
     expect(find.text('JOKERİ HANGİ HARFE ÇEVİR?'), findsOneWidget);
     await tester.tap(find.text('Ç').first);
@@ -503,7 +510,6 @@ void main() {
 
     // Düzenleme modundaki "Geri Al" butonu taşı rafa döndürür.
     await tester.tap(boardCell(1, 0));
-    await tester.pump(kDoubleTapWindow + const Duration(milliseconds: 50));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('wild-recall')));
     await tester.pumpAndSettle();

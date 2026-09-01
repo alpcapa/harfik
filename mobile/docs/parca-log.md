@@ -29,16 +29,33 @@
        yapılınca büyüyecek ve board'u elinle sürükleyebiliceksin. Diğer
        bütün alanlar sabit kalacak. Çift tıkla eski haline dönecek. Zoom
        halindeyken taş sürükleme bırakma, tek tıkla taş koyma/geri alma,
-       vb mükemmel çalışmalı."* + iterasyonla kilitlenen iki karar:
+       vb mükemmel çalışmalı."* + iterasyonla kilitlenen kararlar:
        (a) *"mevcut tek dokunuşlar aynen kalmalı"* — tek dokunuş
        GECİKTİRİLMEZ (Flutter'ın `onDoubleTap`'i her tek dokunuşa ~300 ms
-       ekler → reddedildi, elle algılayıcı yazıldı); (b) *"harf seçiliyken
-       de zoom yapılabilmeli"* — dokunuş-1 normal işler, pencere içinde
-       dokunuş-2 gelirse etkisi GERİ SARILIR (`ZoomTapEffect` kayıtları:
-       koyulan taş `RecallCell`+seçim restorasyonu, geri alınan taş
-       `PlaceTile(rackIndex: raf sonu)` — reducer'ın "recall rafın SONUNA
-       ekler" gerçeğine dayanır) ve zoom açılır. Tahta durumu net
-       değişmez.
+       ekler → reddedildi, elle algılayıcı yazıldı); (b) çiftin İKİNCİ
+       dokunuşu yutulur, İLKİNİN yaptığı iş — koyulan taş dahil —
+       OLDUĞU GİBİ KALIR: *"taşı geri almadan, koyduğu yerde bırakarak
+       zoomlamak lazım."* Çift yalnızca BOŞ kareye dokunuşla başlar; taşa
+       dokunuş (taslak geri alma / onaylı anlam penceresi) çift
+       BAŞLATAMAZ ama İKİNCİ dokunuş olarak yutulabilir — ilk dokunuş
+       taşı koyduysa parmağın altındaki hücre artık boş değildir, ikinci
+       vuruş o taşı geri almasın.
+     - **DÜZELTME DERSİ (aynı gün, kullanıcı reddetti):** ilk sürüm
+       "dokunuş-1'in etkisini GERİ SAR" (`ZoomTapEffect` kayıtları +
+       `applyZoomTapUndo`) ve "joker penceresini ~330 ms ERTELE"
+       (`deferModal`) mekanizmalarını taşıyordu — kullanıcı ikisini de
+       gereksiz buldu: *"taşı geri almadan, koyduğu yerde bırakarak"* ve
+       *"joker tablosu... Bunun zoom olayıyla ne ilgisi var."* İkisi de
+       SİLİNDİ; joker penceresi eskisi gibi ANINDA açılır (pencere
+       açıkken ikinci dokunuş zaten tahtaya değil pencereye düşer) ve
+       `game_screen_test.dart` origin/main ile BAYT BAYT aynıya döndü —
+       "tek dokunuşlar aynen kaldı" iddiasının kanıtı. Tek kabul edilen
+       davranış farkı: koyduktan sonra 300 ms İÇİNDE aynı noktaya ikinci
+       dokunuş artık tanım gereği çift dokunuştur (geri alma değil zoom);
+       koy→geri-al dizen dört test bu yüzden araya gerçekçi bir 350 ms
+       koydu. Ders: bir jest özelliği eklerken "durumu bozmamak" için
+       kurulan telafi mekanizması, kullanıcının zihinsel modelinden daha
+       karmaşıksa muhtemelen yanlış katmandadır — önce sor.
      - **Mimari: layout değil PAINT matrisi** — `Transform` +
        `ClipRect` (görünür kare). `RenderBox.globalToLocal` ata
        transform'ları kendisi tersine çevirdiğinden mevcut stride
@@ -74,9 +91,7 @@
        `_dragRef`i pan'den ÖNCE doldurur, doluysa pan hiç başlamaz. Pan
        bitince 120 ms'lik dokunuş-yutma penceresi (bayrak değil süre —
        ghost-click dersi: 10-18 px'lik pan'ler compat dokunuşu hâlâ
-       üretir). Kapsam: boş hücre + taslak taş; ONAYLI taş kapsam DIŞI
-       (anlam penceresi anında kalsın); joker penceresi ~330 ms ertelenir
-       (algılanamaz — pencere süresi + pay).
+       üretir). ONAYLI taş zoom'a hiç karışmaz (anlam penceresi anında).
      - **Perf:** `AnimatedBuilder` prebuilt `child` ile — 169 hücre pan
        sırasında YENİDEN İNŞA EDİLMEZ (Parça 23 kuralı);
        `RepaintBoundary` bilinçli YOK (2×'te metin vektör-keskin
@@ -86,8 +101,8 @@
        BİLİNÇLİ bir port farkı** (backlog'daki "karar verilmeli" sorusunun
        cevabı): masaüstünde tarayıcı zoom'u var, dokunmatik web kitlesi
        küçük; istek mobil testçiden geldi.
-     - **Doğrulama:** 13 yeni test (`board_zoom_test.dart`: 3 birim +
-       10 widget) + tam takım **680 test yeşil**, `dart analyze` temiz
+     - **Doğrulama:** 14 yeni test (`board_zoom_test.dart`: 3 birim +
+       11 widget) + tam takım **681 test yeşil**, `dart analyze` temiz
        (tek info main'de de olan eski `tap_target_test` satırı).
        **Doğrulama SINIRI:** widget testleri cihaz hissini (çift dokunuş
        ritmi, pan akıcılığı, gerçek parmakla ıskalama) KANITLAMAZ —

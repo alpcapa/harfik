@@ -1654,12 +1654,16 @@ penceresini anında açmaya devam eder). İki ekranda da (YZ oyunu + Canlı).
 - [ ] **Taslak taşa TEK dokun** → anında geri alınır.
 - [ ] **Onaylı taşa TEK dokun** → kelime anlamı ANINDA açılır; onaylı taşa
       çift dokunuş zoom AÇMAZ.
-- [ ] **Joker seç + hücreye dokun** → harf seçim penceresi açılır (çok
-      kısa bir erteleme var, ~üçte bir saniye — fark edilmemeli); pencere
-      açıkken harf seçimi normal çalışır.
-- [ ] **Harf SEÇİLİYKEN boş hücreye çift dokun** → taş KONMAZ (ilk
-      dokunuşun koyduğu taş geri sarılır), seçim rafta DURUR, zoom açılır.
-- [ ] **Taslak taşa çift dokun** → taş YERİNDE kalır, zoom açılır.
+- [ ] **Joker seç + hücreye dokun** → harf seçim penceresi ANINDA açılır
+      (zoom'la hiçbir ilişkisi yok); harf seçimi normal çalışır.
+- [ ] **Harf SEÇİLİYKEN boş hücreye çift dokun** → ilk dokunuş taşı KOYAR
+      ve taş KONDUĞU YERDE KALIR; ikinci dokunuş yalnızca zoom'u açar
+      (taşı GERİ ALMAMALI).
+- [ ] **Taş koy, sonra BAŞKA boş bir kareye çift dokun** → taş yerinde
+      kalır, zoom açılır (kullanıcının birebir senaryosu).
+- [ ] **Taslak taşa çift dokun** → ilk dokunuş taşı geri alır (normal tek
+      dokunuş davranışı), zoom AÇILMAZ — çift dokunuş yalnızca boş kare
+      jesti.
 
 ### Zoom AÇIKKEN oyun
 

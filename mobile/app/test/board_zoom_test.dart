@@ -1,9 +1,11 @@
 // Tahta yakınlaştırması (1.0.5) — board_zoom.dart + game_screen entegrasyonu.
 //
 // Kullanıcının şartı: *"Zoom halindeyken taş sürükleme bırakma, tek tıkla
-// taş koyma/geri alma, vb mükemmel çalışmalı."* Bu dosya o şartın widget
-// testine dökülebilen her parçasını kilitliyor; cihazda kalanlar
-// mobile/TESTING.md'de.
+// taş koyma/geri alma, vb mükemmel çalışmalı."* + (1 Eylül 2026 düzeltmesi)
+// *"taşı geri almadan, koyduğu yerde bırakarak zoomlamak lazım"* — çiftin
+// İKİNCİ dokunuşu yutulur, İLKİNİN yaptığı iş (koyulan taş dahil) KALIR;
+// geri sarma mekanizması YOK. Bu dosya o şartın widget testine dökülebilen
+// her parçasını kilitliyor; cihazda kalanlar mobile/TESTING.md'de.
 //
 // EN KRİTİK İDDİA (analizden): zoom bir ÇİZİM MATRİSİ olduğundan
 // `RenderBox.globalToLocal` onu kendiliğinden tersine çevirir ve ekranların
@@ -98,31 +100,31 @@ void main() {
     var t = DateTime(2026, 9, 1, 12);
     DateTime now() => t;
     withClock(Clock(now), () {
-      // Eşleşebilir bir ilk dokunuş.
-      expect(c.registerTap(const Offset(100, 100)), isFalse);
-      c.recordTapEffect(const ZoomTapNone());
+      // Eşleşebilir bir ilk dokunuş (boş kare).
+      expect(c.tryCompletePair(const Offset(100, 100)), isFalse);
+      c.registerPairableTap(const Offset(100, 100));
       // Pencere içi + yakın → çift.
       t = t.add(const Duration(milliseconds: 200));
-      expect(c.registerTap(const Offset(120, 110)), isTrue);
+      expect(c.tryCompletePair(const Offset(120, 110)), isTrue);
 
       // Çift, izi TÜKETİR: hemen üçüncü bir dokunuş yeni bir ilk dokunuştur.
-      expect(c.registerTap(const Offset(120, 110)), isFalse);
-      c.recordTapEffect(const ZoomTapNone());
+      expect(c.tryCompletePair(const Offset(120, 110)), isFalse);
+      c.registerPairableTap(const Offset(120, 110));
 
       // Pencere DIŞI → çift değil.
       t = t.add(const Duration(milliseconds: 301));
-      expect(c.registerTap(const Offset(120, 110)), isFalse);
-      c.recordTapEffect(const ZoomTapNone());
+      expect(c.tryCompletePair(const Offset(120, 110)), isFalse);
+      c.registerPairableTap(const Offset(120, 110));
 
-      // Yarıçap dışı → çift değil.
+      // Yarıçap dışı → çift değil (iz hâlâ duruyor: tüketmedi).
       t = t.add(const Duration(milliseconds: 100));
-      expect(c.registerTap(const Offset(200, 110)), isFalse);
-      c.recordTapEffect(const ZoomTapNone());
+      expect(c.tryCompletePair(const Offset(200, 110)), isFalse);
 
-      // Eşleşemez kayıt (onaylı taş/raf) çift oluşturamaz.
+      // Eşleşemez etkileşim (taşa dokunuş/raf/sürükleme) zinciri kırar.
+      c.registerPairableTap(const Offset(200, 110));
       c.markUnpairableTap();
       t = t.add(const Duration(milliseconds: 100));
-      expect(c.registerTap(const Offset(200, 110)), isFalse);
+      expect(c.tryCompletePair(const Offset(200, 110)), isFalse);
     });
   });
 
@@ -156,55 +158,84 @@ void main() {
   });
 
   testWidgets(
-      'harf seçiliyken çift dokunuş: taş koyulup GERİ SARILIR, seçim geri '
-      'gelir, zoom açılır — "çift dokunuş tahta durumunu değiştirmez"',
+      'harf seçiliyken çift dokunuş: taş KONUR ve KONDUĞU YERDE KALIR, '
+      'zoom açılır — kullanıcı kararı: "taşı geri almadan, koyduğu yerde '
+      'bırakarak zoomlamak lazım" (1 Eylül 2026)',
       (tester) async {
     final controller = await pumpZoomGame(tester);
     await tester.tap(rackTile(0)); // K seçili
     await tester.pump();
     expect(controller.state.selectedTile, 0);
 
+    // tap1 taşı koyar (hücre artık taslak); tap2 aynı noktaya düşer ve
+    // taşı GERİ ALMAK yerine yutulup zoom'u açar.
     await doubleTapAt(tester, tester.getCenter(boardCell(5, 5)));
 
     expect(isZoomedIn(tester), isTrue);
-    expect(controller.state.placed, isEmpty,
-        reason: 'tap1 koydu, çift dokunuş geri sardı');
-    final rack = controller.state.players[0].rack;
-    expect(rack, hasLength(7), reason: 'taş rafa döndü');
-    // Geri gelen taş rafın SONUNDA (RecallCell reducer davranışı) ve
-    // SEÇİLİ — kullanıcı zoom'lu tahtada kaldığı yerden devam eder.
-    expect(rack.last.letter, 'K');
-    expect(controller.state.selectedTile, rack.length - 1);
+    expect(controller.state.placed['5,5'], isNotNull,
+        reason: 'tap1\'in koyduğu taş yerinde kalmalı');
+    expect(controller.state.placed, hasLength(1));
+    expect(controller.state.players[0].rack, hasLength(6));
   });
 
-  testWidgets('taslak taşa çift dokunuş: geri alınıp GERİ KONUR + zoom',
+  testWidgets(
+      'kullanıcının birebir senaryosu: taşı koy, BAŞKA boş bir kareye çift '
+      'dokun — taş yerinde kalır, zoom açılır', (tester) async {
+    final controller = await pumpZoomGame(tester);
+    await tester.tap(rackTile(0)); // K
+    await tester.pump();
+    await tester.tap(boardCell(5, 5));
+    await tester.pump(const Duration(milliseconds: 400)); // ayrı bir jest
+    expect(controller.state.placed['5,5'], isNotNull);
+
+    await doubleTapAt(tester, tester.getCenter(boardCell(8, 8)));
+
+    expect(isZoomedIn(tester), isTrue);
+    expect(controller.state.placed['5,5'], isNotNull,
+        reason: 'çift dokunuş koyulmuş taşa DOKUNMAZ');
+    expect(controller.state.placed, hasLength(1));
+  });
+
+  testWidgets(
+      'taslak taşa çift dokunuş ZOOM AÇMAZ: tap1 normal geri alma, taşa '
+      'dokunuş çift BAŞLATAMAZ (çift yalnızca boş kare jesti)',
       (tester) async {
     final controller = await pumpZoomGame(tester);
     await tester.tap(rackTile(0)); // K
     await tester.pump();
     await tester.tap(boardCell(5, 5));
-    await tester.pump(const Duration(milliseconds: 400)); // çift penceresi geçsin
+    await tester.pump(const Duration(milliseconds: 400)); // ayrı bir jest
     expect(controller.state.placed['5,5'], isNotNull);
 
     await doubleTapAt(tester, tester.getCenter(boardCell(5, 5)));
-    expect(isZoomedIn(tester), isTrue);
-    expect(controller.state.placed['5,5'], isNotNull,
-        reason: 'tap1 geri aldı, çift dokunuş yeniden koydu — durum değişmedi');
-    expect(controller.state.players[0].rack, hasLength(6));
+    expect(controller.state.placed, isEmpty,
+        reason: 'tap1 tek dokunuş davranışıyla geri aldı');
+    expect(controller.state.players[0].rack, hasLength(7));
+    expect(isZoomedIn(tester), isFalse,
+        reason: 'taşa dokunuş çift başlatamaz; tap2 boş kareye düşen yeni '
+            'bir İLK dokunuştur');
   });
 
-  testWidgets('JOKER seçiliyken çift dokunuş: pencere HİÇ açılmaz, zoom açılır',
+  testWidgets(
+      'JOKER akışının zoom\'la İLİŞKİSİ YOK: pencere tek dokunuşta ANINDA '
+      'açılır, zoom açılmaz (kullanıcı kararı, 1 Eylül 2026)',
       (tester) async {
     final controller = await pumpZoomGame(tester);
     await tester.tap(rackTile(6)); // '?'
     await tester.pump();
-    await doubleTapAt(tester, tester.getCenter(boardCell(5, 5)));
-    // Ertelenen zamanlayıcı süresi de geçsin — pencere yine de açılmamalı.
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('JOKER HANGİ HARF OLSUN?'), findsNothing);
-    expect(isZoomedIn(tester), isTrue);
-    expect(controller.state.placed, isEmpty);
-    expect(controller.state.selectedTile, 6, reason: 'seçim korunur');
+    await tester.tap(boardCell(5, 5));
+    await tester.pump(); // EK süre YOK — pencere hemen açılmış olmalı
+    await tester.pump(); // sheet animasyon karesi
+    expect(find.text('JOKER HANGİ HARF OLSUN?'), findsOneWidget,
+        reason: 'joker penceresi ertelenemez — eski davranış birebir');
+    expect(isZoomedIn(tester), isFalse);
+    // Harf seçimi normal tamamlanır.
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('B').first);
+    await tester.pumpAndSettle();
+    expect(controller.state.placed['5,5']?.wild, isTrue);
+    expect(isZoomedIn(tester), isFalse,
+        reason: 'joker akışının hiçbir adımı zoom\'u değiştirmez');
   });
 
   testWidgets('onaylı taş kapsam DIŞI: çift dokunuş zoom açmaz',

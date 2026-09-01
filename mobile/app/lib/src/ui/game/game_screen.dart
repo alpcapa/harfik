@@ -314,34 +314,22 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   /// geri alınır; joker seçiciyi 'editing' modunda yeniden açar (web).
   Future<void> _tapPlacedTile(int r, int c, Tile placedTile) async {
     if (!_canAct) return;
+    // Taşa dokunuş çift BAŞLATAMAZ (yalnızca bir çiftin İKİNCİSİ olarak
+    // yutulabilir — o kapı çağıranlarda): zinciri kır. Joker penceresinin
+    // zoom'la İLİŞKİSİ YOK (kullanıcı kararı, 1 Eylül 2026): eskisi gibi
+    // ANINDA açılır.
+    _zoom.markUnpairableTap();
     if (placedTile.wild) {
-      // MODAL açan dokunuş geri sarılamaz — çift dokunuş penceresi kadar
-      // ERTELENİR (board_zoom.dart, direk 2): pencere içinde ikinci dokunuş
-      // gelirse pencere hiç açılmaz, zoom değişir. ~300 ms'lik modal
-      // gecikmesi algılanamaz (taş koymanın aksine).
-      _zoom.recordTapEffect(const ZoomTapDeferredModal());
-      _zoom.deferModal(() => unawaited(_editPlacedWild(r, c)));
+      final choice = await showWildLetterSheet(context, editing: true);
+      if (choice == null) return;
+      if (choice.recallRequested) {
+        controller.dispatch(RecallCellAction(r: r, c: c));
+      } else if (choice.letter != null) {
+        controller.dispatch(
+            SetWildLetterAction(r: r, c: c, wildLetter: choice.letter!));
+      }
     } else {
-      final priorSelection = state.selectedTile;
       controller.dispatch(RecallCellAction(r: r, c: c));
-      _zoom.recordTapEffect(ZoomTapRecalled(r, c,
-          wildLetter: null, priorSelection: priorSelection));
-    }
-  }
-
-  /// Ertelenmiş joker düzenleme penceresi (`_tapPlacedTile` wild dalı).
-  Future<void> _editPlacedWild(int r, int c) async {
-    if (!mounted || !_canAct) return;
-    // Erteleme penceresi içinde taş başka bir jestle gitmiş olabilir.
-    final t = state.placed[cellKey(r, c)];
-    if (t == null || !t.wild) return;
-    final choice = await showWildLetterSheet(context, editing: true);
-    if (choice == null) return;
-    if (choice.recallRequested) {
-      controller.dispatch(RecallCellAction(r: r, c: c));
-    } else if (choice.letter != null) {
-      controller.dispatch(
-          SetWildLetterAction(r: r, c: c, wildLetter: choice.letter!));
     }
   }
 
@@ -403,13 +391,15 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   Future<void> _handleCellTap(int r, int c, Offset global) async {
     final k = cellKey(r, c);
     // ── Çift dokunuşla zoom (1.0.5, board_zoom.dart) ────────────────────
-    // Kapsam: boş kareler + taslak taşlar. Onaylı taşlar DIŞARIDA (anlam
-    // penceresi anında kalmalı) ve bir çiftin yarısı da olamazlar.
+    // Dokunuşun işleminden ÖNCE sorulur: bir çiftin İKİNCİSİYSE işlem
+    // yutulur ve zoom değişir — ilk dokunuşun yaptığı iş (koyulan taş
+    // dahil) OLDUĞU GİBİ KALIR (kullanıcı kararı, 1 Eylül 2026: "taşı geri
+    // almadan, koyduğu yerde bırakarak zoomlamak lazım"). Çift yalnızca
+    // BOŞ kareye dokunuşla başlar; taşa dokunuşlar zinciri kırar (taslak
+    // taşınki `_tapPlacedTile`ın kendi içinde, onaylınınki burada).
     if (state.board[r][c] == null) {
       if (_registerZoomTap(global)) return;
-      // Varsayılan: no-op dokunuş (çift oluşturabilir, geri sarılacak işi
-      // yok). İş yapan dallar aşağıda kendi etkilerini üzerine yazar.
-      _zoom.recordTapEffect(const ZoomTapNone());
+      if (state.placed[k] == null) _zoom.registerPairableTap(global);
     } else {
       _zoom.markUnpairableTap();
     }
@@ -493,51 +483,25 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         : null;
     if (sel != null && sel.letter == '?') {
       // Joker: harf seçilene kadar taş konmaz (web pendingWild akışı).
-      // Sayfa MODAL açtığından geri sarılamaz → çift dokunuş penceresi
-      // kadar ertelenir (board_zoom.dart). rackIndex ŞİMDİ yakalanıyor:
-      // pencere içinde seçim değişse bile sayfa DOKUNULAN jokeri koyar.
-      final jokerIdx = selIdx!;
-      _zoom.recordTapEffect(const ZoomTapDeferredModal());
-      _zoom.deferModal(() => unawaited(_placeWildDeferred(r, c, jokerIdx)));
+      // Zoom'la İLİŞKİSİ YOK (kullanıcı kararı, 1 Eylül 2026): pencere
+      // eskisi gibi ANINDA açılır — pencere açıkken gelen ikinci dokunuş
+      // tahtaya değil pencereye/perdeye düşer. Modal açıldı → zincir kır.
+      _zoom.markUnpairableTap();
+      final choice = await showWildLetterSheet(context);
+      if (choice?.letter == null) return;
+      controller
+          .dispatch(PlaceTileAction(r: r, c: c, wildLetter: choice!.letter));
       return;
     }
     controller.dispatch(PlaceTileAction(r: r, c: c));
-    if (selIdx != null) {
-      // Yerleştirme gerçekleşti (hücre boş + geçerli seçim): çift dokunuş
-      // gelirse geri sarılabilsin. selIdx null'ken dispatch yalnızca
-      // "Önce bir harf seç." mesajı üretir — o, yukarıdaki ZoomTapNone.
-      _zoom.recordTapEffect(ZoomTapPlaced(r, c, priorSelection: selIdx));
-    }
-  }
-
-  /// Ertelenmiş joker YERLEŞTİRME penceresi (`_handleCellTap` joker dalı).
-  Future<void> _placeWildDeferred(int r, int c, int rackIndex) async {
-    if (!mounted || !_canAct) return;
-    final me = state.players[state.current];
-    if (rackIndex < 0 || rackIndex >= me.rack.length) return;
-    if (me.rack[rackIndex].letter != '?') return; // raf bu arada değişti
-    if (state.board[r][c] != null || state.placed.containsKey(cellKey(r, c))) {
-      return; // hücre bu arada doldu
-    }
-    final choice = await showWildLetterSheet(context);
-    if (choice?.letter == null) return;
-    controller.dispatch(PlaceTileAction(
-        r: r, c: c, wildLetter: choice!.letter, rackIndex: rackIndex));
   }
 
   /// Çift dokunuş kontrolü — `true` dönerse dokunuşun kendi işlemi
-  /// YUTULMALI: ya pan artığıydı ya da bir çiftin ikincisi (zoom değişti,
-  /// ilk dokunuşun etkisi geri sarıldı — "çift dokunuş tahta durumunu
-  /// değiştirmez" garantisi).
+  /// YUTULMALI: ya pan artığıydı ya da bir çiftin ikincisi (zoom değişti;
+  /// ilk dokunuşun yaptığı iş — koyulan taş dahil — OLDUĞU GİBİ KALIR).
   bool _registerZoomTap(Offset global) {
     if (clock.now().isBefore(_swallowTapsUntil)) return true;
-    if (!_zoom.registerTap(global)) return false;
-    final undo = _zoom.takePendingUndo();
-    if (undo != null) {
-      applyZoomTapUndo(undo,
-          dispatch: controller.dispatch,
-          rack: () => state.players[state.current].rack);
-    }
+    if (!_zoom.tryCompletePair(global)) return false;
     _toggleZoomAt(global);
     return true;
   }
@@ -789,8 +753,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           ? ToggleSwapTileAction(s.index)
           : SelectTileAction(s.index));
     } else if (s is _PlacedSource) {
-      // Taslak taşlar zoom kapsamında: bu dokunuş bir çiftin ikincisiyse
-      // geri alma YUTULUR, ilkinin etkisi geri sarılır, zoom değişir.
+      // Bu dokunuş bir çiftin İKİNCİSİYSE geri alma YUTULUR ve zoom
+      // değişir — ilk dokunuş taşı KOYDUYSA parmağın altındaki hücre artık
+      // boş değildir; ikinci vuruş o taşı geri almasın (kullanıcı kararı:
+      // taş koyduğu yerde kalır). Çift değilse normal geri alma.
       if (_registerZoomTap(globalPos)) return;
       await _tapPlacedTile(s.r, s.c, s.tile);
     }

@@ -75,7 +75,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 |---|---|---|
 | **Sayaç** | 12 tester × 14 gün | ⏳ işliyor, aksiyon yok · *Android developer verification* ✅ **BİTTİ** (Console'dan doğrulandı 31 Ağustos: `com.kelimeki.kelimeki` Registered, 3 anahtar, Identity dolu) |
 | **Console (elle)** | — | ✅ **KAPANDI** (bu satır 31 Ağustos'a kadar bayat kaldı; ayrıntı aşağıda) |
-| **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) · **+ #10 hata hız sınırı** (1 Eylül'de eklendi) | ✅ **1.0.4 (467) hazır**, yükleme kullanıcıda |
+| **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) · **+ #10 hata hız sınırı** (1 Eylül'de eklendi) | ✅ **1.0.4 (467) Play'e YÜKLENDİ, incelemede** (1 Eylül 2026) |
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); kalanlar bekliyor |
 | **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) | ⬜ |
 | **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
@@ -108,18 +108,24 @@ kapalı testteki "kareleri tutturamıyorum" şikâyetinin çözümü). Karar/öl
 § 24 · backlog kaydı kapatıldı (`docs/decisions/product-backlog.md`).
 
 `appVersion` + `pubspec` birlikte 1.0.4 → 1.0.5 yapıldı (aynı dalda).
-13 yeni test (`board_zoom_test.dart`), tam takım 680 yeşil.
 
 **Kapılar, SIRAYLA — kullanıcı kararı:** *"Bunu apk ile test edip sorunsuz
 olduğundan emin olmadan aab yapılmayacak."*
 
-1. ⏳ **467 (1.0.4) Play'e yüklenmeden bu dal merge EDİLMEZ** ("Yüklenene
-   kadar duruyoruz") — merge, `mobile-latest`'teki 1.0.4 paketini 1.0.5'le
-   ezer ve 1.0.4'ün "yüklenmemiş sürüm her merge'i toplar" dersi aynen
-   tekrarlanır.
-2. ⬜ Merge → CI yeni `.apk` + `.aab` üretir → kullanıcı **`.apk`'yı
-   cihazda** § 24 listesiyle dener.
+1. ✅ **467 (1.0.4) Play'e yüklendi** (1 Eylül 2026, incelemede) — merge
+   artık `mobile-latest`'teki yüklenmemiş paketi ezme riski taşımıyor.
+2. ⬜ Merge (kullanıcı onayıyla) → CI yeni `.apk` + `.aab` üretir →
+   kullanıcı **`.apk`'yı cihazda** § 24 listesiyle dener.
 3. ⬜ Ancak onaydan sonra `.aab` Play'e gider.
+
+**1 Eylül 2026, ikinci tur — spec kullanıcı düzeltmesiyle SADELEŞTİ:**
+ilk sürümün "çift dokunuş ilk dokunuşun etkisini geri sarar" ve "joker
+penceresi ertelenir" mekanizmaları kullanıcı tarafından reddedildi
+(*"taşı geri almadan, koyduğu yerde bırakarak zoomlamak lazım"* / *"joker
+tablosunun zoom olayıyla ne ilgisi var"*) ve silindi — artık çiftin
+İKİNCİSİ yutulur, İLKİNİN işi kalır; joker ANINDA açılır ve
+`game_screen_test.dart` origin/main ile bayt bayt aynı. 14 yeni test,
+tam takım 681 yeşil. Ayrıntı: Parça 175.
 
 ### 🚀 1.0.4 SÜRÜM TURU — 31 Ağustos 2026
 

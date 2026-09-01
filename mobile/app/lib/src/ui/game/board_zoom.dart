@@ -15,18 +15,24 @@
 //    bunu kanıtlıyor. Tahtanın dış çerçevesi/kartı sabit; taşan içerik
 //    `ClipRect` ile kırpılır.
 //
-// 2. **Tek dokunuşlar ANINDA çalışır, çift dokunuş İLKİNİ GERİ SARAR.**
-//    Flutter'ın `onDoubleTap`'i kullanılMIYOR: aynı hedefe takılınca her tek
-//    dokunuşa ~300 ms bekleme ekler — bu projenin en çok savaştığı şey tam
-//    da dokunuş hissi. Bunun yerine ilk dokunuş normal işini yapar (taş
-//    konur, kullanıcı görür); pencere içinde ikincisi gelirse ikincisinin
-//    hücre işlemi YUTULUR, ilkinin yaptığı iş GERİ ALINIR (`ZoomTapEffect`)
-//    ve zoom açılır/kapanır. Net garanti: çift dokunuş tahta durumunu
-//    DEĞİŞTİRMEZ. Görünür bedel: harf seçiliyken çift dokunuşta taş ~250
-//    ms'liğine görünüp kaybolur — veri kaybı değil, kabul edilmiş titreme.
-//    İstisna: MODAL açan dokunuşlar (joker harf seçimi) geri sarılamaz —
-//    onlar pencere süresi kadar ERTELENİR (`deferModal`); bir modalın ~300
-//    ms geç açılması algılanamaz, taş koymanın aksine.
+// 2. **Tek dokunuşlar ANINDA ve AYNEN çalışır; ilk dokunuşun yaptığı iş
+//    KALIR.** Flutter'ın `onDoubleTap`'i kullanılMIYOR: aynı hedefe
+//    takılınca her tek dokunuşa ~300 ms bekleme ekler — bu projenin en çok
+//    savaştığı şey tam da dokunuş hissi. Bunun yerine ilk dokunuş normal
+//    işini yapar (harf seçiliyse taş KONUR ve KONDUĞU YERDE KALIR —
+//    kullanıcı kararı, 1 Eylül 2026: *"taşı geri almadan, koyduğu yerde
+//    bırakarak zoomlamak lazım"*); pencere içinde ikincisi gelirse YALNIZCA
+//    ikincisinin hücre işlemi yutulur ve zoom açılır/kapanır. İlk sürümdeki
+//    "ilkini geri sar" (ZoomTapEffect) mekanizması bu kararla SİLİNDİ —
+//    geri sarma hem gereksizdi hem de kullanıcının koyduğu taşı yutuyordu.
+//    Çift, yalnızca BOŞ KAREYE yapılan bir dokunuşla başlar (aşağıdaki
+//    registerPairableTap çağrı yerleri); taslak taşa dokunuş (geri alma)
+//    ve onaylı taşa dokunuş (anlam penceresi) çift BAŞLATMAZ ama İKİNCİ
+//    dokunuş olarak yutulabilir — ilk dokunuş taşı koyduysa parmağın
+//    altındaki hücre artık boş değildir, ikinci vuruş o taşı GERİ ALMASIN.
+//    Joker akışının zoom'la HİÇBİR İLİŞKİSİ YOK (kullanıcı, aynı gün):
+//    harf seçim penceresi eskisi gibi ANINDA açılır; pencere açıkken
+//    gelen ikinci dokunuş zaten tahtaya değil pencereye/perdeye düşer.
 //
 // 3. **Pan, jest arenasına GİRMEZ.** Taş sürükleme ham `Listener` +
 //    elle eşik deseniyle çalışıyor (web setPointerCapture eşleniği) ve pan
@@ -39,11 +45,8 @@
 //
 // Web'de karşılığı YOK — bilinçli port farkı (IntroScreen gibi; karar
 // 1 Eylül 2026, kayıt: docs/decisions/product-backlog.md).
-import 'dart:async';
-
 import 'package:clock/clock.dart';
 import 'package:flutter/widgets.dart';
-import 'package:kelimeki_core/kelimeki_core.dart';
 
 /// Zoom ölçeği. 2.0 bilinçli: 420 px ekranda hücre ~24 px → ~48 px, yani
 /// projenin kendi 48 dp dokunma hedefi kuralı (24 Ağustos 2026 turu) ve
@@ -52,89 +55,15 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 const double kBoardZoomScale = 2.0;
 
 /// Çift dokunuş penceresi/yarıçapı. 300 ms Flutter'ın kDoubleTapTimeout'una,
-/// 40 px hücre boyutunun üstünde bir parmak toleransına denk geliyor.
+/// 40 px hücre boyutunun üstünde bir parmak toleransına denk geliyor —
+/// yarıçap özellikle "ilk dokunuş taşı koydu, ikinci vuruş parmak
+/// titremesiyle bir hücre yana düştü" durumunu da aynı çiftin parçası sayar.
 const Duration kDoubleTapWindow = Duration(milliseconds: 300);
 const double kDoubleTapRadius = 40.0;
 
 /// Zoom aç/kapa animasyonu. Pan SIRASINDA animasyon YOK (`animate=false`) —
 /// parmak gecikmesiz takip edilmeli.
 const Duration kZoomAnimDuration = Duration(milliseconds: 180);
-
-/// Bir tahta dokunuşunun GERİ SARILABİLİR kaydı — çift dokunuş algılanınca
-/// ilk dokunuşun etkisi bununla geri alınır (`applyZoomTapUndo`).
-sealed class ZoomTapEffect {
-  const ZoomTapEffect();
-}
-
-/// Dokunuş hiçbir iş yapmadı (boş kareye seçimsiz dokunuş vb.).
-class ZoomTapNone extends ZoomTapEffect {
-  const ZoomTapNone();
-}
-
-/// Dokunuş rafın [priorSelection] indeksindeki taşı (r,c)'ye KOYDU.
-/// Geri sarma: RecallCell (taş rafın SONUNA döner — reducer davranışı,
-/// `engine/reducer.dart` RecallCellAction) + seçimi geri kur.
-class ZoomTapPlaced extends ZoomTapEffect {
-  final int r, c;
-  final int priorSelection;
-  const ZoomTapPlaced(this.r, this.c, {required this.priorSelection});
-}
-
-/// Dokunuş (r,c)'deki taslak taşı GERİ ALDI (doğrudan ya da ıskalama
-/// kurtarmasıyla). Geri sarma: taş şu an rafın sonunda → aynı hücreye
-/// aynı [wildLetter] ile yeniden konur; önceki seçim varsa geri kurulur.
-class ZoomTapRecalled extends ZoomTapEffect {
-  final int r, c;
-  final String? wildLetter;
-  final int? priorSelection;
-  const ZoomTapRecalled(this.r, this.c,
-      {required this.wildLetter, required this.priorSelection});
-}
-
-/// Dokunuşun işi bir MODALDİ ve modal ertelendi (`deferModal`) — geri
-/// sarılacak bir şey yok; çift dokunuş gelirse modal hiç açılmaz.
-class ZoomTapDeferredModal extends ZoomTapEffect {
-  const ZoomTapDeferredModal();
-}
-
-/// Çift dokunuşla EŞLEŞEMEZ dokunuş (onaylı taş, raf, buton) — bir sonraki
-/// dokunuş bununla çift oluşturamaz. Kapsam kararı (1 Eylül 2026): onaylı
-/// taşlar zoom dışında, çünkü anlam penceresi ANINDA kalmalı.
-class ZoomTapUnpairable extends ZoomTapEffect {
-  const ZoomTapUnpairable();
-}
-
-/// Geri sarma eylemlerini üretir ve [dispatch] ile uygular. İki ekran da
-/// bunu kullanır — eylem mantığı TEK yerde dursun diye.
-///
-/// [rack]: dispatch SONRASI güncel rafı okumalı (RecallCell taşı rafın
-/// sonuna eklediğinden geri gelen taşın indeksi `rack().length - 1`).
-void applyZoomTapUndo(
-  ZoomTapEffect effect, {
-  required void Function(GameAction action) dispatch,
-  required List<Tile> Function() rack,
-}) {
-  switch (effect) {
-    case ZoomTapPlaced(:final r, :final c, :final priorSelection):
-      dispatch(RecallCellAction(r: r, c: c));
-      // Geri gelen taş rafın sonunda; seçim geri kurulur ki kullanıcı
-      // zoom'lu tahtada kaldığı yerden devam edebilsin. (Yan etki: raf
-      // sırası değişir — kozmetik; rafta zaten Karıştır var.)
-      dispatch(SelectTileAction(rack().length - 1));
-      // priorSelection bilerek KULLANILMIYOR: taş artık sondadır, eski
-      // indeks başka bir taşı gösterir. Alan, kaydın eksiksizliği için
-      // duruyor (testler "seçim vardı" bilgisine bakıyor).
-      assert(priorSelection >= 0);
-    case ZoomTapRecalled(:final r, :final c, :final wildLetter, :final priorSelection):
-      dispatch(PlaceTileAction(
-          r: r, c: c, rackIndex: rack().length - 1, wildLetter: wildLetter));
-      if (priorSelection != null) dispatch(SelectTileAction(priorSelection));
-    case ZoomTapNone():
-    case ZoomTapDeferredModal():
-    case ZoomTapUnpairable():
-      break;
-  }
-}
 
 /// Aktif tahta kaydırması (pan) — yalnızca zoom açıkken kurulur. Ekranlar
 /// scroll kilidini buna bağladığından atamalar setState içinde yapılır
@@ -145,7 +74,7 @@ class BoardPanRef {
   BoardPanRef(this.start);
 }
 
-/// Tahta yakınlaştırma durumu + çift dokunuş algılayıcısı + modal ertelemesi.
+/// Tahta yakınlaştırma durumu + çift dokunuş algılayıcısı.
 ///
 /// `ChangeNotifier`: pan her karede yalnızca `BoardWidget`'ın Transform
 /// sarmalayıcısını yeniden kurar (`AnimatedBuilder` + önceden inşa edilmiş
@@ -208,98 +137,58 @@ class BoardZoomController extends ChangeNotifier {
     _offset = Offset.zero;
     _animate = true;
     _resetTapTracking();
-    cancelDeferredModal();
     notifyListeners();
   }
 
   // ── Çift dokunuş algılayıcısı ──────────────────────────────────────────
+  //
+  // Sözleşme (çağıranlar: iki oyun ekranının hücre/taslak dokunuş yolları):
+  //
+  //   1. Her tahta dokunuşunun BAŞINDA `tryCompletePair(global)` sorulur.
+  //      `true` → bu dokunuş bir çiftin İKİNCİSİ: hücre işlemi YUTULUR,
+  //      zoom aç/kapa yapılır, başka hiçbir şey olmaz. İlk dokunuşun
+  //      yaptığı iş (koyulan taş dahil) OLDUĞU GİBİ KALIR.
+  //   2. `false` ise dokunuş normal işini yapar; ardından:
+  //      - BOŞ kareye düşen dokunuş (bir taş koymuş olsa da) →
+  //        `registerPairableTap(global)`: sonraki dokunuş bununla çift
+  //        oluşturabilir.
+  //      - Diğer her şey (taslak/onaylı taşa dokunuş, raf, gerçek
+  //        sürükleme, pan) → `markUnpairableTap()`: çift zinciri kırılır.
+  //
+  // Saat `clock.now()` — `DateTime.now()` DEĞİL: flutter test'in sahte
+  // saati (`tester.pump`) DateTime.now'u İLERLETMEZ; ilk sürüm bunu gerçek
+  // bir test düşüşüyle öğrendi (pubspec'teki `clock` gerekçesi).
 
   DateTime? _lastTapAt;
   Offset? _lastTapPos;
-  ZoomTapEffect _lastEffect = const ZoomTapUnpairable();
-  ZoomTapEffect? _pendingUndo;
 
-  /// Her TAHTA dokunuşunda, dokunuşun işi YAPILMADAN önce çağrılır.
-  /// `true` → bu dokunuş bir çiftin İKİNCİSİ: çağıran kendi hücre işlemini
-  /// YUTMALI, [takePendingUndo] ile ilkinin etkisini geri sarmalı ve zoom'u
-  /// değiştirmelidir. Bekleyen ertelenmiş modal her yeni dokunuşta iptal
-  /// olur (niyet değişti).
-  bool registerTap(Offset globalPos) {
-    final now = clock.now();
-    cancelDeferredModal();
+  /// Bu dokunuş bekleyen bir çift-başlangıcını tamamlıyor mu? `true` ise
+  /// çift TÜKETİLİR (üçüncü dokunuş yeni bir zincir başlatır).
+  bool tryCompletePair(Offset globalPos) {
     final last = _lastTapAt;
     final pos = _lastTapPos;
     final pair = last != null &&
         pos != null &&
-        _lastEffect is! ZoomTapUnpairable &&
-        now.difference(last) <= kDoubleTapWindow &&
+        clock.now().difference(last) <= kDoubleTapWindow &&
         (globalPos - pos).distance <= kDoubleTapRadius;
-    if (pair) {
-      _pendingUndo = _lastEffect;
-      _resetTapTracking();
-      return true;
-    }
-    _lastTapAt = now;
-    _lastTapPos = globalPos;
-    // Etki, iş yapıldıktan sonra `recordTapEffect` ile yazılır; o âna kadar
-    // muhafazakâr davran — bilinmeyen dokunuş çift oluşturmasın.
-    _lastEffect = const ZoomTapUnpairable();
-    return false;
+    if (pair) _resetTapTracking();
+    return pair;
   }
 
-  /// Dokunuşun işi yapıldıktan sonra etkisi kaydedilir (geri sarma verisi).
-  void recordTapEffect(ZoomTapEffect effect) {
-    _lastEffect = effect;
-  }
-
-  /// Çift algılandığında ilk dokunuşun etkisi (bir kez okunur).
-  ZoomTapEffect? takePendingUndo() {
-    final u = _pendingUndo;
-    _pendingUndo = null;
-    return u;
-  }
-
-  /// Tahta DIŞI bir etkileşim (raf, buton, onaylı taş) — sonraki dokunuş
-  /// bununla çift oluşturamaz.
-  void markUnpairableTap() {
+  /// Boş kareye düşen dokunuş — sonraki dokunuş bununla çift oluşturabilir.
+  void registerPairableTap(Offset globalPos) {
     _lastTapAt = clock.now();
-    _lastTapPos = null;
-    _lastEffect = const ZoomTapUnpairable();
-    cancelDeferredModal();
+    _lastTapPos = globalPos;
+  }
+
+  /// Çift oluşturamayan etkileşim (taşa dokunuş, raf, sürükleme, pan) —
+  /// zinciri kırar.
+  void markUnpairableTap() {
+    _resetTapTracking();
   }
 
   void _resetTapTracking() {
     _lastTapAt = null;
     _lastTapPos = null;
-    _lastEffect = const ZoomTapUnpairable();
-  }
-
-  // ── Modal ertelemesi (joker harf seçimi) ──────────────────────────────
-
-  Timer? _modalTimer;
-
-  /// Modal açan dokunuş geri sarılamaz — pencere süresi kadar ertelenir.
-  /// Çift dokunuş (ya da HERHANGİ yeni tahta dokunuşu) gelirse modal hiç
-  /// açılmaz. Bir modalın ~300 ms geç açılması algılanamaz.
-  void deferModal(VoidCallback open) {
-    _modalTimer?.cancel();
-    _modalTimer = Timer(
-      kDoubleTapWindow + const Duration(milliseconds: 30),
-      () {
-        _modalTimer = null;
-        open();
-      },
-    );
-  }
-
-  void cancelDeferredModal() {
-    _modalTimer?.cancel();
-    _modalTimer = null;
-  }
-
-  @override
-  void dispose() {
-    cancelDeferredModal();
-    super.dispose();
   }
 }

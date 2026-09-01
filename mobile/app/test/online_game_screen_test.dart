@@ -587,6 +587,9 @@ void main() {
       expect(find.textContaining('Bağlantı yok.'), findsOneWidget);
       expect(find.text('Oyna tuşuyla kelimeyi onayla.'), findsNothing);
 
+      // Koymadan 300 ms sonra: aynı noktaya hemen ikinci dokunuş artık
+      // ÇİFT DOKUNUŞTUR (zoom, board_zoom.dart) ve yutulur.
+      await tester.pump(const Duration(milliseconds: 350));
       // Taslağa dokunulunca hata geçmişe ait olur (web `placedSignature`).
       await tester.tap(boardCell(0, 5)); // taşı geri al
       await tester.pumpAndSettle();
