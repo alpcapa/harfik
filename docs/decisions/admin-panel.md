@@ -328,3 +328,63 @@ notunda da yazılı.
     - **`PrivacyModal`/`legal_modals.dart` (§6, Çerezler ve Yerel Depolama) güncellendi** — cihaz/OS pinginin artık girişli ziyaretlerde de (yalnızca anonim `anon_id` ile, hiçbir hesap kimliğiyle eşleştirilmeden) atıldığı eklendi; tarih "24 Ağustos 2026"ya bir kez daha çekildi (`legal_text_test.dart` port ↔ web tarih eşitliğini zorluyor).
     - **Doğrulama sınırı:** bu ortamdan gerçek bir girişli oturumla `device_visits`e insert atılıp Realtime/RLS uçtan uca test edilemedi — yalnızca migration production'a uygulanıp `execute_sql` ile RLS/grant/fonksiyon tanımı doğrulandı (bkz. "Migration'lar" bölümündeki zorunlu akış); girişli bir hesapla gerçek bir ziyaretin `device_visits`e düştüğü kullanıcıdan bekleniyor.
 
+## Kaynak Hunisi: "Bitiren Cihaz" (`finishers`) — 31 Ağustos 2026
+
+Kullanıcı 28 Ağustos 2026'da sordu: *"Bitirenler kaç unique kişi? Ya da hepsi
+farklı kişi mi?"* → *"Evet işlere ekle"*. Huninin "Başlayan" tarafında
+`starters` (benzersiz cihaz) vardı, "Biten" tarafında karşılığı YOKTU.
+
+**Neden yoktu — bir eksiklik değil, yazılı bir gizlilik kararıydı**
+(`20260822043039_game_finishes_utm_source`): `game_finishes` `user_id`
+TAŞIYOR ve yanına cihaz kodunu koymak Gizlilik Politikası 6. bölümdeki
+*"anonim kod hesabınızla ASLA eşleştirilmez"* taahhüdünü bozardı.
+`game_starts`te `anon_id` bulunabilmesinin sebebi tam tersi: o tablo hesap
+kimliği hiç taşımıyor, yalnızca bir `is_guest` bayrağı var.
+
+**Çözüm taahhüdü bozmuyor:** `anon_id` YALNIZCA `user_id` NULL iken yazılır.
+İkisi aynı satırda hiçbir zaman bulunmadığından cihaz↔hesap eşlemesi doğmaz.
+Huninin misafir sütunları zaten `user_id is null` filtreliyor, yani ölçü tam
+da o satırlar için üretiliyor.
+
+**İKİ KATMANLI zorlama, ve ikincisi bu projenin kendi dersi.** Backlog
+"kısıt SQL'de zorlanmalı, yorumla değil" diyordu; uygulanan CHECK **artı**
+bir BEFORE INSERT trigger:
+
+| Katman | Ne yapar | Neden |
+|---|---|---|
+| Trigger | `user_id` doluyken `anon_id`i NULL'a çeker | Tek başına CHECK, ileride bir istemci ikisini birden yollarsa INSERT'i reddeder ve **bitiş telemetrisini kaybettirir** — gizliliği korurken ölçümü öldürür. Bu, kayıtlı bir hata sınıfı (`platform.dart`: *"bir telemetri alanı yüzünden oyun kaydı kaybolur"*) |
+| CHECK | `anon_id is null or user_id is null` | Değişmezi doğrudan SQL'e karşı da kanıtlar; yoruma bırakılmaz |
+
+Aynı "tek savunma hattı olmamalı" deseni `client_errors`ın `_mask_route`
+trigger'ında zaten var.
+
+**Canlıda ölçüldü (rollback'li, üretim tablosuna satır bırakmadan):** üyeli
+bitişte `anon_id` → NULL, misafir bitişte korunuyor.
+
+**Panelde: "Biten" yüzdesinin tabanı değişti.** Artık `finishers / starters`
+— cihaz bölü cihaz. Oyun adedi üzerinden hesaplanan eski oran tek bir cihazın
+açtığı onlarca oyunla çarpılabiliyordu: ölçüldü, 117 oyunun 64 cihazdan
+geldiği bir pencerede **İKİ cihaz tek başına 47 oyun** başlatmıştı.
+
+⚠ **"0%" DEĞİL "—"**. Kolon yeni ve geriye dönük doldurulamaz; eski
+bitişlerde (ve damgalamayan istemcide — bugün Flutter portu) `finishers` 0
+kalır. Orada "0%" yazmak *"hiçbir cihaz bitirmedi"* der, oysa gerçek *"cihaz
+bilgisi yok"*. Bu yüzden `completionCell` ayrı bir fonksiyon: biten VAR ama
+bitiren cihaz YOKSA "—". İkisi de 0 ise oran gerçekten 0'dır ve öyle yazılır.
+(Uygulandığı gün canlıda TÜM satırlarda `finishers = 0`di — yani bu kural
+olmasaydı panel ilk günden yanlış konuşurdu.)
+
+**Gizlilik metni dörde çıktı.** 6. bölüm anonim kodun ÜÇ durumunu sayıyordu;
+dördüncüsü eklendi (YZ oyununu bitirme, yalnızca girişsizken) ve "Bu üç
+kaydın hiçbirinde hesap kimliğiniz YER ALMAZ" cümlesi *"Bu dört kaydın
+hiçbirinde anonim kod ile hesap kimliğiniz BİR ARADA YER ALMAZ"* oldu — daha
+dar ve daha doğru bir iddia. Web (`LegalContent.tsx`) + port
+(`legal_modals.dart`) aynı PR'da, "Son güncelleme" tarihi ikisinde de
+31 Ağustos 2026 (`legal_text_test.dart` bunu zorluyor).
+
+**Port BUGÜN göndermiyor:** `anon_id`/`?ref=` damgalama katmanı porta hiç
+girmedi (`games_api.dart`ın kendi notu), yani port satırları `finishes`e
+girer `finishers`a girmez. Pratikte sapma yaratmıyor — port `utm_source`u da
+null gönderdiğinden o satırlar zaten 'bilinmiyor' kaynağında toplanıyor ve
+reklam kampanyalarının baktığı satırlarda yalnızca web var. Port damgalamayı
+eklerse burası da güncellenmeli.

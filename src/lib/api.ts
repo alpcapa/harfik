@@ -46,6 +46,7 @@ import type {
   AdminRetentionCell,
   AdminUserActivityPoint,
   BoardSnapshotTile,
+  ClientPlatform,
   FeedbackSource,
   FriendRelation,
   FriendRow,
@@ -74,7 +75,7 @@ import type {
 import { getLocalMeaning } from '../data/meanings';
 import { CLIENT_PLATFORM } from '../utils/platform';
 import { trCompare, trLower } from '../utils/turkish';
-import { getStoredUtmSource } from '../utils/visitTracking';
+import { getOrCreateAnonId, getStoredUtmSource } from '../utils/visitTracking';
 import { isNetworkError } from '../utils/offlineNotice';
 import { reportClientError } from '../utils/errorReporting';
 import type { GameState, HistoryEntry, Tile } from '../game/types';
@@ -245,6 +246,16 @@ async function notifyLocalGameAbandoned(gameId: string, playerCount: number): Pr
  * ilk-temasta donduğundan (`captureUtmSource`) çağrı anında okumak doğru.
  * `?ref=` hiç yoksa açıkça `'direkt'` yazılır — `logGameStart`/`signUp` ile
  * AYNI sözleşme; üçü ayrışırsa Kaynak Hunisi'nin adımları kıyaslanamaz olur.
+ *
+ * `anon_id` (31 Ağustos 2026) YALNIZCA `user_id` NULL iken yazılır — huninin
+ * "Bitiren Cihaz" (`finishers`) sayacı için. Bu bir stil tercihi DEĞİL, bir
+ * GİZLİLİK DEĞİŞMEZİ: `PrivacyModal` bölüm 6 anonim cihaz kodu için
+ * "hesabınızla ASLA eşleştirilmez" diyor ve ikisini aynı satıra koymak tam
+ * olarak o eşleştirmeyi yapardı. Sunucu bunu iki katmanda zorluyor (BEFORE
+ * INSERT trigger + CHECK), yani burada bir hata kaydı DÜŞÜRMEZ — ama tek
+ * savunma hattı sunucu OLMAMALI, `normalizeRoute`/`_mask_route` ikilisiyle
+ * aynı duruş. `utm_source` gibi bu da ÇAĞIRANDAN değil buradan okunuyor:
+ * fonksiyonun üç çağrı yeri var, birini atlamak sessizce eksik sayardı.
  */
 export async function logGameFinish(
   playerCount: number,
@@ -266,6 +277,7 @@ export async function logGameFinish(
     .from('game_finishes')
     .insert({
       user_id: resolvedUserId,
+      anon_id: resolvedUserId ? null : getOrCreateAnonId(),
       player_count: playerCount,
       duration_seconds: durationSeconds,
       multi_session: multiSession,
@@ -2201,9 +2213,19 @@ export async function fetchAdminActivationStats(): Promise<AdminActivationStats 
  * İstemci hata telemetrisinin gruplanmış dökümü (yalnızca admin — Hatalar
  * sekmesi, ROADMAP #3). Ayrıntılı sözleşme: `AdminClientErrorRow`.
  */
-export async function fetchAdminClientErrors(days = 7): Promise<AdminClientErrorRow[]> {
+export async function fetchAdminClientErrors(
+  days = 7,
+  platform: ClientPlatform | null = null,
+): Promise<AdminClientErrorRow[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase.rpc('admin_client_errors', { p_days: days });
+  // Platform elemesi SUNUCUDA (ROADMAP #11): satırlar (kind, message) ile
+  // gruplandığından ve `platforms` bir `string_agg` olduğundan, burada
+  // elemek `occurrences`/`devices` sayılarını öteki platformları da içerdiği
+  // hâlde bırakırdı — panelin bütün değeri o iki sayı.
+  const { data, error } = await supabase.rpc('admin_client_errors', {
+    p_days: days,
+    p_platform: platform,
+  });
   if (error) {
     // Admin panelindeki .catch(setError) zinciri buna güveniyor — hatayı
     // yutup boş dizi dönmek gerçek bir RPC/izin hatasını gizlerdi.

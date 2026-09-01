@@ -25,13 +25,27 @@ class _NetworkError implements Exception {
   String toString() => 'ClientException: Failed host lookup: kelimeki.com';
 }
 
+/// Üretim kaynağındaki `_windowMs` ile aynı olmak zorunda; web ile paritesini
+/// `error_rate_limit_parity_test.dart` zorluyor.
+const Duration _pencere = Duration(hours: 1);
+
 void main() {
   late _FakeSink sink;
+
+  /// Hız sınırı ZAMAN penceresine bağlı olduğundan saat sahte — testler bunu
+  /// elle ilerletiyor (portun `GamesRepo`'daki `now` enjeksiyonuyla aynı
+  /// desen). Gerçek `DateTime.now` ile "1 saat sonra" sınanamazdı.
+  late DateTime saat;
 
   setUp(() {
     errorReporter.resetForTests();
     sink = _FakeSink();
-    errorReporter.configure(sink: sink, anonId: Future.value('anon-1'));
+    saat = DateTime.utc(2026, 8, 31, 12);
+    errorReporter.configure(
+      sink: sink,
+      anonId: Future.value('anon-1'),
+      now: () => saat,
+    );
   });
 
   test('yapılandırılmamışken hiç göndermez', () async {
@@ -94,7 +108,7 @@ void main() {
     expect(errorReporter.route, kRootRouteName);
   });
 
-  test('aynı imza İKİNCİ kez gönderilmez', () async {
+  test('aynı imza pencere içinde İKİNCİ kez gönderilmez', () async {
     errorReporter.report(Exception('aynı hata'));
     await Future<void>.delayed(Duration.zero);
     errorReporter.report(Exception('aynı hata'));
@@ -102,12 +116,49 @@ void main() {
     expect(sink.sent, hasLength(1));
   });
 
-  test('oturum başına en fazla 10 kayıt (çökme döngüsü koruması)', () async {
+  test('aynı imza pencere GEÇİNCE yeniden gönderilir', () async {
+    // ROADMAP #10'un asıl derdi: app süreci günlerce yaşıyor ve eski hâlde
+    // tekrar eden bir hata süreç başına yalnızca BİR kez sayılıyordu.
+    errorReporter.report(Exception('aynı hata'));
+    await Future<void>.delayed(Duration.zero);
+    saat = saat.add(_pencere);
+    errorReporter.report(Exception('aynı hata'));
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.sent, hasLength(2));
+  });
+
+  test('pencere başına en fazla 10 kayıt (çökme döngüsü koruması)', () async {
     for (var i = 0; i < 25; i++) {
       errorReporter.report(Exception('hata $i'));
       await Future<void>.delayed(Duration.zero);
     }
     expect(sink.sent, hasLength(10));
+
+    // Pencere DOLMADAN açılmaz — koruma gevşemiş olmamalı.
+    saat = saat.add(_pencere - const Duration(milliseconds: 1));
+    errorReporter.report(Exception('pencere dolmadan'));
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.sent, hasLength(10));
+
+    // Pencere kayınca yeniden açılır.
+    saat = saat.add(const Duration(milliseconds: 1));
+    errorReporter.report(Exception('pencere kaydıktan sonra'));
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.sent, hasLength(11));
+  });
+
+  test('cihaz saati GERİYE alınınca kalıcı körlük olmaz', () async {
+    for (var i = 0; i < 10; i++) {
+      errorReporter.report(Exception('hata $i'));
+      await Future<void>.delayed(Duration.zero);
+    }
+    expect(sink.sent, hasLength(10));
+    // Damgalar artık "gelecekte"; eskime koşulu yalnızca `simdi - t` olsaydı
+    // bu cihaz penceresi bir daha hiç boşalmayacaktı.
+    saat = saat.subtract(_pencere * 5);
+    errorReporter.report(Exception('saat geriye alındı'));
+    await Future<void>.delayed(Duration.zero);
+    expect(sink.sent, hasLength(11));
   });
 
   test('OTOMATİK yakalamada ağ hatası ELENİR', () async {

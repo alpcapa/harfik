@@ -120,6 +120,27 @@ gerekenler.
 - [ ] **Devam eden oyuna DÖNMEK bir başlangıç DEĞİL.** Yarım bırakılmış bir
       oyunu "Devam Eden Oyun" satırından sürdür → "Başlayan" ARTMAMALI.
       Artıyorsa aynı oyun her oturum dönüşünde tekrar sayılıyor demektir.
+- [ ] **"Biten" yüzdesi artık CİHAZ oranı (31 Ağustos 2026).** MİSAFİRKEN bir
+      YZ oyununu BİTİR → `%` modunda "Biten" hücresi `bitiren cihaz /
+      başlatan cihaz` göstermeli. Aynı cihazda ikinci bir oyunu daha bitir →
+      sayı modunda "Biten" 2 olmalı ama yüzde DEĞİŞMEMELİ (cihaz hâlâ 1).
+      Yüzde de artıyorsa oran yine oyun adedinden hesaplanıyor demektir.
+- [ ] ⚠ **"Biten" dolu ama yüzdesi "—" ise bu DOĞRU davranış, hata değil.**
+      Cihaz kodu bitmiş tarafa 31 Ağustos 2026'da eklendi ve geriye dönük
+      doldurulamaz; o tarihten önceki bitişlerde cihaz bilgisi YOK. "0%"
+      yazmak "hiçbir cihaz bitirmedi" derdi. Aynısı mobil uygulamadan gelen
+      satırlar için de geçerli (port damgalamıyor, o satırlar zaten
+      "bilinmiyor" kaynağında). İkisi de 0 ise oran gerçekten 0'dır ve
+      "0.0%" yazar.
+- [ ] **CSV'de "Bitiren Cihaz" sütunu var** ve ham sayı veriyor; "Biten Oyun"
+      sütunundan küçük ya da ona eşit olmalı (büyükse bir şey yanlıştır).
+- [ ] **GİZLİLİK — girişliyken bitirilen oyunda cihaz kodu YAZILMAMALI.**
+      Giriş yapıp bir YZ oyunu bitir → `game_finishes` satırında `user_id`
+      dolu, `anon_id` NULL olmalı. Sunucu bunu iki katmanda zorluyor (BEFORE
+      INSERT trigger sessizce NULL'a çeker, CHECK kısıtı da değişmezi
+      kanıtlar), yani bu kontrol istemcinin yanlış davranışını değil
+      taahhüdün ayakta olduğunu sınıyor. Gizlilik metninin 6. bölümü tam
+      olarak bunu söylüyor.
 
 - [ ] **Tablo yükleniyor ve zaman filtresine bağlı.** Admin Paneli → Büyüme →
       Kullanıcı: "Kaynak Hunisi (Son N …)" başlığı üstteki granülerlik/periyot
@@ -342,6 +363,24 @@ YOK) ve okuma yalnızca admin'e açık.
       gözlem.
 - [ ] **Pencere seçici çalışıyor** (24 saat / 7 / 30 / 90 gün) ve seçim
       değişince liste yeniden yükleniyor.
+- [ ] **PLATFORM seçici çalışıyor** (31 Ağustos 2026, ROADMAP #11): Tüm
+      Platformlar / Web / iOS / Android / App (web). Seçim değişince liste
+      yeniden yükleniyor ve **sayılar da daralıyor** — eleme sunucuda,
+      gruplamadan ÖNCE yapılıyor. Somut kontrol: iki platformda birden
+      görülen bir satır bul ("Platform" sütununda virgülle iki değer yazar);
+      "Tüm Platformlar"daki **Kez/Cihaz** sayısı, tek platform seçilince
+      DÜŞMELİ. Aynı kalıyorsa eleme istemciye kaymış demektir ve sayılar
+      yanlıştır. (31 Ağustos'ta canlıda böyle bir satır vardı:
+      `[online_games_repo.load] AuthApiException…` — android+app-web'de
+      2 kez/2 cihaz, yalnız android'de 1/1.)
+- [ ] **CSV filtreyi izliyor:** bir platform seçiliyken CSV indir → yalnızca o
+      platformun satırları ve daraltılmış sayılar olmalı ("CSV ekranda
+      görüneni indirir" sözü).
+- [ ] ⚠ **Platformu boş olan kayıtlar** (yayınlanmayan masaüstü hedefleri)
+      bir platform seçiliyken görünmez; "Tüm Platformlar"da `?` olarak
+      durur. Listede olmayan bir platform değeri de aynı şekilde yalnızca
+      "Tüm Platformlar"da okunur — `client_errors.platform` üzerinde
+      BİLEREK kısıt yok.
 - [ ] **Hiç kayıt yoksa "Bu pencerede hata kaydı yok."** — boş bir liste
       değil, açık bir metin.
 - [ ] **Kartta "Kez" ve "Cihaz" AYRI AYRI okunuyor.** İkisi karıştırılırsa
@@ -353,7 +392,9 @@ YOK) ve okuma yalnızca admin'e açık.
       HAM görünüyorsa bu bir GİZLİLİK hatasıdır — `/davet/:token` ve
       `/game/:id` olmalı.
 - [ ] **CSV iniyor** ve örnek yığını da içeriyor.
-- [ ] **`?` popup'ı açılıyor** ve "Kez ≠ Cihaz" ayrımını anlatıyor.
+- [ ] **`?` popup'ı açılıyor**, "Kez ≠ Cihaz" ayrımını anlatıyor, hız
+      sınırını **saatte** 10 diye söylüyor (süreç ömrü DEĞİL) ve platform
+      filtresinin sayıları da daralttığını yazıyor.
 - [ ] **Admin OLMAYAN bir hesap bu sekmeyi hiç görmemeli** (Admin Paneli
       girişi zaten çıkmaz) — ayrıca doğrudan sorgulayan biri de satırları
       okuyamamalı (tabloda SELECT politikası YOK).
@@ -364,7 +405,10 @@ YOK) ve okuma yalnızca admin'e açık.
       { promise: Promise.reject(new Error('elle test')), reason: new
       Error('elle test') }))` çalıştır → panelde "elle test" belirmeli.
 - [ ] **Tekrar bastırma:** aynı hatayı arka arkaya iki kez tetikle — panelde
-      TEK satır olmalı (aynı oturumda ikinci kayıt gönderilmez).
+      TEK satır olmalı (aynı imza pencere başına bir kez gönderilir).
+      ⚠ 31 Ağustos 2026'da pencere SÜREÇ ÖMRÜNDEN son 1 saate taşındı
+      (ROADMAP #10): aynı hata bir saat sonra YENİDEN gönderilir, yani
+      "Kez" sayacının artması bir hata değil beklenen davranıştır.
 - [ ] **GÜRÜLTÜ ELENİYOR (23 Ağustos 2026, ilk gerçek veriden):** Siteyi
       **Instagram/Facebook uygulamasının içindeki tarayıcıdan** (Android)
       aç, biraz gez ve sekmeyi kapat → panelde

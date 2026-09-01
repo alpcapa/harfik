@@ -14,36 +14,6 @@ maddeleri, burası İKİ platformu birden ilgilendiren ve bilinçli olarak
 ertelenmiş ürün fikirleri. Bir madde yapılınca buradan silinip ilgili
 bölümün kendi tarihli notuna taşınır.
 
-- **`game_finishes.anon_id` — misafir bitişlerinde BENZERSİZ CİHAZ sayılamıyor
-  (28 Ağustos 2026, kullanıcı sordu: *"Bitirenler kaç unique kişi? Ya da hepsi
-  farklı kişi mi?"* → "Evet işlere ekle"):** Kaynak hunisinde Instagram satırı
-  bugün **1522 gelen / 9 üye / 117 başlayan / 41 biten** (dördü de canlı
-  veritabanında doğrulandı; oran 41÷117 = **%35.0**). Ama "başlayan" tarafında
-  `starters` (benzersiz cihaz) VAR — 117 oyunu **64 cihaz** açmış, üstelik
-  bunların İKİSİ tek başına 47 oyun başlatmış — bitmiş tarafta karşılığı YOK.
-  Yani "41 bitiş kaç kişiden geldi" sorusunun bugünkü dürüst cevabı
-  **2 ile 41 arası, bilinmiyor**; kampanya kararını doğrudan etkileyen bir
-  körlük.
-  - **Sebep bir eksiklik DEĞİL, yazılı bir gizlilik kararı**
-    (`20260822043039_game_finishes_utm_source.sql`): `game_finishes` `user_id`
-    TAŞIYOR, yanına anonim cihaz kodunu koymak `PrivacyModal` §6'daki *"anonim
-    cihaz kodunuz hesabınızla ASLA eşleştirilmez"* taahhüdünü bozardı.
-    `game_starts`'ta `anon_id` bulunabilmesinin sebebi tam tersi: o tablo hesap
-    kimliği hiç taşımıyor, yalnızca `is_guest` bayrağı var.
-  - **Taahhüdü bozmadan çözüm:** `anon_id` eklenir ama **YALNIZCA `user_id`
-    null iken yazılır** — ikisi aynı satırda hiçbir zaman bulunmadığından
-    cihaz↔hesap eşlemesi doğmaz, taahhüt aynen ayakta kalır. Huninin misafir
-    kolonları zaten `user_id is null` filtreliyor, yani ölçü tam da o satırlar
-    için üretilir. Kısıt SQL'de zorlanmalı (`check (anon_id is null or user_id
-    is null)`), yorumla değil.
-  - ⚠ **GERİYE DÖNÜK DOLDURULAMAZ** — `utm_source`'un kendisi, `games.platform`
-    ve `game_starts.utm_source` ile aynı sınıf. Bir sonraki reklam
-    harcamasından ÖNCE girmezse o kampanya da körde ölçülür.
-  - Dokunulacak yerler: migration + `admin_source_funnel` (yeni `finishers`
-    sütunu) + `AdminSourceFunnelRow`/CSV + `SourceFunnelTable`'ın "Biten"
-    yüzdesinin tabanı (`finishers/starters` gerçek cihaz-bazlı tamamlanma
-    oranı olur) + `PrivacyModal` kontrolü + `database.types.ts`.
-
 - **Hayalet taş tahtayla birlikte küçülmeli (24 Ağustos 2026, ölçüldü —
   ertelendi):** Sürüklenen taşın hayaleti SABİT 46 px (`App.tsx`'te
   `width/height: 46` + `scale(1.1)` = 50,6 px; portta `_buildGhost`'ta aynı
@@ -120,81 +90,23 @@ bölümün kendi tarihli notuna taşınır.
     grafik BAŞKASININ kartında da görünür — yeni bir sızıntı değil (o veri
     girişli herkese zaten açık) ama bilerek karar verilmeli.
 
-- **Hesap silme (KVKK "unutulma hakkı") — self-servis yol YOK (19 Ağustos
-  2026'da hukuki metin denetiminde tekrar gündeme geldi):** Bugün kullanıcının
-  hesabını kendi silebileceği hiçbir arayüz yok; var olan tek şey admin
-  tarafındaki "hesabı dondurma" (`admin_set_user_banned`). Gizlilik
-  Politikası'nın 5. bölümü bu yüzden 19 Ağustos'ta düzeltildi: silme artık
-  "Görüş Bildir" kanalından TALEP edilen, 30 gün içinde elle yerine getirilen
-  bir işlem olarak anlatılıyor — yani metin bugün DOĞRU, ama özelliğin
-  kendisi hâlâ eksik. **Yapılacağı zaman asıl iş UI değil kaskad zinciri:**
-  `auth.users` + `profiles` + `games` + `game_likes` + `friend_requests` +
-  `friend_invite_links` + `local_game_saves` + `online_game_*` (devam eden
-  oyunlar, sohbet, mute/şikayet) + `feedback` + `league_rewards` +
-  `admin_ban_log`; bir kısmı cascade, bir kısmı değil, ve silinen kişi
-  BAŞKALARININ bitmiş oyun kayıtlarında (`games.players` snapshot'ı) isimle
-  duruyor — o satırlar başka kullanıcıların kendi verisi olduğundan
-  silinemez, en fazla anonimleştirilebilir.
-  **KULLANICI KARARI (19 Ağustos 2026): web için geliştirme YAPILMAYACAK** —
-  sözleriyle: *"Legal olarak silme hakkı zorunluluğu yoksa bildirim üzerine
-  aksiyon yeterlidir ve geliştirme gerekmez."* Bu HUKUKEN doğru: KVKK m.7/m.11
-  (ve GDPR m.17) silme HAKKI veriyor ama uygulama içi bir silme BUTONU şart
-  koşmuyor; talebin 30 gün içinde karşılanması yeterli, politikanın 5. bölümü
-  de tam olarak bunu anlatıyor. **Maddenin listede kalma sebebi hukuk değil
-  MAĞAZA KURALI:** Apple App Store Review Guideline 5.1.1(v) (Haziran
-  2022'den beri) ve Google Play'in veri silme şartı (2024'ten beri), hesap
-  açtıran uygulamalarda uygulama İÇİNDEN başlatılabilen bir silme yolu
-  istiyor — yasa değil yayın kapısı, karşılanmazsa inceleme reddediliyor.
-  Yani: web'de gerekmez, **mobil mağaza çıkışında gerekir**; o gün iki
-  mağazanın güncel politikası bir kez daha teyit edilmeli (bu satır 19 Ağustos
-  2026'daki bilgiye dayanıyor, mağaza kuralları değişebiliyor). Bir sonraki
-  oturum bunu "hukuki eksik" diye yeniden açmasın.
 
-- **Taranabilir `/nasil-oynanir` sayfası (17 Ağustos 2026, kullanıcı
-  kararı: "ileride yapılacak işlere ekle, o zaman değerlendiririz"):**
-  Sitenin EN ZENGİN açıklayıcı içeriği (`HelpModal.tsx` — kurallar, bölge
-  mekaniği, puanlama, rütbeler) yalnızca kullanıcı modalı AÇINCA render
-  oluyor, yani taranabilir HTML'de hiç yok. Fikir o içeriği kendi
-  URL'inde de yayınlamak.
-  - **Tetikleyen somut gözlem (aynı gün, kullanıcının üç ekran
-    görüntüsü):** Google'ın organik sonucu ve AI Overview'ı Kelimeki'yi
-    DOĞRU anlatıyordu, ama **AI Mode** tamamen uydurdu — "kelime bulucu
-    ve sözlük platformu", Scrabble/Kelimelik yardımcısı, jokerli arama,
-    puan hesaplama... hiçbiri bizde yok. Kullanıcı "yanlış" geri bildirimi
-    verdi. Üç ölçülebilir sebep: (1) Google "kelimeki"yi hâlâ marka olarak
-    tanımıyor — arama sonucunda *"Including results for kelimeler"*
-    yazıyor; (2) o isim alanında Türkçe kelime-bulucu/sözlük siteleri
-    baskın, model boşluğu onlarla doldurmuş; (3) sitede grounding yapacak
-    metin çok az — tek sayfa, kısa bir paragraf.
-  - **ASIL KARAR NOKTASI — client-render mi statik HTML mi:** Mimari
-    değişiklik GEREKMİYOR, `main.tsx` zaten router'sız path eşlemesi
-    yapıyor (`/game/:id`, `/davet/:token`) ve `vercel.json` rewrite'ı her
-    path'i `index.html`'e yolluyor; üçüncü bir dal birkaç satır. AMA
-    client-side render Googlebot'u memnun eder (JS render ettiği kanıtlı —
-    SERP snippet'i `Setup.tsx`'in sayfa içi metninden geliyor, meta
-    description'dan DEĞİL), **JS çalıştırmayan AI/LLM crawler'ları için
-    boş sayfa demektir** — yani sorunu doğuran şeyi tam olarak ıskalar.
-    Gerçek çözüm build-time statik üretim (og-image script'iyle aynı
-    kalıp, `dist/nasil-oynanir/index.html`). Vercel'in statik dosyayı
-    rewrite'tan ÖNCE servis ettiği DOĞRULANMALI (dokümanda öyle yazıyor,
-    bu ortamdan test edilemedi).
-  - **Etki analizi — derleyicinin göremeyeceği üç bağ (yapmadan önce
-    oku):** (1) **`mobile/app/test/help_text_parity_test.dart:31` doğrudan
-    `src/components/HelpModal.tsx`'i OKUYOR** ve `<Section title="…">` /
-    `<QuickItem icon="…">` regex'leriyle tarıyor — içeriği başka bir
-    dosyaya çıkarmak o testi düşürür, üstelik web'e dokunduğun için hiç
-    bakmayacağın mobil tarafta; (2) içerik TEK KAYNAKTA kalmalı, modal ve
-    sayfa AYNI bileşeni tüketmeli — iki kopya bu projenin en sık
-    tekrarlayan hata sınıfı (renk paleti/rütbe tablosu/hukuki metin üçü de
-    böyle ayrışmıştı); (3) yeni sayfanın KENDİ title/description'ı olmalı,
-    yoksa SPA'nın genel meta'sını miras alır ve SEO kazancının yarısı
-    gider. Ayrıca `sitemap.xml` (şu an tek URL) ve PWA precache listesi
-    (`vite.config.ts`) kontrol edilmeli; Flutter portunun `help_modal.dart`
-    metinleri de aynı kaynağa bağlı.
-  - **Bu bir REINDEX işi DEĞİL:** aynı bölümün (SEO) "marka karışıklığı
-    reindex ile çözülmez, organik arama/backlink ile zamanla düzelir"
-    notu hâlâ geçerli — bu sayfa o süreci hızlandıran bir içerik işi.
+### Bu listeden çıkanlar (yeniden açılmasın)
 
+- **Hesap silme (KVKK "unutulma hakkı")** — ✅ yapıldı 25 Ağustos 2026.
+  Hesap Ayarları › "Hesabımı Sil" + `delete-my-account`, web ve port.
+  Kaydı: `docs/decisions/account-deletion.md`. Bir sonraki oturum bunu
+  "hukuki eksik" ya da "mağaza blokeri" diye YENİDEN AÇMASIN — hukuken
+  zaten zorunlu değildi, mağaza şartı da karşılandı.
+- **Taranabilir `/nasil-oynanir` sayfası** — ✅ yapıldı 31 Ağustos 2026
+  (#386), build-time statik üretim; içerik `HelpModal`'dan İTHAL ediliyor,
+  kopyalanmıyor. Kaydı: `ROADMAP.md` madde 6.
+- **`game_finishes.anon_id`** — ✅ yapıldı 31 Ağustos 2026. Huniye "Bitiren
+  Cihaz" (`finishers`) eklendi; `anon_id` YALNIZCA `user_id` null iken
+  yazılıyor (trigger + CHECK), yani gizlilik taahhüdü ayakta. Kaydı:
+  `docs/decisions/admin-panel.md` → "Bitiren Cihaz".
+  ⚠ Geriye dönük doldurulamayan kolonların listesi hâlâ geçerli: bir sonraki
+  ölçüm boşluğu da reklam harcamasından ÖNCE kapatılmalı.
 
 
 ## ✅ KAPANDI — Tahta çiziminin önbelleğe alınması (26 Ağustos 2026)

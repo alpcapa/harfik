@@ -50,6 +50,7 @@ import type {
   AdminFeedbackRow,
   AdminChatReportRow,
   AdminClientErrorRow,
+  ClientPlatform,
 } from '../lib/database.types';
 import { PlayerScoreCard } from './PlayerScoreCard';
 import { MemberMessageModal } from './MemberMessageModal';
@@ -349,8 +350,19 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
         Yüzde modunda <b>Üye</b> = üye / gelen. <b>Başlayan</b> = başlatan benzersiz CİHAZ /
         gelen; <b>Gelen</b> ile aynı anonim koddan sayıldığı için bu, tablodaki tek cihaz-bazlı
         dönüşüm oranı — <b>Üye</b> oranı ise ayrı bir kaynaktan (kayıt damgası) gelir.{' '}
-        <b>Biten</b> yüzdesinin tabanı "Gelen" DEĞİL <b>o satırın "Başlayan"ı</b> — yani
-        tamamlanma oranı. Taban 0 ise oran hesaplanmaz, "—" gösterilir.
+        <b>Biten</b> yüzdesi de 31 Ağustos 2026'dan beri CİHAZ üzerinden: <b>bitiren
+        benzersiz cihaz / başlatan benzersiz cihaz</b>, yani "başlayanların kaçı bitirdi"
+        (tamamlanma oranı). Oyun ADEDİ üzerinden hesaplanan eski oran tek bir cihazın açtığı
+        onlarca oyunla çarpılabiliyordu — ölçüldü: 117 oyunun 64 cihazdan geldiği bir
+        pencerede İKİ cihaz tek başına 47 oyun başlatmıştı. Taban 0 ise oran hesaplanmaz,
+        "—" gösterilir.
+        <br />
+        <br />
+        <b>"Biten" var ama yüzdesi "—" ise bu bir hata değil:</b> cihaz kodu bitmiş tarafa 31
+        Ağustos 2026'da eklendi ve <b>geriye dönük doldurulamaz</b>, ayrıca mobil uygulama
+        henüz damgalamıyor. O satırlarda oyun sayılır, cihaz sayılmaz — "0%" yazmak "hiçbir
+        cihaz bitirmedi" derdi, oysa gerçek "cihaz bilgisi yok". CSV'deki <b>Bitiren Cihaz</b>
+        sütunu ham sayıyı verir.
         <br />
         <br />
         <b>Direkt</b> = web'e <code>?ref=</code> olmadan geliş. <b>Bilinmiyor</b> = kaynak
@@ -541,7 +553,13 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
         <br />
         Beklenen durumlar (çevrimdışılık, sunucunun kendi reddi) <b>bilerek kaydedilmez</b> —
         buradaki her satır "birinin bakması gereken bir şey" olmalı. Yol (route) kimliklerden
-        arındırılır (<code>/game/:id</code>), oturum başına en fazla 10 kayıt gönderilir.
+        arındırılır (<code>/game/:id</code>), bir istemciden <b>saatte</b> en fazla 10 kayıt
+        gönderilir.
+        <br />
+        <br />
+        <b>Platform filtresi sayıları da daraltır:</b> eleme gruplamadan ÖNCE yapıldığı için
+        "Android" seçiliyken <b>Kez</b> ve <b>Cihaz</b> yalnızca Android'i sayar. CSV ekranda
+        görüneni indirir.
       </>
     ),
   },
@@ -848,10 +866,20 @@ function SourceFunnelTable({
       starters: acc.starters + row.starters,
       signups: acc.signups + row.signups,
       finishes: acc.finishes + row.finishes,
+      finishers: acc.finishers + row.finishers,
       member_games: acc.member_games + row.member_games,
       players: acc.players + row.players,
     }),
-    { visitors: 0, starts: 0, starters: 0, signups: 0, finishes: 0, member_games: 0, players: 0 },
+    {
+      visitors: 0,
+      starts: 0,
+      starters: 0,
+      signups: 0,
+      finishes: 0,
+      finishers: 0,
+      member_games: 0,
+      players: 0,
+    },
   );
 
   function handleExportCsv() {
@@ -864,6 +892,7 @@ function SourceFunnelTable({
         'Başlayan Oyun',
         'Başlatan Cihaz',
         'Biten Oyun',
+        'Bitiren Cihaz',
         'Üye Oyunu',
         'Oynayan Üye',
       ],
@@ -875,6 +904,7 @@ function SourceFunnelTable({
           row.starts,
           row.starters,
           row.finishes,
+          row.finishers,
           row.member_games,
           row.players,
         ]),
@@ -885,6 +915,7 @@ function SourceFunnelTable({
           total.starts,
           total.starters,
           total.finishes,
+          total.finishers,
           total.member_games,
           total.players,
         ],
@@ -921,6 +952,26 @@ function SourceFunnelTable({
     if (!asPercent) return String(value);
     if (base <= 0) return '—';
     return pct(percentOf, base);
+  }
+
+  /**
+   * "Biten" sütunu — 31 Ağustos 2026'dan beri oranı CİHAZ üzerinden:
+   * `finishers / starters`, yani "başlatan cihazların kaçı bitirdi".
+   *
+   * ⚠ Neden ayrı bir fonksiyon: `conversionCell` taban 0 olunca "—" diyor,
+   * ama burada İKİNCİ bir "bilinmiyor" hâli var. `anon_id` kolonu YENİ ve
+   * geriye dönük doldurulamaz; eski bitişlerde (ve damgalamayan istemcide —
+   * bugün Flutter portu) `finishers` 0 kalır. Orada `0%` yazmak "hiçbir cihaz
+   * bitirmedi" DER, oysa gerçek "cihaz bilgisi yok"tur — tam da bu tablonun
+   * "sıfıra bölmek yerine bilinmediğini söyle" kuralının kapsamı. Bu yüzden
+   * biten VAR ama bitiren cihaz YOKSA "—" gösteriliyor; ikisi de 0 ise oran
+   * gerçekten 0'dır ve öyle yazılır.
+   */
+  function completionCell(finishes: number, starters: number, finishers: number): string {
+    if (!asPercent) return String(finishes);
+    if (starters <= 0) return '—';
+    if (finishes > 0 && finishers === 0) return '—';
+    return pct(finishers, starters);
   }
 
   return (
@@ -973,7 +1024,7 @@ function SourceFunnelTable({
                   {conversionCell(row.starts, row.visitors, row.starters)}
                 </td>
                 <td className="py-1.5 text-muted whitespace-nowrap text-center">
-                  {conversionCell(row.finishes, row.starts, row.finishes)}
+                  {completionCell(row.finishes, row.starters, row.finishers)}
                 </td>
               </tr>
             ))}
@@ -989,7 +1040,7 @@ function SourceFunnelTable({
                 {conversionCell(total.starts, total.visitors, total.starters)}
               </td>
               <td className="py-1.5 text-text font-bold whitespace-nowrap text-center">
-                {conversionCell(total.finishes, total.starts, total.finishes)}
+                {completionCell(total.finishes, total.starters, total.finishers)}
               </td>
             </tr>
           </tbody>
@@ -1397,6 +1448,18 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
    * bakılması gereken ne var" ve gruplama zaten zamanı düzleştiriyor.
    */
   const [errorDays, setErrorDays] = useState(7);
+  /**
+   * "Hatalar" platform filtresi (ROADMAP #11) — `'hepsi'` = filtre yok.
+   *
+   * Eleme SUNUCUDA yapılıyor, burada değil: satırlar (kind, message) ile
+   * gruplanıyor ve `platforms` bir `string_agg`, yani iki platformda da
+   * görülen bir hata TEK satır ve `occurrences`/`devices` ikisinin toplamı.
+   * İstemcide elemek o satırı gösterir ama sayıları öteki platformu da
+   * içerdiği hâlde bırakırdı. ÖLÇÜLDÜ (31 Ağustos 2026, canlı veri): böyle
+   * bir satır GERÇEKTEN var — android+app-web'de 2 kez/2 cihaz, yalnız
+   * android'de 1/1.
+   */
+  const [errorPlatform, setErrorPlatform] = useState<ClientPlatform | 'hepsi'>('hepsi');
   const [expandedErrorKey, setExpandedErrorKey] = useState<string | null>(null);
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
   const [transcriptGameId, setTranscriptGameId] = useState<string | null>(null);
@@ -1425,10 +1488,10 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
   // "Hatalar" sekmesinin kendisi bir rozet taşımadığından (bekleyen İŞ değil,
   // gözlem), admin oraya ancak bir sebep varsa girer ve o zaman veri hazır olur.
   useEffect(() => {
-    fetchAdminClientErrors(errorDays)
+    fetchAdminClientErrors(errorDays, errorPlatform === 'hepsi' ? null : errorPlatform)
       .then(setClientErrors)
       .catch((e) => setError(String(e)));
-  }, [errorDays]);
+  }, [errorDays, errorPlatform]);
 
   useEffect(() => {
     fetchAdminMembers()
@@ -2075,16 +2138,36 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
               kaybolmasın) kaydırma kabının DIŞINDA. */}
           {tab === 'errors' && (
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <AdminSelect
-                value={String(errorDays)}
-                onChange={(v) => setErrorDays(Number(v))}
-                options={[
-                  { value: '1', label: 'Son 24 Saat' },
-                  { value: '7', label: 'Son 7 Gün' },
-                  { value: '30', label: 'Son 30 Gün' },
-                  { value: '90', label: 'Son 90 Gün' },
-                ]}
-              />
+              <div className="flex items-center gap-2 flex-wrap">
+                <AdminSelect
+                  value={String(errorDays)}
+                  onChange={(v) => setErrorDays(Number(v))}
+                  options={[
+                    { value: '1', label: 'Son 24 Saat' },
+                    { value: '7', label: 'Son 7 Gün' },
+                    { value: '30', label: 'Son 30 Gün' },
+                    { value: '90', label: 'Son 90 Gün' },
+                  ]}
+                />
+                {/* Platform seçenekleri `ClientPlatform`in dört değeri —
+                    `games.platform` kısıtıyla aynı sözleşme. `client_errors`
+                    kolonunda KISIT YOK (bilerek: öngörülmemiş bir değer
+                    yüzünden bir hata raporunu kör etmemek için), yani
+                    listede olmayan bir platform yalnızca "Tüm Platformlar"
+                    görünümünde okunur — orada `platforms` sütununda yazılı
+                    olur. Filtre bir kolaylık, tek görüntüleme yolu değil. */}
+                <AdminSelect
+                  value={errorPlatform}
+                  onChange={(v) => setErrorPlatform(v as ClientPlatform | 'hepsi')}
+                  options={[
+                    { value: 'hepsi', label: 'Tüm Platformlar' },
+                    { value: 'web', label: 'Web' },
+                    { value: 'ios', label: 'iOS' },
+                    { value: 'android', label: 'Android' },
+                    { value: 'app-web', label: 'App (web)' },
+                  ]}
+                />
+              </div>
               <div className="flex items-center gap-2 shrink-0">
                 {clientErrors && clientErrors.length > 0 && (
                   <button type="button" onClick={exportClientErrorsCsv} className={csvLinkCls}>

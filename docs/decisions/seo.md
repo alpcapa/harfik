@@ -117,3 +117,38 @@ değiştiği kanıtlanmalı. Ayrıca `og:description` sayfanın kendi
 `description`'ıyla KARŞILAŞTIRILIYOR, sabitle değil. Negatif eşler: `og:url`
 satırı silinince 2 test düşüyor, `og:description` genel bir metne
 çevrilince 2 test düşüyor.
+
+## `/nasil-oynanir/` GSC takibi — "Crawled, currently not indexed" (1 Eylül 2026)
+
+Sayfa 31 Ağustos'ta çıktı (#386), aynı gece Google **taradı** (20:11,
+Googlebot smartphone) ama URL denetimi hâlâ *"URL is not on Google —
+Crawled, currently not indexed"* diyor. **Bu bir arıza değil**, yeni bir
+sayfa için normal ara durum: tarama ile indeksleme kararı ayrı adımlar ve
+ikincisi günler–haftalar sürebiliyor. Zorlayacak bir kol YOK; "Request
+indexing"e tekrar basmak hızlandırmıyor.
+
+**Panik ettirebilecek İKİ satır ve gerçekleri — sonraki oturum bunları
+sıfırdan araştırmasın:**
+
+| Denetimdeki satır | Gerçek |
+|---|---|
+| `Sitemaps: Temporary processing error` | **Geçici, sitemap sağlam.** Aynı anda GSC'nin **Indexing → Sitemaps** sayfası `Success · 5 URL` diyordu (kullanıcı doğruladı). URL denetimi panelindeki bu satır o anki sitemap EŞLEŞTİRMESİNİ gösteriyor; sitemap'in gerçek durumu Sitemaps sayfasındadır. **Kural: bu satırı tek başına kanıt sayma, Sitemaps sayfasına bak.** |
+| `Referring page: None detected` | Bağlantı YAYINDA. `/` sayfasında gerçek bir `<a href="/nasil-oynanir/">Kuralların tamamı →</a>` var (#389, duman testiyle kilitli). Google'ın kendi notu da hedgeliyor: *"URL might be known from other sources that are currently not reported."* Bu alan geç güncelleniyor. |
+
+**Yayındaki dört şey ölçüldü (WebFetch ile, 1 Eylül 2026) ve dördü de
+doğru** — yani takıldığı yer bizim tarafımızda değil:
+
+- `sitemap.xml` → 5 URL, `/nasil-oynanir/` içinde, `lastmod 2026-08-31`
+- `robots.txt` → `Allow: /` + `Sitemap:` satırı, engel yok
+- sayfa → ~2.200+ kelime gerçek metin, `robots: index,follow`, canonical +
+  description yerinde
+- `/` → gerçek (JS'siz HTML'de duran) bağlantı
+
+⚠ **WebFetch sayfayı markdown'a çeviriyor, `<head>` etiketlerini DÜŞÜRÜYOR.**
+İlk okumada canonical/description "yok" görünüyor — bu bir ÖLÇÜM DEĞİL.
+Doğrusu üretilmiş dosyaya bakmak (`dist/nasil-oynanir/index.html`) ya da
+üreticiyi okumak (`src/legal/render.tsx`). Aynı tuzağa düşme.
+
+**Aksiyon: beklemek.** Birkaç gün sonra aynı denetim tekrarlanır; "Referring
+page" satırının `kelimeki.com/` olması ya da sayfanın indekslenmesi
+beklenen sonuç.

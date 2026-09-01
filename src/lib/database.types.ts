@@ -793,6 +793,27 @@ export interface AdminSourceFunnelRow {
    */
   finishes: number;
   /**
+   * O oyunları bitiren BENZERSİZ MİSAFİR CİHAZ sayısı
+   * (`game_finishes.anon_id`, aynı `user_id is null` filtresiyle) —
+   * `starters`ın bitmiş taraftaki eşi (31 Ağustos 2026). `starters`/`finishers`
+   * ikilisi tablonun tek gerçek CİHAZ-BAZLI tamamlanma oranını verir; oyun
+   * adedi üzerinden hesaplanan oran, tek bir cihazın açtığı onlarca oyunla
+   * çarpılabiliyordu (ölçüldü: 117 oyunun 64 cihazdan geldiği bir pencerede
+   * İKİ cihaz tek başına 47 oyun başlatmıştı).
+   *
+   * ⚠ KOLON YENİ, GERİYE DÖNÜK DOLDURULAMAZ. `count(distinct)` NULL saymaz,
+   * yani 31 Ağustos 2026 öncesi bitişler ve damgalamayan istemciler (bugün
+   * Flutter portu — `anon_id` katmanı porta hiç girmedi) buraya girmez ve
+   * `finishes`ten küçük kalır. Panel bu durumda **0% göstermez, "—" gösterir**:
+   * "hiç cihaz bitirmedi" ile "cihaz bilgisi yok" farklı şeyler.
+   *
+   * ⚠ GİZLİLİK: `anon_id` bu tabloya YALNIZCA `user_id` NULL iken yazılır
+   * (sunucuda BEFORE INSERT trigger + CHECK). İkisi aynı satırda hiçbir zaman
+   * bulunmaz, yani `PrivacyModal` 6. bölümdeki "anonim kod hesabınızla ASLA
+   * eşleştirilmez" taahhüdü ayakta.
+   */
+  finishers: number;
+  /**
    * ÜYELERİN (profil damgası olanların) pencerede bitirdiği oyun ADEDİ —
    * eski "Oyun" sütunu. Tabloda GÖSTERİLMEZ, yalnızca CSV'de. `finishes` ile
    * çakışmıyor: bu, üyenin KAYIT damgasından gelir (hesabı takip eder), o
