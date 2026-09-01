@@ -141,6 +141,25 @@ sorunca yapılan denetimden çıktı. Üçü de **geriye dönük doldurulamaz**
   Canlı oynayan biri tabloda hiç görünmez. Tablo `GuestBreakdownTable`'ı
   yeniden kullanıyor; bileşene `valueLabel` prop'u eklendi — sayı sütununun
   başlığını "Ziyaretçi" bırakmak sayının ne olduğu konusunda yalan söylerdi.
+- **⚠ `push_tokens.app_version` YAN YÜKLENEN pakette GÖRÜNMEZ ve bayat
+  KALABİLİR (1 Eylül 2026'da ölçüldü, kullanıcı sordu: *"1.0.5 push token
+  durumuna bak"*).** O gün panelde `game_starts` 1.0.5 gösterirken
+  `push_tokens`ta 1.0.5 HİÇ yoktu; üç satır hâlâ 1.0.4 diyordu. Zincir
+  (ölçüldü, tahmin değil): CI'ın `.apk`'sı Play'dekinden **farklı imza**
+  taşır (keystore secret'ı yoksa debug anahtarı; varsa upload anahtarı —
+  Play App Signing paketi KENDİ anahtarıyla yeniden imzaladığından ikisi
+  hiçbir koşulda eşleşmez), yani yan yüklemek için Play sürümünü ÖNCE
+  kaldırmak gerekir; kaldırma bildirim iznini `notDetermined`'a düşürür ve
+  `PushRepo.senkronize` o dalda **bilerek hiçbir şey yapmaz** (izin
+  sorulmamışken satır ne yazılır ne silinir — yalnız AÇIK bir ret siler).
+  Sonuç: yeni sürüm tabloya hiç yazılmaz, ESKİ satır eski damgasıyla durur.
+  **Bu bir hata değil, iki bilinçli kararın kesişimi** — ama okurken iki
+  şeyi bilmek şart: (a) push davranışı yan yüklenen pakette test EDİLEMEZ
+  (zaten `mobile/CLAUDE.md` → "Güncelleme" aynı sınırı In-App Update için
+  söylüyor); (b) uygulamayı kaldırıp yeniden kuran ve izni yeniden vermeyen
+  bir KULLANICI da "Kurulu Sürümler — Kişi" tablosunda bayat görünür.
+  Push'un kendisi kendini onarır (eski token geçersizdir → FCM
+  `UNREGISTERED` → satır silinir), bayat kalan yalnızca DAMGADIR.
 - **Portun `route` alanı SABİT `'app'`ti, artık gerçek ekran adı**
   (`ErrorReporterRouteObserver`). Web'de o kolon '/'/'/game/:id' diye
   ayrışıyor; app trafiği baskın hâle gelince kolon tamamen ölürdü. Adlar
