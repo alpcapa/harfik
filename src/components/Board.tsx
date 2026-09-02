@@ -15,7 +15,6 @@ import type { GameState, MoveStatus } from '../game/types';
 import { key } from '../utils/board';
 import { buildRoundedOutlinePath } from '../utils/outline';
 import {
-  BOARD_BADGE_CLIP_SLACK,
   ZOOM_ANIM_MS,
   ZOOM_OFF,
   zoomTransform,
@@ -838,7 +837,17 @@ export function Board({
            dolgusu rozetin 1×'teki ≈7 px taşmasından büyük. */
         <div
           className="pointer-events-none absolute inset-0 z-20"
-          style={{ clipPath: `inset(-${BOARD_BADGE_CLIP_SLACK}px)` }}
+          /* PAY YOK ve kırpma KARTIN ŞEKLİ — ızgarayla BİREBİR aynı.
+             Önce 14 px pay vardı, gerekçesi "kenardaki rozet kesilmesin"di;
+             ama o pay tam olarak kullanıcının gördüğü taşmaydı: *"deneme
+             rozeti hâlâ dışarı taşıyormuş, her kenardan denedim, onun
+             içeride kalması lazım; header ve kenar sınırlarının altına
+             giriyor"*. ÖLÇÜLDÜ: 14 px payla rozet kartın dışına 126 piksel
+             boyuyordu. Kullanıcı kararı: rozet kartın İÇİNDE kalsın,
+             gerekirse kesilsin — taşların kenarda kesilmesiyle aynı
+             davranış. Dinlenme hâlinde zaten kesilmiyor: ızgaranın 10 px
+             dolgusu rozetin 1×'teki ≈7 px taşmasından büyük. */
+          style={{ clipPath: 'inset(0 round 18px 18px 0 0)' }}
         >
           <div
             data-board-badge-layer=""

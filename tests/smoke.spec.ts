@@ -1948,6 +1948,118 @@ test.describe('tahta zoom', () => {
     ).toBeLessThanOrEqual(1);
   });
 
+  // 2 Eylül 2026 — kullanıcı: *"deneme rozeti hâlâ dışarı taşıyormuş. Her
+  // kenardan denedim. Onun içeride kalması lazım. Header ve kenar
+  // sınırlarının altına giriyor."*
+  //
+  // Sebep yeni bir hata DEĞİL, bilinçli bir tercihti: rozet katmanına
+  // 14 px PAY bırakılmıştı ("kenardaki rozet kesilmesin"). O pay tam
+  // olarak taşmanın kendisi. Kullanıcı kararı: rozet kartın İÇİNDE kalsın,
+  // gerekirse kesilsin. Pay 0 ve kırpma kartın şeklini taşıyor.
+  //
+  // Ölçüm FARK ölçümü: başlıktaki skor kutucuklarının kenarlığı rozetin
+  // renklerine yakın (yeşil #16A34A ↔ #1FA05C, kırmızı #DC2626 ↔ #E0483A).
+  // Zoom öncesi ↔ sonrası karşılaştırılınca sabit olan her şey eleniyor.
+  test('zoom: hamle rozeti kartın DIŞINA hiç taşmaz (her kenar)', async ({
+    page,
+  }) => {
+    await oyunEkrani(page);
+    // ⚠ KURULUM HESAPLA SEÇİLDİ, denemeyle değil. Rozet hücrenin sol
+    // üstüne 14 px taşıyor; kartın dışına çıkması için hücrenin görünür
+    // karenin TAM ÜST kenarında olması gerek. Tahtanın köşesine dayamak
+    // YETMEZ (ilk sürüm öyleydi ve test yanlışlıkla geçti): ızgaranın
+    // 10 px dolgusu 2×'te 20 px olup taşmayı yutuyor.
+    //   rozet üstü = 2·(10 + satır·28) + öteleme − 14
+    // En uç öteleme −366; satır 6 için: 20 + 336 − 366 − 14 = −24 px,
+    // yani kartın 24 px ÜSTÜNDE. Kullanıcının gördüğü tam bu.
+    await page.locator('[data-rack-tile="0"]').tap();
+    const tas = await hucreKutusu(page, 6, 6);
+    await dokun(page, tas.x + tas.width / 2, tas.y + tas.height / 2);
+    await expect(page.locator('[data-move-badge]')).toBeVisible();
+
+    const kart = (await page.locator('[data-board-viewport]').evaluate((el) => {
+      const k = el.closest('.rounded-\\[18px\\]') as HTMLElement;
+      const r = (k ?? el).getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    })) as { x: number; y: number; width: number; height: number };
+
+    /** Kartın DIŞINDA rozet renginde kaç piksel var. */
+    async function disaridaki(): Promise<number> {
+      const png = (await page.screenshot()).toString('base64');
+      return page.evaluate(
+        async ({ b64, kart }) => {
+          const bmp = await createImageBitmap(
+            await (await fetch(`data:image/png;base64,${b64}`)).blob(),
+          );
+          const c = document.createElement('canvas');
+          c.width = bmp.width;
+          c.height = bmp.height;
+          c.getContext('2d')!.drawImage(bmp, 0, 0);
+          const d = c.getContext('2d')!
+            .getImageData(0, 0, c.width, c.height)
+            .data;
+          // Tolerans DAR (12): başlıktaki oyuncu kutucuklarının yeşil/kırmızı
+          // kenarlığı geniş toleransta rozetle karışıyor (ölçüldü).
+          const rozet = (i: number) =>
+            (Math.abs(d[i] - 31) < 12 &&
+              Math.abs(d[i + 1] - 160) < 12 &&
+              Math.abs(d[i + 2] - 92) < 12) ||
+            (Math.abs(d[i] - 224) < 12 &&
+              Math.abs(d[i + 1] - 72) < 12 &&
+              Math.abs(d[i + 2] - 58) < 12);
+          let n = 0;
+          for (let y = 0; y < c.height; y++) {
+            for (let x = 0; x < c.width; x++) {
+              const icerde =
+                x >= kart.x &&
+                x <= kart.x + kart.width &&
+                y >= kart.y &&
+                y <= kart.y + kart.height;
+              if (!icerde && rozet((y * c.width + x) * 4)) n++;
+            }
+          }
+          return n;
+        },
+        { b64: png, kart },
+      );
+    }
+
+    // DİNLENME HÂLİ: rozet zaten kartın içinde ve KESİLMİYOR — payın
+    // kaldırılması bu hâli bozmuyor (ızgaranın 10 px dolgusu rozetin
+    // 1×'teki ≈7 px taşmasını yutuyor).
+    // ⚠ `once` SIFIR DEĞİL ve olmamalı: geçersiz hamlede kartın ALTINDAKİ
+    // "Kelime geçersiz" yazısı da rozetin kırmızısında (ölçüldü: 4 piksel).
+    // İddia bu yüzden MUTLAK değil FARK — sabit olan her şey eleniyor.
+    const once = await disaridaki();
+    const durgun = (await page.locator('[data-move-badge]').boundingBox())!;
+    expect(durgun.x).toBeGreaterThanOrEqual(kart.x);
+    expect(durgun.y).toBeGreaterThanOrEqual(kart.y);
+
+    // Zoom aç ve YUKARI kaydır (dikey öteleme en uca, −366): 6. satır
+    // görünür karenin üst kenarına gelir.
+    // Odak taşın KENDİSİ olamaz (ilk dokunuş taşı geri alır) — komşu boş
+    // kare. Yatayda rozet görünür karenin İÇİNDE kalmalı, yoksa tamamen
+    // kırpılıp test hiçbir şey kanıtlamaz (ölçüldü: x=−165'te 0 piksel).
+    const b = await hucreKutusu(page, 9, 6);
+    await ciftDokun(page, b.x + b.width / 2, b.y + b.height / 2);
+    expect(await olcek(page)).toBeCloseTo(2, 1);
+    for (let i = 0; i < 4; i++) {
+      await kaydir(
+        page,
+        kart.x + kart.width * 0.5,
+        kart.y + kart.height * 0.8,
+        0,
+        -kart.height,
+      );
+    }
+
+    const sonra = await disaridaki();
+    expect(
+      sonra - once,
+      `rozet kartın dışına ${sonra - once} piksel boyadı`,
+    ).toBeLessThanOrEqual(0);
+  });
+
   test('KENARDAN (kareler dışı) çift dokunuş da zoom açar', async ({ page }) => {
     await oyunEkrani(page);
     const vp = (await page.locator('[data-board-viewport]').boundingBox())!;
