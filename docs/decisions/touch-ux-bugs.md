@@ -1082,10 +1082,31 @@ ve hiçbir şeyi sınırlamaz. Doğru yapı ızgarada zaten vardı ve
 kopyalanmamıştı: klip KIRPILMAYAN görünür karede, transform içteki
 katmanda.
 
-**Kullanıcının "app'de olmuyordu" tespiti doğruydu ve sebebi aynı:**
-Flutter'da sıra TERS — `ClipRect` çocuğunun boyamasını KENDİ (ebeveyn)
-uzayında kırpar, yani `ClipRect(child: Transform(...))` gerçekten
-sınırlar. Aynı kod deseni iki platformda zıt anlama geliyor.
+**Kullanıcının "app'de olmuyordu" tespiti doğruydu ve sebebi ÖLÇÜLDÜ:**
+rozetin ataları taranınca çıkan şey şu —
+
+```
+ATA Stack clipBehavior=Clip.none
+ATA ClipRect clipper=true          ← sonradan eklenen, GEREKSİZ
+ATA Stack clipBehavior=Clip.hardEdge   ← Flutter'ın VARSAYILANI
+ATA ClipRect clipper=false
+ATA Stack clipBehavior=Clip.hardEdge
+```
+
+Yani portta rozeti `Stack` ZATEN kırpıyordu: `Stack.clipBehavior`
+varsayılan olarak `Clip.hardEdge` ve çocuklarını kendi sınırlarına
+kesiyor. Ayrıca Flutter'da sıra da TERS — `ClipRect` çocuğunun boyamasını
+KENDİ (ebeveyn) uzayında kırpar. İki sebep de aynı yöne çalışıyor: port
+hiç bozuk değildi.
+
+⚠ **Buna rağmen porta bir `ClipRect` EKLENMİŞTİ** (2 Eylül 2026), gerekçe
+"web'de olan hata portta da vardır" varsayımıydı — ölçülmeden. Kullanıcı
+itiraz etti: *"Mobile'de yaptığın gereksiz düzeltme ne olacak? Zaten
+düzgün çalışan şeyi değiştirdin."* Haklıydı ve değişiklik GERİ ALINDI
+(kod + testin çevrilen iddiası). **Ders: bir platformda bulunan hatayı
+ötekine VARSAYARAK taşıma.** İkiz dosya kuralı "aynı davranışı koru"
+demek, "aynı yamayı uygula" demek değil — davranış zaten aynıysa
+dokunulacak bir şey yoktur.
 
 **Asıl hata testteydi, koddan önce:** ilk tur `getComputedStyle(...)
 .clipPath` değerine bakıyordu, yani MEKANİZMANIN VARLIĞINA. Mekanizma
