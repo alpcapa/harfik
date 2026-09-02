@@ -113,7 +113,7 @@ bölümün kendi tarihli notuna taşınır.
     ancak `mobile_min_supported_version` eski sürümü kestikten sonra.
   - **Ne zaman:** `handle_new_user`'a zaten dokunulacak ilk PR'da — en
     güçlü aday **Google ile giriş** (o iş trigger'ı değiştirmek zorunda,
-    bkz. `ROADMAP.md` → madde 16). Ayrı bir PR açmak bedelini iki
+    bkz. `ROADMAP.md` → madde 17). Ayrı bir PR açmak bedelini iki
     katına çıkarır.
   - **`harfik` izlerinin ÖLÇÜLEN durumu (2 Eylül 2026):**
     - **Canlı veritabanı TEMİZ.** `pg_proc`/`information_schema`/
