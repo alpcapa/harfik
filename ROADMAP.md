@@ -139,7 +139,11 @@ olduğundan emin olmadan aab yapılmayacak."*
    `mobile/TESTING.md` § 8 (çevrimdışı şerit + zoom kenarı + filigranlar),
    § 24 (zoom), § 25 (yazı boyutu),
    `mobile/docs/testing-arkadaslar-canli.md` → Mesajlaşma.
-3. ⏳ **YÜKLEME SÜRÜYOR** — `1.0.5 (501) — 4a0a29b`, kapalı test kanalı.
+3. ✅ **YÜKLENDİ, ⏳ İNCELEMEDE** — `1.0.5 (501) — 4a0a29b`, kapalı test
+   kanalı, 2 Eylül ~14:40. Kanonik kayıt:
+   `mobile/docs/build-and-distribution-log.md` → "Yayınlanan sürümlerin
+   kütüğü". ⚠ "Published" rozeti kanala GİRDİĞİNİ söyler, cihaza indiğini
+   DEĞİL — ölçülmüş çare aynı dosyada ("testçi opt-in linkine TEKRAR gir").
 
 **Turun WEB yarısı — ayrı ve ZATEN CANLIDA** (`kelimeki.com`, `b053779`),
 çünkü web merge'de anında deploy oluyor: #398 (zoom + balon, portla aynı
