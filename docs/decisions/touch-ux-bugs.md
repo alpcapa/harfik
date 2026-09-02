@@ -1025,3 +1025,46 @@ hesaplanırsa biri doğru çalışıp ötekini örter.
 — son satır görünür olur"*. Test matematiği değil DAVRANIŞI ölçüyor: sonuna
 kadar kaydırınca son hücre görünür karenin içine girmeli. Negatif eşi
 kanıtlandı — bölme geri konunca −366 yerine −183 ölçülüp düşüyor.
+
+## Rozet zoom'u İZLİYOR ama kırpılmıyordu (2 Eylül 2026, İKİ platform)
+
+Pan menzili düzeltildikten hemen sonra kullanıcı ikinci bir şey bildirdi:
+*"zoom alt satırı gösteriyor artık ama deneme puanı hâlâ aşağılara
+iniyor"*. Hamle puanı rozeti (`+4`) zoom transform'unu izliyor ama katmanı
+HİÇ kırpılmıyordu — hedef hücre görünür kareden çıkınca rozet tahtanın
+DIŞINA, rafın üstüne çiziliyordu. ÖLÇÜLDÜ: görünür kare `y=55, h=366`
+iken rozet `y=-300`.
+
+**Neden kırpılmıyordu:** 1 Eylül'de portta bir kullanıcı *"kenarda kalan
+deneme sayıları kesiliyor"* demişti; rozet hücresinden `-35%` taştığı için
+ızgaranın dar payıyla (≈3,5 px) kırpılınca kenarı kesiliyordu. O turda
+rozet kırpmanın DIŞINA alınmıştı ve not şöyle yazılmıştı: *"kırpma payını
+rozeti kapsayacak kadar büyütmek YANLIŞ çözüm olurdu — aynı pay kadar
+zoom'lu ızgara da taşardı"*. **Cümle doğru ama eksikti:** IZGARANIN payını
+büyütmek yanlış; rozet AYRI bir katman olduğundan KENDİ payıyla
+kırpılabiliyordu. Doğru soru "kırpayım mı" değil, "hangi katman hangi
+payla" idi.
+
+**Pay ölçüldü, tahmin edilmedi:** rozet 2× zoom'da 39,9 × 28 px, `-35%`
+taşması ≈ 14 px → `BOARD_BADGE_CLIP_SLACK = 14` (portta `_badgeClipSlack`).
+
+**Klip HER ZAMAN var, duruma bağlı DEĞİL** — iki tuzak yüzünden:
+1. Portta zoom KAPALIYKEN de matris kimlik olarak geliyor, yani ayrım
+   `m == null` ile yapılamıyor (ilk sürüm bu yüzden dinlenmede de
+   kırpıyordu ve testi düşürdü).
+2. Duruma bağlansaydı kapatma animasyonu (180 ms) boyunca klip düşerken
+   rozet hâlâ tahta dışındaki konumundan dönüyor, yani rafın üstünden
+   süzülerek geçiyordu.
+Dinlenme hâlinde güvenli olmasının sebebi ölçüldü: tahtanın 10 px iç
+dolgusu rozetin 1×'teki ≈7 px taşmasından büyük, yani rozet payın
+sınırına hiç ulaşmıyor.
+
+**Testler:** web `smoke.spec.ts` → *"zoom + pan: hamle rozeti tahtanın
+DIŞINA boyanamaz"*, port `board_zoom_test.dart`. ⚠ `boundingBox()`
+KIRPMAYI GÖRMEZ (clipPath boyamayı etkiler, düzeni değil — ölçüldü:
+düzeltmeden önce de sonra da kutu `y=-300`), bu yüzden iddia klibin
+KENDİSİNE bakıyor; kesilmediğinin kanıtı ise ölçüm.
+
+⚠ **Port testinin iddiası TERSİNE ÇEVRİLDİ:** *"zoom'da da
+kırpılmamalı"* diyordu, yani eski hatalı tasarımı kilitliyordu. Bir test
+bir hatayı kilitleyebilir — iddiayı değiştirirken neden değiştiğini yaz.

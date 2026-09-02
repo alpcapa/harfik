@@ -50,6 +50,24 @@ export const PAN_SWALLOW_MS = 120;
  */
 export const BOARD_CLIP_SLACK = 4;
 
+/**
+ * Hamle rozeti KATMANININ kırpma payı (px) — ızgaranınkinden AYRI, çünkü
+ * rozet kendi kutusundan `translate(-35%,-35%)` ile taşıyor.
+ *
+ * 2 Eylül 2026 — kullanıcı bildirdi: *"deneme puanı hâlâ aşağılara
+ * iniyor"*. Rozet katmanı zoom transform'unu İZLİYOR ama hiç kırpılmıyordu
+ * (rozetin kesilmemesi için bilerek kırpma dışında bırakılmıştı), yani
+ * hedef hücre görünür kareden çıkınca rozet tahtanın DIŞINA — rafın
+ * üstüne — düşüyordu. ÖLÇÜLDÜ: görünür kare `y=55, h=366` iken rozet
+ * `y=-300`, yani 355 px yukarıda.
+ *
+ * Pay TAHMİN DEĞİL ölçü: rozet 2× zoom'da 39,9 × 28 px ölçüldü, `-35%`
+ * taşması ≈ 14 px. Bu kadar payla hücresi TAMAMEN görünen bir rozet
+ * kesilmez; kesilen yalnızca hücresi zaten yarım kalan rozet olur —
+ * ızgaranın kenardaki hücrelerinin kesilmesiyle aynı davranış.
+ */
+export const BOARD_BADGE_CLIP_SLACK = 14;
+
 export type ZoomState = {
   zoomed: boolean;
   /** Ölçeksiz ızgara uzayında öteleme (transform-origin: 0 0). */

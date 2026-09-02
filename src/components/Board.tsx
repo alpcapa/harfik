@@ -16,6 +16,7 @@ import { key } from '../utils/board';
 import { buildRoundedOutlinePath } from '../utils/outline';
 import {
   BOARD_CLIP_SLACK,
+  BOARD_BADGE_CLIP_SLACK,
   ZOOM_ANIM_MS,
   ZOOM_OFF,
   zoomTransform,
@@ -493,6 +494,7 @@ export function Board({
     const [r, c] = badge;
     return (
       <div
+        data-move-badge=""
         className="pointer-events-none absolute z-20 flex items-center justify-center rounded-full font-sans font-bold text-white leading-none whitespace-nowrap"
         style={{
           top: `${(r / SIZE) * 100}%`,
@@ -813,6 +815,13 @@ export function Board({
           data-board-badge-layer=""
           className="pointer-events-none absolute inset-0 p-[10px] z-20"
           style={{
+            // KENDİ payıyla kırpılır (ızgarannkinden AYRI) ve HER ZAMAN —
+            // zoom kapalıyken de. Güvenli olmasının sebebi ölçüldü:
+            // tahtanın 10 px dolgusu rozetin `-35%` taşmasından (1×'te
+            // ≈7 px) büyük, yani rozet payın sınırına hiç ulaşmıyor.
+            // Duruma bağlamak kapatma animasyonu (180 ms) boyunca klibi
+            // düşürüp rozeti rafın üstünden süzülerek geçirirdi.
+            clipPath: `inset(-${BOARD_BADGE_CLIP_SLACK}px)`,
             transform: zoomTransform(zoom),
             transformOrigin: '0 0',
             transition: zoom.animate
