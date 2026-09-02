@@ -91,6 +91,67 @@ bölümün kendi tarihli notuna taşınır.
     girişli herkese zaten açık) ama bilerek karar verilmeli.
 
 
+- **Miras isimler: `sharedxp_pending_profile` ve kalan `harfik` izleri (2
+  Eylül 2026, ölçüldü — ertelendi):** Projenin soyağacı **SharedXP →
+  Harfik → Kelimeki** ve iki ad hâlâ canlı kodda duruyor. Kullanıcı
+  kayıt akışını okurken bunu bizzat yakaladı (*"biz sharedXP değil Kelimeki
+  projesinde çalışıyoruz"*) — yani bu bir kozmetik borç değil, okuyanı
+  yanlış projeye götüren bir işaret.
+  - **`sharedxp_pending_profile`** — kayıt metadata'sının anahtar adı.
+    Nereden geldiği yazılı: `20260629000300_profile_name_fields.sql`
+    başlığı *"Harfik signUp, meta_data içinde `sharedxp_pending_profile`"*
+    diyor. Bugün **üç yerde birden** sözleşme: `src/lib/api.ts` (`signUp`),
+    `mobile/app/lib/src/data/auth_service.dart` (`signUp`) ve
+    `handle_new_user`'ın DÖRT sürümü (`20260629000300`, `20260729113942`,
+    `20260816073403`, `20260821094121`).
+  - **Neden tek satırlık bir rename DEĞİL:** anahtar, istemci ile trigger
+    arasındaki sözleşme. Play'de yayında olan eski istemci (1.0.5) eski
+    anahtarla yazmaya devam eder; trigger tek anahtara çevrilirse o
+    kayıtlarda ad/soyad boşalır. Doğru sıra: (1) trigger **iki anahtarı
+    birden** okusun (`coalesce(yeni, eski)`), (2) web + port yeni anahtara
+    geçsin, (3) eski istemciler tükendiğinde eski dal silinsin. 3. adım
+    ancak `mobile_min_supported_version` eski sürümü kestikten sonra.
+  - **Ne zaman:** `handle_new_user`'a zaten dokunulacak ilk PR'da — en
+    güçlü aday **Google ile giriş** (o iş trigger'ı değiştirmek zorunda,
+    bkz. `ROADMAP.md` → madde 17). Ayrı bir PR açmak bedelini iki
+    katına çıkarır.
+  - **`harfik` izlerinin ÖLÇÜLEN durumu (2 Eylül 2026):**
+    - **Canlı veritabanı TEMİZ.** `pg_proc`/`information_schema`/
+      `storage.buckets` taraması `harfik` içeren tek bir ad döndürmedi —
+      son kalan `harfik_points` fonksiyonu `20260721203236` ile
+      `kelimeki_points`e çevrilmişti.
+    - **Eski migration dosyaları `public.harfik_points(...)` çağırıyor**
+      (`20260628090300_seed_dictionary.sql` içinde 92 bin kez, tarihsel
+      sözlük tohumlaması). Bunlar **DEĞİŞTİRİLMEMELİ**: uygulanmış geçmişi
+      yeniden yazmak, tekrar oynatıldığında bugün var olmayan bir isme
+      dayanmaya çalışmak demek. Tarama yapan bir sonraki oturum bu 92 bin
+      eşleşmeyi "yapılacak iş" sanmasın.
+    - **Kodda tek canlı iz:** `src/utils/gameSync.ts` → `LEGACY_PENDING_KEY
+      = 'harfik:pending-games'` — 20 Temmuz rebrand'inde mahsur kalan
+      kuyruğu kurtaran `migrateLegacyQueue`. **Bilerek kalmalı**: adı eski
+      OLDUĞU İÇİN işe yarıyor.
+    - **`harfik.vercel.app` HÂLÂ YAYINDA ve canlı uygulamayı sunuyor** —
+      `curl` ile ölçüldü: `kelimeki.com` ile **aynı derleme sha'sını**
+      (`62610f7`) döndürüyor, yani Vercel projesinin adı hâlâ `harfik` ve
+      bu onun otomatik `<proje>.vercel.app` alan adı. `kelimeki.vercel.app`
+      ise **boşta** (`404 DEPLOYMENT_NOT_FOUND`), yani ad alınabilir.
+      SEO tarafı zaten korunuyor: sayfa `canonical`/`og:url` olarak
+      `https://kelimeki.com/` veriyor.
+    - ⚠ **Bu oturumun erişemediği yer:** Vercel MCP'siyle görünen hesapta
+      (`alpcapa's projects`, hobby) TEK proje var ve adı **`sharedxp`**
+      (repo `alpcapa/SharedXP`) — Kelimeki'yi yayınlayan proje bu hesapta
+      görünmüyor. Yani yeniden adlandırma **panelden elle** yapılacak;
+      ajanla yapılamaz.
+  - **Vercel projesini yeniden adlandırma planı** (yapılmadı, kullanıcı
+    kararı bekliyor): Settings → General → Project Name `harfik` →
+    `kelimeki`. Sonrası ölçülmeli, varsayılmamalı: (1) `kelimeki.com` özel
+    alan adı olduğundan üretim adresi DEĞİŞMEZ; (2) `harfik.vercel.app`
+    yayından kalkar — kırılacak bir yer var mı diye **Supabase Auth →
+    URL Configuration**'daki Site URL / Redirect URLs listesi ve varsa
+    kayıtlı Google/Firebase OAuth redirect'leri ÖNCE okunmalı; (3)
+    `main`'e bir sonraki merge'den sonra `curl -s https://kelimeki.com/ |
+    grep kelimeki-build` ile deploy zincirinin sağlam kaldığı doğrulanmalı.
+
 ### Bu listeden çıkanlar (yeniden açılmasın)
 
 - **Hesap silme (KVKK "unutulma hakkı")** — ✅ yapıldı 25 Ağustos 2026.

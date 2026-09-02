@@ -605,6 +605,38 @@ premium içerik yok, ve **Android uygulamasında yönetici paneli YOK** —
 `lib/src/ui/` altında hiçbir ekranı kilitlemiyor. Panel web'de yaşıyor,
 Play'e giden pakette değil.
 
+## 6.7 — Firebase ↔ Google Play bağlantısı: **YAPILMADI** (2 Eylül 2026)
+
+Firebase Console → *Project settings → Integrations → Google Play* ekranı
+("Link Firebase to Google Play", 1. adım) kullanıcı tarafından açıldı ve
+soruldu: *"Bunu yapmam gerekir mi?"* **Cevap: hayır — bugün karşılığı yok.**
+Karar ileride kolayca dönülebilir olsun diye gerekçesiyle yazılıyor;
+zararlı değil, yalnızca gereksiz.
+
+Ekranın kendi saydığı üç fayda, repodan ÖLÇÜLEN duruma karşı:
+
+| Bağlantının vaadi | Kelimeki'deki karşılığı |
+|---|---|
+| **App Distribution** — yüklenen `.aab` Play'e verilip test cihazına uygun APK üretilir | Firebase App Distribution **kullanılmıyor**. Test dağıtımı `mobile-build.yml` → GitHub `mobile-latest` prerelease'i (`.apk` + imzalı `.aab`) ve Play kapalı test kanalı üzerinden |
+| **Crashlytics** ↔ Play kararlılık verisi paylaşımı | Crashlytics repoda **hiç yok** — `mobile/app/pubspec.yaml` yalnızca `firebase_core`, `firebase_messaging`, `firebase_analytics` taşıyor. Hata telemetrisi Supabase `client_errors` tablosunda (bkz. `docs/decisions/telemetry.md`) |
+| **Google Analytics** ↔ Play uygulama içi satın alma / abonelik geliri | Satın alma da abonelik de **yok** — bu dosyanın 3.3/3.7 formlarında ve `metin.md`'de harfiyen böyle beyan edildi ("Reklam yok, uygulama içi satın alma yok") |
+
+Kullanılan iki Firebase ürünü — **FCM push** ve **Analytics olayları** — bu
+bağlantıdan bağımsız çalışıyor: ikisi de `android/app/google-services.json`
++ paket adıyla iş görüyor, Play tarafında bir eşleme istemiyor.
+
+**Ne zaman geri dönülür:**
+- **Crashlytics eklenirse** — bağlantı o zaman gerçek fayda üretir (Play
+  kararlılık verisi ↔ Crashlytics).
+- **Reklam ya da abonelik eklenirse** — ama o durumda zaten bütün beyan
+  zinciri değişiyor (bkz. yukarıdaki "reklam eklenirse BEYAN ZİNCİRİ
+  değişir" uyarısı); bağlantı o işin küçük bir parçası olur.
+
+⚠ Bağlantı Play tarafında **Owner** yetkisi ve paket adının Play'de kayıtlı
+olmasını istiyor — bu iki koşulun ötesindeki akış GÖRÜLMEDİ, bu yüzden
+adım adım yazılmıyor (bu dosyanın "Console davranışını çıkarımla yazma"
+kuralı).
+
 ## 7. 12 tester + 14 gün
 
 **Şart:** kapalı testte **en az 12 tester**, **kesintisiz 14 gün** kayıtlı.
