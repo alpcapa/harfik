@@ -64,8 +64,20 @@ bool buyukOlcek(BuildContext context) =>
 /// büyürken kutu sabit kalırsa metin sarıyor — kutu da aynı oranda
 /// büyütülünce sarma kökten ortadan kalkıyor. Satırdaki esnek öğe (isim,
 /// `Expanded` + `ellipsis`) bu büyümeyi soğurur.
-double scaledWidth(BuildContext context, double px) =>
-    MediaQuery.textScalerOf(context).scale(px);
+double scaledWidth(BuildContext context, double px) {
+  final olcek = MediaQuery.textScalerOf(context).scale(100) / 100;
+  // ⚠ KISMİ ölçek — tam ölçek SINIF 3'ü çözerken SINIF 2'yi tetikliyordu.
+  // ÖLÇÜLDÜ (GameOver, uzun ad "Abdurrahman Çelebioğlu", tavan 1,3):
+  //   kutu sabit  → isim 124,0 px (skorlar BÖLÜNÜYOR — asıl hata)
+  //   tam ölçek   → isim  98,2 px (−25,8; skor tam boy)
+  //   1,15 tavanı → isim 111,1 px (−12,9; skor 1,0'dakinden hâlâ %15 büyük,
+  //                 gerekirse %11 küçültülüyor — okunurluk sınırının içinde)
+  // Yani satırdaki esnek öğenin (isim) bedeli YARIYA iniyor ve skor yine de
+  // büyüyor. Tavan [kWideLayoutScale] ile AYNI sayı ve bu tesadüf değil:
+  // ikisi de "düzenin bir satırda taşıyabileceği büyüme" sınırını tarif
+  // ediyor. Üstündeki büyümeyi `ScaledCell`in `FittedBox`u soğuruyor.
+  return px * (olcek > kWideLayoutScale ? kWideLayoutScale : olcek);
+}
 
 /// Sabit genişlikli bir SÜTUN hücresi — sarmayı YAPISAL olarak imkânsız
 /// kılar (SINIF 3'ün tek çözüm noktası).

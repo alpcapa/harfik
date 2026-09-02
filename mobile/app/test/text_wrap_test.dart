@@ -176,7 +176,10 @@ void main() {
           .renderObject as RenderBox;
       // FittedBox child'a sonsuz genişlik verdiğinden `ro.size.width`
       // metnin DOĞAL (küçültülmemiş) genişliğidir.
-      if (ro.size.width > hucre.size.width + 0.5) {
+      // Kısmi ölçeğin (bkz. scaledWidth) kabul edilen bedeli: metin en çok
+      // %15 küçültülebilir. Daha fazlası okunurluğu bozar; hiç izin
+      // vermemek ise isim sütununu gereksiz yere ezerdi.
+      if (ro.size.width > hucre.size.width / 0.85) {
         kuculen.add('"$metin" (${ro.size.width.toStringAsFixed(1)}px metin, '
             '${hucre.size.width.toStringAsFixed(1)}px kutu)');
       }
@@ -186,8 +189,8 @@ void main() {
             'cihazda bildirdiği hata (241 → 24/1) geri gelmiş.');
     expect(kuculen, isEmpty,
         reason: 'Sütun kutusu yazı ölçeğiyle büyümüyor: metin sığmak için '
-            'KÜÇÜLTÜLÜYOR. Yazıyı büyüten kullanıcıda sayının küçülmesi '
-            'kabul edilemez — `ScaledCell` genişliği `scaledWidth` ile '
-            'ölçeklemeli.');
+            'KÜÇÜLTÜLÜYOR (>%15). Yazıyı büyüten kullanıcıda sayının '
+            'küçülmesi kabul edilemez — `ScaledCell` genişliği '
+            '`scaledWidth` ile ölçeklemeli.');
   });
 }
