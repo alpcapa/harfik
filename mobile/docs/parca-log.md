@@ -20,6 +20,44 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 177 — sistem yazı boyutunun ÜÇÜNCÜ hata sınıfı: sabit
+     genişlikli kutuda SARMA (1 Eylül 2026; YENİ dosya
+     `test/text_wrap_test.dart`; değişen: `ui/text_scale.dart`,
+     `game_over_modal.dart`, `leaderboard_modal.dart`,
+     `game_history_modal.dart`, `meaning_modal.dart`, `help_modal.dart`):**
+     - **Kullanıcı bildirdi (ekran görüntüsüyle):** *"fontlarını büyüten
+       kişilerde bitirme modalı puanları bölüyor."* Skor `241` ekranda
+       `24`/`1`; başlıklar `KAL`/`AN`, `TOPLA`/`M`, `k-`/`lig`.
+     - **Bu, tanımlı iki sınıfın HİÇBİRİ değil.** Taşma üretmiyor (ölçüldü:
+       takımın tamamı ölçek 1,3'te koşturuldu → taşma **sıfır**, yani
+       tavan+Wrap turu tutmuş) ve sıkışma da değil (bilgi kaybolmuyor,
+       okunamaz hâle geliyor). Tavan ÇÖZMÜYOR.
+     - **Envanter ÖLÇÜLDÜ** (gerçek fontlarla, 15 sabit genişlikli sütun):
+       tavanda 10 nokta sarıyor; **dördü ölçek 1,0'da bile sarıyordu**.
+     - **Test verisi de ölçüldü, uydurulmadı** — ilk taslakta "+12" ve
+       "1000" gibi imkânsız değerler vardı: `leaguePoints` yalnızca
+       -2/0/1/2 döndürüyor (yani k-lig katkısı en fazla iki karakter) ve
+       100 taşlık torbayla skor üç hane. Buna karşılık `meanings.json`
+       taranınca en çok anlamlı kelimenin **`çıkmak`, 54 anlam** olduğu
+       çıktı — yani anlam modalindeki `54.` GERÇEK bir en kötü durum.
+     - **Çözüm `ScaledCell`** (`ui/text_scale.dart`): kutu `scaledWidth` ile
+       ölçekle büyür + `maxLines:1`/`softWrap:false` + `FittedBox` güvenlik
+       ağı. `game_history_modal`'da zaten `softWrap:false` vardı — o sarmayı
+       değil KIRPMAYI seçiyordu (bilgi kaybı); ScaledCell ikisini de çözer.
+     - **⚠ TESTİN KENDİSİNDE ölçülmüş bir ders:** ilk negatif eş SESSİZCE
+       GEÇTİ, çünkü test yanlış katmanı ölçüyordu — `FittedBox` tek başına
+       bölünmeyi engelliyor, `scaledWidth`in işi ise metnin KÜÇÜLMEMESİ.
+       İki mekanizma, iki ayrı iddia: kapı artık ikisini AYRI ölçüyor
+       (bölünme + küçültme) ve negatif eşi gerçekten düşürüyor. Ders: bir
+       düzeltme iki mekanizmadan oluşuyorsa negatif eş her ikisini de
+       tek tek kaldırarak koşulmalı.
+     - **Doğrulama:** 3 yeni test (envanter + negatif eş + GameOver'ın
+       GERÇEK render'ı tavan ölçeğinde) + tam takım **696 test yeşil**,
+       `dart analyze` temiz. Cihaz listesi: `mobile/TESTING.md` § 25.
+       **Doğrulama SINIRI:** sınıf 2 (sessiz sıkışma) bu turda ÖLÇÜLMEDİ;
+       web tarafındaki aynı desen (`w-[29px]` vb.) de ölçülmedi — orada
+       sistem ölçeği metni büyütmüyor ama tarayıcının "en küçük yazı
+       boyutu" ayarı aynı sınıfı doğurabilir.
    - ✅ **Parça 176 — zoom tanıtım balonu (1 Eylül 2026; YENİ dosya
      `test/zoom_hint_test.dart`; değişen: `flags_store.dart`,
      `board_widget.dart`, `game_screen.dart`, `online_game_screen.dart`,

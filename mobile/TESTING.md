@@ -1632,6 +1632,23 @@ sırası gelen İNSAN oyuncunun ev karesinin yanında çıkar.
 - [ ] **Canlı oyun** ekranında da aynı davranış (iki ekran `BoardWidget`'ı
       paylaşıyor).
 
+## 25. Sistem yazı boyutu — sayılar bölünmüyor (1 Eylül 2026)
+
+Ayarlar → Ekran → Yazı tipi boyutunu **en büyüğe** al (uygulama 1,3'te
+kırpar), sonra:
+
+- [ ] **Bir oyunu bitir** → bitirme modalında `KALAN`/`TOPLAM`/`k-lig`
+      başlıkları ve skorlar TEK SATIR olmalı; `241` gibi bir sayı
+      `24`/`1` diye bölünmemeli.
+- [ ] **Skor Kartı → k-lig lider tablosu** → sıra ve puan sütunları tek
+      satır.
+- [ ] **Oyun geçmişi (Tüm Oyunlarım → bir oyun)** → `PUAN`/`k-lig`
+      başlıkları, sıra ve skorlar tek satır.
+- [ ] **Tahtada onaylı bir taşa dokun (kelime anlamı)** → madde numaraları
+      (`1.`, `2.` …) tek satır.
+- [ ] **Nasıl Oynanır → k-lig kademe tablosu** → kademe harfleri tek satır.
+- [ ] Yazı boyutunu normale al → hiçbir yerde görünüm değişmemeli.
+
 ## 24. Tahta zoom'u — çift dokunuş + pan (1 Eylül 2026, Parça 175)
 
 Sadece tahtanın İÇİ büyür (2×); raf, başlık, butonlar sabit kalır. Kapsam:

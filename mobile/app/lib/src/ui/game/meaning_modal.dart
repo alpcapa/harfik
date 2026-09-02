@@ -2,6 +2,7 @@
 // portu. Bir dokunuş en fazla iki kelime üretir (yatay + dikey); ilki
 // başlık olur, ikincisi ayraçlı bir alt başlıkla listelenir.
 import 'package:flutter/material.dart';
+import '../text_scale.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 
 import '../../data/meaning_entry.dart';
@@ -157,10 +158,14 @@ class _MeaningBody extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
+              // SINIF 3 (sarma): "10." ölçek 1,3'te 20 px'e sarıyordu.
+              ScaledCell(
                 width: 20,
+                align: Alignment.topLeft,
                 child: Text(
                   '${i + 1}.',
+                  maxLines: 1,
+                  softWrap: false,
                   style: const TextStyle(
                     fontFamily: 'SpaceMono',
                     fontSize: 13,

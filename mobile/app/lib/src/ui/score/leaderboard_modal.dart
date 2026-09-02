@@ -3,6 +3,7 @@
 // altta kesikli çizgiyle ayrılmış "senin sıran" kısayolu. Satıra dokunmak o
 // oyuncunun (salt-okunur) skor kartını açar.
 import 'package:flutter/material.dart';
+import '../text_scale.dart';
 
 import '../../data/auth_service.dart';
 import '../../data/friends_api.dart';
@@ -560,9 +561,14 @@ class _Row extends StatelessWidget {
           ),
           child: Row(
             children: [
-              SizedBox(
+              // SINIF 3 (sarma): kutu ölçekle büyür, sığmazsa küçülür —
+              // "100" ölçek 1,3'te 28 px'e sarıyordu (bkz. text_scale.dart).
+              ScaledCell(
                 width: 28,
+                align: Alignment.centerLeft,
                 child: Text('$rank',
+                    maxLines: 1,
+                    softWrap: false,
                     style: TextStyle(
                         fontFamily: 'SpaceMono',
                         fontSize: 14,
@@ -601,9 +607,11 @@ class _Row extends StatelessWidget {
                     style: const TextStyle(
                         fontFamily: 'SpaceMono', fontSize: 11, color: _muted)),
               ),
-              SizedBox(
+              ScaledCell(
                 width: 44,
                 child: Text('$score',
+                    maxLines: 1,
+                    softWrap: false,
                     textAlign: TextAlign.right,
                     style: const TextStyle(
                         fontFamily: 'SpaceMono',
