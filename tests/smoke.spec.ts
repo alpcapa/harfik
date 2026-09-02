@@ -1778,6 +1778,78 @@ test.describe('tahta zoom', () => {
     expect(son.y).toBeGreaterThanOrEqual(kare.y - 1);
   });
 
+  // 2 Eylül 2026 — pan menzili düzeltildikten SONRA kullanıcı ikinci bir
+  // şeyi bildirdi: *"zoom alt satırı gösteriyor artık ama deneme puanı hâlâ
+  // aşağılara iniyor"*. Rozet (`+4`) zoom transform'unu İZLİYOR ama katmanı
+  // kırpılmıyordu (kendi kutusundan `translate(-35%,-35%)` ile taştığı için
+  // bilerek kırpma DIŞINDA bırakılmıştı) — sonuç: hedef hücre görünür
+  // kareden çıkınca rozet tahtanın dışına, rafın üstüne düşüyordu.
+  test('zoom + pan: hamle rozeti tahtanın DIŞINA boyanamaz', async ({ page }) => {
+    await oyunEkrani(page);
+    // Taş TAHTANIN ORTASINA konuyor. Köşe (0,0) kullanılmıyor: oradan
+    // odaklanmak için tahtanın sol-üst ÇERÇEVESİNE dokunmak gerekiyor ve o
+    // nokta "← Geri" bağlantısına denk gelip sayfayı Setup'a döndürüyor
+    // (ölçüldü — ilk sürüm böyle düştü). Hamle geçersiz olabilir; rozet
+    // geçersiz hamlede de çiziliyor (rengi kırmızı).
+    await page.locator('[data-rack-tile="0"]').tap();
+    const hedef = await hucreKutusu(page, 5, 5);
+    await dokun(page, hedef.x + hedef.width / 2, hedef.y + hedef.height / 2);
+    await expect(page.locator('[data-move-badge]')).toBeVisible();
+
+    const kare = (await page.locator('[data-board-viewport]').boundingBox())!;
+    const katman = page.locator('[data-board-badge-layer]');
+    const kirpma = () => katman.evaluate((el) => getComputedStyle(el).clipPath);
+    const { BOARD_BADGE_CLIP_SLACK } = await import('../src/utils/boardZoom');
+
+    // Klip HER ZAMAN var (zoom kapalıyken de) — kapatma animasyonu boyunca
+    // düşerse rozet rafın üstünden süzülerek geçerdi. 1 Eylül'ün "kenardaki
+    // rozet kesilmesin" derdi payın genişliğiyle korunuyor ve bu ÖLÇÜLEREK
+    // kanıtlanıyor: dinlenme hâlinde rozet payın içinde.
+    const pay = BOARD_BADGE_CLIP_SLACK;
+    expect(await kirpma()).toBe(`inset(-${pay}px)`);
+    const durgun = (await page.locator('[data-move-badge]').boundingBox())!;
+    expect(durgun.x).toBeGreaterThanOrEqual(kare.x - pay);
+    expect(durgun.y).toBeGreaterThanOrEqual(kare.y - pay);
+
+    // (1) Hücresi GÖRÜNÜRKEN rozet kırpılmamalı: taşın olduğu köşeye
+    // odaklanarak zoom aç, rozet görünür karenin içinde kalmalı. Bu, payın
+    // (14 px) gerçekten yeterli olduğunun kanıtı — dar seçilseydi burada
+    // düşerdi.
+    // ⚠ Çift dokunuş TAŞIN ÜSTÜNE yapılamaz — ilk dokunuş taslak taşı geri
+    // alır, rozet kaybolur ve test "rozet yok" diye düşer (ölçüldü).
+    // Komşu BOŞ kareye odaklanılıyor; odak korunumu taşın hücresini de
+    // görünür bırakıyor.
+    const komsu = await hucreKutusu(page, 6, 6);
+    await ciftDokun(page, komsu.x + komsu.width / 2, komsu.y + komsu.height / 2);
+    expect(await olcek(page)).toBeCloseTo(2, 1);
+    await expect(page.locator('[data-move-badge]')).toBeVisible();
+    const yakin = (await page.locator('[data-move-badge]').boundingBox())!;
+    expect(yakin.x).toBeGreaterThanOrEqual(kare.x - pay);
+    expect(yakin.y).toBeGreaterThanOrEqual(kare.y - pay);
+
+    // (2) Hücre görünür kareden çıkınca rozet BOYANMAMALI.
+    // ⚠ `boundingBox()` KIRPMAYI GÖRMEZ — `clipPath` boyamayı etkiler,
+    // düzeni değil; ölçüldü, düzeltmeden önce de sonra da kutu y=-300
+    // çıkıyor. Bu yüzden iddia kırpmanın KENDİSİNE bakıyor: katman zoom
+    // açıkken gerçekten kırpılıyor mu ve bölge görünür kare + ölçülmüş pay
+    // kadar mı. Kırpma kalkarsa (hatanın kendisi) bu düşer.
+    for (let i = 0; i < 4; i++) {
+      await kaydir(
+        page,
+        kare.x + kare.width * 0.8,
+        kare.y + kare.height * 0.8,
+        -kare.width,
+        -kare.height,
+      );
+    }
+    const uzak = (await page.locator('[data-move-badge]').boundingBox())!;
+    expect(
+      uzak.y + uzak.height < kare.y || uzak.x + uzak.width < kare.x,
+      'kurulum: rozetin hücresi görünür kareden çıkmış olmalı',
+    ).toBe(true);
+    expect(await kirpma()).toBe(`inset(-${pay}px)`);
+  });
+
   test('KENARDAN (kareler dışı) çift dokunuş da zoom açar', async ({ page }) => {
     await oyunEkrani(page);
     const vp = (await page.locator('[data-board-viewport]').boundingBox())!;
