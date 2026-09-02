@@ -12,6 +12,7 @@
 import 'dart:async' show unawaited;
 
 import 'package:flutter/material.dart';
+import '../text_scale.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../config/env.dart';
@@ -971,9 +972,11 @@ class _EntryCard extends StatelessWidget {
                         ),
                       ],
                       const Spacer(),
-                      const SizedBox(
+                      const ScaledCell(
                           width: 40,
                           child: Text('PUAN',
+                              maxLines: 1,
+                              softWrap: false,
                               textAlign: TextAlign.right,
                               style: TextStyle(
                                   fontFamily: 'SpaceMono',
@@ -987,9 +990,11 @@ class _EntryCard extends StatelessWidget {
                       // notu: kısa etiketlerde wordmark, ama bu punto onun
                       // altında). Sütun 24→32: 5 karakter 9px SpaceMono +
                       // 0.5 letterSpacing ile 24'e sığmıyordu.
-                      const SizedBox(
+                      const ScaledCell(
                           width: 32,
                           child: Text('k-lig',
+                              maxLines: 1,
+                              softWrap: false,
                               textAlign: TextAlign.right,
                               style: TextStyle(
                                   fontFamily: 'SpaceMono',
@@ -1132,10 +1137,14 @@ class _PlayerRow extends StatelessWidget {
       padding: const EdgeInsets.only(top: 2),
       child: Row(
         children: [
-          SizedBox(
-            width: 18, // "1." 12px SpaceMono'da 14px'e sığmıyordu (ekran
-            // görüntüsü yakaladı: rakam ve nokta alt alta düşüyordu)
+          // 18 px: "1." 12px SpaceMono'da 14 px'e sığmıyordu (ekran
+          // görüntüsü yakalamıştı: rakam ve nokta alt alta düşüyordu).
+          // `softWrap: false` sarmayı kapatıyordu ama sığmayanı KIRPIYORDU;
+          // ScaledCell kutuyu ölçekle büyütüp gerekirse küçültüyor.
+          ScaledCell(
+            width: 18,
             child: Text('$rank.',
+                maxLines: 1,
                 softWrap: false,
                 textAlign: TextAlign.right,
                 style: const TextStyle(
@@ -1161,9 +1170,11 @@ class _PlayerRow extends StatelessWidget {
             const _Badge(text: 'TESLİM OLDU', color: _red),
           ],
           const SizedBox(width: 4),
-          SizedBox(
+          ScaledCell(
             width: 40,
             child: Text('${player.score}',
+                maxLines: 1,
+                softWrap: false,
                 textAlign: TextAlign.right,
                 style: TextStyle(
                     fontFamily: 'SpaceMono',
@@ -1172,12 +1183,14 @@ class _PlayerRow extends StatelessWidget {
                     color: isMe ? _gold : _muted)),
           ),
           const SizedBox(width: 8),
-          SizedBox(
+          ScaledCell(
             // Başlıkla (k-lig) aynı genişlik — ikisi de sağa hizalı, sağ
             // kenarların çakışması için eşit olmak zorunda.
             width: 32,
             child: Text(
               formatLeaguePoints(points),
+              maxLines: 1,
+              softWrap: false,
               textAlign: TextAlign.right,
               style: TextStyle(
                 fontFamily: 'SpaceMono',

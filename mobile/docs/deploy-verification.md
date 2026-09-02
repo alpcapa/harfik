@@ -103,6 +103,69 @@ bir vaka değil; bu yüzden bugün düzeltilmedi. Tavan yükseltilirse ya da
 biri cihazda şikayet konusu olursa çözüm aynı: `buyukOlcek(context)` ile
 satırı ikiye böl.
 
+### ✅ 1 Eylül 2026 — dördü de ÖLÇÜLDÜ (kullanıcı isteği: "sınıf 2'ye de bak")
+
+Desen izole edilip ölçüldü (`Expanded(isim)` + metin kardeş, uzun ad
+"Abdurrahman Çelebioğlu", 320 ve 360 px, ölçek 1,0 → 1,3):
+
+| Aday | 320 px | Kayıp |
+|---|---|---|
+| `setup_screen` (devam eden oyun) | 114,2 → **67,8 px** | **−41 %** |
+| `live_games_tab` (durum etiketi) | 202,4 → 178,6 px | −12 % |
+| `game_history_modal` (satır) | 220,4 → 202,3 px | −8 % |
+| `recent_games_section` (skor) | 216,9 → 197,1 px | −9 % |
+
+**Yani dördünden YALNIZCA BİRİ gerçek risk:** `setup_screen`'deki devam
+eden oyun kartı, çünkü kardeşi projenin en uzun etiketi (`SENİN HAMLEN
+BEKLENİYOR`). Kalan üçü "birkaç karakter" tahmininin içinde kaldı — 2028
+Ağustos'taki karar bu üçü için DOĞRU çıktı, dördüncüsü için değil.
+67,8 px ≈ 7 karakter: kimlik korunuyor ama zayıf.
+
+⚠ **Ölçüm sentetik desen üzerinde** (gerçek kartta avatar/rozet de var),
+yani gerçek kayıp bundan biraz DAHA fazla olabilir.
+
+### ✅ 2 Eylül 2026 — o tek gerçek risk DÜZELTİLDİ (kullanıcı: "İkisini de yap")
+
+Sentetik desen bırakılıp **gerçek kart** ölçüldü (`setup_screen_test.dart`,
+320 px, kayıtlı yarım oyun, ölçek 1,0 → 1,3; ölçülen şey avatar dizisi
+değil onu barındıran SOL SÜTUNUN eni):
+
+| Düzen | 1,0 → 1,3 | |
+|---|---|---|
+| eski (tek satır) | 114,9 → **73,9 px** | −36 % |
+| yeni (eşikte ikiye bölünür) | 114,9 → **266,0 px** | +131 % |
+
+Çare dokümanda zaten yazılıydı: `buyukOlcek(context)` eşiğinde satır ikiye
+bölünüyor — durum etiketi avatar satırının ALTINA geçiyor
+(`_DevamEdenGovde`). Sentetik ölçümün −41'i gerçek kartta −36 çıktı; sıra
+büyüklüğü aynı, yani desen doğru yeri işaret etmişti.
+
+⚠ **Bölmede `CrossAxisAlignment.stretch` ŞART.** İlk sürüm `start`
+kullanıyordu ve sol sütun kendi içeriğine shrink-wrap ettiğinden alan —
+artık kimse yemediği hâlde — 93,0 px'te kaldı (ölçüldü, %19 kayıp). Yani
+"etiketi alta aldım" tek başına sıkışmayı KAPATMIYOR; ölçüm olmasa bu
+sessizce yarım düzeltme olarak kalırdı.
+
+Test iki AYRI şeyi kilitliyor (biri olmadan öteki aldatıcı): satır gerçekten
+bölündü mü, ve sol sütun daralmadı mı. Negatif eşi koşuldu — `ikiyeBol`
+sabitlenince test düşüyor. Normal ölçekte düzenin DEĞİŞMEDİĞİ de ayrıca
+kilitli (web paritesi).
+
+### ⚠ SINIF 3'ün düzeltmesi SINIF 2'yi tetikliyordu — kısmi ölçek kararı
+
+`ScaledCell` sütun kutularını yazı ölçeğiyle büyütünce satırdaki esnek öğe
+(isim) daralıyor. ÖLÇÜLDÜ (GameOver, 360 px, tavan 1,3):
+
+| | isim genişliği |
+|---|---|
+| kutu sabit (eski) | 124,0 px — ama skorlar BÖLÜNÜYOR |
+| kutu tam ölçekli | 98,2 px (−25,8) |
+| **kutu 1,15 tavanlı** | **111,1 px (−12,9)** ← seçilen |
+
+Kısmi ölçekte skor 1,0'dakinden hâlâ %15 büyük ve gerekirse en çok %11
+küçültülüyor. Yani iki sınıfın bedeli ORTALANDI; `scaledWidth` bu yüzden
+`kWideLayoutScale` (1,15) ile sınırlı.
+
 ---
 
 # 31 Ağustos 2026'da `mobile/CLAUDE.md`'den taşınanlar

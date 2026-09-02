@@ -905,6 +905,19 @@ ve tek bir çözüm ikisini birden kapatmıyor:
 | Hata basılır mı | evet | **hayır** |
 | Çözümü | `kMaxTextScale` tavanı | satırı İKİYE BÖLMEK |
 
+**ÜÇÜNCÜ SINIF — SARMA (1 Eylül 2026):** sabit piksel genişlikli bir
+kutudaki metin ölçekle büyüyünce kutuya sığmayıp **satır kırıyor**; bir
+kullanıcı cihazda yakaladı: *"fontlarını büyüten kişilerde bitirme modalı
+puanları bölüyor"* — skor `241` ekranda `24`/`1` diye okunuyordu. Taşma
+ÜRETMEZ (ölçüldü: tavanda takımın tamamında taşma **sıfır**), sıkışma da
+değildir; hiçbir hata basılmaz. **Tavan çözmez** ve dört vaka ölçek
+1,0'da bile sarıyordu. Çözüm `ui/text_scale.dart` → **`ScaledCell`**: kutu
+`scaledWidth` ile ölçekle büyür, metin `maxLines:1`+`softWrap:false` ile
+asla sarmaz, yine de sığmazsa `FittedBox` küçültür. Kapı:
+`test/text_wrap_test.dart` (15 sütunluk envanter + GameOver'ın gerçek
+render'ı). ⚠ **Yeni bir sabit genişlikli sütun eklerken `SizedBox` değil
+`ScaledCell` kullan** — aksi halde bu hata sessizce geri gelir.
+
 **Tavan 1,3** (kullanıcı kararı). Ölçüldü: taşma sayısı ölçek 1,0'da 0 ·
 1,3'te 10 · 2,0'da 73 — hasar 1,3'ten sonra patlıyor. 1,0'a kilitlemek
 erişilebilirlik açısından savunulamazdı. Tam envanter:

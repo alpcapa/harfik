@@ -14,6 +14,7 @@
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
+import '../text_scale.dart';
 import 'modal_shell.dart';
 import 'player_badge.dart';
 import 'player_colors.dart';
@@ -184,10 +185,15 @@ class _ColHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    // SINIF 3 (sarma) — kutu ölçekle büyür, sığmazsa metin küçülür ama
+    // ASLA satır kırmaz (1 Eylül 2026: "KALAN" ölçek 1,3'te "KAL/AN"
+    // oluyordu). Gerekçe: `ui/text_scale.dart`.
+    return ScaledCell(
       width: width,
       child: Text(
         label,
+        maxLines: 1,
+        softWrap: false,
         textAlign: TextAlign.right,
         style: const TextStyle(
           fontSize: 9,
@@ -254,10 +260,12 @@ class _PlayerRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        SizedBox(
+        ScaledCell(
           width: 29,
           child: Text(
             remaining > 0 ? '-$remaining' : '',
+            maxLines: 1,
+            softWrap: false,
             textAlign: TextAlign.right,
             style: const TextStyle(
               fontFamily: 'SpaceMono',
@@ -267,10 +275,12 @@ class _PlayerRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        SizedBox(
+        ScaledCell(
           width: 37,
           child: Text(
             '${p.score}',
+            maxLines: 1,
+            softWrap: false,
             textAlign: TextAlign.right,
             style: TextStyle(
               fontFamily: 'SpaceMono',
@@ -281,10 +291,12 @@ class _PlayerRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        SizedBox(
+        ScaledCell(
           width: 20,
           child: Text(
             formatLeaguePoints(points),
+            maxLines: 1,
+            softWrap: false,
             textAlign: TextAlign.right,
             style: TextStyle(
               fontFamily: 'SpaceMono',
