@@ -1068,3 +1068,41 @@ KENDİSİNE bakıyor; kesilmediğinin kanıtı ise ölçüm.
 ⚠ **Port testinin iddiası TERSİNE ÇEVRİLDİ:** *"zoom'da da
 kırpılmamalı"* diyordu, yani eski hatalı tasarımı kilitliyordu. Bir test
 bir hatayı kilitleyebilir — iddiayı değiştirirken neden değiştiğini yaz.
+
+### ⚠ İLK DÜZELTME İŞE YARAMADI — klip TRANSFORM'LU katmandaydı (aynı gün)
+
+Yukarıdaki düzeltme gönderildikten sonra kullanıcı aynı hatayı yine gördü:
+*"Web düzelmemiş hâlâ, zoomda deneme taşı koyunca aşağı kaydırınca rozet
+alta sarkıyor. Bu app'de olmuyordu ayrıca."*
+
+**Sebep:** `clipPath` rozet katmanının KENDİSİNE konmuştu — yani
+`transform` ile AYNI elemana. CSS `clip-path`i elemanın kendi
+transform'undan ÖNCE uygular, dolayısıyla klip de rozetle birlikte kayar
+ve hiçbir şeyi sınırlamaz. Doğru yapı ızgarada zaten vardı ve
+kopyalanmamıştı: klip KIRPILMAYAN görünür karede, transform içteki
+katmanda.
+
+**Kullanıcının "app'de olmuyordu" tespiti doğruydu ve sebebi aynı:**
+Flutter'da sıra TERS — `ClipRect` çocuğunun boyamasını KENDİ (ebeveyn)
+uzayında kırpar, yani `ClipRect(child: Transform(...))` gerçekten
+sınırlar. Aynı kod deseni iki platformda zıt anlama geliyor.
+
+**Asıl hata testteydi, koddan önce:** ilk tur `getComputedStyle(...)
+.clipPath` değerine bakıyordu, yani MEKANİZMANIN VARLIĞINA. Mekanizma
+yanlış olduğu için test yeşil geçti ve hata kullanıcıda sürdü. Yorumda
+*"`boundingBox()` kırpmayı görmez"* diye doğru bir gözlem vardı ve
+oradan YANLIŞ sonuca gidilmişti: ölçülemiyorsa mekanizmayı doğrula.
+Doğrusu: **ölçüm yolunu değiştir.**
+
+Yeni kapı PİKSEL ölçüyor (`smoke.spec.ts` → *"zoom: hamle rozeti RAFIN
+üstüne BOYANMAZ (piksel)"*): ekran görüntüsü sayfaya geri verilip
+`canvas`ta çözülüyor (Node'da PNG çözücü yok, tarayıcınınki kullanılıyor)
+ve raf bandında rozetin rengi aranıyor. Kurulum da ölçülüyor — rozet
+tahtanın içinde gerçekten görünüyor ve bantta baştan yok. Senaryo
+kullanıcınınkiyle birebir: taş alt satırda, zoom tahtanın üstüne odaklı.
+İki kurulum tuzağı ölçümle bulundu: rozet geçersiz hamlede KIRMIZI (ilk
+sürüm yalnız yeşile bakıp "rozet yok" sandı) ve "Kelime geçersiz" yazısı
+da kırmızı olduğundan bant rafın üstünden başlamak zorunda.
+
+**Ders:** bir iddia "şu ayar kurulu mu" diyorsa hatayı değil niyeti test
+ediyordur. Kırpma/boyama iddiaları pikselle ölçülür.

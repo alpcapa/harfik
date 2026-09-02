@@ -811,25 +811,36 @@ export function Board({
           içinde) — ikisi ancak böyle birebir hizalı kalır.
           Port ikizi: `board_widget.dart` → `_zoomWrap(unclipped:)`. */}
       {moveBadge && (
+        /* ⚠ KLİP AYRI, TRANSFORM'SUZ BİR SARMALAYICIDA — aynı elemana
+           koymak İŞE YARAMAZ ve bu ölçülerek öğrenildi (2 Eylül 2026).
+           CSS `clip-path`i elemanın KENDİ transform'undan ÖNCE uygular,
+           yani klip de rozetle birlikte kayar; kullanıcı hatayı düzeltme
+           "yapıldıktan" sonra da gördü. Izgara zaten bu doğru yapıyı
+           kullanıyordu: klip kırpılmayan GÖRÜNÜR KAREDE, transform içteki
+           katmanda. Rozet katmanı da artık öyle.
+           Flutter'da sıra TERS (`ClipRect` çocuğunu ebeveyn uzayında
+           kırpar), bu yüzden portta aynı hata hiç doğmadı — kullanıcı
+           "bu app'de olmuyordu" derken haklıydı.
+           Pay ölçüldü: rozet 2× zoom'da 39,9 × 28 px, `-35%` taşması ≈14.
+           Klip HER ZAMAN açık; dinlenmede güvenli çünkü tahtanın 10 px
+           dolgusu rozetin 1×'teki ≈7 px taşmasından büyük. */
         <div
-          data-board-badge-layer=""
-          className="pointer-events-none absolute inset-0 p-[10px] z-20"
-          style={{
-            // KENDİ payıyla kırpılır (ızgarannkinden AYRI) ve HER ZAMAN —
-            // zoom kapalıyken de. Güvenli olmasının sebebi ölçüldü:
-            // tahtanın 10 px dolgusu rozetin `-35%` taşmasından (1×'te
-            // ≈7 px) büyük, yani rozet payın sınırına hiç ulaşmıyor.
-            // Duruma bağlamak kapatma animasyonu (180 ms) boyunca klibi
-            // düşürüp rozeti rafın üstünden süzülerek geçirirdi.
-            clipPath: `inset(-${BOARD_BADGE_CLIP_SLACK}px)`,
-            transform: zoomTransform(zoom),
-            transformOrigin: '0 0',
-            transition: zoom.animate
-              ? `transform ${ZOOM_ANIM_MS}ms cubic-bezier(0.22,1,0.36,1)`
-              : undefined,
-          }}
+          className="pointer-events-none absolute inset-0 z-20"
+          style={{ clipPath: `inset(-${BOARD_BADGE_CLIP_SLACK}px)` }}
         >
-          <div className="relative w-full h-full">{moveBadge}</div>
+          <div
+            data-board-badge-layer=""
+            className="absolute inset-0 p-[10px]"
+            style={{
+              transform: zoomTransform(zoom),
+              transformOrigin: '0 0',
+              transition: zoom.animate
+                ? `transform ${ZOOM_ANIM_MS}ms cubic-bezier(0.22,1,0.36,1)`
+                : undefined,
+            }}
+          >
+            <div className="relative w-full h-full">{moveBadge}</div>
+          </div>
         </div>
       )}
       </div>
