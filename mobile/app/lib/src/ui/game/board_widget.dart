@@ -730,6 +730,33 @@ class BoardWidget extends StatelessWidget {
   /// YATAY — 48 px'lik satırda kendiliğinden ortalanıyorlar; eskisi gibi
   /// asimetrik dikey dolgu taşısalardı ~3 px kayarlardı.
 
+  /// "Mesajlaşma" butonunun içeriği. `etiketli: false` → yalnızca ikon
+  /// (çevrimdışı; gerekçe `_footer`daki nota yazılı). Okunmamış sayacı bu
+  /// widget'ın DIŞINDA, `Stack`te duruyor — yani etiket düşse de rozet
+  /// kaybolmaz, yalnızca çapası ikonun sağ üstüne kayar.
+  static Widget _mesajlasmaIcerik({required bool etiketli}) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Anahtar TESTİN kancası: sınıf private olduğundan tip olarak
+          // aranamıyor, ve çevrimdışıyken kontrolün İKON olarak ayakta
+          // kaldığı iddiası tam da bu yüzden bir anahtara bağlı.
+          const _ChatBubbleIcon(key: ValueKey('chat-icon')),
+          if (etiketli) ...[
+            const SizedBox(width: 4),
+            const Text(
+              'Mesajlaşma',
+              style: TextStyle(
+                fontFamily: 'SpaceMono',
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+                color: kAccent,
+              ),
+            ),
+          ],
+        ],
+      );
+
   Widget _footer() {
     return Container(
       // `Padding` DEĞİL `Container`: dolgunun yanında GENİŞLİĞİ de zorluyor
@@ -813,23 +840,35 @@ class BoardWidget extends StatelessWidget {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _ChatBubbleIcon(),
-                          SizedBox(width: 4),
-                          Text(
-                            'Mesajlaşma',
-                            style: TextStyle(
-                              fontFamily: 'SpaceMono',
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                              color: kAccent,
-                            ),
-                          ),
-                        ],
-                      ),
+                      // ÇEVRİMDIŞIYKEN ETİKET DÜŞER, ikon ve sayaç kalır
+                      // (2 Eylül 2026, kullanıcı sordu: *"Çevrimdışı da
+                      // gelince 2 satıra gelip o alanı büyütüyor mu?"*).
+                      // ÖLÇÜLDÜ — şeridin tek satırda kalması için gereken
+                      // en az genişlik: yerel oyun çevrimdışı+tavan 282 px
+                      // (her telefonda sığar), ama CANLI oyun
+                      // çevrimdışı+tavan **405 px** → 320/360/390'da şerit
+                      // 48 → 96 px'e çıkıyordu. `Wrap` taşmaz SARAR, yani
+                      // ne hata basılır ne de "taşma yok" diyen test görür.
+                      // Etiketi düşürmek eşiği ~348 px'e indiriyor: 360 ve
+                      // 390 kurtulur. ⚠ 320 px'te tavanda HÂLÂ iki satır —
+                      // bilinen ve kabul edilen sınır, gizlenmesin.
+                      // Neden ETİKET seçildi: çevrimdışıyken mesaj zaten
+                      // gönderilemiyor; ikon okumak için duruyor ve
+                      // okunmamış sayacı (asıl bilgi) hiç kaybolmuyor.
+                      // ⚠ WEB İKİZİ BİLEREK DEĞİŞMEDİ — parite "aynı kod"
+                      // değil "aynı sonuç": web'de sistem yazı ölçeği yok
+                      // ve ölçüldü ki `Board.tsx` şeridi 320 px'te bile
+                      // çevrimdışıyken tek satır (48 px). Orada çözülecek
+                      // bir sorun olmadığı için etiket kaldırmak yalnızca
+                      // bilgi kaybı olurdu.
+                      if (onlineStatus == null)
+                        _mesajlasmaIcerik(etiketli: true)
+                      else
+                        ListenableBuilder(
+                          listenable: onlineStatus!,
+                          builder: (context, _) =>
+                              _mesajlasmaIcerik(etiketli: onlineStatus!.online),
+                        ),
                       // Konum web'de ölçülerek seçildi (`-top-1 -right-1`):
                       // rozet satır içi olsaydı şeride ~20px eklerdi ve dar
                       // telefonlarda "Nasıl Oynanır?" ile çakışırdı (⚠ o
@@ -1467,7 +1506,7 @@ class _DocumentIconPainter extends CustomPainter {
 /// Web `ChatBubbleIcon` — "Mesajlaşma" butonunun konuşma balonu SVG'si
 /// (`M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z`).
 class _ChatBubbleIcon extends StatelessWidget {
-  const _ChatBubbleIcon();
+  const _ChatBubbleIcon({super.key});
 
   @override
   Widget build(BuildContext context) => SizedBox(

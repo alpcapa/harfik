@@ -20,6 +20,63 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 178 — şerit ÇEVRİMDIŞIYKEN iki satıra düşüyordu; "taşma
+     yok" testi bunu göremez (2 Eylül 2026; değişen:
+     `ui/game/board_widget.dart`, `test/text_scale_test.dart`):**
+     - **Kullanıcı sordu** (punto turundan hemen sonra): *"Bizim senaryoda
+       çevrimdışı konuşmadık. O da gelince ne oluyor? 2 satıra gelip o
+       alanı büyütüyor mu?"* — cevap EVET'ti. Bütün punto ölçümleri
+       çevrimiçi hâl için yapılmıştı; "Çevrimdışı" beşinci öğe olarak
+       girince şerit **48 → 96 px**'e çıkıyordu.
+     - **KÖR NOKTA, dersin kendisi:** `Wrap` TAŞMAZ, **sarar**. Mevcut test
+       ("tahta alt şeridi 1,3 ölçeğinde TAŞMIYOR") `online: false` ile
+       koşuyordu ve YEŞİLDİ — çünkü iddiaları "taşma hatası yok" ve "üç
+       metin görünür"dü; ikisi de şerit iki satıra düşmüş hâlde DE doğru.
+       Sessiz bozulmayı ancak **konum** ölçen bir iddia yakalar (aynı ders
+       30 Ağustos'ta `tap_target_test` için de alınmıştı: kutu BOYUTU ölçen
+       test, kümelenmeyi göremedi).
+     - **ÖLÇÜLDÜ — tek satır için gereken en az genişlik** (ikili arama):
+
+       | Senaryo | Gereken |
+       |---|---|
+       | yerel oyun, çevrimiçi, 1,0 ve 1,3 | 240 px |
+       | yerel oyun, ÇEVRİMDIŞI, 1,3 | 282 px |
+       | Canlı oyun, çevrimiçi, 1,3 | 305 px |
+       | Canlı oyun, ÇEVRİMDIŞI, 1,0 | 336 px |
+       | Canlı oyun, ÇEVRİMDIŞI, 1,3 | **405 px** |
+
+       Yani asıl offline hâl (yerel/YZ oyunu — offline oynamak bir ÖZELLİK)
+       her telefonda güvendeydi; patlayan tek bileşim **Canlı oyun +
+       bağlantı kaybı**: 320/360/390 px'te iki satır.
+     - **Ayrım ölçmeden görünmüyordu:** "Mesajlaşma" yalnızca Canlı oyunda
+       çizilir. İlk ölçüm onu her durumda geçirdiği için sorun olduğundan
+       GENİŞ görünüyordu; kırılım yapılınca kapsam daraldı.
+     - **Çözüm (kullanıcı seçti):** çevrimdışıyken "Mesajlaşma" ETİKETİ
+       düşer, ikon ve okunmamış sayacı kalır. Gerekçe: o anda mesaj zaten
+       gönderilemiyor, ikon okumak için duruyor, asıl bilgi olan sayaç hiç
+       kaybolmuyor. Eşik 405 → ~348 px.
+     - **Sonuç ölçüldü:** 320@1,0 · 360@1,3 · 390@1,3 → hepsi 48 px.
+       320@1,0 vakası düzeltmeden ÖNCE de iki satırdı (normal fontta!) ve
+       yan fayda olarak kapandı.
+     - ⚠ **BİLİNEN SINIR: 320 px + tavan HÂLÂ iki satır.** Gizlenmedi —
+       test bunu AÇIKÇA iddia ediyor (`isFalse`), yani bir gün düzelirse
+       test düşer ve notlar güncellenir. "Sessizce düzeldi sanmak" bu
+       projede iki kez yanlış çıktı.
+     - ⚠ **WEB İKİZİ BİLEREK DEĞİŞMEDİ** — parite "aynı kod" değil "aynı
+       sonuç": ölçüldü ki `Board.tsx` şeridi 320 px'te bile çevrimdışıyken
+       tek satır (48 px), çünkü web'de sistem yazı ölçeği diye bir şey yok
+       (tarayıcı tüm SAYFAYI zoom'lar). Web'de çözülecek bir sorun yokken
+       etiket kaldırmak yalnızca bilgi kaybı olurdu. Bu, "ikiz dosyalar
+       birlikte değişir" kuralının bilinçli istisnası ve gerekçesi hem
+       burada hem kodda yazılı.
+     - **Negatif eş koşuldu:** düzeltme kaldırılınca yeni test tam beklenen
+       mesajla düşüyor (*"360.0 px, ölçek 1.3, ÇEVRİMDIŞI: şerit iki satıra
+       düştü"*). Mevcut 2. test de düzeltmeyle birlikte DÜŞTÜ ve doğru
+       düştü — çevrimdışıyken metin yerine artık İKONU arıyor
+       (`ValueKey('chat-icon')`; sınıf private olduğundan tip olarak
+       aranamıyor).
+     - **Doğrulama:** `dart analyze` temiz · `flutter test` 700 → **701**.
+
    - ✅ **Parça 177 — sistem yazı boyutunun ÜÇÜNCÜ hata sınıfı: sabit
      genişlikli kutuda SARMA (1 Eylül 2026; YENİ dosya
      `test/text_wrap_test.dart`; değişen: `ui/text_scale.dart`,

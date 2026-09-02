@@ -794,6 +794,19 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 
 - [ ] **Offline oyun.** Uçak moduna al, YZ oyunu oynanmaya devam etmeli
       (motor ve sözlük tamamen yerel).
+- [ ] **CANLI oyunda bağlantı giderken tahtanın ALT ŞERİDİ tek satır
+      kalmalı (Parça 178, 2 Eylül 2026).** Sistem yazı boyutunu EN BÜYÜĞE
+      al, bir Canlı oyun aç, uçak moduna geç. Şeritte "Çevrimdışı" belirir
+      ve **"Mesajlaşma" yazısı düşer, konuşma balonu ikonu (varsa
+      okunmamış sayacıyla) kalır** — şerit 48 px'lik TEK satır olmalı,
+      tahtanın altı kalınlaşmamalı. İkona dokunmak sohbeti hâlâ açmalı.
+      Ağı geri açınca yazı geri gelmeli.
+      ⚠ **320 px genişliğindeki bir cihazda (çok eski/küçük Android) en
+      büyük fontta şeridin İKİ satır olması BİLİNEN ve kabul edilen
+      sınırdır** — hata olarak bildirme.
+      ⚠ Neden elle: `flutter test` bunu ölçüyor (`text_scale_test.dart`)
+      ama GERÇEK cihazın yazı ölçeği, font metrikleri ve genişliği
+      testtekiyle birebir aynı olmayabilir.
 - [ ] **GİRİŞLİYKEN offline oynanan hamleler KAYBOLMAMALI (Parça 38).**
       Girişli ol, bir YZ oyunu aç, birkaç hamle yap. Uçak moduna al ve
       **birkaç hamle daha yap**. Ağı geri aç, uygulamayı yeniden başlat →
