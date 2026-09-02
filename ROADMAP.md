@@ -578,10 +578,39 @@ AYNI PR'da.
 
 ---
 
-## 8. FAZ A1 Bölüm 6 (Paylaşma) — cihazda kapatılacak
+## 8. FAZ A1 Bölüm 6 (Paylaşma) — iPad popover ankrajı, cihazda kapatılacak
 
-Kod işi yok; iPad popover ankrajı (Parça 86) gerçek cihaz istiyor. FAZ B
-turunda kapanır.
+**Kod işi YOK, bekleyen tek şey bir DOĞRULAMA.** Parça 86 (13 Ağustos
+2026): `share_plus`ın iOS eklentisi iPad'de paylaş sayfasını popover
+açıyor ve ankraj (`sharePositionOrigin`) istiyor; verilmezse paylaşmak
+yerine `FlutterError` döndürüyor, iki `catch` onu yutuyor ve kullanıcıya
+**hiçbir şey olmuyor**. Düzeltme yazıldı (ortak `shareOriginFrom`, `origin`
+typedef'te zorunlu, iki katmanlı test) — kalan tek soru gerçek iPad'de
+popover'ın çıkıp çıkmadığı. Üç yol da denenmeli: (a) oyun geçmişinde tahta
+paylaşımı, (b) Setup'ta "Arkadaşınla paylaş", (c) Arkadaşlar'da davet linki.
+
+⚠ **BU MADDEYİ NE KAPATMAZ — ölçüldü, 2 Eylül 2026.** Kullanıcı üç yolu da
+GERÇEK bir iPad'de denedi ve *"sorun yok"* dedi, ama derleme
+`kelimeki.com`/Pages idi, yani **web** derlemesi. Orada `share_plus`ın WEB
+eklentisi (`navigator.share`) çalışıyor ve iOS platform kanalına HİÇ
+uğranmıyor — ankrajı kontrol eden kod (`FPPSharePlusPlugin.m`) native iOS
+eklentisinin içinde. **Cihazın iPad olması yetmiyor, DERLEMENİN native
+olması gerekiyor.** Parça 86'nın 3 ay görünmeden kalmasının sebebi de tam
+olarak buydu; aynı deneme tekrarlanmasın diye buraya yazıldı.
+(Denemenin kanıtladığı ayrı bir şey var ve o gerçek: iPad Safari'de web
+paylaşımı çalışıyor — `kelimeki.com`'a iPad'den girenlerin yüzeyi.)
+
+**Kanıtlayan tek ortam:** Appetize → iOS simülatörü → **iPad cihaz tipi**.
+CI zaten imzasız bir simülatör derlemesi üretip Appetize'a yüklüyor, yani
+**Apple üyeliği GEREKMİYOR**. iPad tipinin panelde seçilebilir olup
+olmadığı doğrulanmadı — `mobile/docs/test-ortamlari.md` bunu "panelden
+bakılmalı" diye bırakmış; seçilemiyorsa madde gerçek bir native iPad
+derlemesine (Apple üyeliği) kalır.
+
+⚠ Bu bölüm önceden *"FAZ B turunda kapanır"* diyordu; yanlıştı. FAZ B
+Android/Play turu ve 24-25 Ağustos Android turu temiz geldi — ROADMAP'in
+kendisi *"Madde 8 bundan ETKİLENMEDİ"* diyor. Maddenin gerçek ön koşulu
+Android turu değil, yukarıdaki iki ortamdan biri.
 
 ---
 
