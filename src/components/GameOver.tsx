@@ -1,4 +1,5 @@
 // Kelimeki — oyun sonu ekranı (çok oyunculu)
+import { Fragment } from 'react';
 import { Modal } from './Modal';
 import { PLAYER_COLORS } from '../game/constants';
 import type { Player } from '../game/types';
@@ -65,23 +66,61 @@ export function GameOver({ show, players, turnCount, onOpenHistory, onOpenFeedba
             tutuldu: aynı satırda artık 20.5px sola / 16.0px sağa, yani skor
             görünür biçimde sağa yaslanıyor. Sağ blok 104 → 100px; yan fayda:
             390px'te "Konstantinopolis" artık kırpılmıyor. */}
-        <div className="shadow-raised bg-bg border border-border rounded-[10px] px-5 py-4 text-center flex flex-col gap-2.5 w-full">
-          <div className="flex items-center text-[9px] uppercase tracking-wide text-muted">
-            <span className="flex-1" />
-            <span className="w-[29px] ml-1 text-right shrink-0">Kalan</span>
-            <span className="w-[37px] ml-2 text-right shrink-0">Toplam</span>
-            {/* Satır `uppercase` olduğundan `normal-case` ŞART — marka küçük
-                harf ("SL" sütununda öğrenilen aynı ders). Oyun kartlarındaki
-                (GameHistoryModal/SharedGamePage) k-lig sütununun eşi. */}
-            <span className="w-5 ml-1 text-right normal-case shrink-0">k-lig</span>
-          </div>
+        {/* 2 Eylül 2026 — SABİT px KUTULAR IZGARAYA ÇEVRİLDİ (sınıf 1+3).
+            Yukarıdaki mürekkep ölçüleri (29/37/20 px) hâlâ geçerli, ama
+            ARTIK ELLE YAZILMIYORLAR: her sütun `auto`, yani genişliğini
+            kendi en geniş içeriğinden alıyor — tam olarak o ölçülerin
+            türetildiği kuralın kendisi. Fark, metin BÜYÜDÜĞÜNDE ortaya
+            çıkıyor: tarayıcının "asgari yazı boyutu" erişilebilirlik ayarı
+            (Ayarlar → Görünüm → Yazı tipi boyutu) eşiğin altındaki puntoları
+            yukarı çekiyor, kutular ise px'te kalıyordu.
+
+            ÖLÇÜLDÜ (390 px, `--blink-settings=minimumFontSize=16`,
+            `tests/text-scale.spec.ts`):
+              Kalan  başlığı  50,4 px metin / 29 px kutu  → %74 TAŞMA
+              Toplam başlığı  63,3 px metin / 37 px kutu  → %71 TAŞMA
+              k-lig  başlığı  20 px kutuda İKİ SATIRA sarıyor
+              -17 / 254         kıl payı sığıyor (29,4/29 ve 36,7/37)
+            Yani mobilde kullanıcının bildirdiği "puanları bölüyor"un web
+            eşleniği: başlıklar isim alanının üstüne biniyordu.
+
+            Izgara satırlar ARASINDA hizayı da korur (üç `min-w` kutu bunu
+            yapamazdı: her satır kendi genişliğini seçip sütunlar kayardı).
+            `auto` büyürken payı isim sütunu (`minmax(0,1fr)`) veriyor — o
+            zaten `truncate`, yani zarar "…" ile sınırlı; sınıf 2'nin bilinçli
+            kabulü, portun `ScaledCell`'inde ödenen bedelin aynısı. */}
+        <div className="shadow-raised bg-bg border border-border rounded-[10px] px-5 py-4 text-center grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-y-2.5 w-full">
+          <span />
+          {/* Başlıklar ve sayılar AYNI ızgaranın hücreleri — satır sarmalayıcı
+              yok, yoksa sütunlar satırlar arasında hizalanmazdı. */}
+          <span
+            data-metin-kutusu="kalan-baslik"
+            className="ml-1 text-right whitespace-nowrap text-[9px] uppercase tracking-wide text-muted"
+          >
+            Kalan
+          </span>
+          <span
+            data-metin-kutusu="toplam-baslik"
+            className="ml-2 text-right whitespace-nowrap text-[9px] uppercase tracking-wide text-muted"
+          >
+            Toplam
+          </span>
+          {/* Satır `uppercase` olduğundan `normal-case` ŞART — marka küçük
+              harf ("SL" sütununda öğrenilen aynı ders). Oyun kartlarındaki
+              (GameHistoryModal/SharedGamePage) k-lig sütununun eşi. */}
+          <span
+            data-metin-kutusu="klig-baslik"
+            className="ml-1 text-right whitespace-nowrap text-[9px] tracking-wide text-muted"
+          >
+            k-lig
+          </span>
           {ranked.map(({ player: p, index: i, rank }) => {
             const col = PLAYER_COLORS[p.colorIndex];
             const remaining = p.rack.reduce((s, t) => s + t.pts, 0);
             const points = leaguePoints(rank, players.length, p.surrendered);
             return (
-              <div key={i} className="flex items-center text-[15px]">
-                <span className="flex items-center gap-1.5 min-w-0 flex-1">
+              <Fragment key={i}>
+                <span className="flex items-center gap-1.5 min-w-0 text-[15px]">
                   <PlayerBadge index={i} colorIndex={p.colorIndex} size={14} />
                   <span className="text-text truncate">
                     {rank}. {p.name}
@@ -92,11 +131,15 @@ export function GameOver({ show, players, turnCount, onOpenHistory, onOpenFeedba
                     </span>
                   )}
                 </span>
-                <span className="w-[29px] ml-1 text-right font-mono text-[13px] text-muted shrink-0">
+                <span
+                  data-metin-kutusu="kalan-skor"
+                  className="ml-1 text-right whitespace-nowrap font-mono text-[13px] text-muted"
+                >
                   {remaining > 0 ? `-${remaining}` : ''}
                 </span>
                 <span
-                  className="w-[37px] ml-2 text-right font-mono text-[20px] font-bold shrink-0"
+                  data-metin-kutusu="toplam-skor"
+                  className="ml-2 text-right whitespace-nowrap font-mono text-[20px] font-bold"
                   style={{ color: col.base }}
                 >
                   {p.score}
@@ -107,18 +150,20 @@ export function GameOver({ show, players, turnCount, onOpenHistory, onOpenFeedba
                     "Kalan" sütunundaki eksi ise raf taşı düşümü — iki farklı
                     şey, bu yüzden ikisi ayrı sütun ve ayrı başlık. */}
                 <span
-                  className={`w-5 ml-1 text-right font-mono text-[13px] font-bold shrink-0 ${
+                  data-metin-kutusu="klig-skor"
+                  className={`ml-1 text-right whitespace-nowrap font-mono text-[13px] font-bold ${
                     points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'
                   }`}
                 >
                   {formatLeaguePoints(points)}
                 </span>
-              </div>
+              </Fragment>
             );
           })}
           {/* Sayı etiketin YANINDA (önceden `justify-between` ile satırın iki
               ucundaydı) — kullanıcı isteği, 20 Ağustos 2026. */}
-          <div className="flex justify-center items-center gap-2 text-[12px] border-t border-border pt-2 mt-1">
+          {/* Izgaranın DÖRT sütununu birden kaplar — kendi satırında ortalı. */}
+          <div className="col-span-4 flex justify-center items-center gap-2 text-[12px] border-t border-border pt-2 mt-1">
             <span className="text-muted">Toplam hamle</span>
             <span className="font-mono font-bold text-muted">{turnCount}</span>
           </div>

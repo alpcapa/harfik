@@ -169,7 +169,17 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
       ) : (
         <div className="flex flex-col gap-2">
           <div className="flex items-center text-[9px] uppercase tracking-[1px] text-muted font-mono px-2 pb-1 gap-1">
-            <span className="w-6">Sıra</span>
+            {/* 2 Eylül 2026 — `w-*` → `min-w-*` + `whitespace-nowrap` (sınıf
+                1+3'ün web eşleniği). Tarayıcının "asgari yazı boyutu"
+                erişilebilirlik ayarı eşiğin altındaki puntoları yukarı
+                çekiyor, px kutular ise yerinde kalıyordu: metin ya sarıyor
+                ya komşusunun üstüne biniyordu (GameOver'da ölçüldü —
+                `tests/text-scale.spec.ts`). NORMAL ölçekte bu değişiklik
+                KANITEN etkisiz: bu kutular zaten içeriklerinden geniş
+                seçilmişti, yani `min-width` aynı sayıyı veriyor. Burası
+                gerçek bir Supabase oturumu gerektirdiğinden otomatik
+                ölçülemiyor; elle kontrol `TESTING.md` §"yazı boyutu". */}
+            <span className="min-w-6 whitespace-nowrap">Sıra</span>
             <span className="flex-1">Oyuncu</span>
             {/* Kutu genişliği OHP DEĞERİNİN ink genişliğine eşit (`12.78` =
                 5 monospace karakter × 11px × 0.612 ≈ 34px) — böylece sağa
@@ -180,7 +190,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                 kadar ayrışır). Kutunun SAĞ kenarı değişmedi — daralma
                 yalnızca sol kenarı sağa çekip boşluğu "Oyuncu"ya verir,
                 yani OHP↔Puan hizası (44px) korunuyor. */}
-            <span ref={ohpRef} className="relative w-[34px] shrink-0">
+            <span ref={ohpRef} className="relative min-w-[34px] whitespace-nowrap shrink-0">
               <button
                 type="button"
                 onClick={() => setOhpHintPinned((v) => !v)}
@@ -205,7 +215,7 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                 </span>
               )}
             </span>
-            <span className="w-10 text-right">Puan</span>
+            <span className="min-w-10 whitespace-nowrap text-right">Puan</span>
           </div>
           {rows.length === 0 ? (
             <p className="text-muted text-xs font-mono text-center py-4">
@@ -256,10 +266,10 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                       {/* OHP düz gri, KALIN DEĞİL ve satırın kendi 14px'inden
                           küçük (kullanıcı isteği) — asıl sıralama ölçütü olan
                           "Puan"la görsel olarak yarışmasın diye. */}
-                      <span className="w-[34px] text-right text-[11px] text-muted shrink-0">
+                      <span className="min-w-[34px] whitespace-nowrap text-right text-[11px] text-muted shrink-0">
                         {formatOhp(r.avg_move_score)}
                       </span>
-                      <span className="w-10 text-right font-bold text-accent shrink-0">
+                      <span className="min-w-10 whitespace-nowrap text-right font-bold text-accent shrink-0">
                         {r.total_score?.toLocaleString('tr-TR') ?? '—'}
                       </span>
                     </button>
@@ -298,12 +308,12 @@ export function Leaderboard({ onClose }: LeaderboardProps) {
                 }
                 className="w-full flex items-center gap-1 text-sm font-mono rounded-md px-2 py-1.5 text-left bg-accent/10 border border-accent active:opacity-70 transition-opacity"
               >
-                <span className="w-6 font-bold text-muted shrink-0">{myRank.rank}</span>
+                <span className="min-w-6 whitespace-nowrap font-bold text-muted shrink-0">{myRank.rank}</span>
                 <span className="flex-1 text-text">Sen</span>
-                <span className="w-[34px] text-right text-[11px] text-muted shrink-0">
+                <span className="min-w-[34px] whitespace-nowrap text-right text-[11px] text-muted shrink-0">
                   {formatOhp(myRank.avg_move_score)}
                 </span>
-                <span className="w-10 text-right font-bold text-accent shrink-0">
+                <span className="min-w-10 whitespace-nowrap text-right font-bold text-accent shrink-0">
                   {myRank.total_score.toLocaleString('tr-TR')}
                 </span>
               </button>

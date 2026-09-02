@@ -713,14 +713,19 @@ export function GameHistoryModal({
                       )}
                     </span>
                     <span className="flex items-center gap-2 shrink-0 ml-auto">
-                      <span className="w-9 text-right">Puan</span>
+                      {/* `w-*` DEĞİL `min-w-*` + `whitespace-nowrap` (2 Eylül
+                          2026): tarayıcının asgari-yazı-boyutu ayarı puntoyu
+                          büyütünce sabit px kutu metni sarıyor/taşırıyordu
+                          (GameOver'da ölçüldü). Normal ölçekte etkisiz —
+                          kutular zaten içerikten geniş. */}
+                      <span className="min-w-9 whitespace-nowrap text-right">Puan</span>
                       {/* "SL" (Sanal Lig) yerine marka adı: küçük harf "k-lig"
                           — satır `uppercase` olduğundan `normal-case` şart
                           (yanındaki "Canlı" rozetiyle aynı gerekçe). Wordmark
                           (KLigMark) değil düz metin: 9px'te el yazısı okunmaz.
                           w-6→w-8: 5 karakter 9px mono + 0.5px tracking ile
                           24px'e sığmıyor (mobil portta da aynı genişlik). */}
-                      <span className="w-8 text-right normal-case">k-lig</span>
+                      <span className="min-w-8 whitespace-nowrap text-right normal-case">k-lig</span>
                     </span>
                   </div>
                   <div className="flex flex-col gap-0.5">
@@ -732,7 +737,7 @@ export function GameHistoryModal({
                           className="flex items-center justify-between gap-2 text-[12px] font-mono"
                         >
                           <span className="flex items-center gap-1.5 min-w-0">
-                            <span className="w-3 text-right text-muted shrink-0">{ranks[i]}.</span>
+                            <span className="min-w-3 whitespace-nowrap text-right text-muted shrink-0">{ranks[i]}.</span>
                             <PlayerBadge index={seatIndexFor(p, i, hasSnapshot)} size={14} />
                             <span className={`truncate ${i === meIndex ? 'text-text font-bold' : 'text-muted'}`}>
                               {i === meIndex && myCurrentName ? myCurrentName : p.name}
@@ -745,7 +750,7 @@ export function GameHistoryModal({
                           </span>
                           <span className="flex items-center gap-2 shrink-0">
                             <span
-                              className={`font-bold w-9 text-right ${i === meIndex ? 'text-gold' : 'text-muted'}`}
+                              className={`font-bold min-w-9 whitespace-nowrap text-right ${i === meIndex ? 'text-gold' : 'text-muted'}`}
                             >
                               {p.score}
                             </span>
@@ -753,7 +758,7 @@ export function GameHistoryModal({
                               // Başlıkla (k-lig) aynı genişlik — ikisi de sağa
                               // hizalı, sağ kenarların çakışması için eşit
                               // olmak zorunda.
-                              className={`font-bold w-8 text-right ${points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'}`}
+                              className={`font-bold min-w-8 whitespace-nowrap text-right ${points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'}`}
                             >
                               {formatLeaguePoints(points)}
                             </span>
