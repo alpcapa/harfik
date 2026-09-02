@@ -136,6 +136,21 @@ void main() {
       return sent;
     }
 
+    // Kullanıcı isteği (2 Eylül 2026): "mesaj kutusunun hemen üstüne
+    // 'Oyunculara buradan mesaj gönder' yaz". Hint'e EK — hint yazmaya
+    // başlayınca kayboluyor. İddia metni DE konumu DA tutuyor: sadece
+    // metni aramak, etiket yanlışlıkla listenin altına düşse bile geçerdi.
+    testWidgets('mesaj kutusunun ÜSTÜNDE yönlendirme etiketi var',
+        (tester) async {
+      await pumpModal(tester, messages: const []);
+      final etiket = find.text('Oyunculara buradan mesaj gönder');
+      expect(etiket, findsOneWidget);
+      expect(tester.getBottomLeft(etiket).dy,
+          lessThanOrEqualTo(tester.getTopLeft(find.byType(TextField)).dy));
+      // Hint HÂLÂ duruyor — etiket onun yerine geçmedi.
+      expect(find.text('Mesajınızı girin'), findsOneWidget);
+    });
+
     testWidgets(
         'mesajlar en yeni üstte + rozetler + 200 sayaç + boşken Gönder pasif',
         (tester) async {

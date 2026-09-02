@@ -432,6 +432,10 @@
       "DEVAM" → sohbet penceresi açılmalı. Aynı hesapla tekrar aç (başka
       bir Canlı oyunda da olabilir) — tanıtım BİR DAHA çıkmamalı (bayrak
       hesaba özel, oyuna özel değil).
+- [ ] **Yönlendirme etiketi (2 Eylül 2026, kullanıcı isteği).** Mesaj
+      kutusunun HEMEN ÜSTÜNDE "Oyunculara buradan mesaj gönder" yazmalı ve
+      `Mesajınızı girin` yer tutucusu da yerinde kalmalı (etiket ona EK,
+      yerine geçmiyor). Web'deki eşiyle aynı punto/renk görünmeli.
 - [ ] **Gönder/al gerçek zamanlı.** İki hesapla (biri web olabilir) aynı
       Canlı oyunu aç, mobilden mesaj gönder → web'de ~1sn içinde görünmeli
       (ve tersi). Mesajlar en YENİ üstte sıralanmalı.

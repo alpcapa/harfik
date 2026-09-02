@@ -184,6 +184,14 @@ class _ChatModalState extends State<ChatModal> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Kutunun ÜSTÜNDE, hint'e EK olarak (kullanıcı isteği, 2 Eylül
+          // 2026): hint yazmaya başlayınca kayboluyor. Web eşi
+          // `src/components/ChatModal.tsx` — punto/renk/boşluk birebir
+          // (11px, kMuted, SpaceMono, altında 4px).
+          const Text('Oyunculara buradan mesaj gönder',
+              style: TextStyle(
+                  fontFamily: 'SpaceMono', fontSize: 11, color: _muted)),
+          const SizedBox(height: 4),
           TextField(
             controller: _controller,
             maxLength: kChatMaxLength,

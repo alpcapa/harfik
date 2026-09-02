@@ -132,6 +132,12 @@ export function ChatModal({
       }
     >
       <div className="flex flex-col mb-3">
+        {/* Kutunun ÜSTÜNDE, placeholder'a EK olarak (kullanıcı isteği,
+            2 Eylül 2026): placeholder yazmaya başlayınca kayboluyor ve
+            pencere açıldığında en görünür şey mesaj LİSTESİ oluyordu —
+            "buraya yazılır" bilgisi yazarken de duruyor. Portun eşi:
+            `mobile/app/lib/src/ui/chat/chat_modal.dart`. */}
+        <p className="text-[11px] text-muted font-mono mb-1">Oyunculara buradan mesaj gönder</p>
         <textarea
           className="w-full bg-bg border border-border rounded-md px-3 py-2 text-sm text-text outline-none focus:border-accent transition-colors resize-none"
           rows={2}
