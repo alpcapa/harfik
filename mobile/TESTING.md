@@ -807,6 +807,19 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       ⚠ Neden elle: `flutter test` bunu ölçüyor (`text_scale_test.dart`)
       ama GERÇEK cihazın yazı ölçeği, font metrikleri ve genişliği
       testtekiyle birebir aynı olmayabilir.
+- [ ] **Zoom'da tahta kartın YUVARLAK KENARINA kadar gitmeli (Parça 179).**
+      Tahtada boş bir kareye çift dokun (2× zoom), sonra parmakla sağa/aşağı
+      sona kadar kaydır. Kenarlarda **sabit duran ince bir çerçeve
+      OLMAMALI** — kareler kartın yuvarlatılmış kenarına kadar gitmeli.
+      ⚠ Kaydırdığın YÖNÜN ters ucunda tahtanın kendi iç boşluğunun
+      ölçeklenmiş hâli (≈20 px) görünür; bu NORMAL ve web'de de öyle —
+      çerçeve o değil, dört kenarda birden duran sabit şerittir.
+- [ ] **En büyük fontta bölge filigranları BÜYÜMEMELİ (Parça 179).**
+      Sistem yazı boyutunu en büyüğe al, oyunu aç: köşelerdeki büyük
+      oyuncu numarası, ortadaki "X2" ve merkez karedeki "X3" **normal
+      fonttakiyle aynı boyutta** kalmalı ve numara 4×4 köşe bloğunun
+      dışına taşmamalı. (Küçük ekranlarda — 320/360 px — düzeltmeden önce
+      taşıyordu.)
 - [ ] **GİRİŞLİYKEN offline oynanan hamleler KAYBOLMAMALI (Parça 38).**
       Girişli ol, bir YZ oyunu aç, birkaç hamle yap. Uçak moduna al ve
       **birkaç hamle daha yap**. Ağı geri aç, uygulamayı yeniden başlat →
