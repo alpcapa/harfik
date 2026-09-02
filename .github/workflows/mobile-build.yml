@@ -17,6 +17,8 @@
 #       ve GitHub Pages test ortamı YALNIZCA burada güncellenir.
 #   (2) `main`e açılan, `mobile/**` dokunan PR — merge ÖNCESİ doğrulama;
 #       derler ama HİÇBİR ŞEY YAYINLAMAZ (bkz. "YAYINLAMA" notu).
+#   ⚠ İkisinde de `mobile/**.md` HARİÇ (2 Eylül 2026) — gerekçe `on:`
+#     bloğundaki notta.
 #   (3) elle (Actions → Run workflow).
 #
 # NEDEN DEĞİŞTİ: tetikleyici, artık SİLİNMİŞ olan port dalına
@@ -60,11 +62,29 @@ on:
     branches: [main]
     paths:
       - 'mobile/**'
+      # ⚠ YALNIZCA DOKÜMAN DEĞİŞEN BİR PR macOS/Android DERLEMESİ BAŞLATMASIN
+      # (2 Eylül 2026). `mobile/**` deseni `mobile/CLAUDE.md`,
+      # `mobile/TESTING.md`, `mobile/docs/*.md`yi de yakalıyordu; o gün tek
+      # satır doküman değiştiren bir PR (#405) iOS derlemesini tetikledi.
+      # Deponun kendi ilkesiyle çelişiyordu — bkz. `docs-size.yml`in başındaki
+      # "bu repoda 'yalnızca doküman değişikliği ücretsizdir' kuralı bilerek
+      # korunuyor" notu.
+      #
+      # NEGATİF DESENİN SEMANTİĞİ (yanlış anlaşılırsa CI SESSİZCE ÖLÜR, bu
+      # deponun kayıtlı en kötü arıza tipi — bkz. başlıktaki ölü dal vakası):
+      # GitHub her DEĞİŞEN DOSYAYI listeyle eşleştirir ve SON eşleşen desen
+      # kazanır; dosyalardan EN AZ BİRİ dahil kalıyorsa workflow koşar. Yani
+      # `.dart` + `.md` birlikte değişen bir PR'da `.dart` hâlâ dahil ve
+      # derleme KOŞAR. Dışarıda kalan tek şey `.md`nin TEK BAŞINA olduğu hâl.
+      # `**.md` GitHub'ın kendi dokümanındaki idiom (`**.js` örneği) ve alt
+      # dizin gerektirmez, yani `mobile/CLAUDE.md` de kapsanır.
+      - '!mobile/**.md'
       - '.github/workflows/mobile-build.yml'
   pull_request:
     branches: [main]
     paths:
       - 'mobile/**'
+      - '!mobile/**.md'  # push ile AYNI — yukarıdaki gerekçeye bkz.
       - '.github/workflows/mobile-build.yml'
   workflow_dispatch:
     inputs:

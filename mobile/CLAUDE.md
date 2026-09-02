@@ -68,7 +68,7 @@ Vaka kaydı: `mobile/docs/deploy-verification.md`.
 | Yüzey | Nereden yayınlanır | Ne zaman |
 |---|---|---|
 | `kelimeki.com` (web app) | Vercel | `main`'e her merge |
-| `alpcapa.github.io/kelimeki` (Flutter test ortamı) | Actions `mobile-build.yml` → Pages | YALNIZCA `main`'e push **ve** `mobile/**` değiştiyse |
+| `alpcapa.github.io/kelimeki` (Flutter test ortamı) | Actions `mobile-build.yml` → Pages | YALNIZCA `main`'e push **ve** `mobile/**` değiştiyse (2 Eylül 2026'dan beri `mobile/**.md` HARİÇ — yalnızca doküman değişen bir PR artık derleme başlatmıyor; `.dart` ile birlikte değişirse KOŞAR) |
 | Supabase (migration/Edge Function) | MCP ile doğrudan | Anında — dal/merge ile İLGİSİZ |
 
 **Feature dalındaki bir commit sitede ASLA görünmez.** Bir PR açmak da
