@@ -18,21 +18,30 @@ test('Normal ölçekte sütun genişlikleri ve sağa yaslama DEĞİŞMEDİ', asy
   const kutular = await kutuOlcumleri(page);
   const bul = (ad: string) => kutular.find((k) => k.ad === ad)!;
 
-  // (1) IZGARANIN SÖZLEŞMESİ, ortamdan bağımsız: her sütunun genişliği o
-  // sütundaki EN GENİŞ mürekkebe eşit. Elle yazılmış 29/37/20 px zaten
-  // böyle türetilmişti; asıl korunması gereken kural bu.
+  // (1) IZGARANIN SÖZLEŞMESİ, ortamdan bağımsız — iki parça:
+  //   a. bir sütundaki BÜTÜN hücreler aynı genişlikte (satırlar hizalı),
+  //   b. o genişlik hiçbir hücrenin mürekkebinden dar değil (kırpma yok).
+  //
+  // ⚠ Bu iddia "sabit px'e geri dönüldü" hâlini YAKALAMAZ ve bu ölçüldü:
+  // `min-w-*` tabanları yerinde olduğu için normal ölçekte ızgara ile sabit
+  // genişlik BİREBİR aynı render ediyor (29,00/37,00/20,00) — ayırt edilecek
+  // bir fark yok. O regresyonu yakalayan `text-scale.spec.ts`in TAŞMA
+  // iddiası (kutuya `w-[29px]` konunca 50,4 px metin 29 px kutuda kalıyor).
+  // Buradaki iş bölümü bilinçli: bu dosya "eski görünüm bozulmadı"yı, öteki
+  // "büyüyünce patlamıyor"u tutuyor.
   for (const [sutun, hucreler] of [
     ['Kalan', ['kalan-baslik', 'kalan-skor']],
     ['Toplam', ['toplam-baslik', 'toplam-skor']],
     ['k-lig', ['klig-baslik', 'klig-skor']],
   ] as const) {
     const ait = kutular.filter((k) => hucreler.includes(k.ad as never));
-    const enGenisMurekkep = Math.max(...ait.map((k) => k.murekkep));
+    const en = ait[0].kutu;
     for (const k of ait) {
-      expect(k.kutu, `${sutun}: ${k.ad} kutusu sütunla aynı olmalı`).toBeCloseTo(
-        enGenisMurekkep,
-        1,
-      );
+      expect(k.kutu, `${sutun}: ${k.ad} kutusu sütunla aynı olmalı`).toBeCloseTo(en, 1);
+      expect(
+        k.kutu,
+        `${sutun}: ${k.ad} mürekkebi (${k.murekkep.toFixed(1)}) kutusundan geniş`,
+      ).toBeGreaterThanOrEqual(k.murekkep - 0.5);
     }
   }
 

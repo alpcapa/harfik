@@ -93,27 +93,23 @@ export function GameOver({ show, players, turnCount, onOpenHistory, onOpenFeedba
           <span />
           {/* Başlıklar ve sayılar AYNI ızgaranın hücreleri — satır sarmalayıcı
               yok, yoksa sütunlar satırlar arasında hizalanmazdı. */}
-          <span
-            data-metin-kutusu="kalan-baslik"
-            className="ml-1 text-right whitespace-nowrap text-[9px] uppercase tracking-wide text-muted"
-          >
-            Kalan
-          </span>
-          <span
-            data-metin-kutusu="toplam-baslik"
-            className="ml-2 text-right whitespace-nowrap text-[9px] uppercase tracking-wide text-muted"
-          >
-            Toplam
-          </span>
+          {/* ⚠ `min-w-*` TABANLARI SİLME — ikisi birden gerekiyor:
+              (a) davranış: `auto` sütun zaten içeriğe göre büyüyor, taban
+                  yalnızca normal ölçekteki eski görünümü birebir sabitliyor;
+              (b) PARİTE: `layout_parity_test.dart` (bir MOBİL test) bu
+                  dosyayı OKUYUP `w-\[(\d+)px\][^"]*">Kalan<` ile sayıyı
+                  çekiyor ve portun `_ColHeader('KALAN', width: 29)`'uyla
+                  karşılaştırıyor. Yani sınıf adı DA, etiketin `className`den
+                  hemen sonra TEK SATIRDA gelmesi DE sözleşmenin parçası.
+              Bu ikisi 2 Eylül 2026'da ızgaraya geçerken kaldırılmış ve
+              `main` KIRMIZI olmuştu — web değişikliği bir mobil testi
+              düşürdü. */}
+          <span data-metin-kutusu="kalan-baslik" className="min-w-[29px] ml-1 text-right whitespace-nowrap text-[9px] uppercase tracking-wide text-muted">Kalan</span>
+          <span data-metin-kutusu="toplam-baslik" className="min-w-[37px] ml-2 text-right whitespace-nowrap text-[9px] uppercase tracking-wide text-muted">Toplam</span>
           {/* Satır `uppercase` olduğundan `normal-case` ŞART — marka küçük
               harf ("SL" sütununda öğrenilen aynı ders). Oyun kartlarındaki
               (GameHistoryModal/SharedGamePage) k-lig sütununun eşi. */}
-          <span
-            data-metin-kutusu="klig-baslik"
-            className="ml-1 text-right whitespace-nowrap text-[9px] tracking-wide text-muted"
-          >
-            k-lig
-          </span>
+          <span data-metin-kutusu="klig-baslik" className="min-w-5 ml-1 text-right whitespace-nowrap text-[9px] tracking-wide text-muted">k-lig</span>
           {ranked.map(({ player: p, index: i, rank }) => {
             const col = PLAYER_COLORS[p.colorIndex];
             const remaining = p.rack.reduce((s, t) => s + t.pts, 0);
