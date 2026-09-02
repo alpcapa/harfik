@@ -27,12 +27,13 @@
 | Madde 11 — hata panelinde platform filtresi | 31 Ağustos 2026 |
 | Madde 12 — sürüm dağılımının kapsamı | 31 Ağustos 2026 |
 | Faz 1-7 + Faz dışı (push bildirimleri, madde 13'ün gövdesi) | 30-31 Ağustos, 1 Eylül 2026 |
-| 1.0.3 ve 1.0.4 sürüm turları | 31 Ağustos, 1 Eylül 2026 |
+| 1.0.3, 1.0.4 ve 1.0.5 sürüm turları | 31 Ağustos, 1 ve 2 Eylül 2026 |
 | Sürüm A çıkışı + Sürüm B sözlük eklemeleri | 27 ve 31 Ağustos 2026 |
 
-⚠ **1.0.5 sürüm turu BURADA DEĞİL** — `ROADMAP.md`'de kaldı: paket yayında
-ama üç işin (zoom tanıtım balonu · yazı ölçeği · mesaj kutusu etiketi) cihaz
-doğrulaması hâlâ ⬜. Kapanınca buraya taşınacak.
+**1.0.5 sürüm turu da burada** (2 Eylül 2026 akşamı eklendi): ilk taşımada
+ROADMAP'te bırakılmıştı çünkü üç işin cihaz doğrulaması ⬜'dü; kullanıcı aynı
+gün *"1.0.5 turu testi tamam. Herşey düzgün çalışıyor."* deyince tur kapandı
+ve kural gereği aynı gün taşındı.
 
 ---
 
@@ -1003,3 +1004,80 @@ açılıyorsa yükseltmek o kullanıcıları uygulamadan kilitler
 kilitlenmiyor (23 Ağustos 2026'da canlıdan okundu).
 
 ---
+
+---
+
+### 🚀 1.0.5 SÜRÜM TURU — ✅ **TAMAMLANDI** (2 Eylül 2026)
+
+**KAPANIŞ:** paket kapalı testte yayında (`1.0.5 (501) — 4a0a29b`, ~15:03) ve
+aşağıdaki tabloda ⬜ kalan üç iş de **kullanıcı tarafından cihazda doğrulandı**
+(2 Eylül 2026: *"1.0.5 turu testi tamam. Herşey düzgün çalışıyor."*). Tur
+kapandı; bölüm bu yüzden arşivde.
+
+⚠ Bu bölüm iki kez bayatladı: 1 Eylül'de *"dalda hazır, KAPILI · tek
+içerik: tahta zoom'u"*, 2 Eylül sabahı *"`.aab` hazır, Play'e
+yüklenmedi"*. Tur `main`'e girdi, zoom'un yanına üç iş bindi, ardından
+cihaz turundan **beş düzeltme daha** çıktı.
+
+**İçerik — `main`'e giren SIRAYLA:**
+
+| PR | Ne | Cihazda denendi mi |
+|---|---|---|
+| #395 | Tahta zoom'u: çift dokunuşla 2×, parmakla pan (yalnızca tahtanın içi) | ✅ kullanıcı: *"App ok 👍"* |
+| #396 | APK turu 2: bölge çizgisi kenarda incelmesin · kenarlar/boşluklar da çift dokunuş yüzeyi | ✅ aynı turda |
+| #397 | APK turu 3: hamle puanı rozeti kenarda kırpılmasın | ✅ aynı turda |
+| #399 | Zoom **tanıtım balonu** — merkez kareyi işaret eden tek seferlik ipucu | ✅ cihazda doğrulandı (2 Eylül, kullanıcı) |
+| #400 | Yazı ölçeği: sınıf 3 (sarma — bitirme modalı puanları bölüyordu) + sınıf 2 (Setup'ta devam eden oyun kartı) | ✅ cihazda doğrulandı (2 Eylül, kullanıcı) |
+| #402 | Mesaj kutusunun üstüne "Oyunculara buradan mesaj gönder" | ✅ cihazda doğrulandı (2 Eylül, kullanıcı) |
+| #408 | Cihaz turu: k-lig sütunları · devam eden oyun kartı · alt şerit | ✅ şerit onaylandı |
+| #410 · #411 | Hamle rozeti zoom'da tahtanın DIŞINA çiziliyordu (web; ilk klip transform'lu katmandaydı ve işe yaramıyordu) | ✅ web'de onaylandı |
+| #413 | Portta da rozet taşıyordu (piksel ölçümü: 268 px → 0) · çevrimdışıyken alt şerit tek satır · "Nasıl Oynanır?" → "Yardım", punto 11 | ✅ **2 Eylül**: *"sonunda web ile aynı olmuş"* |
+| #414 | Zoom'da kalıcı 10 px çerçeve (kırpan kutu kart−10 → kartın tamamı) · filigranlar yazı ölçeğinden muaf | ✅ **TAMAMEN ONAYLANDI** — çerçeve + çevrimdışı + filigranlar (2 Eylül, kullanıcı: *"Filigranlar düzgün (en büyük fontta)"*) |
+
+`appVersion` + `pubspec` 1.0.4 → **1.0.5** (#395'te birlikte). Tam takım
+681 → **702** test yeşil.
+
+**Kapılar, SIRAYLA — kullanıcı kararı:** *"Bunu apk ile test edip sorunsuz
+olduğundan emin olmadan aab yapılmayacak."*
+
+1. ✅ **467 (1.0.4) Play'e yüklendi** (1 Eylül 2026).
+2. ✅ **AÇILDI** (2 Eylül 2026, 14:0x). CI `.apk` + imzalı `.aab` üretti
+   (`mobile-latest`, **`4a0a29b`**'den, 13:56). Kullanıcı APK'yı kurup
+   denedi: *"sonunda web ile aynı olmuş. Çevrimiçi de uçak modunda düzgün
+   çalışıyor."* — yani **zoom kenarı (çerçeve yok)** ve **Canlı oyunda
+   çevrimdışı alt şerit** doğrulandı.
+   ⚠ **Hâlâ denenmemiş:** balon · yazı ölçeği (bitirme modalı) · mesaj
+   etiketi · **filigranlar** (#414'ün ikinci yarısı). Listeler:
+   `mobile/TESTING.md` § 8 (çevrimdışı şerit + zoom kenarı + filigranlar),
+   § 24 (zoom), § 25 (yazı boyutu),
+   `mobile/docs/testing-arkadaslar-canli.md` → Mesajlaşma.
+3. ✅ **YAYINLANDI** — `1.0.5 (501) — 4a0a29b`, kapalı test kanalı,
+   2 Eylül ~14:40 gönderim → ~15:03 Published (≈23 dk). Kanonik kayıt:
+   `mobile/docs/build-and-distribution-log.md` → "Yayınlanan sürümlerin
+   kütüğü". ⚠ "Published" rozeti kanala GİRDİĞİNİ söyler, cihaza indiğini
+   DEĞİL — ölçülmüş çare aynı dosyada ("testçi opt-in linkine TEKRAR gir").
+
+**Turun WEB yarısı — ayrı ve ZATEN CANLIDA** (`kelimeki.com`, `b053779`),
+çünkü web merge'de anında deploy oluyor: #398 (zoom + balon, portla aynı
+deneyim — kullanıcı kararı *"her yerde aynı deneyim olsun"*), #401 (yazı
+boyutu sütunları), #402'nin web yarısı.
+
+**Turdan çıkan iki SÜREÇ düzeltmesi** (ürün değil, altyapı):
+- **#403 + #404 — `main` bir kez KIRMIZI oldu.** #401 `GameOver.tsx`teki
+  `w-[29px]` sınıflarını sildi; o sınıfları bir MOBİL test okuyordu
+  (`layout_parity_test.dart` ↔ `_ColHeader(width: 29)`). İki PR ayrı ayrı
+  yeşildi, kopma yalnızca birleşimde göründü. #403 belirtiyi (`min-w-*`
+  tabanı geri kondu), #404 SEBEBİ kapattı: `web-ci.yml` artık mobil test
+  paketini de koşuyor. Ders `docs/decisions/components-account.md`'de.
+- **#405 + #406 — doküman borcu ve CI maliyeti:** README ağaçlarındaki üç
+  eksik dosya + bayat "`curl` çıkamıyor" tespiti düzeltildi; yalnızca
+  doküman değiştiren bir PR'ın macOS derlemesi başlatması engellendi
+  (`!mobile/**.md`).
+
+**1 Eylül 2026, ikinci tur — spec kullanıcı düzeltmesiyle SADELEŞTİ:**
+ilk sürümün "çift dokunuş ilk dokunuşun etkisini geri sarar" ve "joker
+penceresi ertelenir" mekanizmaları kullanıcı tarafından reddedildi
+(*"taşı geri almadan, koyduğu yerde bırakarak zoomlamak lazım"* / *"joker
+tablosunun zoom olayıyla ne ilgisi var"*) ve silindi — artık çiftin
+İKİNCİSİ yutulur, İLKİNİN işi kalır; joker ANINDA açılır ve
+`game_screen_test.dart` origin/main ile bayt bayt aynı. Ayrıntı: Parça 175.

@@ -325,7 +325,7 @@ kapı açıldı) anlatır, hangi paketin yayında olduğunu değil.
 | 1.0.0 | — | — | — | mekanizmasız; In-App Update yoktu (bkz. "Güncelleme modeli") |
 | 1.0.2 | 435 | `d3d4702` | 30 Ağu, Submission 8 | inceleme 10 dk (15:29 → Published 15:39) |
 | 1.0.4 | 467 | — | 1 Eyl | Faz 6 istemci yarısı + Faz 7 iki çökme + hata hız sınırı |
-| **1.0.5** | **501** | **`4a0a29b`** | **2 Eyl ~14:40 → ✅ Published ~15:03** (≈23 dk) | tahta zoom'u + zoom balonu + yazı ölçeği + mesaj etiketi + cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar). `.aab` 63.146.275 bayt, SHA-256 `200e82b9…451d4`. APK cihazda önce onaylandı (kullanıcı kuralı: *"apk ile test edip sorunsuz olduğundan emin olmadan aab yapılmayacak"*) |
+| **1.0.5** | **501** | **`4a0a29b`** | **2 Eyl ~14:40 → ✅ Published ~15:03** (≈23 dk) | tahta zoom'u + zoom balonu + yazı ölçeği + mesaj etiketi + cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar). `.aab` 63.146.275 bayt, SHA-256 `200e82b9…451d4`. APK cihazda önce onaylandı (kullanıcı kuralı: *"apk ile test edip sorunsuz olduğundan emin olmadan aab yapılmayacak"*). **Yayın sonrası kapalı test paketi de cihazda doğrulandı** (2 Eylül, kullanıcı: *"1.0.5 turu testi tamam. Herşey düzgün çalışıyor."*) — turun ⬜ kalan üç işi (zoom balonu · yazı ölçeği · mesaj etiketi) dahil; tur kapandı, kaydı `docs/decisions/roadmap-arsiv.md` |
 
 **İnceleme süresi — iki ölçüm, aralık geniş:** 30 Ağustos'ta `1.0.2 (435)`
 **10 dakikada** (15:29 → 15:39, Console saatleri) Published olmuştu; 2
