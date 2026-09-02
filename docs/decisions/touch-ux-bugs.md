@@ -1156,3 +1156,37 @@ fark SATIR olarak sayılıyor: tek satır kırpma sınırındaki kenar
 yumuşatması, iki ve fazlası gerçek taşma. Negatif eş: eski `inset(-4px)`
 geri konunca test "kartın üstüne 4 satır fazladan boyadı (51,52,54,55)"
 diyerek düşüyor — tam olarak 4 px'lik pay.
+
+### Portta da vardı — "Stack zaten kırpıyor" ölçümü YANILTMIŞTI (2 Eylül 2026)
+
+Kullanıcı APK'yı denedi: *"Web'deki aynı taşma mobilde de var. Onu da web
+ile birebir hâle getir. Web şu anda tam olması gerektiği gibi."*
+
+⚠ **Bu, birkaç saat önce "port bozuk değil" diye kapatılmış bir konuydu.**
+O gün rozetin ataları taranmış, `Stack clipBehavior=Clip.hardEdge`
+görülmüş ve "Flutter zaten kırpıyor" sonucuna varılmıştı. **Ölçüm doğruydu,
+ÇIKARIM yanlıştı:** `Transform` boyama zamanı çalışır, `Stack` layout'ta
+taşma GÖRMEZ ve kırpmaz. Yani bir widget ağacında klibin VARLIĞINI görmek,
+onun ETKİDİĞİNİ göstermez — web'de aynı hatanın (`clipPath` transform'lu
+katmanda) Dart'taki kardeşi.
+
+**Bu sefer piksel ölçüldü** (`board_badge_clip_test.dart`, `toImage` +
+`runAsync`): rozet tahtanın dışına **268 piksel** boyuyordu. Düzeltmeden
+sonra 0.
+
+**Düzeltme web ile birebir:** rozet katmanı `_BadgeCardClipper` ile
+kırpılıyor — tahtanın kutusu (katmanın kutusu dolgulu alan olduğundan
+`_boardPad` kadar genişletiliyor) ve kartın ÜST iki köşesinin yuvarlağı
+(`_cardRadius`), pay YOK. Web karşılığı: `inset(0 round 18px 18px 0 0)`.
+Kırpma her iki hâlde de var (kapatma animasyonunda rozet kartın dışından
+süzülmesin diye). `_boardPad`/`_cardRadius` artık sabit, çünkü üç yerde
+birden kullanılıyorlar.
+
+**IZGARANIN kırpmasına DOKUNULMADI ve bu da ölçüldü:** aynı testin ikinci
+iddiası ızgara için de fark ölçüyor ve sonuç 0 — portun ızgara kırpması
+dolgunun içinde olduğundan görünür taşma üretmiyor. "Web'de değiştirdim,
+burada da değiştireyim" demek bugün bir kez zaten çalışan kodu bozmuştu.
+
+⚠ Her iki iddia da FARK ölçümü: başlıktaki skor kutucuklarının zemini
+oyuncu tint'i, rozet renkleri de kutucuk kenarlıklarına yakın; mutlak sayım
+"613 piksel taşma" diye yanlış pozitif veriyor.

@@ -58,6 +58,42 @@ class _ZoomClipSlackClipper extends CustomClipper<Rect> {
   bool shouldReclip(covariant CustomClipper<Rect> oldClipper) => false;
 }
 
+/// Tahtanın iç dolgusu ve kartın köşe yarıçapı — İKİSİ de birden fazla
+/// yerde kullanılıyor (dolgu `_zoomWrap`te, yarıçap kartın dekorasyonunda
+/// ve rozet kırpıcısında). Sabit olarak duruyorlar ki ayrışmasınlar.
+const double _boardPad = 10;
+const double _cardRadius = 18;
+
+/// Hamle rozeti KATMANININ kırpması — web ikizinin BİREBİR karşılığı
+/// (`Board.tsx` → `clipPath: inset(0 round 18px 18px 0 0)`).
+///
+/// 2 Eylül 2026, kullanıcı cihazda: *"Web'deki aynı taşma mobilde de var.
+/// Onu da web ile birebir hâle getir."* Rozet katmanı zoom matrisini
+/// izliyor ama hiç kırpılmıyordu, yani hücresi görünür kareden çıkınca
+/// kartın üstüne — başlığın içine — çiziliyordu. ÖLÇÜLDÜ (piksel):
+/// tahtanın dışına 268 piksel.
+///
+/// ⚠ "Stack zaten kırpıyor" SANILMIŞTI ve yanlıştı: `Transform` boyama
+/// zamanı çalıştığından Stack layout'ta taşma görmüyor ve kırpmıyor.
+/// Yapısal iddia yetmez; kapı `board_badge_clip_test.dart` PİKSEL ölçüyor.
+///
+/// Katmanın kutusu ızgaranın DOLGULU alanı, kırpma ise TAHTANIN kutusu
+/// olmalı — bu yüzden dolgu kadar genişletiliyor. Pay YOK: rozet kartın
+/// içinde kalır, kenarda gerekirse kesilir (kullanıcı kararı, web ile aynı).
+class _BadgeCardClipper extends CustomClipper<Path> {
+  const _BadgeCardClipper();
+  @override
+  Path getClip(Size size) => Path()
+    ..addRRect(RRect.fromRectAndCorners(
+      Rect.fromLTRB(-_boardPad, -_boardPad, size.width + _boardPad,
+          size.height + _boardPad),
+      topLeft: const Radius.circular(_cardRadius),
+      topRight: const Radius.circular(_cardRadius),
+    ));
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
 const Color _boardBg = Color(0xFFDDE4EE);
 
 const LinearGradient _goldZone = LinearGradient(
@@ -222,7 +258,14 @@ class BoardWidget extends StatelessWidget {
         children: [
           govde,
           IgnorePointer(
-            child: m == null ? u : Transform(transform: m, child: u),
+            // Kırpma HER İKİ hâlde de var (web ile aynı): duruma bağlamak
+            // kapatma animasyonu boyunca rozeti kartın dışından süzülerek
+            // geçirirdi. Dinlenmede zaten kesmiyor — rozetin 1×'teki
+            // taşması tahtanın 10 px dolgusundan küçük.
+            child: ClipPath(
+              clipper: const _BadgeCardClipper(),
+              child: m == null ? u : Transform(transform: m, child: u),
+            ),
           ),
         ],
       );
@@ -232,7 +275,7 @@ class BoardWidget extends StatelessWidget {
     // (aşağıdaki Listener) çerçeveyi de kapsasın diye (1 Eylül 2026,
     // kullanıcı APK'da bildirdi: "zoom sadece karelerde çalışıyor,
     // kenarlar da dahil olmalı"). zoom verilmemişken ağaç ESKİSİYLE aynı.
-    const pad = EdgeInsets.all(10);
+    const pad = EdgeInsets.all(_boardPad);
     if (z == null) {
       return Padding(
           padding: pad,
@@ -398,7 +441,7 @@ class BoardWidget extends StatelessWidget {
     return Container(
       decoration: const ShapeDecorationWithCssShadows(
         color: _boardBg,
-        radius: 18,
+        radius: _cardRadius,
         // Web Board.tsx'in gölge üçlüsü — CSS değerleriyle: koyu sağ-alt,
         // beyaz sol-üst parlama, altta geniş yumuşak gölge. Flutter'ın
         // BoxShadow'u CSS'ten hem daha koyu/kısa boyuyor hem katman sırası

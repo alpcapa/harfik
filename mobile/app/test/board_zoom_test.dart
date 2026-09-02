@@ -28,17 +28,23 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 import 'game_screen_test.dart' show craftedState, rackTile, boardCell;
 import 'support/test_view.dart';
 
-Future<GameController> pumpZoomGame(WidgetTester tester) async {
+/// [boundaryKey]: ekranın tamamını saran `RepaintBoundary` — piksel ölçen
+/// testler (bkz. `board_badge_clip_test.dart`) buradan görüntü alıyor.
+Future<GameController> pumpZoomGame(WidgetTester tester,
+    {GlobalKey? boundaryKey}) async {
   await setPhoneViewSize(tester, const Size(420, 900));
   final words = SetWordSource(const ['ab', 'aba', 'kelime']);
   final controller =
       GameController(words: words, autoPlayAi: false, nowIso: () => '');
   controller.dispatch(ResumeSavedAction(craftedState()));
-  await tester.pumpWidget(MaterialApp(
-    theme: kelimekiTheme(),
-    home: GameScreen(
-        controller: controller, words: words, auth: AuthService.fake()),
-  ));
+  Widget ekran = GameScreen(
+      controller: controller, words: words, auth: AuthService.fake());
+  if (boundaryKey != null) {
+    ekran = RepaintBoundary(
+        key: boundaryKey,
+        child: ColoredBox(color: Colors.white, child: ekran));
+  }
+  await tester.pumpWidget(MaterialApp(theme: kelimekiTheme(), home: ekran));
   await tester.pump();
   return controller;
 }
