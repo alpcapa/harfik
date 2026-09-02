@@ -149,8 +149,15 @@ yukarıda.) Merge etmeden cihazda görmek gerekiyorsa tek yol dalda bir
   ve dışarıdan "sebepsiz iptal" gibi göründü. Bir iptali açıklarken
   koşunun `run_attempt` alanına da bak: 1'den büyükse birileri yeniden
   başlatmış demektir.
+- **DÜZELTME 2 (2 Eylül 2026, ölçüldü): `curl` DE ÇIKIYOR** — ajan vekili
+  üzerinden `curl -s https://kelimeki.com/ | grep kelimeki-build` derleme
+  sha'sını doğrudan veriyor. Deploy doğrulaması için tercih edilen yol bu:
+  `WebFetch` içeriği markdown'a çevirdiğinden `<meta>` etiketlerini GÖSTERMEZ,
+  yani sha'yı okuyamaz. Aşağıdaki madde (ve kök `CLAUDE.md`'nin eski hâli)
+  "`curl` çıkamıyor" diyordu; artık geçerli değil.
 - **DÜZELTME (25 Ağustos 2026, ölçüldü): WEB yüzeyini açıp okuyabiliyorum.**
-  Yukarıdaki "`curl`/`bash` siteye çıkamıyor" doğru, ama `WebFetch` ARACI
+  O günkü "`curl`/`bash` siteye çıkamıyor" tespiti (yukarıda düzeltildi) ile
+  birlikte yazılmıştı; `WebFetch` ARACI
   `https://kelimeki.com`'a ulaşıyor — o gün `/.well-known/assetlinks.json`
   (henüz yayında değildi → SPA kabuğu) ve `/gizlilik/` (statik sayfa, doğru
   başlıkla) ayrı ayrı okundu, yani araç hangi sayfanın servis edildiğini

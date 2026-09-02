@@ -31,7 +31,7 @@ npm run dev      # geliştirme sunucusu (http://localhost:5173)
 npm run build    # üretim derlemesi (dist/)
 npm run preview  # derlemeyi yerelde önizle
 npm run lint     # TypeScript tip kontrolü
-npm run test     # Playwright duman testleri (tests/smoke.spec.ts)
+npm run test     # Playwright testleri (tests/*.spec.ts — duman + yazı ölçeği)
 
 # Birim test çatısı yok; riskli saf mantık ayrı doğrulama betikleriyle sınanır:
 npm run verify-cloud-save-mirror # bulut kaydının çevrimdışı karar mantığı
@@ -68,7 +68,10 @@ cihazda koşulan listesi: [`mobile/TESTING.md`](mobile/TESTING.md) (arkadaşlık
 
 Web tarafında `lint`+`build`+`test`'i koşturan ayrı bir iş akışı var
 (18 Ağustos 2026'da eklendi — `src/**`/`scripts/**`/`tests/**` dokunan her
-PR'da ve `main`e her push'ta): `.github/workflows/web-ci.yml`.
+PR'da ve `main`e her push'ta): `.github/workflows/web-ci.yml`. Aynı iş akışı
+2 Eylül 2026'dan beri **mobil test paketini de** koşuyor (`parite` işi):
+mobil testlerin bir bölümü web kaynak dosyalarını okuyor, yani saf bir web
+değişikliği bir mobil testi düşürebiliyor — bir kez düşürdü de.
 
 ## Proje Yapısı
 
@@ -167,6 +170,8 @@ src/
 │   ├── offlineNotice.ts # sunucuya ulaşılamadığında gösterilen metinler + ağ hatası tespiti (Flutter portuyla testli olarak senkron)
 │   ├── shareBoardImage.ts # bir DOM düğümünü (tahta önizlemesi) paylaşılabilir PNG'ye çevirir (html-to-image)
 │   ├── shareLink.ts    # ?ref=arkadas etiketli davet linki + native paylaşım/panoya kopyalama (Setup ve karşılama katmanı ORTAK — iki ayrı uygulama sessizce ayrışmasın diye)
+│   ├── boardZoom.ts    # tahtanın çift dokunuşla 2× büyütülmesi: çift dokunuş dedektörü, pan sınırlama, transform matrisi (saf; portun board_zoom.dart'ıyla senkron)
+│   ├── draftRescue.ts  # ıskalanan dokunuşu en yakın taslak taşa yönlendirir (npm run verify-draft-rescue)
 │   ├── ghostClick.ts   # bir jestin ardından gelen "hayalet" click'i yutar (dokunmatikte compat mouse olayları O ANDAKİ DOM'a düşer) — dört çağrı yeri ortak
 │   ├── errorReporting.ts # istemci hata telemetrisi (client_errors) — beklenen durumlar BİLEREK kaydedilmez, saatte 10 kayıt tavanı (zaman penceresi, süreç ömrü DEĞİL)
 │   ├── friendInvite.ts # bekleyen arkadaşlık davet token'ı için tek seferlik localStorage kuyruğu
@@ -195,7 +200,8 @@ src/
 │   ├── useOnlineStatus.ts # çevrimiçi/çevrimdışı durumu izler
 │   ├── useNicknameAvailability.ts # takma isim uygunluğu (debounce'lu RPC kontrolü, AuthModal + AccountSettingsModal ortak)
 │   ├── useAppIconBadge.ts # PWA ikonu üzerinde Badge API ile kırmızı yuvarlak/beyaz sayı rozeti
-│   └── useRankScores.tsx  # isimlerin yanındaki rütbe mührü için k-lig puanı (toplu, leaderboard view'ı)
+│   ├── useRankScores.tsx  # isimlerin yanındaki rütbe mührü için k-lig puanı (toplu, leaderboard view'ı)
+│   └── useBoardZoom.ts    # tahta zoom'unun React tarafı (durum, tanıtım balonu kararı, sürükleme sırasında devre dışı)
 └── lib/
     ├── supabase.ts        # Supabase istemcisi
     ├── api.ts             # saveGame, fetchLeaderboard, auth, fetchMeaning

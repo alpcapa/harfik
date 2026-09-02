@@ -152,10 +152,17 @@ Mobilde GÖRÜNÜR karşılığı Setup teşhis satırındaki `Derleme a1b2c3d �
 (`mobile/app/lib/src/config/env.dart`, CI `--dart-define` ile veriyor).
 **Bir düzeltmenin kullanıcıda görüneceğini söylemeden önce o sha'yı iste
 ya da ekran görüntüsünden oku** — eşleşmiyorsa tartışılacak bir hata yok,
-deploy bekleniyor demektir. 25 Ağustos 2026'da ölçülen bir kolaylık:
-**`kelimeki.com` bu oturumdan `WebFetch` ile doğrudan okunabiliyor**
-(`curl`/`bash` hâlâ çıkamıyor) — "doğru sayfa mı yayında" sorusunu cevaplar,
-başlık/bayt ölçmez; Flutter/Pages yüzeyi için kanıtlanmadı. Ayrıntı (bu oturumun gözlem sınırı, merge
+deploy bekleniyor demektir. **2 Eylül 2026'da ölçüldü: `curl` ARTIK ÇIKIYOR** (ajan vekili üzerinden) ve
+bu, deploy doğrulamasının en kesin yolu:
+```
+curl -s https://kelimeki.com/ | grep kelimeki-build
+kelimeki-build" content="ea0a1c8"
+```
+Yani derleme sha'sı için artık kullanıcıdan ekran görüntüsü beklemeye gerek
+YOK — `main`'in başıyla karşılaştır, yeter. (Bu, 25 Ağustos'ta yazılan
+"`curl`/`bash` çıkamıyor" tespitini geçersiz kılıyor; `WebFetch` de çalışıyor
+ama içeriği markdown'a çevirdiğinden `<meta>` etiketlerini GÖSTERMEZ — sha
+okumak için `curl` şart.) Flutter/Pages yüzeyi için kanıtlanmadı. Ayrıntı (bu oturumun gözlem sınırı, merge
 sonrası dal hijyeni, PR'da CI koşmazsa ne yapılacağı):
 `mobile/CLAUDE.md` → "Deploy Doğrulaması".
 
@@ -366,7 +373,7 @@ src/
     constants.ts    # Tahta sabitleri, köşe hesapları, bonus konumları
     gameReducer.ts  # useReducer tabanlı oyun state makinesi
     types.ts        # GameState, Player, Tile tipleri
-  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, pendingLiveGames, errorReporting, ghostClick, boardZoom...)
+  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, shareBoardImage, pendingLiveGames, errorReporting, ghostClick, draftRescue, boardZoom...)
   data/         # Kelime listesi (~63k), harf dağılımı, kelime anlamları, wordSetLoader (lazy chunk)
   lib/          # Supabase istemcisi ve API sarmalayıcısı
   fonts/        # @font-face tanımları (main.tsx import eder) + files/*.woff2 — bunlardan
