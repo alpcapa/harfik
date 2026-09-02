@@ -509,13 +509,21 @@ yakalanamazdı. Cihaz listesi: `mobile/docs/testing-bildirimler.md` §3e —
 orada "rozet 0 oldu" ARANMIYOR, aranan şey rozetin bekleyen AYRI İŞ
 sayısını göstermesi.
 
-### Faz 6 — rozet sıfırlama (#15) + "kaç kişi hangi sürümde" (#12) · sunucu ✅ CANLIDA, istemci ⏳ **1.0.4 BEKLİYOR** (31 Ağustos 2026)
+### Faz 6 — rozet sıfırlama (#15) + "kaç kişi hangi sürümde" (#12) · sunucu ✅ CANLIDA, istemci ✅ **1.0.4 (467) İLE ÇIKTI** (1 Eylül 2026)
 
-⚠ **SÜRÜM ÇIKARILMADI.** Kullanıcı kararı (31 Ağustos 2026): *"Yap ama henüz
-yeni versiyon çıkarmıyoruz. Tüm işlerle (bundan sonraki) toplu çıkartırız."*
-Yani `pubspec.yaml`/`env.dart` sürümü BİLEREK 1.0.3'te bırakıldı; bunları
-taşıyacak derleme sonraki toplu sürüm olacak. Sunucu yarısı ise merge'den
-bağımsız CANLI (migration + RPC anında uygulandı).
+⚠ Bu başlık 2 Eylül'e kadar *"istemci 1.0.4 BEKLİYOR"* diyordu ve BAYATTI:
+1.0.4 (467) 1 Eylül'de Play'e yüklendi, yani bekleyen bir iş kalmamıştı.
+Aynı sınıf hata bu dosyada üçüncü kez (bkz. "Console (elle)" satırı) —
+sebep hep aynı: kaydın İKİ yerde durması. **Yayının kanonik kaydı
+`mobile/docs/build-and-distribution-log.md` → "Yayınlanan sürümlerin
+kütüğü"**; buradaki faz notları neyin YAPILDIĞINI anlatır, neyin
+yayında olduğunu değil.
+
+Tarihçe (o günkü karar): kullanıcı 31 Ağustos'ta *"Yap ama henüz yeni
+versiyon çıkarmıyoruz. Tüm işlerle (bundan sonraki) toplu çıkartırız."*
+demişti; `pubspec.yaml`/`env.dart` bilerek 1.0.3'te bırakıldı ve toplu
+sürüm ertesi gün 1.0.4 oldu. Sunucu yarısı ise merge'den bağımsız CANLIydı
+(migration + RPC anında uygulandı).
 
 **#15 — rozet gerçekten sıfırlansın.** Faz 5 birikmeyi durdurdu ama
 sıfırlamayı değil: panelde duran bildirimler orada kalıyordu. Artık uygulama
@@ -567,12 +575,13 @@ görür ama yalnızca YZ oyunlarını ve OYUN AÇILIŞI sayar; "Kurulu Sürümle
 (`push_tokens`) KİŞİ sayar ve oyun beklemez ama yalnızca giriş yapmış +
 bildirim izni vermiş kişileri görür.
 
-### Faz 7 — telemetriden çıkan iki çökme · ⏳ **1.0.4 BEKLİYOR** (31 Ağustos 2026)
+### Faz 7 — telemetriden çıkan iki çökme · ✅ **1.0.4 (467) İLE ÇIKTI** (1 Eylül 2026)
 
 Kullanıcı isteği: *"Admin Hatalar bölümündeki loglara bakıp önemli bir
 şeyler var mı kontrol et."* 30 günde 31 kayıt vardı; ikisi gerçek hataydı.
-⚠ İkisi de İSTEMCİ değişikliği → sıradaki toplu sürümle çıkar; sürüm yine
-yükseltilmedi.
+⚠ İkisi de İSTEMCİ değişikliğiydi ve sıradaki toplu sürümle çıktı:
+**1.0.4 (467), 1 Eylül 2026.** (Bu satır 2 Eylül'e kadar "sıradaki toplu
+sürümle çıkar; sürüm yine yükseltilmedi" diyordu — bayattı.)
 
 **1. Derin bağlantı çökmesi — 11 CİHAZ.** `boundary /
 Null check operator used on a null value`, 26–29 Ağustos, dört ayrı
@@ -1198,8 +1207,12 @@ Ağustos 2026). Aşağısı yalnızca hangi formun neden riskli olduğunun özet
   kırpıldı (23 Ağu 2026, dosyalar kullanıcıda). Çekim listesi + gizlilik
   uyarıları + oran kuralı `metin.md`'de. Tablet desteği iddia edilecekse
   tablet görselleri ayrıca gerekir.
-- ⬜ Kategori **Oyunlar → Kelime**, iletişim e-postası, web sitesi
-  (Console'a elle girilir)
+- ✅ Kategori **Games → Word** (25 Ağustos), iletişim e-postası
+  `destek@kelimeki.com`, web sitesi `https://kelimeki.com` — üçü de
+  Console'a girildi.
+  ⚠ Bu satır 2 Eylül'e kadar ⬜ duruyordu ve BAYATTI; aynı üç madde
+  yukarıdaki "Console (elle)" düzeltme tablosunda 31 Ağustos'ta zaten
+  kapatılmıştı. Kaydın iki yerde durmasının bu dosyadaki dördüncü örneği.
 
 **Görseller elle çizilmez:** reklam kareleri (`scripts/sponsored-post/`) ve
 reel (`scripts/reel/`) zaten ÜRETİM bileşenlerini sunucuda render eden bir
