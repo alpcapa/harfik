@@ -1656,9 +1656,13 @@ kırpar), sonra:
       ALTTA tam genişlik satırda (Canlı oyundaki `SIRA RAKİPTE` kartıyla
       aynı şekil). Etiket kartın ORTASINDA durmamalı. Oyuncu adları
       kırpılmamalı.
+- [ ] **Rafın üstündeki mesaj satırı** → uzun bir mesaj (ör. "+9 puan
+      (5 puanı X kaptı)") KESİLMEMELİ; kutu metinle birlikte büyümeli.
+      (2 Eylül 2026: port sabit 30 px kullanıyordu, web ikizi `min-h`.)
 - [ ] **Board altındaki şerit** (Hamleler · Mesajlaşma · Nasıl Oynanır?) →
-      okunur ama kartın altını yiyecek kadar büyük OLMAMALI (punto 2 Eylül
-      2026'da kullanıcı isteğiyle 12 → 11 indirildi, web ikizi de).
+      okunur olmalı. ⚠ ÖLÇÜLDÜ (2 Eylül 2026): ölçek tavanında şerit
+      360 ve 390 px'te İKİ SATIRA sarıyor ve yüksekliği 48 → 96 px'e
+      çıkıyor; punto 12 → 11 indirimi bunu ENGELLEMEDİ. Açık madde.
 - [ ] Yazı boyutunu normale al → hiçbir yerde görünüm değişmemeli; DEVAM
       EDEN OYUN kartının şekli AYNI kalmalı (düzen artık ölçekten bağımsız
       — ölçeğe göre şekil değiştiren dal 2 Eylül'de kaldırıldı).
