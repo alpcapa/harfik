@@ -113,9 +113,12 @@ kapandığında kaynağı `console-formlari.md`'dir, karar oradan okunur.
 
 ### Sonra / bloke
 
-**#8** (FAZ A1 Bölüm 6 — Paylaşma, iPad popover), **#11** (hata panelinde
-platform filtresi). **#12** (sürüm dağılımı kapsamı) ✅ **KAPANDI**
-31 Ağustos 2026 — bkz. arşivde "Faz 6".
+Açık olan TEK madde: **#8** (FAZ A1 Bölüm 6 — Paylaşma, iPad popover).
+**#11** (hata panelinde platform filtresi) ✅ **KAPANDI** 31 Ağustos 2026
+— bu satır 2 Eylül'e kadar onu hâlâ bekleyen iş gibi gösteriyordu, oysa
+aynı gün yukarıdaki özet tablo ✅ diyordu (kaydın iki yerde durması).
+**#12** (sürüm dağılımı kapsamı) ✅ **KAPANDI** 31 Ağustos 2026 — bkz.
+arşivde "Faz 6".
 **#15 — uygulama öne gelince bildirim panelini temizle** → ✅ **KOD TAMAM**
 (31 Ağustos 2026), sıradaki mobil sürümle çıkar. Ayrıntı arşivde: "Faz 6".
 **iOS/APNs** Apple Developer üyeliğine takılı; tasarım bilerek FCM üzerinden
@@ -489,17 +492,26 @@ Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
    `dryRun` bayrağıyla hiçbir şey silmeden sayan bir kuru çalıştırma modu
    var ve onay penceresi bunu gösteriyor. Karar/ölçüm/tuzaklar:
    `docs/decisions/account-deletion.md`.
-   ⚠ **Console'da yapılacak tek iş kaldı:** App content › **Data deletion**
-   formunda artık "uygulama içi silme yolu VAR" seçilmeli (form bugüne kadar
-   yalnızca web URL'ini taşıyordu).
-3. **Madde 1 — deep link.** Play blokeri değil ama
-   kayıt onayı maili uygulamayı değil web'i açıyor; inceleme "kırık akış"
-   diye dönebilir. iOS yarısı Apple hesabı istediğinden bekler.
-   **`assetlinks.json` bu maddeden AYRILDI ve bitti** (25 Ağustos 2026,
-   §6.6) — parmak izi Console'dan ancak `.aab` yüklendikten sonra
-   okunabildiğinden dosya o anda yazıldı; maddenin geri kalanı (intent
-   filter, Supabase redirect allow-list, e-posta şablonları, Flutter
-   yönlendirme) duruyor.
+   ✅ **Console'da yapılacak iş de YOK** (2 Eylül 2026'da düzeltildi).
+   Burada *"App content › Data deletion formunda artık 'uygulama içi silme
+   yolu VAR' seçilmeli"* yazıyordu; **böyle bir form alanı YOK.** Silme
+   sorusunun cevabı `Evet → kelimeki.com/hesap-silme/` ve öyle kalıyor —
+   Play'in uygulama içi şartı bir form alanı değil, **uygulamanın
+   kendisinde** aranan bir politika şartı ve 372'de karşılandı.
+   `console-formlari.md` §3.8 bunu 26 Ağustos'ta *"ENGEL KALKTI, beyanda
+   değişen bir şey YOK"* diye kapatmıştı; bu satır o güne kadar geriye
+   dönük olarak bayat kaldı.
+3. ✅ **Madde 1 — deep link: KAPANDI** (30 Ağustos 2026, Faz 3'te ölçüldü;
+   SAHADA 1.0.3 ile). Madde arşivde: `docs/decisions/roadmap-arsiv.md` →
+   *"1. `kelimeki://` deep link kanalı"*. **Numara bilerek duruyor** —
+   arşivdeki madde buraya (`0.B/3`) atıf yapıyor.
+   ⚠ Bu satır 2 Eylül 2026'ya kadar bayat kaldı: hâlâ *"kayıt onayı maili
+   uygulamayı değil web'i açıyor"* ve *"intent filter, Supabase redirect
+   allow-list, e-posta şablonları, Flutter yönlendirme duruyor"* diyordu.
+   Dördü de bitmişti — kayıt onayı 28 Ağustos'ta https'e geçti, intent
+   filtreleri Parça 87/158'de zaten yazılmıştı, yönlendirmeyi Faz 3 ekledi.
+   Açık kalan TEK parça **iOS Associated Domains**, o da bu maddenin değil
+   aşağıdaki **iOS/APNs** bloğunun (Apple Developer üyeliği).
 4. **0.C — App content formları** (aşağı).
 5. ~~Test hesaplarının silinmesi~~ — **madde KALDIRILDI** (26 Ağustos 2026,
    kullanıcı kararı: *"gerekirse daha sonra hesabımı silden ben yaparım,
