@@ -64,7 +64,7 @@ Yani maddeleri "konu"ya göre değil **paketlenebilirliğe** göre grupladım.
 Sonuç: kalan HER ŞEY **iki sürüm turuna** sığıyor — bildirim işinin yarısı
 sunucu tarafında olduğu için sürüm beklemiyor.
 
-### Kalan işlerin tamamı — tek bakışta (31 Ağustos 2026)
+### Kalan işlerin tamamı — tek bakışta (2 Eylül 2026'da güncellendi)
 
 ⚠ **Asıl bloker kod DEĞİL.** Play production'a başvurmak için kişisel
 hesaplarda **12 tester'ın 14 gün kesintisiz kayıtlı** kalması gerekiyor;
@@ -76,7 +76,8 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Sayaç** | 12 tester × 14 gün | ⏳ işliyor, aksiyon yok · *Android developer verification* ✅ **BİTTİ** (Console'dan doğrulandı 31 Ağustos: `com.kelimeki.kelimeki` Registered, 3 anahtar, Identity dolu) |
 | **Console (elle)** | — | ✅ **KAPANDI** (bu satır 31 Ağustos'a kadar bayat kaldı; ayrıntı aşağıda) |
 | **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) · **+ #10 hata hız sınırı** (1 Eylül'de eklendi) | ✅ **1.0.4 (467) Play'e YÜKLENDİ, incelemede** (1 Eylül 2026) |
-| **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); kalanlar bekliyor |
+| **1.0.5'e binen kod** | Tahta zoom'u (+2 APK turu) · zoom tanıtım balonu · yazı ölçeği (sınıf 3+2) · mesaj kutusu etiketi | ⏳ `main`'de, `.aab` HAZIR — **Play'e yüklenmedi**, cihaz onayı bekliyor (2 Eylül 2026; ayrıntı aşağıdaki 1.0.5 turu) |
+| **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView · **1.0.5'in üç yeni işi** (balon · yazı ölçeği · mesaj etiketi) | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); zoom turu 1 Eylül'de onaylandı; kalanlar bekliyor |
 | **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) | ⬜ |
 | **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
@@ -99,24 +100,53 @@ yapılacak iş olmadığı anlaşıldı. Tek tek:
 kâğıdı) biri kapanırken öteki kapanmıyor. Bu tablo bir İNDEKS — bir kova
 kapandığında kaynağı `console-formlari.md`'dir, karar oradan okunur.
 
-### 🚀 1.0.5 SÜRÜM TURU — ⏳ dalda hazır, KAPILI (1 Eylül 2026)
+### 🚀 1.0.5 SÜRÜM TURU — ⏳ `main`'DE, `.aab` HAZIR, Play'e YÜKLENMEDİ (2 Eylül 2026)
 
-**Tek içerik: tahta zoom'u** — çift dokunuşla 2× büyütme + parmakla pan,
-yalnızca tahtanın içi; tek dokunuşlar birebir korunuyor (kullanıcı isteği,
-kapalı testteki "kareleri tutturamıyorum" şikâyetinin çözümü). Karar/ölçüm:
-`mobile/docs/parca-log.md` → Parça 175 · cihaz listesi `mobile/TESTING.md`
-§ 24 · backlog kaydı kapatıldı (`docs/decisions/product-backlog.md`).
+⚠ Bu bölüm 1 Eylül'de *"dalda hazır, KAPILI · tek içerik: tahta zoom'u"*
+diyordu; ikisi de artık DOĞRU DEĞİL. Tur `main`'e girdi ve zoom'un yanına
+üç iş daha bindi.
 
-`appVersion` + `pubspec` birlikte 1.0.4 → 1.0.5 yapıldı (aynı dalda).
+**İçerik — `main`'e giren SIRAYLA:**
+
+| PR | Ne | Cihazda denendi mi |
+|---|---|---|
+| #395 | Tahta zoom'u: çift dokunuşla 2×, parmakla pan (yalnızca tahtanın içi) | ✅ kullanıcı: *"App ok 👍"* |
+| #396 | APK turu 2: bölge çizgisi kenarda incelmesin · kenarlar/boşluklar da çift dokunuş yüzeyi | ✅ aynı turda |
+| #397 | APK turu 3: hamle puanı rozeti kenarda kırpılmasın | ✅ aynı turda |
+| #399 | Zoom **tanıtım balonu** — merkez kareyi işaret eden tek seferlik ipucu | ⬜ **HAYIR** |
+| #400 | Yazı ölçeği: sınıf 3 (sarma — bitirme modalı puanları bölüyordu) + sınıf 2 (Setup'ta devam eden oyun kartı) | ⬜ **HAYIR** |
+| #402 | Mesaj kutusunun üstüne "Oyunculara buradan mesaj gönder" | ⬜ **HAYIR** |
+
+`appVersion` + `pubspec` 1.0.4 → **1.0.5** (#395'te birlikte). Tam takım
+681 → **698** test yeşil.
 
 **Kapılar, SIRAYLA — kullanıcı kararı:** *"Bunu apk ile test edip sorunsuz
 olduğundan emin olmadan aab yapılmayacak."*
 
-1. ✅ **467 (1.0.4) Play'e yüklendi** (1 Eylül 2026, incelemede) — merge
-   artık `mobile-latest`'teki yüklenmemiş paketi ezme riski taşımıyor.
-2. ⬜ Merge (kullanıcı onayıyla) → CI yeni `.apk` + `.aab` üretir →
-   kullanıcı **`.apk`'yı cihazda** § 24 listesiyle dener.
-3. ⬜ Ancak onaydan sonra `.aab` Play'e gider.
+1. ✅ **467 (1.0.4) Play'e yüklendi** (1 Eylül 2026).
+2. ⏳ **YARIM.** Merge yapıldı, CI `.apk` + imzalı `.aab` üretti
+   (`mobile-latest`, `df6fcce`'den, 2 Eylül 06:41). Zoom turu cihazda
+   onaylandı; **balon + yazı ölçeği + mesaj etiketi HENÜZ denenmedi.**
+   Listeler: `mobile/TESTING.md` § 24 (zoom) ve § 25 (yazı boyutu),
+   `mobile/docs/testing-arkadaslar-canli.md` → Mesajlaşma.
+3. ⬜ Ancak o onaydan sonra `.aab` Play'e gider.
+
+**Turun WEB yarısı — ayrı ve ZATEN CANLIDA** (`kelimeki.com`, `b053779`),
+çünkü web merge'de anında deploy oluyor: #398 (zoom + balon, portla aynı
+deneyim — kullanıcı kararı *"her yerde aynı deneyim olsun"*), #401 (yazı
+boyutu sütunları), #402'nin web yarısı.
+
+**Turdan çıkan iki SÜREÇ düzeltmesi** (ürün değil, altyapı):
+- **#403 + #404 — `main` bir kez KIRMIZI oldu.** #401 `GameOver.tsx`teki
+  `w-[29px]` sınıflarını sildi; o sınıfları bir MOBİL test okuyordu
+  (`layout_parity_test.dart` ↔ `_ColHeader(width: 29)`). İki PR ayrı ayrı
+  yeşildi, kopma yalnızca birleşimde göründü. #403 belirtiyi (`min-w-*`
+  tabanı geri kondu), #404 SEBEBİ kapattı: `web-ci.yml` artık mobil test
+  paketini de koşuyor. Ders `docs/decisions/components-account.md`'de.
+- **#405 + #406 — doküman borcu ve CI maliyeti:** README ağaçlarındaki üç
+  eksik dosya + bayat "`curl` çıkamıyor" tespiti düzeltildi; yalnızca
+  doküman değiştiren bir PR'ın macOS derlemesi başlatması engellendi
+  (`!mobile/**.md`).
 
 **1 Eylül 2026, ikinci tur — spec kullanıcı düzeltmesiyle SADELEŞTİ:**
 ilk sürümün "çift dokunuş ilk dokunuşun etkisini geri sarar" ve "joker
@@ -124,8 +154,7 @@ penceresi ertelenir" mekanizmaları kullanıcı tarafından reddedildi
 (*"taşı geri almadan, koyduğu yerde bırakarak zoomlamak lazım"* / *"joker
 tablosunun zoom olayıyla ne ilgisi var"*) ve silindi — artık çiftin
 İKİNCİSİ yutulur, İLKİNİN işi kalır; joker ANINDA açılır ve
-`game_screen_test.dart` origin/main ile bayt bayt aynı. 14 yeni test,
-tam takım 681 yeşil. Ayrıntı: Parça 175.
+`game_screen_test.dart` origin/main ile bayt bayt aynı. Ayrıntı: Parça 175.
 
 ### 🚀 1.0.4 SÜRÜM TURU — 31 Ağustos 2026
 
