@@ -153,10 +153,17 @@ void main() {
     expect(tester.takeException(), isNull,
         reason: 'Alt şerit taştı. İki grup da `shrink-0` olduğundan düz bir '
             '`Row` sığmadığı anda taşar — bu yüzden `Wrap` kullanılıyor.');
-    // Şeridin üç kontrolü de GÖRÜNÜR kalmalı (taşmayı gizlemek çözüm değil).
-    for (final t in const ['Hamleler', 'Mesajlaşma', 'Nasıl Oynanır?']) {
+    // Şeridin kontrolleri GÖRÜNÜR kalmalı (taşmayı gizlemek çözüm değil).
+    for (final t in const ['Hamleler', 'Yardım']) {
       expect(find.text(t), findsOneWidget, reason: '$t şeritten düştü');
     }
+    // ⚠ "Mesajlaşma" burada METİN olarak aranmıyor ve bu bilinçli: bu kurulum
+    // ÇEVRİMDIŞI (`online: false`) ve 2 Eylül 2026'dan beri o durumda etiket
+    // bilerek düşüyor (gerekçe aşağıda, 2c). Kontrolün KENDİSİ kaybolmamalı,
+    // o yüzden İKONU aranıyor — kullanıcı sohbeti hâlâ açabiliyor.
+    expect(find.byKey(const ValueKey('chat-icon')), findsOneWidget,
+        reason: 'Mesajlaşma kontrolü şeritten tamamen düştü. Çevrimdışıyken '
+            'yalnızca ETİKET düşecekti, ikon (ve okunmamış sayacı) kalacaktı.');
   });
 
   // ——— 2b. Şerit TAŞMIYOR ama KÜMELENİYOR mu? ———
@@ -202,7 +209,7 @@ void main() {
       await tester.pump();
       final tahta = tester.getRect(find.byType(BoardWidget));
       final sol = tester.getRect(find.text('Hamleler'));
-      final sag = tester.getRect(find.text('Nasıl Oynanır?'));
+      final sag = tester.getRect(find.text('Yardım'));
       return (
         solBosluk: sol.left - tahta.left,
         sagBosluk: tahta.right - sag.right,
@@ -217,7 +224,7 @@ void main() {
     //    içeride). Kümelenmiş hâlde bu 38,4 / 58,4 px çıkıyordu.
     for (final (ad, m) in [('360', dar), ('430', genis)]) {
       expect(m.sagBosluk, lessThan(dolgu + 1),
-          reason: '$ad px: "Nasıl Oynanır?" sağ kenara yaslı değil '
+          reason: '$ad px: "Yardım" sağ kenara yaslı değil '
               '(${m.sagBosluk.toStringAsFixed(1)} px içeride). `Wrap` gelen '
               'genişliği DOLDURMUYOR demektir — `SizedBox(width: '
               'double.infinity)` düşmüş olabilir (board_widget.dart '
@@ -233,6 +240,104 @@ void main() {
         reason: 'Şerit 360→430 px büyüdü ama gruplar arası boşluk yalnızca '
             '${buyume.toStringAsFixed(1)} px arttı. Boşluğun genişlikten '
             'BAĞIMSIZ olması kümelenmenin imzasıdır.');
+  });
+
+  // ——— 2c. Şerit SARIYOR mu? (taşmıyor ≠ tek satırda) ———
+  //
+  // 2 Eylül 2026, kullanıcı sordu: *"Bizim senaryoda çevrimdışı
+  // konuşmadık. O da gelince ne oluyor? 2 satıra gelip o alanı büyütüyor
+  // mu?"* — cevap EVET idi ve yukarıdaki 2. test bunu GÖREMİYOR.
+  //
+  // ⚠ Kör noktanın sebebi: `Wrap` TAŞMAZ, **sarar**. Yani "taşma yok +
+  // üç metin de görünür" iddiası şerit iki satıra düşmüş hâlde de
+  // DOĞRUDUR. Sessiz bozulmayı ancak KONUM ölçen bir iddia yakalar.
+  //
+  // ÖLÇÜLDÜ — şeridin tek satırda kalması için gereken en az genişlik:
+  //   yerel oyun (Mesajlaşma yok), çevrimiçi 1,0 ve 1,3 → 240 px
+  //   yerel oyun, ÇEVRİMDIŞI, 1,3                       → 282 px
+  //   Canlı oyun, çevrimiçi, 1,3                        → 305 px
+  //   Canlı oyun, ÇEVRİMDIŞI, 1,0                       → 336 px
+  //   Canlı oyun, ÇEVRİMDIŞI, 1,3                       → **405 px**
+  // Yani asıl offline hâl (yerel/YZ oyunu) her telefonda güvendeydi;
+  // patlayan tek bileşim Canlı oyun + bağlantı kaybıydı: 320/360/390
+  // px'te şerit 48 → 96 px.
+  //
+  // ÇÖZÜM: çevrimdışıyken "Mesajlaşma" ETİKETİ düşer (ikon ve okunmamış
+  // sayacı kalır) — o anda mesaj zaten gönderilemiyor, ikon okumak için
+  // duruyor. Eşik 405 → ~348 px. Ölçüm sonrası: 320@1,0 · 360@1,3 ·
+  // 390@1,3 hepsi 48 px.
+  //
+  // ⚠ 320 px + tavan HÂLÂ iki satır — kabul edilen sınır, aşağıda
+  // AÇIKÇA iddia ediliyor ki sessizce "düzeldi" sanılmasın.
+  //
+  // ⚠ WEB İKİZİ BİLEREK DEĞİŞMEDİ: ölçüldü ki `Board.tsx` şeridi 320 px'te
+  // bile çevrimdışıyken tek satır (48 px) — web'de sistem yazı ölçeği
+  // diye bir şey yok. Parite "aynı kod" değil "aynı sonuç".
+  testWidgets('şerit ÇEVRİMDIŞIYKEN de tek satır (Canlı oyun, tavan)',
+      (tester) async {
+    Future<({bool tekSatir, bool etiket, bool rozet})> olc(
+        double genislik, double olcek, bool canli) async {
+      await setPhoneViewSize(tester, Size(genislik, 844));
+      await tester.pumpWidget(_olcekli(
+        olcek,
+        BoardWidget(
+          state: _state(),
+          onOpenHistory: () {},
+          onOpenMessaging: () {},
+          onOpenHelp: () {},
+          unreadMessageCount: 3,
+          onlineStatus: OnlineStatus.fake(online: canli),
+        ),
+      ));
+      await tester.pump();
+      final h = tester.getRect(find.text('Hamleler'));
+      final y = tester.getRect(find.text('Yardım'));
+      return (
+        // İki satıra düştüyse "Yardım" bir satır AŞAĞIDA başlar.
+        tekSatir: (y.top - h.top).abs() <= 1,
+        etiket: find.text('Mesajlaşma').evaluate().isNotEmpty,
+        rozet: find
+            .byKey(const ValueKey('chat-unread-badge'))
+            .evaluate()
+            .isNotEmpty,
+      );
+    }
+
+    // 1) ASIL İDDİA: yaygın telefon genişliklerinde çevrimdışı+tavan tek satır.
+    for (final g in [360.0, 390.0]) {
+      final m = await olc(g, kMaxTextScale, false);
+      expect(m.tekSatir, isTrue,
+          reason: '$g px, ölçek $kMaxTextScale, ÇEVRİMDIŞI: şerit iki satıra '
+              'düştü (48 → 96 px). Çevrimdışıyken "Mesajlaşma" etiketini '
+              'düşüren dal kalkmış olabilir (board_widget.dart '
+              '`_mesajlasmaIcerik`). ⚠ `Wrap` taşmadığı için bunu hiçbir '
+              'taşma testi göremez.');
+      expect(m.etiket, isFalse,
+          reason: '$g px: çevrimdışıyken "Mesajlaşma" ETİKETİ düşmeliydi.');
+      expect(m.rozet, isTrue,
+          reason: '$g px: okunmamış sayacı etiketle birlikte kaybolmuş — '
+              'asıl bilgi o, yalnızca etiket düşecekti.');
+    }
+
+    // 2) Çevrimiçiyken etiket YERİNDE (düzeltme her zaman kısaltmıyor).
+    final cevrimici = await olc(360, kMaxTextScale, true);
+    expect(cevrimici.etiket, isTrue,
+        reason: 'Çevrimiçiyken "Mesajlaşma" etiketi görünmeli — kısaltma '
+            'yalnızca çevrimdışına özgü.');
+    expect(cevrimici.tekSatir, isTrue);
+
+    // 3) 320 px'te normal ölçek de kurtuldu (düzeltmenin yan faydası).
+    expect((await olc(320, 1.0, false)).tekSatir, isTrue,
+        reason: '320 px, ölçek 1,0, çevrimdışı: bu vaka düzeltmeden ÖNCE de '
+            'iki satırdı ve düzeltmeyle kapandı.');
+
+    // 4) BİLİNEN SINIR — 320 px + tavan hâlâ iki satır. Bu iddia "bir gün
+    //    düzeldi" varsayımını engelliyor: düzelirse test düşer ve notlar
+    //    güncellenir.
+    expect((await olc(320, kMaxTextScale, false)).tekSatir, isFalse,
+        reason: '320 px + ölçek $kMaxTextScale artık tek satıra sığıyor. Bu '
+            'İYİ haber ama belgelenen sınır değişti: bu testi ve '
+            'board_widget.dart\'taki notu güncelle.');
   });
 
   // ——— 3. SIFIRA SIKIŞMA: arkadaşlık isteği satırı ———

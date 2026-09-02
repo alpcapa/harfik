@@ -1288,17 +1288,27 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                     Padding(
                                       padding:
                                           const EdgeInsets.fromLTRB(12, 4, 12, 0),
-                                      child: SizedBox(
+                                      // ⚠ SABİT YÜKSEKLİK DEĞİL, ASGARİ —
+                                      // web ikizi `min-h-[30px]` diyor,
+                                      // port `height: 30` diyordu. Sistem
+                                      // yazı ölçeğinde iki satır 38 px'e
+                                      // çıkıp 30 px kutuda KESİLİYORDU
+                                      // (2 Eylül 2026, kullanıcı cihazda:
+                                      // "rafın üzerindeki mesaj kutusu
+                                      // 2 satırda kesiliyor"). `maxLines`
+                                      // de kaldırıldı: web'de sınır yok,
+                                      // uzun mesaj satır sayısı kadar yer
+                                      // kaplıyor.
+                                      child: ConstrainedBox(
                                         key: const ValueKey('message-line'),
-                                        height: 30,
+                                        constraints:
+                                            const BoxConstraints(minHeight: 30),
                                         child: Center(
                                           child: Text(
                                             state.isGameOver
                                                 ? 'Oyun bitti.'
                                                 : liveMessage,
-                                            maxLines: 2,
                                             textAlign: TextAlign.center,
-                                            overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               fontSize: 11,
                                               fontFamily: 'SpaceMono',

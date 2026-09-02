@@ -794,6 +794,19 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
 
 - [ ] **Offline oyun.** Uçak moduna al, YZ oyunu oynanmaya devam etmeli
       (motor ve sözlük tamamen yerel).
+- [ ] **CANLI oyunda bağlantı giderken tahtanın ALT ŞERİDİ tek satır
+      kalmalı (Parça 178, 2 Eylül 2026).** Sistem yazı boyutunu EN BÜYÜĞE
+      al, bir Canlı oyun aç, uçak moduna geç. Şeritte "Çevrimdışı" belirir
+      ve **"Mesajlaşma" yazısı düşer, konuşma balonu ikonu (varsa
+      okunmamış sayacıyla) kalır** — şerit 48 px'lik TEK satır olmalı,
+      tahtanın altı kalınlaşmamalı. İkona dokunmak sohbeti hâlâ açmalı.
+      Ağı geri açınca yazı geri gelmeli.
+      ⚠ **320 px genişliğindeki bir cihazda (çok eski/küçük Android) en
+      büyük fontta şeridin İKİ satır olması BİLİNEN ve kabul edilen
+      sınırdır** — hata olarak bildirme.
+      ⚠ Neden elle: `flutter test` bunu ölçüyor (`text_scale_test.dart`)
+      ama GERÇEK cihazın yazı ölçeği, font metrikleri ve genişliği
+      testtekiyle birebir aynı olmayabilir.
 - [ ] **GİRİŞLİYKEN offline oynanan hamleler KAYBOLMAMALI (Parça 38).**
       Girişli ol, bir YZ oyunu aç, birkaç hamle yap. Uçak moduna al ve
       **birkaç hamle daha yap**. Ağı geri aç, uygulamayı yeniden başlat →
@@ -1650,15 +1663,23 @@ kırpar), sonra:
       başlıkları, sıra ve skorlar tek satır.
 - [ ] **Tahtada onaylı bir taşa dokun (kelime anlamı)** → madde numaraları
       (`1.`, `2.` …) tek satır.
-- [ ] **Nasıl Oynanır → k-lig kademe tablosu** → kademe harfleri tek satır.
+- [ ] **Yardım → k-lig kademe tablosu** → kademe harfleri tek satır.
 - [ ] **Setup → DEVAM EDEN OYUN kartı** (yarım bir yerel oyun bırakıp
       Setup'a dön) → `SIRA SENDE` oyuncu satırının SAĞINDA, kalan süre
       ALTTA tam genişlik satırda (Canlı oyundaki `SIRA RAKİPTE` kartıyla
       aynı şekil). Etiket kartın ORTASINDA durmamalı. Oyuncu adları
       kırpılmamalı.
-- [ ] **Board altındaki şerit** (Hamleler · Mesajlaşma · Nasıl Oynanır?) →
-      okunur ama kartın altını yiyecek kadar büyük OLMAMALI (punto 2 Eylül
-      2026'da kullanıcı isteğiyle 12 → 11 indirildi, web ikizi de).
+- [ ] **Rafın üstündeki mesaj satırı** → uzun bir mesaj (ör. "+9 puan
+      (5 puanı X kaptı)") KESİLMEMELİ; kutu metinle birlikte büyümeli.
+      (2 Eylül 2026: port sabit 30 px kullanıyordu, web ikizi `min-h`.)
+- [ ] **Board altındaki şerit** (Hamleler · Mesajlaşma · **Yardım**) →
+      ölçek tavanında da TEK SATIR (48 px) kalmalı, iki satıra düşmemeli.
+      Etiket 2 Eylül 2026'da `Nasıl Oynanır?` → `Yardım` oldu (kullanıcı
+      fikri) ve ÖLÇÜLDÜ: 14 karakterlik etiketle tavanda şerit 48 → 96 px'e
+      çıkıyordu, tek satırda kalabilen en yüksek ölçek 360 px'te 1,10 idi;
+      `Yardım` ile 320/360/390 px'in üçünde de tavanda tek satır.
+      ⚠ Yalnızca ŞERİT etiketi değişti — HelpModal başlığı, hesap menüsü
+      maddesi ve `/nasil-oynanir/` sayfası `Nasıl Oynanır?` olarak kaldı.
 - [ ] Yazı boyutunu normale al → hiçbir yerde görünüm değişmemeli; DEVAM
       EDEN OYUN kartının şekli AYNI kalmalı (düzen artık ölçekten bağımsız
       — ölçeğe göre şekil değiştiren dal 2 Eylül'de kaldırıldı).

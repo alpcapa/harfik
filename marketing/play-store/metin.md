@@ -184,7 +184,7 @@ Neden: rakiplerinden ayrıştığın yer — sözlük uygulamanın içinde.
 
 **6 — Nasıl Oynanır (kurallar)**
 
-Nasıl: oyun ekranının alt şeridinde **"Nasıl Oynanır?"** → "Hızlı Başlangıç".
+Nasıl: oyun ekranının alt şeridinde **"Yardım"** → "Hızlı Başlangıç".
 
 Karede görünmeli: kural maddeleri (bölge, X2/X3, bingo).
 

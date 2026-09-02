@@ -22,8 +22,11 @@
 //      CSS transform'u kendisi tersine çevirdiğinden portun stride
 //      matematiğinde gereken "görünür kare kapısı" burada gerekmez.
 //   2. Dış hat `vectorEffect="non-scaling-stroke"` çizildiğinden zoom'da
-//      KALINLAŞMAZ; portta stroke ölçekle büyüyor. Kırpma payı bu yüzden
-//      web'de daha küçük yeter (bkz. BOARD_CLIP_SLACK).
+//      KALINLAŞMAZ; portta stroke ölçekle büyüyor.
+//      ⚠ Bu madde 2 Eylül 2026'ya kadar "kırpma payı bu yüzden web'de daha
+//      küçük yeter" diye bitiyordu ve artık YANLIŞ: web'de pay hiç YOK
+//      (aşağıdaki iki kaldırma notu). Stroke farkı duruyor, paya gerekçe
+//      olması bitti — ölçüldü ki dış hat zaten dolgunun 10 px'i içinde.
 
 /** Yakınlaştırma oranı — port `kBoardZoomScale` ile AYNI olmalı. */
 export const BOARD_ZOOM_SCALE = 2;

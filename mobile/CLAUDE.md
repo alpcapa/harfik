@@ -972,6 +972,18 @@ erişilebilirlik açısından savunulamazdı. Tam envanter:
    BOYUTU ölçtüğü için hiç kıpırdamamıştı, o sessizlik "değişmedi" diye
    okunmuştu. Kapı: `test/text_scale_test.dart` → *"tahta alt şeridi
    ŞERİDİ DOLDURUR"* (iki farklı genişlikte ölçüyor).
+   ⚠⚠ **Ve `Wrap`'e geçtikten sonra TAŞMA TESTİ SENİ KORUMAZ** (2 Eylül
+   2026, Parça 178): `Wrap` taşmaz, **sarar**. "Taşma hatası yok + metinler
+   görünür" diyen bir iddia, şerit iki satıra düşmüş hâlde DE geçer.
+   Nitekim geçti: şerit çevrimdışıyken 48 → 96 px'e çıkıyordu ve testler
+   yeşildi; kullanıcı sordu diye ölçülüp bulundu. **Bir `Wrap` eklediğinde
+   aynı PR'da "tek satırda mı" iddiasını da yaz** — iki öğenin dikey
+   konumunu karşılaştırmak yetiyor.
+   ⚠ **Ve şeridi DOLU hâliyle ölç.** O tur şerit yalnızca çevrimiçi
+   ölçülmüştü; "Çevrimdışı" beşinci öğe olarak girince eşik 305 → 405 px'e
+   fırlıyor. Koşullu bir öğe (yalnız Canlı oyunda çıkan "Mesajlaşma",
+   yalnız bağlantı yokken çıkan "Çevrimdışı") varsa **en dolu bileşimi**
+   ölç, en yaygın olanı değil.
 5. ⚠ **Takımı 1,3'te koşturmak CI KAPISI OLARAK KULLANILAMAZ** (denendi):
    31 test düşüyor ve çoğu gerçek hata değil — bu projede birçok test web
    paritesini piksel piksel ölçüyor, ölçek değişince o ölçümler tanım

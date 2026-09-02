@@ -15,7 +15,7 @@
 // İLK TURDA (ölçüm turu) iddia YOKTU, yalnızca sayı basılıyordu:
 //   alt şerit: Hamleler         78.8 × 31.0
 //   alt şerit: Mesajlaşma       94.4 × 31.0
-//   alt şerit: Nasıl Oynanır?  125.8 × 31.0
+//   alt şerit: Yardım (eski 'Nasıl Oynanır?')  125.8 × 31.0
 //   başlık: ← Geri              90.8 × 29.3
 //   yardım: Detaylı Kurallar   128.2 × 14.0
 // Beşi de 48'in altındaydı. Düzeltmeden sonra bu dosya artık İDDİA ediyor.
@@ -232,7 +232,7 @@ void main() {
 
     _olc(tester, find.text('Hamleler'), 'alt şerit: Hamleler');
     _olc(tester, find.text('Mesajlaşma'), 'alt şerit: Mesajlaşma');
-    _olc(tester, find.text('Nasıl Oynanır?'), 'alt şerit: Nasıl Oynanır?');
+    _olc(tester, find.text('Yardım'), 'alt şerit: Yardım');
   });
 
   testWidgets('oyun başlığı: ← Geri (girişsiz — GİRİŞ butonu)',

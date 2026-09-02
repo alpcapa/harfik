@@ -4,7 +4,7 @@
 // da sürükleme de ekran katmanının (GameScreen) pointer akışından geçer
 // (web'de Tile'ın onPointerDown/Move/Up prop'larının eşleniği). Alt bilgi
 // şeridi (solda "Hamleler" [+ Canlı oyunda "· Mesajlaşma"], sağda
-// "Çevrimdışı" uyarısı ve "Nasıl Oynanır?") kartın alt bölümü olarak
+// "Çevrimdışı" uyarısı ve "Yardım") kartın alt bölümü olarak
 // portlandı; "Mesajlaşma" butonu yalnızca Canlı oyunda çıkar (web'de de
 // prop verilmezse hiç render edilmiyor).
 import 'package:flutter/foundation.dart';
@@ -56,6 +56,42 @@ class _ZoomClipSlackClipper extends CustomClipper<Rect> {
       size.width + _zoomClipSlack, size.height + _zoomClipSlack);
   @override
   bool shouldReclip(covariant CustomClipper<Rect> oldClipper) => false;
+}
+
+/// Tahtanın iç dolgusu ve kartın köşe yarıçapı — İKİSİ de birden fazla
+/// yerde kullanılıyor (dolgu `_zoomWrap`te, yarıçap kartın dekorasyonunda
+/// ve rozet kırpıcısında). Sabit olarak duruyorlar ki ayrışmasınlar.
+const double _boardPad = 10;
+const double _cardRadius = 18;
+
+/// Hamle rozeti KATMANININ kırpması — web ikizinin BİREBİR karşılığı
+/// (`Board.tsx` → `clipPath: inset(0 round 18px 18px 0 0)`).
+///
+/// 2 Eylül 2026, kullanıcı cihazda: *"Web'deki aynı taşma mobilde de var.
+/// Onu da web ile birebir hâle getir."* Rozet katmanı zoom matrisini
+/// izliyor ama hiç kırpılmıyordu, yani hücresi görünür kareden çıkınca
+/// kartın üstüne — başlığın içine — çiziliyordu. ÖLÇÜLDÜ (piksel):
+/// tahtanın dışına 268 piksel.
+///
+/// ⚠ "Stack zaten kırpıyor" SANILMIŞTI ve yanlıştı: `Transform` boyama
+/// zamanı çalıştığından Stack layout'ta taşma görmüyor ve kırpmıyor.
+/// Yapısal iddia yetmez; kapı `board_badge_clip_test.dart` PİKSEL ölçüyor.
+///
+/// Katmanın kutusu ızgaranın DOLGULU alanı, kırpma ise TAHTANIN kutusu
+/// olmalı — bu yüzden dolgu kadar genişletiliyor. Pay YOK: rozet kartın
+/// içinde kalır, kenarda gerekirse kesilir (kullanıcı kararı, web ile aynı).
+class _BadgeCardClipper extends CustomClipper<Path> {
+  const _BadgeCardClipper();
+  @override
+  Path getClip(Size size) => Path()
+    ..addRRect(RRect.fromRectAndCorners(
+      Rect.fromLTRB(-_boardPad, -_boardPad, size.width + _boardPad,
+          size.height + _boardPad),
+      topLeft: const Radius.circular(_cardRadius),
+      topRight: const Radius.circular(_cardRadius),
+    ));
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
 const Color _boardBg = Color(0xFFDDE4EE);
@@ -173,7 +209,7 @@ class BoardWidget extends StatelessWidget {
   /// öteki rozetleriyle aynı görsele çekildi.
   final int unreadMessageCount;
 
-  /// Alt şeridin SAĞ ucundaki "Nasıl Oynanır?" linki (14 Ağustos 2026,
+  /// Alt şeridin SAĞ ucundaki "Yardım" linki (14 Ağustos 2026,
   /// kullanıcı isteği) — buraya kadar X2/X3 açıklaması duruyordu. Bonus
   /// renkleri tahtada zaten büyük filigranlarla yazılı olduğundan legend'ın
   /// taşıdığı bilgi kaybolmuyor; kurallara her yerden erişim kazanılıyor.
@@ -222,7 +258,14 @@ class BoardWidget extends StatelessWidget {
         children: [
           govde,
           IgnorePointer(
-            child: m == null ? u : Transform(transform: m, child: u),
+            // Kırpma HER İKİ hâlde de var (web ile aynı): duruma bağlamak
+            // kapatma animasyonu boyunca rozeti kartın dışından süzülerek
+            // geçirirdi. Dinlenmede zaten kesmiyor — rozetin 1×'teki
+            // taşması tahtanın 10 px dolgusundan küçük.
+            child: ClipPath(
+              clipper: const _BadgeCardClipper(),
+              child: m == null ? u : Transform(transform: m, child: u),
+            ),
           ),
         ],
       );
@@ -232,7 +275,7 @@ class BoardWidget extends StatelessWidget {
     // (aşağıdaki Listener) çerçeveyi de kapsasın diye (1 Eylül 2026,
     // kullanıcı APK'da bildirdi: "zoom sadece karelerde çalışıyor,
     // kenarlar da dahil olmalı"). zoom verilmemişken ağaç ESKİSİYLE aynı.
-    const pad = EdgeInsets.all(10);
+    const pad = EdgeInsets.all(_boardPad);
     if (z == null) {
       return Padding(
           padding: pad,
@@ -398,7 +441,7 @@ class BoardWidget extends StatelessWidget {
     return Container(
       decoration: const ShapeDecorationWithCssShadows(
         color: _boardBg,
-        radius: 18,
+        radius: _cardRadius,
         // Web Board.tsx'in gölge üçlüsü — CSS değerleriyle: koyu sağ-alt,
         // beyaz sol-üst parlama, altta geniş yumuşak gölge. Flutter'ın
         // BoxShadow'u CSS'ten hem daha koyu/kısa boyuyor hem katman sırası
@@ -672,7 +715,7 @@ class BoardWidget extends StatelessWidget {
 
   /// Alt bilgi şeridi — solda "Hamleler" (+ Canlı oyunda "· Mesajlaşma"),
   /// sağda "Çevrimdışı" uyarısı (yalnızca bağlantı yokken) ve
-  /// "Nasıl Oynanır?".
+  /// "Yardım".
   /// Dokunulabilir öğeler `TapTarget` içinde — yani kutuları en az
   /// 48×48 (`kMinTapTarget`). 22 Ağustos 2026'da buraya bir dolgu
   /// (`top: 4, bottom: 10`) konmuştu ama YETMEDİ: CI'da ölçülen gerçek
@@ -686,6 +729,33 @@ class BoardWidget extends StatelessWidget {
   /// Tıklanamaz öğelerin (ayraç, "Çevrimdışı") dolgusu artık yalnızca
   /// YATAY — 48 px'lik satırda kendiliğinden ortalanıyorlar; eskisi gibi
   /// asimetrik dikey dolgu taşısalardı ~3 px kayarlardı.
+
+  /// "Mesajlaşma" butonunun içeriği. `etiketli: false` → yalnızca ikon
+  /// (çevrimdışı; gerekçe `_footer`daki nota yazılı). Okunmamış sayacı bu
+  /// widget'ın DIŞINDA, `Stack`te duruyor — yani etiket düşse de rozet
+  /// kaybolmaz, yalnızca çapası ikonun sağ üstüne kayar.
+  static Widget _mesajlasmaIcerik({required bool etiketli}) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Anahtar TESTİN kancası: sınıf private olduğundan tip olarak
+          // aranamıyor, ve çevrimdışıyken kontrolün İKON olarak ayakta
+          // kaldığı iddiası tam da bu yüzden bir anahtara bağlı.
+          const _ChatBubbleIcon(key: ValueKey('chat-icon')),
+          if (etiketli) ...[
+            const SizedBox(width: 4),
+            const Text(
+              'Mesajlaşma',
+              style: TextStyle(
+                fontFamily: 'SpaceMono',
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+                color: kAccent,
+              ),
+            ),
+          ],
+        ],
+      );
 
   Widget _footer() {
     return Container(
@@ -726,7 +796,7 @@ class BoardWidget extends StatelessWidget {
       // ⚠ Ekran başına ölçek TAVANI konmadı — `mobile/CLAUDE.md` kural 1
       // bunu yasaklıyor (tavan TEK yerde). Değişen taban punto.
       // ⚠ BEŞ kardeş de aynı puntoda olmak ZORUNDA (Hamleler · ayraç ·
-      // Mesajlaşma · sayaç · Nasıl Oynanır?) ve web `Board.tsx` ikizi de —
+      // Mesajlaşma · sayaç · Yardım) ve web `Board.tsx` ikizi de —
       // biri değişirse hepsi.
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
@@ -770,26 +840,41 @@ class BoardWidget extends StatelessWidget {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _ChatBubbleIcon(),
-                          SizedBox(width: 4),
-                          Text(
-                            'Mesajlaşma',
-                            style: TextStyle(
-                              fontFamily: 'SpaceMono',
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                              color: kAccent,
-                            ),
-                          ),
-                        ],
-                      ),
+                      // ÇEVRİMDIŞIYKEN ETİKET DÜŞER, ikon ve sayaç kalır
+                      // (2 Eylül 2026, kullanıcı sordu: *"Çevrimdışı da
+                      // gelince 2 satıra gelip o alanı büyütüyor mu?"*).
+                      // ÖLÇÜLDÜ — şeridin tek satırda kalması için gereken
+                      // en az genişlik: yerel oyun çevrimdışı+tavan 282 px
+                      // (her telefonda sığar), ama CANLI oyun
+                      // çevrimdışı+tavan **405 px** → 320/360/390'da şerit
+                      // 48 → 96 px'e çıkıyordu. `Wrap` taşmaz SARAR, yani
+                      // ne hata basılır ne de "taşma yok" diyen test görür.
+                      // Etiketi düşürmek eşiği ~348 px'e indiriyor: 360 ve
+                      // 390 kurtulur. ⚠ 320 px'te tavanda HÂLÂ iki satır —
+                      // bilinen ve kabul edilen sınır, gizlenmesin.
+                      // Neden ETİKET seçildi: çevrimdışıyken mesaj zaten
+                      // gönderilemiyor; ikon okumak için duruyor ve
+                      // okunmamış sayacı (asıl bilgi) hiç kaybolmuyor.
+                      // ⚠ WEB İKİZİ BİLEREK DEĞİŞMEDİ — parite "aynı kod"
+                      // değil "aynı sonuç": web'de sistem yazı ölçeği yok
+                      // ve ölçüldü ki `Board.tsx` şeridi 320 px'te bile
+                      // çevrimdışıyken tek satır (48 px). Orada çözülecek
+                      // bir sorun olmadığı için etiket kaldırmak yalnızca
+                      // bilgi kaybı olurdu.
+                      if (onlineStatus == null)
+                        _mesajlasmaIcerik(etiketli: true)
+                      else
+                        ListenableBuilder(
+                          listenable: onlineStatus!,
+                          builder: (context, _) =>
+                              _mesajlasmaIcerik(etiketli: onlineStatus!.online),
+                        ),
                       // Konum web'de ölçülerek seçildi (`-top-1 -right-1`):
                       // rozet satır içi olsaydı şeride ~20px eklerdi ve dar
-                      // telefonlarda "Nasıl Oynanır?" ile çakışırdı. Beyaz
+                      // telefonlarda "Nasıl Oynanır?" ile çakışırdı (⚠ o
+                      // ölçüm ESKİ etiketle; 2 Eylül 2026'da "Yardım" olunca
+                      // boşluk arttı — gerekçe duruyor, rakam yeniden
+                      // ölçülmeden alıntılanmamalı). Beyaz
                       // halka web'in `ring-2 ring-panel`i — rozet altındaki
                       // mavi etiketten ayrışsın diye.
                       if (unreadMessageCount > 0)
@@ -824,7 +909,7 @@ class BoardWidget extends StatelessWidget {
                       : const Padding(
                           padding: EdgeInsets.only(right: 8),
                           // Punto/aralık, şeritteki KARDEŞ kontrollerle
-                          // (Hamleler · Mesajlaşma · Nasıl Oynanır?) birebir
+                          // (Hamleler · Mesajlaşma · Yardım) birebir
                           // aynı — yalnızca rengi farklı. Web'de bu bir kez
                           // 8px'e düşmüş ve kullanıcı cihazda "belli
                           // olmuyor" diye bildirmişti (14 Ağustos 2026): tam
@@ -852,7 +937,18 @@ class BoardWidget extends StatelessWidget {
                       _HelpIcon(),
                       SizedBox(width: 4),
                       Text(
-                        'Nasıl Oynanır?',
+                        // ETİKET 'Nasıl Oynanır?' → 'Yardım' (2 Eylül 2026,
+                        // kullanıcı fikri). Sebep ölçüm: 14 karakterlik
+                        // etiket ölçek tavanında şeridi İKİ SATIRA
+                        // düşürüyordu (48 → 96 px) ve punto indirimi bunu
+                        // engellemiyordu; tek satırda kalabilen en yüksek
+                        // ölçek 360 px'te yalnızca 1,10 idi. 'Yardım' ile
+                        // 320/360/390 px'in ÜÇÜNDE de tavanda tek satır.
+                        // ⚠ Yalnızca ŞERİT etiketi değişti: HelpModal'ın
+                        // başlığı, hesap menüsü maddesi ve /nasil-oynanir/
+                        // sayfası 'Nasıl Oynanır?' olarak kaldı.
+                        // Web ikizi: `Board.tsx` — biri değişirse öteki de.
+                        'Yardım',
                         style: TextStyle(
                           fontFamily: 'SpaceMono',
                           fontSize: 11,
@@ -1410,7 +1506,7 @@ class _DocumentIconPainter extends CustomPainter {
 /// Web `ChatBubbleIcon` — "Mesajlaşma" butonunun konuşma balonu SVG'si
 /// (`M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z`).
 class _ChatBubbleIcon extends StatelessWidget {
-  const _ChatBubbleIcon();
+  const _ChatBubbleIcon({super.key});
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -1447,7 +1543,7 @@ class _ChatBubbleIconPainter extends CustomPainter {
   bool shouldRepaint(_ChatBubbleIconPainter oldDelegate) => false;
 }
 
-/// "Nasıl Oynanır?" linkinin başındaki soru işareti ikonu — web `HelpIcon`
+/// "Yardım" linkinin başındaki soru işareti ikonu — web `HelpIcon`
 /// SVG'sinin (daire + soru işareti kancası + nokta) portu. Path verisi
 /// KOPYALANMAMALI; aynı şeyi açan iki kontrol aynı görünmeli.
 class _HelpIcon extends StatelessWidget {
