@@ -66,10 +66,6 @@ Future<void> doubleTapAt(WidgetTester tester, Offset pos) async {
   await tester.pump();
 }
 
-/// Portun `_badgeClipSlack`i private; test kendi kopyasını taşıyor ve
-/// ikisi ayrışırsa yukarıdaki ölçüm iddiası düşer.
-const double _badgeClipSlackTest = 14;
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -438,41 +434,26 @@ void main() {
         (w) => w is Text && (w.data ?? '').startsWith('+'));
     expect(rozet, findsOneWidget, reason: 'hamle rozeti hiç çizilmemiş');
 
-    // ⚠ İDDİA 2 Eylül 2026'da DEĞİŞTİ. Önceden "rozetin üstünde kırpıcılı
-    // ClipRect OLMAMALI" diyordu; o tasarım rozeti zoom'da tahtanın DIŞINA
-    // (rafın üstüne) çizdiriyordu ve web ikizinde kullanıcı bildirdi.
-    // Yeni tasarım: rozetin KENDİ, daha geniş payı olan bir klibi var.
-    // 1 Eylül'ün derdi (kenardaki rozet kesilmesin) böylece korunuyor —
-    // kanıtı aşağıdaki ÖLÇÜM, yapı değil.
-    final klip = find.ancestor(
-        of: rozet,
-        matching:
-            find.byWidgetPredicate((w) => w is ClipRect && w.clipper != null));
-    expect(klip, findsOneWidget,
-        reason: 'rozet katmanının kendi klibi olmalı');
+    // Kanıt YAPISAL: rozetin üstünde kırpıcılı ClipRect (görünür kare)
+    // OLMAMALI. Piksel karşılaştırması bu ortamda kırpmayı göstermez —
+    // getRect kırpılmış widget'ın da tam kutusunu döndürür.
+    expect(
+      find.ancestor(
+          of: rozet,
+          matching: find.byWidgetPredicate(
+              (w) => w is ClipRect && w.clipper != null)),
+      findsNothing,
+      reason: 'rozet görünür karenin İÇİNDE kalmış — kenarda kesilir',
+    );
 
-    // Rozet gerçekten ızgaranın dışına taşıyor (fikstür bunu kurmazsa test
-    // hiçbir şey kanıtlamaz) AMA klip payının içinde kalıyor, yani
-    // KESİLMİYOR.
+    // Ve rozet gerçekten ızgaranın dışına taşıyor olmalı (test aksi hâlde
+    // hiçbir şey kanıtlamazdı).
     final grid = tester.getRect(boardCell(0, 0));
-    final rRect = tester.getRect(rozet);
-    expect(rRect.left, lessThan(grid.left),
+    expect(tester.getRect(rozet).left, lessThan(grid.left),
         reason: 'rozet ızgara kutusunun dışına taşmıyorsa kırpma da '
             'sorun olmazdı — fikstür kurulumu bozulmuş');
-    final klipKutu = tester.getRect(klip);
-    expect(rRect.left, greaterThanOrEqualTo(klipKutu.left - _badgeClipSlackTest),
-        reason: 'rozet payın DIŞINA taşmış — dinlenme hâlinde kesilir');
-    expect(rRect.top, greaterThanOrEqualTo(klipKutu.top - _badgeClipSlackTest),
-        reason: 'rozet payın DIŞINA taşmış — dinlenme hâlinde kesilir');
 
-    // ⚠ ZOOM AÇIKKEN DE KIRPILIR — asıl kazanç bu.
-    // Önceden "zoom'da da kırpılmamalı" diyordu ve eski (hatalı) tasarımı
-    // kilitliyordu: rozet zoom matrisini izleyip hiç kırpılmayınca, hedef
-    // hücre görünür kareden çıktığında rozet tahtanın DIŞINA (rafın üstüne)
-    // çiziliyordu. Web ikizinde bir kullanıcı bildirdi ve orada ölçüldü:
-    // görünür kare y=55/h=366 iken rozet y=-300.
-    // Klip her iki hâlde de var; 1 Eylül'ün "kesilmesin" derdi payın
-    // ölçülmüş genişliğiyle korunuyor (yukarıdaki iddia).
+    // Zoom AÇILINCA da kırpılmamalı (aynı matrisi alır, kırpmayı almaz).
     await doubleTapAt(tester, tester.getCenter(boardCell(6, 6)));
     expect(isZoomedIn(tester), isTrue);
     expect(
@@ -480,9 +461,7 @@ void main() {
           of: rozet,
           matching: find.byWidgetPredicate(
               (w) => w is ClipRect && w.clipper != null)),
-      findsOneWidget,
-      reason: 'zoom açıkken rozet katmanı KENDİ payıyla kırpılmalı — yoksa '
-          'hücresi görünür kareden çıkınca tahtanın dışına çizilir',
+      findsNothing,
     );
     expect(controller.state.placed, hasLength(1));
   });

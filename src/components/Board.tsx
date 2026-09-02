@@ -15,7 +15,6 @@ import type { GameState, MoveStatus } from '../game/types';
 import { key } from '../utils/board';
 import { buildRoundedOutlinePath } from '../utils/outline';
 import {
-  BOARD_CLIP_SLACK,
   BOARD_BADGE_CLIP_SLACK,
   ZOOM_ANIM_MS,
   ZOOM_OFF,
@@ -580,8 +579,8 @@ export function Board({
           açıkken kurulur — kapalıyken `clipPath: none`, yani eski render
           BİREBİR korunur (kırpmanın kendisi bir tur önce portta rozeti ve
           bölge çizgisini kesmişti; web'de o riski hiç doğurmuyoruz).
-          Pay (`BOARD_CLIP_SLACK`) dış hattın stroke taşması için: yol hücre
-          sınırının ÜZERİNDE, yarısı kutunun dışına düşüyor.
+          Kırpma KARE DEĞİL, kartın üst köşelerinin yuvarlağını taşır —
+          gerekçe aşağıdaki `clipPath` yorumunda.
           ⚠ `elementFromPoint` transform'u kendisi tersine çevirdiğinden
           hücre bulma/bırakma kodunun HİÇBİRİ değişmedi (portta bu iş için
           ayrı bir "görünür kare kapısı" yazmak gerekmişti). */}
@@ -591,7 +590,20 @@ export function Board({
         data-board-viewport=""
         className="absolute inset-0"
         style={{
-          clipPath: zoom.zoomed ? `inset(-${BOARD_CLIP_SLACK}px)` : undefined,
+          // ⚠ KARE DEĞİL, KARTIN ŞEKLİ. Önce `inset(-4px)` idi: kırpma
+          // kartın dışına 4 px taşıyor ve KARE olduğu için kartın 18 px'lik
+          // yuvarlak ÜST köşelerini de dolduruyordu — kullanıcı zoom'da
+          // "tahtanın üstünde ve sağında taşma" olarak gördü. ÖLÇÜLDÜ
+          // (fark ölçümü, zoom öncesi ↔ sonrası): kartın üstündeki bantta
+          // 462 → 527 taş renkli piksel, yani zoom 65 px² fazladan boyuyor.
+          // Yalnızca ÜST iki köşe yuvarlanıyor: alt iki köşe kartın
+          // ortasında (altında alt şerit var), onları yuvarlamak tahtanın
+          // alt köşelerini keserdi.
+          // Pay neden 0: zoom'da dış hat ızgaranın 10 px dolgusunun
+          // içinde, yani 2×'te kenardan ≥20 px içeride — kırpma sınırına
+          // hiç yaklaşmıyor; bu yüzden pay 0 ve eski `BOARD_CLIP_SLACK`
+          // sabiti kaldırıldı (rozetin KENDİ payı ayrı ve duruyor).
+          clipPath: zoom.zoomed ? 'inset(0 round 18px 18px 0 0)' : undefined,
           // Zoom'luyken parmak tahtayı kaydırır; tarayıcının kendi kaydırma
           // jesti devreye girerse pan hiç başlamaz.
           touchAction: zoom.zoomed ? 'none' : undefined,
@@ -811,25 +823,36 @@ export function Board({
           içinde) — ikisi ancak böyle birebir hizalı kalır.
           Port ikizi: `board_widget.dart` → `_zoomWrap(unclipped:)`. */}
       {moveBadge && (
+        /* ⚠ KLİP AYRI, TRANSFORM'SUZ BİR SARMALAYICIDA — aynı elemana
+           koymak İŞE YARAMAZ ve bu ölçülerek öğrenildi (2 Eylül 2026).
+           CSS `clip-path`i elemanın KENDİ transform'undan ÖNCE uygular,
+           yani klip de rozetle birlikte kayar; kullanıcı hatayı düzeltme
+           "yapıldıktan" sonra da gördü. Izgara zaten bu doğru yapıyı
+           kullanıyordu: klip kırpılmayan GÖRÜNÜR KAREDE, transform içteki
+           katmanda. Rozet katmanı da artık öyle.
+           Flutter'da sıra TERS (`ClipRect` çocuğunu ebeveyn uzayında
+           kırpar), bu yüzden portta aynı hata hiç doğmadı — kullanıcı
+           "bu app'de olmuyordu" derken haklıydı.
+           Pay ölçüldü: rozet 2× zoom'da 39,9 × 28 px, `-35%` taşması ≈14.
+           Klip HER ZAMAN açık; dinlenmede güvenli çünkü tahtanın 10 px
+           dolgusu rozetin 1×'teki ≈7 px taşmasından büyük. */
         <div
-          data-board-badge-layer=""
-          className="pointer-events-none absolute inset-0 p-[10px] z-20"
-          style={{
-            // KENDİ payıyla kırpılır (ızgarannkinden AYRI) ve HER ZAMAN —
-            // zoom kapalıyken de. Güvenli olmasının sebebi ölçüldü:
-            // tahtanın 10 px dolgusu rozetin `-35%` taşmasından (1×'te
-            // ≈7 px) büyük, yani rozet payın sınırına hiç ulaşmıyor.
-            // Duruma bağlamak kapatma animasyonu (180 ms) boyunca klibi
-            // düşürüp rozeti rafın üstünden süzülerek geçirirdi.
-            clipPath: `inset(-${BOARD_BADGE_CLIP_SLACK}px)`,
-            transform: zoomTransform(zoom),
-            transformOrigin: '0 0',
-            transition: zoom.animate
-              ? `transform ${ZOOM_ANIM_MS}ms cubic-bezier(0.22,1,0.36,1)`
-              : undefined,
-          }}
+          className="pointer-events-none absolute inset-0 z-20"
+          style={{ clipPath: `inset(-${BOARD_BADGE_CLIP_SLACK}px)` }}
         >
-          <div className="relative w-full h-full">{moveBadge}</div>
+          <div
+            data-board-badge-layer=""
+            className="absolute inset-0 p-[10px]"
+            style={{
+              transform: zoomTransform(zoom),
+              transformOrigin: '0 0',
+              transition: zoom.animate
+                ? `transform ${ZOOM_ANIM_MS}ms cubic-bezier(0.22,1,0.36,1)`
+                : undefined,
+            }}
+          >
+            <div className="relative w-full h-full">{moveBadge}</div>
+          </div>
         </div>
       )}
       </div>

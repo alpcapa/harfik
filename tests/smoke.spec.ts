@@ -1784,70 +1784,168 @@ test.describe('tahta zoom', () => {
   // kırpılmıyordu (kendi kutusundan `translate(-35%,-35%)` ile taştığı için
   // bilerek kırpma DIŞINDA bırakılmıştı) — sonuç: hedef hücre görünür
   // kareden çıkınca rozet tahtanın dışına, rafın üstüne düşüyordu.
-  test('zoom + pan: hamle rozeti tahtanın DIŞINA boyanamaz', async ({ page }) => {
+  /** Bir ekran bölgesinde ROZETİN RENGİNE yakın piksel var mı.
+   *
+   *  ⚠ Bu yardımcı 2 Eylül 2026'da EKLENDİ ve sebebi bir BAŞARISIZLIK:
+   *  önceki tur rozet klibini test ederken `getComputedStyle(...).clipPath`
+   *  değerine bakıyordu, yani MEKANİZMANIN VARLIĞINI. Mekanizma yanlıştı
+   *  (klip transform'lu katmandaydı, CSS onu transform'dan ÖNCE uyguladığı
+   *  için klip de rozetle birlikte kayıyordu) — test yeşil geçti, hata
+   *  kullanıcıda sürdü. Ders: kırpma/boyama iddiaları PİKSELLE ölçülür.
+   *
+   *  Ekran görüntüsü sayfaya geri verilip `canvas`ta çözülüyor; Node'da
+   *  PNG çözücü yok, tarayıcının kendi çözücüsü kullanılıyor. */
+  async function rozetRengiVarMi(
+    page: Page,
+    bolge: { x: number; y: number; width: number; height: number },
+  ): Promise<boolean> {
+    const png = (await page.screenshot({ clip: bolge })).toString('base64');
+    return page.evaluate(async (b64) => {
+      const bmp = await createImageBitmap(
+        await (await fetch(`data:image/png;base64,${b64}`)).blob(),
+      );
+      const c = document.createElement('canvas');
+      c.width = bmp.width;
+      c.height = bmp.height;
+      c.getContext('2d')!.drawImage(bmp, 0, 0);
+      const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+      // Rozet zemini hamlenin geçerliliğine göre yeşil (#1FA05C) ya da
+      // KIRMIZI (#E0483A). Bu fikstürde tek taş konduğundan hamle geçersiz
+      // ve rozet kırmızı — kurulum kontrolü bunu ölçerek yakaladı, ilk
+      // sürüm yalnızca yeşile bakıp "rozet yok" sanmıştı.
+      const hedefler = [
+        [31, 160, 92],
+        [224, 72, 58],
+      ];
+      for (let i = 0; i < d.length; i += 4) {
+        for (const [r, g, b] of hedefler) {
+          if (
+            Math.abs(d[i] - r) < 40 &&
+            Math.abs(d[i + 1] - g) < 40 &&
+            Math.abs(d[i + 2] - b) < 40
+          ) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }, png);
+  }
+
+  test('zoom: hamle rozeti RAFIN üstüne BOYANMAZ (piksel)', async ({ page }) => {
     await oyunEkrani(page);
-    // Taş TAHTANIN ORTASINA konuyor. Köşe (0,0) kullanılmıyor: oradan
-    // odaklanmak için tahtanın sol-üst ÇERÇEVESİNE dokunmak gerekiyor ve o
-    // nokta "← Geri" bağlantısına denk gelip sayfayı Setup'a döndürüyor
-    // (ölçüldü — ilk sürüm böyle düştü). Hamle geçersiz olabilir; rozet
-    // geçersiz hamlede de çiziliyor (rengi kırmızı).
+    // Kullanıcının senaryosu birebir: taş tahtanın ALT bölgesinde, sonra
+    // zoom tahtanın ÜSTÜNE odaklanıyor — böylece rozetin hücresi görünür
+    // karenin ALTINDA kalıyor ve hatalı sürümde rozet rafın üstüne düşüyor.
+    // Pan'a bile gerek yok: 2× zoom'da 10. satır zaten kareyi aşıyor.
     await page.locator('[data-rack-tile="0"]').tap();
-    const hedef = await hucreKutusu(page, 5, 5);
+    const hedef = await hucreKutusu(page, 10, 2);
     await dokun(page, hedef.x + hedef.width / 2, hedef.y + hedef.height / 2);
     await expect(page.locator('[data-move-badge]')).toBeVisible();
 
     const kare = (await page.locator('[data-board-viewport]').boundingBox())!;
-    const katman = page.locator('[data-board-badge-layer]');
-    const kirpma = () => katman.evaluate((el) => getComputedStyle(el).clipPath);
-    const { BOARD_BADGE_CLIP_SLACK } = await import('../src/utils/boardZoom');
+    const rafKutu = (await page.locator('[data-rack]').boundingBox())!;
+    // Bant RAFIN üstünden başlıyor: aradaki durum satırı ("Kelime geçersiz")
+    // KIRMIZI ve rozetin kırmızısıyla karışırdı — ölçülerek bulundu.
+    const bant = {
+      x: 0,
+      y: Math.round(rafKutu.y) - 6,
+      width: Math.round(kare.x + kare.width) + 12,
+      height: 300,
+    };
 
-    // Klip HER ZAMAN var (zoom kapalıyken de) — kapatma animasyonu boyunca
-    // düşerse rozet rafın üstünden süzülerek geçerdi. 1 Eylül'ün "kenardaki
-    // rozet kesilmesin" derdi payın genişliğiyle korunuyor ve bu ÖLÇÜLEREK
-    // kanıtlanıyor: dinlenme hâlinde rozet payın içinde.
-    const pay = BOARD_BADGE_CLIP_SLACK;
-    expect(await kirpma()).toBe(`inset(-${pay}px)`);
-    const durgun = (await page.locator('[data-move-badge]').boundingBox())!;
-    expect(durgun.x).toBeGreaterThanOrEqual(kare.x - pay);
-    expect(durgun.y).toBeGreaterThanOrEqual(kare.y - pay);
+    // KURULUM: rozet tahtanın içinde görünür, bantta yok.
+    expect(
+      await rozetRengiVarMi(page, {
+        x: Math.round(kare.x),
+        y: Math.round(kare.y),
+        width: Math.round(kare.width),
+        height: Math.round(kare.height),
+      }),
+      'kurulum: rozet tahtanın içinde görünmeli',
+    ).toBe(true);
+    expect(
+      await rozetRengiVarMi(page, bant),
+      'kurulum: rafın üstünde rozet rengi olmamalı',
+    ).toBe(false);
 
-    // (1) Hücresi GÖRÜNÜRKEN rozet kırpılmamalı: taşın olduğu köşeye
-    // odaklanarak zoom aç, rozet görünür karenin içinde kalmalı. Bu, payın
-    // (14 px) gerçekten yeterli olduğunun kanıtı — dar seçilseydi burada
-    // düşerdi.
-    // ⚠ Çift dokunuş TAŞIN ÜSTÜNE yapılamaz — ilk dokunuş taslak taşı geri
-    // alır, rozet kaybolur ve test "rozet yok" diye düşer (ölçüldü).
-    // Komşu BOŞ kareye odaklanılıyor; odak korunumu taşın hücresini de
-    // görünür bırakıyor.
-    const komsu = await hucreKutusu(page, 6, 6);
-    await ciftDokun(page, komsu.x + komsu.width / 2, komsu.y + komsu.height / 2);
+    // Tahtanın ÜST bölgesine odaklanarak zoom aç.
+    const odak = await hucreKutusu(page, 1, 1);
+    await ciftDokun(page, odak.x + odak.width / 2, odak.y + odak.height / 2);
     expect(await olcek(page)).toBeCloseTo(2, 1);
-    await expect(page.locator('[data-move-badge]')).toBeVisible();
-    const yakin = (await page.locator('[data-move-badge]').boundingBox())!;
-    expect(yakin.x).toBeGreaterThanOrEqual(kare.x - pay);
-    expect(yakin.y).toBeGreaterThanOrEqual(kare.y - pay);
 
-    // (2) Hücre görünür kareden çıkınca rozet BOYANMAMALI.
-    // ⚠ `boundingBox()` KIRPMAYI GÖRMEZ — `clipPath` boyamayı etkiler,
-    // düzeni değil; ölçüldü, düzeltmeden önce de sonra da kutu y=-300
-    // çıkıyor. Bu yüzden iddia kırpmanın KENDİSİNE bakıyor: katman zoom
-    // açıkken gerçekten kırpılıyor mu ve bölge görünür kare + ölçülmüş pay
-    // kadar mı. Kırpma kalkarsa (hatanın kendisi) bu düşer.
-    for (let i = 0; i < 4; i++) {
-      await kaydir(
-        page,
-        kare.x + kare.width * 0.8,
-        kare.y + kare.height * 0.8,
-        -kare.width,
-        -kare.height,
+    // ASIL İDDİA — kullanıcının bildirdiği hata: rozet rafın üstüne
+    // boyanmamalı.
+    expect(
+      await rozetRengiVarMi(page, bant),
+      'rozet tahtanın dışına, rafın üstüne boyanmış',
+    ).toBe(false);
+  });
+
+  // 2 Eylül 2026 — kullanıcı zoom'u preview'da denedi: *"rozet artık
+  // taşmıyor, alt kısım ok ama tahtanın üstünde ve sağında da taşma var"*.
+  // Görünür karenin kırpması KARE ve kartın 4 px DIŞINDAYDI, yani kartın
+  // 18 px'lik yuvarlak üst köşelerini de dolduruyordu. Kırpma artık kartın
+  // şeklini taşıyor (`inset(0 round 18px 18px 0 0)`).
+  //
+  // Ölçüm FARK ölçümü: skor kutucuklarının zemini de taş tonunda olduğundan
+  // mutlak sayım yanlış pozitif veriyor (ölçüldü: "43 px taşma" aslında
+  // kutucuklardı). Zoom ÖNCESİ ile SONRASI karşılaştırılıyor ve fark SATIR
+  // olarak sayılıyor — tek satırlık fark kırpma sınırındaki kenar
+  // yumuşatması, iki ve fazlası gerçek taşma.
+  test('zoom tahtayı kartın DIŞINA taşırmaz', async ({ page }) => {
+    await oyunEkrani(page);
+    const kart = (await page.locator('[data-board-viewport]').evaluate((el) => {
+      const c = el.closest('.rounded-\\[18px\\]') as HTMLElement;
+      const r = (c ?? el).getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    })) as { x: number; y: number; width: number; height: number };
+
+    async function tasanSatirlar(): Promise<number[]> {
+      const png = (await page.screenshot()).toString('base64');
+      return page.evaluate(
+        async ({ b64, kart }) => {
+          const bmp = await createImageBitmap(
+            await (await fetch(`data:image/png;base64,${b64}`)).blob(),
+          );
+          const c = document.createElement('canvas');
+          c.width = bmp.width;
+          c.height = bmp.height;
+          c.getContext('2d')!.drawImage(bmp, 0, 0);
+          const d = c.getContext('2d')!
+            .getImageData(0, 0, c.width, c.height)
+            .data;
+          // Taş zemini — camgöbeği oyuncunun tint'i (#A9E4EF).
+          const tas = (i: number) =>
+            Math.abs(d[i] - 169) < 25 &&
+            Math.abs(d[i + 1] - 228) < 25 &&
+            Math.abs(d[i + 2] - 239) < 25;
+          const satirlar: number[] = [];
+          for (let y = Math.max(0, Math.round(kart.y) - 30); y < kart.y; y++) {
+            for (let x = Math.round(kart.x); x < kart.x + kart.width; x++) {
+              if (tas((y * c.width + x) * 4)) {
+                satirlar.push(y);
+                break;
+              }
+            }
+          }
+          return satirlar;
+        },
+        { b64: png, kart },
       );
     }
-    const uzak = (await page.locator('[data-move-badge]').boundingBox())!;
+
+    const once = await tasanSatirlar();
+    const b = await hucreKutusu(page, 6, 6);
+    await ciftDokun(page, b.x + b.width / 2, b.y + b.height / 2);
+    expect(await olcek(page)).toBeCloseTo(2, 1);
+    const sonra = await tasanSatirlar();
+
+    const yeni = sonra.filter((y) => !once.includes(y));
     expect(
-      uzak.y + uzak.height < kare.y || uzak.x + uzak.width < kare.x,
-      'kurulum: rozetin hücresi görünür kareden çıkmış olmalı',
-    ).toBe(true);
-    expect(await kirpma()).toBe(`inset(-${pay}px)`);
+      yeni.length,
+      `zoom kartın üstüne ${yeni.length} satır fazladan boyadı (${yeni.join(",")})`,
+    ).toBeLessThanOrEqual(1);
   });
 
   test('KENARDAN (kareler dışı) çift dokunuş da zoom açar', async ({ page }) => {

@@ -50,34 +50,13 @@ const double _outlineStroke = 2.5;
 const double _zoomClipSlack = _outlineStroke * kBoardZoomScale / 2 + 1;
 
 class _ZoomClipSlackClipper extends CustomClipper<Rect> {
-  final double pay;
-  const _ZoomClipSlackClipper([this.pay = _zoomClipSlack]);
+  const _ZoomClipSlackClipper();
   @override
-  Rect getClip(Size size) => Rect.fromLTRB(
-      -pay, -pay, size.width + pay, size.height + pay);
+  Rect getClip(Size size) => Rect.fromLTRB(-_zoomClipSlack, -_zoomClipSlack,
+      size.width + _zoomClipSlack, size.height + _zoomClipSlack);
   @override
-  bool shouldReclip(covariant _ZoomClipSlackClipper oldClipper) =>
-      oldClipper.pay != pay;
+  bool shouldReclip(covariant CustomClipper<Rect> oldClipper) => false;
 }
-
-/// Hamle rozeti KATMANININ kırpma payı — ızgaranınkinden AYRI ve daha
-/// geniş, çünkü rozet kendi kutusundan `-0.35` taşıyor.
-///
-/// 2 Eylül 2026 — web ikizinde bir kullanıcı bildirdi: *"deneme puanı hâlâ
-/// aşağılara iniyor"*. Rozet katmanı zoom matrisini İZLİYOR ama HİÇ
-/// kırpılmıyordu, yani hedef hücre görünür kareden çıkınca rozet tahtanın
-/// DIŞINA, rafın üstüne çiziliyordu. Web'de ölçüldü: görünür kare
-/// `y=55, h=366` iken rozet `y=-300`.
-///
-/// Pay 14 (web'de ÖLÇÜLDÜ: rozet 2× zoom'da 39,9 × 28 px, `-35%` taşması
-/// ≈ 14). Bu kadar payla hücresi TAMAMEN görünen bir rozet kesilmez;
-/// kesilen yalnızca hücresi zaten yarım kalan rozet olur — ızgaranın
-/// kenar hücrelerinin kesilmesiyle aynı davranış.
-///
-/// ⚠ Yukarıdaki "kırpma payını büyütmek YANLIŞ çözüm olurdu" notu HÂLÂ
-/// geçerli ama başka bir şey için: IZGARANIN payını büyütmek yanlış. Rozet
-/// AYRI bir katman olduğundan kendi payıyla kırpılabiliyor.
-const double _badgeClipSlack = 14;
 
 const Color _boardBg = Color(0xFFDDE4EE);
 
@@ -243,19 +222,7 @@ class BoardWidget extends StatelessWidget {
         children: [
           govde,
           IgnorePointer(
-            // Rozet katmanı HER ZAMAN kendi payıyla kırpılır — dinlenme
-            // hâli dahil. Güvenli olmasının sebebi ÖLÇÜLDÜ: tahtanın 10 px
-            // iç dolgusu rozetin `-0.35` taşmasından (1×'te ≈7 px) büyük,
-            // yani rozet zaten payın sınırına hiç ulaşmıyor. "Zoom'da klip,
-            // dinlenmede yok" diye ayırmak İKİ tuzak doğuruyordu: (a) zoom
-            // KAPALIYKEN de matris kimlik olarak geliyor, yani ayrım
-            // `m == null` ile yapılamıyor; (b) kapatma animasyonu boyunca
-            // (180 ms) klip düşerken rozet hâlâ tahta dışındaki konumundan
-            // dönüyor, yani rafın üstünden süzülerek geçiyordu.
-            child: ClipRect(
-              clipper: const _ZoomClipSlackClipper(_badgeClipSlack),
-              child: m == null ? u : Transform(transform: m, child: u),
-            ),
+            child: m == null ? u : Transform(transform: m, child: u),
           ),
         ],
       );

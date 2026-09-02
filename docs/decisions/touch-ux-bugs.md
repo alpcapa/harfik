@@ -1068,3 +1068,91 @@ KENDİSİNE bakıyor; kesilmediğinin kanıtı ise ölçüm.
 ⚠ **Port testinin iddiası TERSİNE ÇEVRİLDİ:** *"zoom'da da
 kırpılmamalı"* diyordu, yani eski hatalı tasarımı kilitliyordu. Bir test
 bir hatayı kilitleyebilir — iddiayı değiştirirken neden değiştiğini yaz.
+
+### ⚠ İLK DÜZELTME İŞE YARAMADI — klip TRANSFORM'LU katmandaydı (aynı gün)
+
+Yukarıdaki düzeltme gönderildikten sonra kullanıcı aynı hatayı yine gördü:
+*"Web düzelmemiş hâlâ, zoomda deneme taşı koyunca aşağı kaydırınca rozet
+alta sarkıyor. Bu app'de olmuyordu ayrıca."*
+
+**Sebep:** `clipPath` rozet katmanının KENDİSİNE konmuştu — yani
+`transform` ile AYNI elemana. CSS `clip-path`i elemanın kendi
+transform'undan ÖNCE uygular, dolayısıyla klip de rozetle birlikte kayar
+ve hiçbir şeyi sınırlamaz. Doğru yapı ızgarada zaten vardı ve
+kopyalanmamıştı: klip KIRPILMAYAN görünür karede, transform içteki
+katmanda.
+
+**Kullanıcının "app'de olmuyordu" tespiti doğruydu ve sebebi ÖLÇÜLDÜ:**
+rozetin ataları taranınca çıkan şey şu —
+
+```
+ATA Stack clipBehavior=Clip.none
+ATA ClipRect clipper=true          ← sonradan eklenen, GEREKSİZ
+ATA Stack clipBehavior=Clip.hardEdge   ← Flutter'ın VARSAYILANI
+ATA ClipRect clipper=false
+ATA Stack clipBehavior=Clip.hardEdge
+```
+
+Yani portta rozeti `Stack` ZATEN kırpıyordu: `Stack.clipBehavior`
+varsayılan olarak `Clip.hardEdge` ve çocuklarını kendi sınırlarına
+kesiyor. Ayrıca Flutter'da sıra da TERS — `ClipRect` çocuğunun boyamasını
+KENDİ (ebeveyn) uzayında kırpar. İki sebep de aynı yöne çalışıyor: port
+hiç bozuk değildi.
+
+⚠ **Buna rağmen porta bir `ClipRect` EKLENMİŞTİ** (2 Eylül 2026), gerekçe
+"web'de olan hata portta da vardır" varsayımıydı — ölçülmeden. Kullanıcı
+itiraz etti: *"Mobile'de yaptığın gereksiz düzeltme ne olacak? Zaten
+düzgün çalışan şeyi değiştirdin."* Haklıydı ve değişiklik GERİ ALINDI
+(kod + testin çevrilen iddiası). **Ders: bir platformda bulunan hatayı
+ötekine VARSAYARAK taşıma.** İkiz dosya kuralı "aynı davranışı koru"
+demek, "aynı yamayı uygula" demek değil — davranış zaten aynıysa
+dokunulacak bir şey yoktur.
+
+**Asıl hata testteydi, koddan önce:** ilk tur `getComputedStyle(...)
+.clipPath` değerine bakıyordu, yani MEKANİZMANIN VARLIĞINA. Mekanizma
+yanlış olduğu için test yeşil geçti ve hata kullanıcıda sürdü. Yorumda
+*"`boundingBox()` kırpmayı görmez"* diye doğru bir gözlem vardı ve
+oradan YANLIŞ sonuca gidilmişti: ölçülemiyorsa mekanizmayı doğrula.
+Doğrusu: **ölçüm yolunu değiştir.**
+
+Yeni kapı PİKSEL ölçüyor (`smoke.spec.ts` → *"zoom: hamle rozeti RAFIN
+üstüne BOYANMAZ (piksel)"*): ekran görüntüsü sayfaya geri verilip
+`canvas`ta çözülüyor (Node'da PNG çözücü yok, tarayıcınınki kullanılıyor)
+ve raf bandında rozetin rengi aranıyor. Kurulum da ölçülüyor — rozet
+tahtanın içinde gerçekten görünüyor ve bantta baştan yok. Senaryo
+kullanıcınınkiyle birebir: taş alt satırda, zoom tahtanın üstüne odaklı.
+İki kurulum tuzağı ölçümle bulundu: rozet geçersiz hamlede KIRMIZI (ilk
+sürüm yalnız yeşile bakıp "rozet yok" sandı) ve "Kelime geçersiz" yazısı
+da kırmızı olduğundan bant rafın üstünden başlamak zorunda.
+
+**Ders:** bir iddia "şu ayar kurulu mu" diyorsa hatayı değil niyeti test
+ediyordur. Kırpma/boyama iddiaları pikselle ölçülür.
+
+### Kırpma KARE ve kartın DIŞINDAYDI (2 Eylül 2026, aynı zincirin üçüncü halkası)
+
+Rozet düzeldikten sonra kullanıcı preview'da üçüncü bir şey gördü:
+*"rozet artık taşmıyor, alt kısım ok ama tahtanın üstünde ve sağında da
+taşma var"*.
+
+Görünür karenin kırpması `inset(-4px)` idi — yani kartın **4 px DIŞINDA**
+ve **KARE**. Kart `rounded-[18px]`; kare kırpma o yuvarlak üst köşeleri de
+dolduruyor, üstelik dört yandan 4 px taşıyordu. Zoom kapalıyken görünmez
+(ızgaranın 10 px dolgusu var), zoom açıkken taşlar kenara dayandığı için
+ortaya çıkıyor.
+
+**Pay neden vardı ve neden gereksizdi:** dış hattın stroke'u hücre
+sınırının ÜZERİNDE çizildiğinden yarısı dışarı taşar diye konmuştu. Ama
+zoom'da dış hat ızgaranın 10 px dolgusunun içinde, yani 2×'te kenardan
+≥20 px içeride — kırpma sınırına hiç yaklaşmıyor. Pay hiçbir şey
+korumuyor, yalnızca kartın köşesini dolduruyordu. Kaldırıldı; kırpma artık
+kartın şeklini taşıyor: `inset(0 round 18px 18px 0 0)` — **yalnızca ÜST**
+iki köşe, çünkü alt iki köşe kartın ortasında (altında alt şerit var) ve
+onları yuvarlamak tahtanın alt köşelerini keserdi.
+
+**Ölçüm FARK ölçümü olmak zorundaydı:** skor kutucuklarının zemini de taş
+tonunda, mutlak sayım yanlış pozitif veriyor — ilk deneme "43 px taşma"
+raporladı, hepsi kutucuklardı. Zoom öncesi ↔ sonrası karşılaştırılıyor ve
+fark SATIR olarak sayılıyor: tek satır kırpma sınırındaki kenar
+yumuşatması, iki ve fazlası gerçek taşma. Negatif eş: eski `inset(-4px)`
+geri konunca test "kartın üstüne 4 satır fazladan boyadı (51,52,54,55)"
+diyerek düşüyor — tam olarak 4 px'lik pay.

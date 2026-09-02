@@ -42,13 +42,14 @@ export const ZOOM_ANIM_MS = 180;
 export const PAN_SWALLOW_MS = 120;
 
 /**
- * Görünür karenin kırpma PAYI (px). Dış hat yolu hücre sınırının ÜZERİNDE
- * çizildiğinden kutunun dışına stroke'un yarısı taşar; `non-scaling-stroke`
- * sayesinde bu taşma zoom'da BÜYÜMEZ (2.5/2 ≈ 1.25 px) — pay AA için
- * yuvarlanmış hâli. Rozet bu payla KURTARILAMAZ (kendi boyutunun %35'i
- * kadar taşıyor); o yüzden Board rozeti kırpılan katmanın DIŞINDA çiziyor.
+ * ⚠ Eski `BOARD_CLIP_SLACK` (4 px) 2 Eylül 2026'da KALDIRILDI. Görünür kare
+ * artık kartın dışına hiç taşmıyor, kırpması da kare değil kartın üst
+ * köşelerinin yuvarlağını taşıyor (`Board.tsx`). Gerekçe ölçüldü: pay
+ * dış hattın stroke taşması için konmuştu ama zoom'da dış hat ızgaranın
+ * 10 px dolgusunun içinde, yani 2×'te kenardan ≥20 px içeride — kırpma
+ * sınırına hiç yaklaşmıyor. Pay yalnızca kartın yuvarlak köşesini
+ * doldurup kullanıcıya "tahta taşıyor" olarak görünüyordu.
  */
-export const BOARD_CLIP_SLACK = 4;
 
 /**
  * Hamle rozeti KATMANININ kırpma payı (px) — ızgaranınkinden AYRI, çünkü
