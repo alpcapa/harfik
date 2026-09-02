@@ -53,6 +53,7 @@ import { nearbyDraftCell } from '../utils/draftRescue';
 import { trLower } from '../utils/turkish';
 import { hasSeenChatIntro, markChatIntroSeen, getChatLastReadAt, markChatRead } from '../utils/onboarding';
 import { swallowNextClick } from '../utils/ghostClick';
+import { useBoardZoom } from '../hooks/useBoardZoom';
 import {
   checkOnlineGameTurnTimeout,
   createOnlineGame,
@@ -313,6 +314,9 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
 
   // ── Taş sürükleme (App.tsx'teki sistemle birebir aynı) ─────────────────
   const dragRef = useRef<{ source: DragSource; startX: number; startY: number; moved: boolean } | null>(null);
+  // Tahta yakınlaştırması — App.tsx ile AYNI hook, aynı davranış
+  // (bkz. src/utils/boardZoom.ts; iki ekranın deseni paylaşma kuralı).
+  const boardZoom = useBoardZoom(() => dragRef.current !== null);
   const [ghost, setGhost] = useState<{
     x: number;
     y: number;
@@ -746,22 +750,24 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     // Sürükleme değil DOKUNUŞ olarak işle — iki dal da buradan geçer.
     const dokunusOlarakIsle = () => {
       if (d.source.kind === 'rack') {
+        // Raf dokunuşu tahta çifti oluşturamaz (zoom kapsamı yalnızca tahta).
+        boardZoom.markUnpairable();
         dispatch({ type: 'SELECT_TILE', index: d.source.index });
       } else {
+        // Çiftin İKİNCİSİYSE geri alma yutulur ve zoom değişir — ilk dokunuş
+        // taşı koyduysa ikinci vuruş onu geri ALMASIN (App.tsx ile aynı).
+        if (boardZoom.registerCellTap(e.clientX, e.clientY)) return;
         tapPlacedTile(d.source.r, d.source.c, true);
       }
     };
 
     if (!d.moved) {
-      if (d.source.kind === 'rack') {
-        dispatch({ type: 'SELECT_TILE', index: d.source.index });
-      } else {
-        // Joker ise pencere BU pointerup içinde açıldığından ardından gelen
-        // compat click'i yut — aksi halde modalın harf ızgarasına düşüp
-        // jokeri sessizce başka bir harfe çeviriyor ya da zemine düşüp
-        // pencereyi anında kapatıyor (gerekçe: `src/utils/ghostClick.ts`).
-        tapPlacedTile(d.source.r, d.source.c, true);
-      }
+      // ⚠ Bu dal `dokunusOlarakIsle`nin KOPYASIYDI; 1 Eylül 2026'da tek
+      // gövdeye indi (App.tsx'teki aynı düzeltme — zoom kapısı yalnızca
+      // kopyalardan birine eklenince hareketsiz çift dokunuş çalışmıyordu).
+      // Joker penceresinin compat click'i `tapPlacedTile` içinde yutuluyor
+      // (gerekçe: `src/utils/ghostClick.ts`).
+      dokunusOlarakIsle();
       return;
     }
 
@@ -782,6 +788,9 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     // Sürükleme bitişinin hayalet click'i (bırakılan hücrenin onClick'i
     // tetiklenmesin).
     swallowNextClick();
+    // Sürüklemeden sonraki dokunuş, öncekiyle çift oluşturup zoom'u kazara
+    // açmasın (App.tsx ile aynı).
+    boardZoom.markUnpairable();
 
     const { cellEl, rackEl } = dropTargetsAt(e.clientX, liftedPoint(e.clientY));
     if (cellEl?.dataset.cell) {
@@ -846,6 +855,8 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
     // açılıyor), yani ardından gelen compat click her hâlükârda BAŞKA bir
     // öğenin üstüne düşüyor.
     if (swallow) swallowNextClick();
+    // Taşa dokunuş çift dokunuş BAŞLATAMAZ; joker penceresi anında açılır.
+    boardZoom.markUnpairable();
     if (tile.wild) {
       setPendingWild({ r, c, editing: true });
     } else {
@@ -854,6 +865,13 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   };
 
   const handleCellClick = (r: number, c: number, e: ReactMouseEvent) => {
+    // Çift dokunuşla zoom — kapsam/gerekçe App.tsx'in aynı dalında.
+    if (!state.board[r][c]) {
+      if (boardZoom.registerCellTap(e.clientX, e.clientY)) return;
+      if (!state.placed[key(r, c)]) boardZoom.registerPairable(e.clientX, e.clientY);
+    } else {
+      boardZoom.markUnpairable();
+    }
     // ⚠ TASLAK HAMLE VARKEN ANLAM AÇILMAZ (24 Ağustos 2026, kullanıcı
     // cihazda bildirdi): *"2 kelimenin birleştiği yere bir taş koyup deneme
     // yaparken (oynaya basmadan) koyduğum taşın üstüne basıp geri almaya
@@ -927,6 +945,11 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
 
     const sel = state.selectedTile !== null ? me.rack[state.selectedTile] : null;
     if (sel && sel.letter === '?') {
+      // Modal AÇILDI → çift dokunuş zinciri kırılır (portun aynı dalıyla
+      // hizalı): joker penceresi açıkken ikinci dokunuş tahtaya değil
+      // pencereye düşer, zincirin diri kalması sonraki gerçek dokunuşu
+      // yanlışlıkla "çift" yapardı (Playwright bunu yakaladı).
+      boardZoom.markUnpairable();
       setPendingWild({ r, c });
       return;
     }
@@ -1370,6 +1393,13 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
           onTilePointerMove={moveDrag}
           onTilePointerUp={endDrag}
           onTilePointerCancel={cancelDrag}
+          zoomHint={boardZoom.hint}
+          zoom={boardZoom.zoom}
+          viewportRef={boardZoom.viewportRef}
+          onBoardPointerDown={boardZoom.onPointerDown}
+          onBoardPointerMove={boardZoom.onPointerMove}
+          onBoardPointerUp={boardZoom.onPointerUp}
+          onBoardPointerCancel={boardZoom.onPointerCancel}
         />
 
         <div className="w-full max-w-[680px] px-3 pb-3 pt-1 flex flex-col gap-1.5">

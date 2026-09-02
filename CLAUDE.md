@@ -351,13 +351,13 @@ src/
     constants.ts    # Tahta sabitleri, köşe hesapları, bonus konumları
     gameReducer.ts  # useReducer tabanlı oyun state makinesi
     types.ts        # GameState, Player, Tile tipleri
-  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, pendingLiveGames, errorReporting, ghostClick...)
+  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, pendingLiveGames, errorReporting, ghostClick, boardZoom...)
   data/         # Kelime listesi (~63k), harf dağılımı, kelime anlamları, wordSetLoader (lazy chunk)
   lib/          # Supabase istemcisi ve API sarmalayıcısı
   fonts/        # @font-face tanımları (main.tsx import eder) + files/*.woff2 — bunlardan
                 # mplus-rounded-1c-800-subset.woff2 ÜRETİLMİŞ, yalnızca RankSeal'ın harfi
                 # (yeniden üretimi: "k-lig Ödül & Rütbe Sistemi" → Rütbe Rozeti Fontu)
-  hooks/        # useAuth, useModalA11y, useOnlineStatus, useAppIconBadge, useNicknameAvailability, useRankScores
+  hooks/        # useAuth, useModalA11y, useOnlineStatus, useAppIconBadge, useNicknameAvailability, useRankScores, useBoardZoom
 marketing/      # reklam/tanıtım çıktıları (üretilmiş PNG + metin) — uygulamaya girmez
 mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
                 # sözlük asset'i + golden vector fixture'ları (bkz. mobile/CLAUDE.md)
@@ -386,6 +386,30 @@ mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
 - **Bölge vergisi:** Bu turda konan taşlardan biri bir rakip bölgesinin (genişlemiş dinamik alan) içine düşüyorsa (girme) ya da kendisi bölgenin dışında kalsa bile sınırına bitişikse (değme), hamlenin puanından bir pay bölge sahi(pleri)ne aktarılır. Etkileşilen rakip bölge sayısına (n) göre oynayanın payı küçülür: n=1'de 2/3 oynayanda kalır, 1/3 tek bölge sahibine gider; n=2'de yarısı (1/2) oynayanda kalır, kalan yarısı iki bölge sahibi arasında eşit paylaşılır (kişi başı 1/4); n=3'te 1/3 oynayanda kalır, kalan 2/3 üç bölge sahibi arasında eşit paylaşılır (kişi başı 2/9) — genel formül, her bölge sahibinin payı `basePts*(n+1)/(6n)` (`computeInvasionSplit`, `src/utils/validator.ts`). İnsan oyuncu için "Oyna" öncesinde onay modalı (`invasionConfirm` state) gösterilir. YZ için de aynı kural otomatik uygulanır (`findAIMove` kendi bölge genişlemesini hesaba katarak güvenli/güvensiz hamleleri karşılaştırır).
   **Terminoloji (19 Ağustos 2026, kullanıcı sordu: "bazı yerlerde bölge vergisi, bazı yerlerde sınır ihlal vergisi diyoruz; hangisi daha yaygın?"):** İkisi AYNI şeyin iki farklı yüzü ve ayrım bilinçli — **`sınır ihlali` EYLEMİN adı** (onay diyaloğu başlığı `Sınır İhlali!` — `App.tsx`/`OnlineGameScreen.tsx`/portun `invasion_confirm.dart`'ı; `MoveHistoryModal` rozeti `Sınır İhlali`), **`bölge vergisi` o eylemin BEDELİNİN adı** (`HelpModal`'ın "Bölge Vergisi" bölümü + hızlı başlangıç maddesi, `submit_move`'un hata mesajları, bu doküman). Sayım yapıldığında tek gerçek tutarsızlık `Landing.tsx`'in "Nasıl oynanır" 4. adımıydı: `"Sınır ihlal vergisine dikkat!"` ikisini birleştirip projede başka HİÇBİR yerde geçmeyen üçüncü bir terim uyduruyordu (üstelik "ihlal vergisi" dilbilgisi olarak da tökezliyor). Başlık **"Bölge vergisine dikkat!"** oldu — karşılama katmanı kuralları ilk kez anlatan yüzey, orada verginin kanonik adı geçmeli. Aynı turda kod YORUMLARINDAKİ iki ölü varyant da (`köşe vergisi` → `types.ts`/`gameReducer.ts`, `sınır vergisi` → `validator.ts` + `_game/validator.ts` + portun `validator.dart`'ı) `bölge vergisi`ne çekildi; davranış değişmedi, golden vector'lar yeniden üretildi ve **sıfır fark** çıktı. Yeni bir yüzey eklerken bu ikiliği koru, üçüncü bir terim üretme.
 - **Oyun bitişi:** Raf boş + torba boş → oyun biter. Her oyuncunun kendi elinde kalan raf taşlarının puanı kendi skorundan düşülür — rafını bitiren oyuncuya diğerlerinin kalan taş puanları eklenmez (`endGame`, `src/game/gameReducer.ts`). Alternatif: tüm oyuncular arka arkaya MAX_PASS_ROUNDS tur puansız geçerse (pas VEYA taş değiştirme — ikisi de skoru etkilemediğinden ve taş değiştirme torbadaki taş sayısını azaltmadığından aynı sayaca dahildir, yoksa oyuncular sürekli taş değiştirerek oyunu hiç bitirmeyebilirdi) biter. İstisna: oyunu bitiren hamledeki taşların TAMAMI jokerse (başka hiçbir harf yoksa) ekstra bir bitiş bonusu kazanılır — 1 joker +25, 2 joker +50 (`jokerFinishBonus`, `src/game/constants.ts`).
+- **Tahta yakınlaştırması (1 Eylül 2026):** Tahtanın İÇİNE çift dokunuş 2×
+  yakınlaştırır (dokunulan noktaya odaklı), zoom açıkken tahta parmakla
+  kaydırılır, tekrar çift dokunuş eski hâline döndürür. Kapsam yalnızca
+  tahta — raf/başlık/butonlar kımıldamaz. **Tek dokunuşlar birebir korunur
+  ve GECİKMEZ:** ilk dokunuş normal işini yapar (taş konur ve KONDUĞU YERDE
+  KALIR), pencere içinde gelen ikinci dokunuş yalnızca yutulup zoom'u
+  değiştirir; çift yalnızca boş kareye/boşluğa/çerçeveye dokunuşla başlar,
+  taşa dokunuş (geri alma, anlam penceresi, joker) çift BAŞLATAMAZ. Kaynak
+  `src/utils/boardZoom.ts` + `src/hooks/useBoardZoom.ts`; iki oyun ekranı da
+  aynı hook'u kullanır. **Port ile AYNI davranış** (kullanıcı kararı: *"her
+  yerde aynı deneyim olsun"*) — port karşılığı
+  `mobile/app/lib/src/ui/game/board_zoom.dart`, biri değişirse öteki de.
+  ⚠ Kabul edilen tek yan etki: taş konduktan sonra 300 ms İÇİNDE aynı
+  bölgeye (40 px) yapılan dokunuş çift sayılır, yani geri alma yerine zoom
+  açar — insan ritminde erişilmiyor, testler bu yüzden araya 350 ms koyuyor.
+  **Tanıtım balonu (1 Eylül 2026):** oyun ekranı açılışında merkez kareyi
+  işaret eden tek seferlik ipucu — *"Boş kareye veya çerçevesine çift
+  tıklama tahtayı büyütür. Hemen dene!"*. Kural İKİ değere birden bakıyor
+  (`src/utils/onboarding.ts` → `shouldShowZoomHint`): gösterim sayacı
+  (tavan 2) VE "denedi mi" — zoom bir kez denenirse balon anında kapanır ve
+  bir daha hiç çıkmaz, hiç denenmezse ikinci bir açılışta bir kez daha
+  çıkar. Bayraklar cihaz-yerel, yani Canlı oyunda hem açan hem karşı taraf
+  kendi ilk açılışında görür. Port ikizi: `FlagsStore.shouldShowZoomHint`;
+  metin iki tarafta BİREBİR aynı olmalı.
 - **Joker (`?`):** 2 adet, 0 puan, oynanırken herhangi bir Türkçe harfe dönüşür. **Tahtaya konmuş bir jokerin `0` puanı KIRMIZI yazılır** (token `red`/`kRed`, 28 Ağustos 2026 kullanıcı isteği) — jokerin nereye harcandığı tahtada görünsün diye; RAF taşı bilinçli olarak dışarıda (orada ★ zaten ayırt ediyor). `Tile.tsx` ↔ `tile_widget.dart`, ikisi de testli. Tahtaya bu turda konmuş (henüz "Oyna" ile onaylanmamış) bir jokere tekrar dokunmak artık onu geri almaz — `WildcardModal` tekrar açılır (başlık "Jokeri Hangi Harfe Çevir?") ve seçilen yeni harf `SET_WILD_LETTER` action'ıyla (`src/game/gameReducer.ts`) hücredeki `wildLetter`'ı günceller; taş geri alınmaz. Geri alma bu modda hâlâ iki yoldan mümkün: modaldeki "Geri Al" butonu (`RECALL_CELL` dispatch eder) ya da taşı doğrudan rafa sürükleyerek (mevcut sürükle-bırak `RECALL_CELL` yolu, dokunmadan ayrışır — sürükleme hâlâ eski davranışı korur, yalnızca hareketsiz dokunuş/tık yeni davranışa geçti). Sıradan (joker olmayan) yerleştirilmiş bir taşa dokunmak hâlâ doğrudan geri alır, davranış değişmedi. `App.tsx` (yerel/YZ oyun) ve `OnlineGameScreen.tsx` (Canlı oyun) aynı deseni birebir paylaşıyor (`pendingWild.editing` bayrağı) — biri değişirse diğeri de güncellenmeli.
   **BULUNAN HATA (22 Ağustos 2026, bir kullanıcı bildirdi — DOKUNMATİKTE bu
   düzenleme yolu baştan beri kırıktı):** *"Tahtaya joker koyup değiştirmek

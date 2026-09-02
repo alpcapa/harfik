@@ -43,6 +43,7 @@ import {
 import { buildGameRecord } from './utils/gameRecord';
 import { markQuickStartSeen } from './utils/onboarding';
 import { swallowNextClick } from './utils/ghostClick';
+import { useBoardZoom } from './hooks/useBoardZoom';
 import { getFormedWords, getFullWordAt, key } from './utils/board';
 import { nearbyDraftCell } from './utils/draftRescue';
 import type { GameState, Tile as TileModel } from './game/types';
@@ -800,6 +801,8 @@ export default function App() {
    */
   const startLocalGame = (players: PlayerSetup[]) => {
     dispatch({ type: 'START', players });
+    // Yeni oyun/rövanş zoom'u sıfırlar (port `_handleRematch` ile aynı).
+    boardZoom.reset();
     // Fire-and-forget: telemetri hatası oyunu etkilemez.
     // `!user` = misafir başlangıcı — huninin "Başlayan" adımı yalnızca bunları
     // sayıyor (bkz. `logGameStart` ve `game_starts.is_guest`).
@@ -995,6 +998,15 @@ export default function App() {
   // olayında render tetiklemeden okunup güncellenir); `ghost` yalnızca
   // gerçek bir sürükleme başladığında (eşik aşılınca) set edilir ve
   // sürüklenen taşın parmak/imleci takip eden görselini tetikler.
+  // Tahta yakınlaştırması (1 Eylül 2026, kullanıcı kararı: "her yerde aynı
+  // deneyim"). Sürükleme sürerken pan HİÇ başlamaz — `dragRef` bayrağı
+  // portun hit-test sırasının web karşılığı (bkz. useBoardZoom).
+  // İkinci argüman: tahta ŞU AN ekranda mı — `App` Setup'ı da render
+  // ettiğinden tanıtım balonunun sayacı orada artmamalı (bkz. useBoardZoom).
+  const boardZoom = useBoardZoom(
+    () => dragRef.current !== null,
+    state.phase !== 'setup',
+  );
   const dragRef = useRef<{
     source: DragSource;
     startX: number;
@@ -1409,30 +1421,38 @@ export default function App() {
     // titreşimli dokunuş dalı buradan geçer, davranışları AYRIŞMASIN diye.
     const dokunusOlarakIsle = () => {
       if (d.source.kind === 'rack') {
+        // Raf dokunuşu tahta çifti oluşturamaz (zoom kapsamı yalnızca tahta).
+        boardZoom.markUnpairable();
         dispatch({ type: 'SELECT_TILE', index: d.source.index });
       } else {
+        // Çiftin İKİNCİSİYSE geri alma yutulur ve zoom değişir — ilk dokunuş
+        // taşı koyduysa parmağın altındaki hücre artık boş değildir, ikinci
+        // vuruş o taşı geri ALMASIN.
+        if (boardZoom.registerCellTap(e.clientX, e.clientY)) return;
         tapPlacedTile(d.source.r, d.source.c, true);
       }
     };
 
     if (!d.moved) {
       // Hareket yok: sıradan bir dokunuş/tık — eski davranış korunur.
-      if (d.source.kind === 'rack') {
-        dispatch({ type: 'SELECT_TILE', index: d.source.index });
-      } else {
-        // Tahtaya konmuş bir taş: joker ise harfi değiştirme penceresi
-        // açılır (geri alma hâlâ sürükleyerek ya da modaldeki "Geri Al"
-        // butonuyla mümkün), değilse doğrudan geri alınır.
-        //
-        // Pencere BU pointerup içinde açıldığından, dokunmatikte hemen
-        // ardından gelen uyumluluk (compat) click'i artık hücrenin değil
-        // YENİ AÇILAN modalın üstüne düşüyor — ölçüldü (22 Ağustos 2026):
-        // parmağın konumuna göre ya harf ızgarasındaki bir taşa basıp jokeri
-        // sessizce başka bir harfe çeviriyor (kullanıcının bildirdiği "A, C
-        // oldu") ya da zemine düşüp modalı anında kapatıyor ("pencere hiç
-        // açılmadı"). O tek click yutulmalı.
-        tapPlacedTile(d.source.r, d.source.c, true);
-      }
+      //
+      // ⚠ Bu dal 1 Eylül 2026'ya kadar aşağıdaki `dokunusOlarakIsle`nin
+      // KOPYASIYDI (aynı iki satır, iki yerde). Zoom kapısı eklenirken
+      // yalnızca biri güncellendi ve hareketsiz çift dokunuş sessizce
+      // çalışmadı — Playwright testi yakaladı. Kopya kaldırıldı: iki dal
+      // artık TEK gövdeden geçiyor (portun `_endTileDrag`ı da öyle).
+      //
+      // Tahtaya konmuş bir taşta joker ise harfi değiştirme penceresi
+      // açılır (geri alma hâlâ sürükleyerek ya da modaldeki "Geri Al"
+      // butonuyla mümkün), değilse doğrudan geri alınır. Pencere BU
+      // pointerup içinde açıldığından, dokunmatikte hemen ardından gelen
+      // uyumluluk (compat) click'i artık hücrenin değil YENİ AÇILAN
+      // modalın üstüne düşüyor — ölçüldü (22 Ağustos 2026): parmağın
+      // konumuna göre ya harf ızgarasındaki bir taşa basıp jokeri sessizce
+      // başka bir harfe çeviriyor (kullanıcının bildirdiği "A, C oldu") ya
+      // da zemine düşüp modalı anında kapatıyor ("pencere hiç açılmadı").
+      // O tek click `tapPlacedTile` içinde yutuluyor.
+      dokunusOlarakIsle();
       return;
     }
 
@@ -1455,6 +1475,9 @@ export default function App() {
     // Aynı koruma sürükleme sonunda AÇILAN pencere için de gerekiyor:
     // raftan sürüklenen bir joker aşağıda `setPendingWild` ile pencere açıyor.
     swallowNextClick();
+    // Önceki dokunuş kaydı bayatladı: sürüklemeden sonraki dokunuş onunla
+    // çift oluşturup zoom'u kazara açmasın.
+    boardZoom.markUnpairable();
 
     const { cellEl, rackEl } = dropTargetsAt(e.clientX, liftedPoint(e.clientY));
     if (cellEl?.dataset.cell) {
@@ -1511,6 +1534,10 @@ export default function App() {
     // açılıyor), yani ardından gelen compat click her hâlükârda BAŞKA bir
     // öğenin üstüne düşüyor.
     if (swallow) swallowNextClick();
+    // Taşa dokunuş çift dokunuş BAŞLATAMAZ (yalnızca ikincisi olarak
+    // yutulabilir — o kapı çağıranlarda). Joker penceresinin zoom'la
+    // ilişkisi YOK: eskisi gibi anında açılır.
+    boardZoom.markUnpairable();
     if (tile.wild) {
       setPendingWild({ r, c, editing: true });
     } else {
@@ -1519,6 +1546,16 @@ export default function App() {
   };
 
   const handleCellClick = (r: number, c: number, e: ReactMouseEvent) => {
+    // ── Çift dokunuşla zoom (bkz. src/utils/boardZoom.ts) ────────────────
+    // Dokunuşun kendi işleminden ÖNCE sorulur: bir çiftin İKİNCİSİYSE işlem
+    // yutulur ve zoom değişir — ilk dokunuşun yaptığı iş (koyulan taş dahil)
+    // OLDUĞU GİBİ KALIR. Çift yalnızca BOŞ kareye dokunuşla başlar.
+    if (!state.board[r][c]) {
+      if (boardZoom.registerCellTap(e.clientX, e.clientY)) return;
+      if (!state.placed[key(r, c)]) boardZoom.registerPairable(e.clientX, e.clientY);
+    } else {
+      boardZoom.markUnpairable();
+    }
     // Tahtada duran bir taşa (hangi hamlede oynandığına bakılmaksızın)
     // tıklanırsa, o hücreden geçen kelime(ler)in anlamı gösterilir.
     // ⚠ TASLAK HAMLE VARKEN ANLAM AÇILMAZ (24 Ağustos 2026, kullanıcı
@@ -1598,6 +1635,11 @@ export default function App() {
     const sel = state.selectedTile !== null ? me.rack[state.selectedTile] : null;
     if (sel && sel.letter === '?') {
       // Joker taş: hangi harfe dönüşeceği seçilene kadar taş konmaz.
+      // Modal AÇILDI → çift dokunuş zinciri kırılır (portun aynı dalıyla
+      // hizalı): joker penceresi açıkken ikinci dokunuş tahtaya değil
+      // pencereye düşer, zincirin diri kalması sonraki gerçek dokunuşu
+      // yanlışlıkla "çift" yapardı (Playwright bunu yakaladı).
+      boardZoom.markUnpairable();
       setPendingWild({ r, c });
       return;
     }
@@ -1723,6 +1765,13 @@ export default function App() {
         onTilePointerMove={moveDrag}
         onTilePointerUp={endDrag}
         onTilePointerCancel={cancelDrag}
+        zoomHint={boardZoom.hint}
+        zoom={boardZoom.zoom}
+        viewportRef={boardZoom.viewportRef}
+        onBoardPointerDown={boardZoom.onPointerDown}
+        onBoardPointerMove={boardZoom.onPointerMove}
+        onBoardPointerUp={boardZoom.onPointerUp}
+        onBoardPointerCancel={boardZoom.onPointerCancel}
       />
 
       <div className="w-full max-w-[680px] px-3 pb-3 pt-1 flex flex-col gap-1.5">

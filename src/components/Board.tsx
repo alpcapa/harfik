@@ -14,6 +14,13 @@ import {
 import type { GameState, MoveStatus } from '../game/types';
 import { key } from '../utils/board';
 import { buildRoundedOutlinePath } from '../utils/outline';
+import {
+  BOARD_CLIP_SLACK,
+  ZOOM_ANIM_MS,
+  ZOOM_OFF,
+  zoomTransform,
+  type ZoomState,
+} from '../utils/boardZoom';
 import { computeAllTerritories } from '../utils/validator';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { CountBadge } from './CountBadge';
@@ -76,6 +83,21 @@ interface BoardProps {
   hideFooter?: boolean;
   /** Taşları küçük/puan göstermeden çizer — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
   compact?: boolean;
+  /** Tahta yakınlaştırması (1 Eylül 2026 — port ile AYNI davranış, bkz.
+      `src/utils/boardZoom.ts`). VERİLMEZSE ağaç eskisiyle birebir aynı
+      çizilir: transform `none`, kırpma yok — salt-okunur önizlemeler ve
+      karşılama katmanı bu yoldan geçiyor. */
+  zoom?: ZoomState;
+  /** Görünür kare (kırpma kutusu) — hook'un ölçüm/odak referansı. */
+  viewportRef?: React.RefObject<HTMLDivElement>;
+  /** Zoom tanıtım balonu (1 Eylül 2026) — merkez kareyi işaret eden tek
+      seferlik ipucu. Gösterilip gösterilmeyeceğine `useBoardZoom` karar
+      verir (`utils/onboarding.ts`); burada yalnızca çizim var. */
+  zoomHint?: boolean;
+  onBoardPointerDown?: (e: React.PointerEvent) => void;
+  onBoardPointerMove?: (e: React.PointerEvent) => void;
+  onBoardPointerUp?: () => void;
+  onBoardPointerCancel?: () => void;
 }
 
 // Merkezdeki x2 bonus bölgesi altın rengi — nömorfik, diğer köşe tonlarıyla
@@ -161,6 +183,13 @@ export function Board({
   onTilePointerCancel,
   hideFooter = false,
   compact = false,
+  zoom = ZOOM_OFF,
+  viewportRef,
+  zoomHint = false,
+  onBoardPointerDown,
+  onBoardPointerMove,
+  onBoardPointerUp,
+  onBoardPointerCancel,
 }: BoardProps) {
   const online = useOnlineStatus();
   const { board, placed, bonuses, players, current } = state;
@@ -543,11 +572,42 @@ export function Board({
           boxShadow: '8px 8px 20px rgba(163,177,198,0.7), -4px -4px 14px rgba(255,255,255,0.9), 0 20px 60px rgba(163,177,198,0.5)',
         }}
       >
+      {/* ── Yakınlaştırma katmanları (1 Eylül 2026) ────────────────────
+          GÖRÜNÜR KARE (`viewportRef`) ızgarayı kırpar, ızgaranın kendisi
+          `transform` ile ölçeklenir/kaydırılır. Kırpma YALNIZCA zoom
+          açıkken kurulur — kapalıyken `clipPath: none`, yani eski render
+          BİREBİR korunur (kırpmanın kendisi bir tur önce portta rozeti ve
+          bölge çizgisini kesmişti; web'de o riski hiç doğurmuyoruz).
+          Pay (`BOARD_CLIP_SLACK`) dış hattın stroke taşması için: yol hücre
+          sınırının ÜZERİNDE, yarısı kutunun dışına düşüyor.
+          ⚠ `elementFromPoint` transform'u kendisi tersine çevirdiğinden
+          hücre bulma/bırakma kodunun HİÇBİRİ değişmedi (portta bu iş için
+          ayrı bir "görünür kare kapısı" yazmak gerekmişti). */}
+      <div className="relative w-full aspect-square">
       <div
-        className="relative grid gap-[3px] p-[10px] w-full aspect-square"
+        ref={viewportRef}
+        data-board-viewport=""
+        className="absolute inset-0"
+        style={{
+          clipPath: zoom.zoomed ? `inset(-${BOARD_CLIP_SLACK}px)` : undefined,
+          // Zoom'luyken parmak tahtayı kaydırır; tarayıcının kendi kaydırma
+          // jesti devreye girerse pan hiç başlamaz.
+          touchAction: zoom.zoomed ? 'none' : undefined,
+        }}
+        onPointerDown={onBoardPointerDown}
+        onPointerMove={onBoardPointerMove}
+        onPointerUp={onBoardPointerUp}
+        onPointerCancel={onBoardPointerCancel}
+      >
+      <div
+        data-board-grid=""
+        className="relative grid gap-[3px] p-[10px] w-full h-full"
         style={{
           gridTemplateColumns: `repeat(${SIZE}, 1fr)`,
           gridTemplateRows: `repeat(${SIZE}, 1fr)`,
+          transform: zoomTransform(zoom),
+          transformOrigin: '0 0',
+          transition: zoom.animate ? `transform ${ZOOM_ANIM_MS}ms cubic-bezier(0.22,1,0.36,1)` : undefined,
         }}
       >
         {cells}
@@ -574,9 +634,52 @@ export function Board({
             {moveOutline}
           </svg>
 
-          {/* Anlık geçerlilik çerçevesinin puan rozeti. */}
-          {moveBadge}
         </div>
+
+        {/* Zoom tanıtım balonu — MERKEZ karenin üstünde, kuyruğu aşağı
+            (kareye) bakan çok satırlı kutu. `inset-[10px]`: aşağıdaki
+            "Buradan başla" ile aynı gerekçe (grid'in kendi dolgusuyla
+            eşleşmezse yüzde koordinatları hücre alanından kayar).
+            Sürükleme başlayınca kaybolur — `tileLifted`, "Buradan başla"nın
+            aynı davranışı. Port ikizi: `board_widget.dart`
+            `_zoomHintBubble`; METİN İKİSİNDE DE BİREBİR aynı olmalı. */}
+        {zoomHint && !tileLifted && (
+          <div className="pointer-events-none absolute inset-[10px] z-20">
+            <div
+              data-zoom-hint=""
+              className="absolute left-0 right-0 flex flex-col items-center"
+              style={{
+                // Merkez karenin ÜST kenarı; kutu kendi yüksekliği kadar
+                // yukarı çekiliyor (punto akışkan, yükseklik bilinmiyor).
+                top: `calc(${CELL_W} * ${Math.floor(SIZE / 2)} + ${Math.floor(SIZE / 2) * GRID_GAP}px)`,
+                transform: 'translateY(-100%)',
+              }}
+            >
+              <div
+                className="font-bold leading-snug text-center rounded-[9px] text-white"
+                style={{
+                  maxWidth: '78%',
+                  background: '#2563EB',
+                  fontSize: 'clamp(9px, 2.4vw, 13px)',
+                  padding: '7px 10px',
+                  boxShadow: '0 2px 6px rgba(15,23,42,0.28)',
+                }}
+              >
+                Boş kareye veya çerçevesine çift tıklama tahtayı büyütür. Hemen dene!
+              </div>
+              {/* Kuyruk: merkez kareye bakan küçük üçgen. */}
+              <span
+                style={{
+                  width: 0,
+                  height: 0,
+                  borderLeft: '5px solid transparent',
+                  borderRight: '5px solid transparent',
+                  borderTop: '6px solid #2563EB',
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* "Buradan başla" balonu. `inset-[10px]`: köşe filigranındaki aynı
             gerekçe — absolute konumlanan bir grid öğesinin containing block'u
@@ -690,6 +793,36 @@ export function Board({
             </div>
           </div>
         )}
+      </div>
+      </div>
+
+      {/* ROZET, KIRPMANIN DIŞINDA — ızgarayla AYNI transform'u alır ama
+          görünür karenin içinde DEĞİLDİR. Sebebi ölçüldü (1 Eylül 2026,
+          portta bir kullanıcı cihazda yakaladı: *"kenarda kalan deneme
+          sayıları kesiliyor"*): rozet `translate(-35%,-35%)` ile hücre
+          kutusunun dışına, tahtanın 10px'lik dolgusuna taşıyor; kırpılan
+          katmanda kalsaydı kenardaki rozetin bir yanı düz kesilirdi.
+          Kırpma payını rozeti kapsayacak kadar büyütmek YANLIŞ çözüm olurdu
+          — aynı pay kadar zoom'lu ızgara da taşardı.
+          `inset-0 p-[10px]`: transform ızgarayla AYNI kutuda uygulanmalı,
+          rozetin yüzde koordinatları ise hücre alanına göre (dolgunun
+          içinde) — ikisi ancak böyle birebir hizalı kalır.
+          Port ikizi: `board_widget.dart` → `_zoomWrap(unclipped:)`. */}
+      {moveBadge && (
+        <div
+          data-board-badge-layer=""
+          className="pointer-events-none absolute inset-0 p-[10px] z-20"
+          style={{
+            transform: zoomTransform(zoom),
+            transformOrigin: '0 0',
+            transition: zoom.animate
+              ? `transform ${ZOOM_ANIM_MS}ms cubic-bezier(0.22,1,0.36,1)`
+              : undefined,
+          }}
+        >
+          <div className="relative w-full h-full">{moveBadge}</div>
+        </div>
+      )}
       </div>
 
       {/* Alt bilgi şeridi (Hamleler / Mesajlaşma / Nasıl Oynanır?) — kartın
