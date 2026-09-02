@@ -111,6 +111,7 @@ koptu" (bkz. "Belgeleri Güncel Tutma").
 | Bir Dart↔Kotlin/Swift MethodChannel adı ya da bildirim kanalı kimliği | Parite testi (`notification_*_parity_test.dart`) — derleyici görmez, uyuşmazlık SESSİZ arızadır |
 | `register_push_token` gibi bir RPC'ye parametre EKLEME | Eski imzayı `drop` et, `create or replace` YETMEZ — iki imza yan yana kalır ve eski istemcinin çağrısı "function is not unique" (42725) verir |
 | `mobile/` DIŞINDA bir dosya (port işi sırasında) | kök `CLAUDE.md`/`README.md` — port dokümanı TEK BAŞINA yetmez |
+| `ROADMAP.md`'deki bir madde/faz KAPANDI (✅ · YAPILDI · CANLIDA · SAHADA) | Aynı PR'da `docs/decisions/roadmap-arsiv.md`'ye TAŞI — ROADMAP yalnızca AÇIK maddeleri tutar. Başlığı/numarayı/satırları değiştirme (atıflar kırılır); dosyanın kendi kuralıydı, uygulanmayınca %45'i kapanmış işe döndü (2 Eylül 2026) |
 
 Mobil portun kendi (daha ayrıntılı, Dart'a özgü) sürümü: `mobile/CLAUDE.md`,
 "Etki Analizi" ve "Parça Bitirme Kontrol Listesi" bölümleri — orada tek
@@ -339,6 +340,7 @@ olabilir — atıf bulunamazsa önce buradaki tabloya bak.
 | E-posta gönderenleri (`noreply@` ↔ `destek@`), Zoho rozeti, inbound webhook kurulumu | `docs/decisions/support-email.md` |
 | Supabase işletimi: Brevo SMTP/teslimat geçmişi, SPF-DKIM-DMARC'ın gerçek hâli, migration geçmişinin kopması, dal temizliği, Edge Function deploy tuzakları | `docs/decisions/supabase-ops.md` |
 | Sonraya bırakılan ürün fikirleri (karar verildi, henüz yapılmadı) | `docs/decisions/product-backlog.md` |
+| ROADMAP arşivi — kapanmış maddeler, fazlar ve sürüm turları (grep'lenir, baştan sona okunmaz) | `docs/decisions/roadmap-arsiv.md` |
 
 **Yeni bir dated not eklerken:** eğer not, kod tabanında HER YERDE geçerli
 bir kural/değişmez tarif ediyorsa (Türkçe harf kuralı, migration disiplini,
