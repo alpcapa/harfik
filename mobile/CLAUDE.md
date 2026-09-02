@@ -921,9 +921,17 @@ değildir; hiçbir hata basılmaz. **Tavan çözmez** ve dört vaka ölçek
 1,0'da bile sarıyordu. Çözüm `ui/text_scale.dart` → **`ScaledCell`**: kutu
 `scaledWidth` ile ölçekle büyür, metin `maxLines:1`+`softWrap:false` ile
 asla sarmaz, yine de sığmazsa `FittedBox` küçültür. Kapı:
-`test/text_wrap_test.dart` (15 sütunluk envanter + GameOver'ın gerçek
+`test/text_wrap_test.dart` (19 sütunluk envanter + GameOver'ın gerçek
 render'ı). ⚠ **Yeni bir sabit genişlikli sütun eklerken `SizedBox` değil
 `ScaledCell` kullan** — aksi halde bu hata sessizce geri gelir.
+
+⚠ **BİR SATIRI ÇEVİRİRKEN BAŞLIĞINI VE ARADAKİ SÜTUNLARI DA SAY** (2 Eylül
+2026, cihazda yakalandı): k-lig lider tablosunda 1 Eylül turu yalnızca
+`sıra` ve `skor` hücrelerini çevirmiş, **aralarındaki OHP sütununu ve
+BAŞLIK satırının tamamını** atlamıştı. Sonuç cihazda `13.17` → `13.`/`17`
+ve `SIRA` → `SIR`/`A`. Envanter de o üçünü hiç içermiyordu — bu yüzden
+takım yeşil kaldı. Envantere `letterSpacing` alanı da o gün eklendi:
+öncesinde modellenmiyordu ve sütunları olduğundan DAR sanıyordu.
 
 **Tavan 1,3** (kullanıcı kararı). Ölçüldü: taşma sayısı ölçek 1,0'da 0 ·
 1,3'te 10 · 2,0'da 73 — hasar 1,3'ten sonra patlıyor. 1,0'a kilitlemek

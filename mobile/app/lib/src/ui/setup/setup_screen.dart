@@ -31,7 +31,6 @@
 import 'dart:async' show Timer, unawaited;
 
 import 'package:flutter/material.dart';
-import '../text_scale.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/analytics.dart';
@@ -1983,14 +1982,22 @@ class _SavedGameRow extends StatelessWidget {
           shadows: kRaisedShadows, // web shadow-raised
         ),
         child: _DevamEdenGovde(
-          // SINIF 2 (sessiz sıkışma) — ÖLÇÜLDÜ (2 Eylül 2026, 320 px, ölçek
-          // 1,0 → 1,3, `setup_screen_test.dart`): sol sütun 114,9 → 73,9 px,
-          // yani **%36** kayıp. Risk kütüğündeki DÖRT adayın ölçülen en
-          // kötüsü; sebebi sağdaki `SIRA SENDE` etiketinin ölçekle büyüyüp
-          // `Expanded` olan sol taraftan yer yemesi. Çözüm dokümanda yazılı
-          // olan: eşiği aşınca satırı İKİYE BÖL (ui/text_scale.dart → sınıf
-          // 2). Bölündükten sonra aynı ölçüm: 114,9 → 266,0 px.
-          ikiyeBol: buyukOlcek(context),
+          // SINIF 2 (sessiz sıkışma). ÖLÇÜLDÜ (320 px): sol sütun ölçek
+          // 1,0 → 1,3'te 114,9 → 73,9 px, yani %36 kayıp.
+          //
+          // ⚠ İLK DÜZELTME YANLIŞ ŞEYİ SUÇLADI (2 Eylül 2026 sabahı): sağ
+          // sütunun TAMAMI eşikte alt satıra alınmıştı, gerekçe "`SIRA
+          // SENDE` etiketi yer yiyor" diye yazılmıştı. Kullanıcı cihazda
+          // gördü — etiket kartın ORTASINDA duruyordu — ve doğrusunu
+          // söyledi: *"Sıra Sende'yi de Sıra Rakipte gibi yapalım, sadece
+          // kalan süre en altta çıksın"*. Sonra ÖLÇÜLDÜ ve haklı çıktı:
+          //   "SIRA SENDE"  89,6 → 113,4 px
+          //   süre satırı  194,3 → 246,9 px   ← sağ sütunun eni BU
+          // Yani daraltan etiket değil SÜRE SATIRIYDI, ölçek 1,0'da bile.
+          // Şimdiki yapı: durum etiketi satırda KALIR (89,6 px kimseyi
+          // ezmiyor), yalnızca süre alta tam genişlik satıra iner. Ölçekten
+          // bağımsız TEK düzen — `buyukOlcek` dalı kalktı, `live_games_tab`
+          // kartıyla da aynı şekil.
           sol: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2020,79 +2027,65 @@ class _SavedGameRow extends StatelessWidget {
                   ),
                 ],
               ),
-          sag: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Metin ve punto `live_games_tab`ın aktif oyun kartıyla
-                // BİREBİR (30 Ağustos 2026, kullanıcı isteği): biri YZ biri
-                // Canlı oyun ama ikisi de "devam eden oyun" satırı.
-                Text.rich(
-                  TextSpan(
-                      text: 'SIRA SENDE',
-                      children: [turnTriangleSpan(kGreen)]),
-                  style: TextStyle(
-                    fontFamily: 'SpaceMono',
-                    fontSize: 13,
-                    height: 1, // ok satırı büyütmesin (bkz. kTurnArrowSpan)
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                    color: kGreen,
-                  ),
-                ),
-                // 8 px — web `gap-0.5` + `mt-1.5` (kullanıcı isteği).
-                const SizedBox(height: 8),
-                Text(
-                  // trUpper ŞART — native toUpperCase 'dakika'yı noktasız I
-                  // ile 'DAKIKA' yapar (test yakaladı; web'de CSS uppercase
-                  // tr locale ile doğruydu). Süre dolunca metne geri gelen
-                  // 'silinecek' de aynı tuzağı taşıyor.
-                  trUpper(remaining.text),
-                  style: TextStyle(
-                    fontFamily: 'SpaceMono',
-                    fontSize: 8,
-                    letterSpacing: 0.5,
-                    color: remaining.urgent ? kRed : _muted,
-                  ),
-                ),
-              ],
+          // Metin ve punto `live_games_tab`ın aktif oyun kartıyla BİREBİR
+          // (30 Ağustos 2026, kullanıcı isteği): biri YZ biri Canlı oyun
+          // ama ikisi de "devam eden oyun" satırı.
+          durum: Text.rich(
+            TextSpan(
+                text: 'SIRA SENDE', children: [turnTriangleSpan(kGreen)]),
+            style: const TextStyle(
+              fontFamily: 'SpaceMono',
+              fontSize: 13,
+              height: 1, // ok satırı büyütmesin (bkz. kTurnArrowSpan)
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+              color: kGreen,
             ),
+          ),
+          sure: Text(
+            // trUpper ŞART — native toUpperCase 'dakika'yı noktasız I ile
+            // 'DAKIKA' yapar (test yakaladı; web'de CSS uppercase tr locale
+            // ile doğruydu). Süre dolunca metne geri gelen 'silinecek' de
+            // aynı tuzağı taşıyor.
+            trUpper(remaining.text),
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              fontFamily: 'SpaceMono',
+              fontSize: 8,
+              letterSpacing: 0.5,
+              color: remaining.urgent ? kRed : _muted,
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-/// "Devam eden oyun" kartının gövdesi — normalde tek satır (sol: oyuncular,
-/// sağ: durum), yazı ölçeği eşiği aşınca İKİ satır.
+/// "Devam eden oyun" kartının gövdesi: üstte tek satır (sol oyuncular, sağ
+/// durum etiketi), altta tam genişlik kalan-süre satırı.
 ///
-/// Ayrı bir widget: aynı iki parça iki düzende de kullanılıyor ve `Row`↔
-/// `Column` geçişini çağrı yerinde yapmak kartın JSX'ini iki kez yazdırırdı
-/// (bu projenin kayıtlı hata sınıfı: kopyalanan dal sessizce ayrışıyor).
+/// Ayrı bir widget: aynı gövde iki çağrı yerinde kullanılıyor ve düzeni
+/// çağrı yerinde kurmak kartı iki kez yazdırırdı (bu projenin kayıtlı hata
+/// sınıfı: kopyalanan dal sessizce ayrışıyor).
 class _DevamEdenGovde extends StatelessWidget {
-  final bool ikiyeBol;
   final Widget sol;
-  final Widget sag;
+  final Widget durum;
+  final Widget sure;
   const _DevamEdenGovde(
-      {required this.ikiyeBol, required this.sol, required this.sag});
+      {required this.sol, required this.durum, required this.sure});
 
   @override
   Widget build(BuildContext context) {
-    if (!ikiyeBol) {
-      return Row(children: [Expanded(child: sol), sag]);
-    }
-    // İki satır: durum etiketi artık isim alanını YEMİYOR, altına geçiyor.
-    // Hizası da sola dönüyor — sağa dayalı tek başına bir etiket, altında
-    // durduğu satırla ilişkisiz görünürdü.
     return Column(
-      // `stretch` ŞART, `start` DEĞİL: `start` sol sütunu kendi içeriğine
-      // shrink-wrap eder ve isim alanı — artık kimse yemediği hâlde — yine
-      // dar kalır (ölçüldü: 114,9 → 93,0 px). Gerilmiş hâlde alan kartın
-      // TAMAMI olur, yani sıkışma gerçekten kapanır.
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        sol,
-        const SizedBox(height: 6),
-        Align(alignment: Alignment.centerLeft, child: sag),
+        Row(children: [Expanded(child: sol), durum]),
+        // 8 px — web `gap-0.5` + `mt-1.5` (kullanıcı isteği). Süre artık
+        // durumun ALTINDA değil KARTIN altında, ama aynı sağ kenara yaslı,
+        // yani görsel çapa değişmedi.
+        const SizedBox(height: 8),
+        Align(alignment: Alignment.centerRight, child: sure),
       ],
     );
   }

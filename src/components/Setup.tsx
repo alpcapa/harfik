@@ -1,36 +1,36 @@
 // Kelimeki — oyun kurulum ekranı: oyuncu sayısı (2/4) seçimi
-import { useEffect, useRef, useState } from 'react';
-import { GUEST_PLAYER_NAME, PLAYER_COLORS } from '../game/constants';
-import type { PlayerSetup } from '../game/gameReducer';
-import { useAuth } from '../hooks/useAuth';
-import { useModalA11y } from '../hooks/useModalA11y';
-import { subscribeMyOnlineGames } from '../lib/api';
-import { hasSeenQuickStart, markQuickStartSeen } from '../utils/onboarding';
-import { ABANDON_TIMEOUT_MS, type SavedGame } from '../utils/gameStorage';
+import { useEffect, useRef, useState } from "react";
+import { GUEST_PLAYER_NAME, PLAYER_COLORS } from "../game/constants";
+import type { PlayerSetup } from "../game/gameReducer";
+import { useAuth } from "../hooks/useAuth";
+import { useModalA11y } from "../hooks/useModalA11y";
+import { subscribeMyOnlineGames } from "../lib/api";
+import { hasSeenQuickStart, markQuickStartSeen } from "../utils/onboarding";
+import { ABANDON_TIMEOUT_MS, type SavedGame } from "../utils/gameStorage";
 import {
   decideInitialMainView,
   fetchPendingLiveGameCounts,
   type PendingLiveGameCounts,
-} from '../utils/pendingLiveGames';
-import { preloadWordSet, isWordSetReady } from '../data/wordSetLoader';
-import { Avatar } from './Avatar';
-import { AuthModal } from './AuthModal';
-import { CountBadge } from './CountBadge';
-import { HelpModal } from './HelpModal';
-import { LiveGamesTab, TurnTriangle } from './LiveGamesTab';
-import { LogoMark } from './LogoMark';
-import { PlayerAvatarRow, type AvatarRowPlayer } from './PlayerAvatarRow';
-import { PlayerBadge } from './PlayerBadge';
-import { RankSeal } from './RankSeal';
-import { useRankScores } from '../hooks/useRankScores';
-import { RecentGamesSection } from './RecentGamesSection';
-import { ShareIcon } from './RelationIcons';
-import { shareKelimekiLink } from '../utils/shareLink';
-import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import { OFFLINE_AI_SUGGESTION, OFFLINE_AI_CTA } from '../utils/offlineNotice';
-import { TermsModal } from './TermsModal';
-import { PrivacyModal } from './PrivacyModal';
-import type { LocalGameSave, OnlineGame } from '../lib/database.types';
+} from "../utils/pendingLiveGames";
+import { preloadWordSet, isWordSetReady } from "../data/wordSetLoader";
+import { Avatar } from "./Avatar";
+import { AuthModal } from "./AuthModal";
+import { CountBadge } from "./CountBadge";
+import { HelpModal } from "./HelpModal";
+import { LiveGamesTab, TurnTriangle } from "./LiveGamesTab";
+import { LogoMark } from "./LogoMark";
+import { PlayerAvatarRow, type AvatarRowPlayer } from "./PlayerAvatarRow";
+import { PlayerBadge } from "./PlayerBadge";
+import { RankSeal } from "./RankSeal";
+import { useRankScores } from "../hooks/useRankScores";
+import { RecentGamesSection } from "./RecentGamesSection";
+import { ShareIcon } from "./RelationIcons";
+import { shareKelimekiLink } from "../utils/shareLink";
+import { useOnlineStatus } from "../hooks/useOnlineStatus";
+import { OFFLINE_AI_SUGGESTION, OFFLINE_AI_CTA } from "../utils/offlineNotice";
+import { TermsModal } from "./TermsModal";
+import { PrivacyModal } from "./PrivacyModal";
+import type { LocalGameSave, OnlineGame } from "../lib/database.types";
 
 // "Devam Eden Oyun" satırındaki kalan süre — gameStorage.ts'teki
 // ABANDON_TIMEOUT_MS (7 gün) ile aynı terk-silme kuralına göre, son kayıt
@@ -50,8 +50,11 @@ import type { LocalGameSave, OnlineGame } from '../lib/database.types';
 // giriyor — o noktadan itibaren metin de "gün" yerine dakika hassasiyetinde
 // saat gösterir (LiveGamesTab'daki aktif Canlı oyun kalan-süre etiketiyle
 // aynı mantık/stil).
-function remainingTime(savedAt: number, willSurrender: boolean): { text: string; urgent: boolean } {
-  const verb = willSurrender ? 'teslim sayılacak' : 'silinecek';
+function remainingTime(
+  savedAt: number,
+  willSurrender: boolean,
+): { text: string; urgent: boolean } {
+  const verb = willSurrender ? "teslim sayılacak" : "silinecek";
   const ms = savedAt + ABANDON_TIMEOUT_MS - Date.now();
   // ⚠ Fiil (`verb`) YALNIZCA süre DOLDUĞUNDA görünüyor artık. 30 Ağustos
   // 2026'da kullanıcı üç sayacın da yalnızca "… kaldı" demesini istedi
@@ -70,7 +73,7 @@ function remainingTime(savedAt: number, willSurrender: boolean): { text: string;
   // `willSurrender` false iken -2 diye bir ceza YOK (henüz bir tam tur
   // oynanmamış), o kayıt yalnızca siliniyor — oraya "Teslim -2 puan" yazmak
   // olmayan bir cezayla korkutmak olurdu. Ayrım zaten `verb`de vardı.
-  const sonuc = willSurrender ? 'teslim (-2 puan)' : 'silinecek';
+  const sonuc = willSurrender ? "teslim (-2 puan)" : "silinecek";
   const text =
     days > 0
       ? `${days} gün ${hours} saat sonra ${sonuc}`
@@ -85,22 +88,37 @@ function remainingTime(savedAt: number, willSurrender: boolean): { text: string;
 // de çıkıyor); girişli kullanıcı "+ Yeni Yapay Zeka Oyunu" formunu açtığında
 // (aynı `else` dalına düşse de) `!user` koşuluyla gizli kalır.
 const MEMBERSHIP_PERKS = [
-  'Arkadaşlarınla çoklu canlı oyun oynama',
-  'Skor takibi ve k-lig sıralaması',
-  'Aynı anda birden fazla Yapay Zeka oyunu oynama',
-  'Cihazlar arası kesintisiz devam etme',
-  'Oyun geçmişini saklama, beğenme ve paylaşma',
-  'Arkadaş ekleyip listende tutma',
+  "Arkadaşlarınla çoklu canlı oyun oynama",
+  "Skor takibi ve k-lig sıralaması",
+  "Aynı anda birden fazla Yapay Zeka oyunu oynama",
+  "Cihazlar arası kesintisiz devam etme",
+  "Oyun geçmişini saklama, beğenme ve paylaşma",
+  "Arkadaş ekleyip listende tutma",
 ];
 
-function MembershipPerksBox({ onSignup, className = '' }: { onSignup: () => void; className?: string }) {
+function MembershipPerksBox({
+  onSignup,
+  className = "",
+}: {
+  onSignup: () => void;
+  className?: string;
+}) {
   return (
-    <div className={`shadow-raised flex flex-col gap-2.5 rounded-md px-3.5 py-3 border border-accent/30 bg-accent/5 ${className}`}>
-      <div className="font-sans text-sm font-bold text-text">Neden Ücretsiz Üye Olmalıyım?</div>
+    <div
+      className={`shadow-raised flex flex-col gap-2.5 rounded-md px-3.5 py-3 border border-accent/30 bg-accent/5 ${className}`}
+    >
+      <div className="font-sans text-sm font-bold text-text">
+        Neden Ücretsiz Üye Olmalıyım?
+      </div>
       <ul className="flex flex-col gap-1.5">
         {MEMBERSHIP_PERKS.map((perk) => (
-          <li key={perk} className="flex items-start gap-2 text-[11px] font-mono text-muted leading-snug">
-            <span className="text-green font-bold shrink-0" aria-hidden="true">✓</span>
+          <li
+            key={perk}
+            className="flex items-start gap-2 text-[11px] font-mono text-muted leading-snug"
+          >
+            <span className="text-green font-bold shrink-0" aria-hidden="true">
+              ✓
+            </span>
             {perk}
           </li>
         ))}
@@ -135,7 +153,7 @@ function savedGameAvatars(
 ): AvatarRowPlayer[] {
   return players.map((p) =>
     p.isAI
-      ? { name: 'Yapay Zeka', isAi: true }
+      ? { name: "Yapay Zeka", isAi: true }
       : { name: p.name, avatarUrl, isGuest },
   );
 }
@@ -163,36 +181,47 @@ function SavedGameRow({
   return (
     <button
       onClick={onClick}
-      className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
+      className="shadow-raised flex flex-col rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
     >
-      <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-        {/* "N Kişilik Oyun" başlığının yerine katılımcı avatarları —
+      {/* 2 Eylül 2026 — SÜRE SATIRI KARTIN ALTINA ALINDI (kullanıcı, cihazda:
+          *"Sıra Sende kutunun ortasında çıkıyor, Sıra Rakipte düzgün; Sıra
+          Sende'yi de aynı şekle getirelim, sadece kalan süre en altta
+          çıkabilir"*). Önceki yapıda durum ve süre TEK bir sağ sütundaydı ve
+          o sütunun enini SÜRE belirliyordu — ölçüldü (portun ikizinde,
+          320 px): "SIRA SENDE" 89,6 px, süre satırı **194,3 px**. Yani
+          isim alanını daraltan etiket değil süreydi, üstelik yazı ölçeği
+          1,0'da bile. Şimdi üst satır sol=oyuncular / sağ=durum, süre altta
+          tam genişlik (sağa yaslı — görsel çapa değişmedi). */}
+      <span className="flex items-center gap-2.5">
+        <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+          {/* "N Kişilik Oyun" başlığının yerine katılımcı avatarları —
             `LiveGamesTab`'daki Canlı oyun kartlarıyla BİREBİR AYNI desen
             (kullanıcı isteği: YZ oyunlarında da Canlı'daki gibi avatar).
             Avatar sayısı zaten oyuncu sayısını gösterdiğinden metin bilgi
             kaybettirmiyor. */}
-        <PlayerAvatarRow players={players} />
-        <span className="text-[9px] font-mono text-muted truncate">{subtitle}</span>
-      </span>
-      <span className="flex flex-col items-end gap-0.5 shrink-0">
+          <PlayerAvatarRow players={players} />
+          <span className="text-[9px] font-mono text-muted truncate">
+            {subtitle}
+          </span>
+        </span>
         {/* Metin ve punto `LiveGamesTab`'ın aktif oyun kartıyla BİREBİR
-            (30 Ağustos 2026, kullanıcı isteği) — bu kart YZ oyunu, orası
-            Canlı oyun, ama ikisi de "devam eden oyun" satırı ve kullanıcı
-            ikisini yan yana görüyor. Burada koşul yok: yerel kayıt her zaman
-            hesap sahibinin sırasında duruyor. */}
-        <span className="text-[13px] font-mono uppercase tracking-[1px] text-green font-bold">
+          (30 Ağustos 2026, kullanıcı isteği) — bu kart YZ oyunu, orası
+          Canlı oyun, ama ikisi de "devam eden oyun" satırı ve kullanıcı
+          ikisini yan yana görüyor. Burada koşul yok: yerel kayıt her zaman
+          hesap sahibinin sırasında duruyor. */}
+        <span className="shrink-0 text-[13px] font-mono uppercase tracking-[1px] text-green font-bold">
           SIRA SENDE
           <TurnTriangle />
         </span>
-        <span
-          /* mt-1.5 — LiveGamesTab'ın aktif oyun kartıyla aynı: süre satırı
-             durum etiketine yapışmasın (kullanıcı isteği). */
-          className={`mt-1.5 text-[8px] font-mono uppercase tracking-[0.5px] ${
-            remaining.urgent ? 'text-red' : 'text-muted'
-          }`}
-        >
-          {remaining.text}
-        </span>
+      </span>
+      <span
+        /* mt-1.5 — LiveGamesTab'ın aktif oyun kartıyla aynı: süre satırı
+           durum etiketine yapışmasın (kullanıcı isteği). */
+        className={`mt-1.5 self-end text-[8px] font-mono uppercase tracking-[0.5px] ${
+          remaining.urgent ? "text-red" : "text-muted"
+        }`}
+      >
+        {remaining.text}
       </span>
     </button>
   );
@@ -205,8 +234,8 @@ interface SetupProps {
   // "Oyun Tipi" seçimi (Yapay Zeka ile / Arkadaşınla) — App.tsx'te tutulur,
   // çünkü Canlı oyun tamamen ayrı bir veri kaynağından (Supabase) besleniyor;
   // Setup burada yalnızca seçiciyi gösterip görünümü değiştirir.
-  mainView: 'local' | 'live';
-  onMainViewChange: (view: 'local' | 'live') => void;
+  mainView: "local" | "live";
+  onMainViewChange: (view: "local" | "live") => void;
   // "Devam Eden" bir Canlı oyuna tıklanınca (LiveGamesTab), gerçek oyun
   // ekranını açmak için App.tsx'e iletilir (Faz 3, 4. adım).
   onOpenLiveGame: (game: OnlineGame) => void;
@@ -251,7 +280,7 @@ export function Setup({
   const accountName =
     profile?.display_name ||
     profile?.first_name ||
-    (user?.email && !profileLoading ? user.email.split('@')[0] : null);
+    (user?.email && !profileLoading ? user.email.split("@")[0] : null);
   // Oturum var ama profil henüz gelmediyse (profileLoading) accountName
   // hâlâ null'dur — bu durumda 1. oyuncu satırını "Misafir" olarak
   // göstermek de yanlış: oturum açık biri için bir anlığına "Misafir" yazıp
@@ -282,7 +311,10 @@ export function Setup({
           // kalınmasın diye birkaç saniye sonra otomatik tekrar deneniyor
           // (preloadWordSet artık başarısızlıkta kendi önbelleğini
           // temizleyip yeniden denemeye izin veriyor, bkz. wordSetLoader.ts).
-          console.error('[Kelimeki] Kelime listesi yüklenemedi, tekrar denenecek:', err);
+          console.error(
+            "[Kelimeki] Kelime listesi yüklenemedi, tekrar denenecek:",
+            err,
+          );
           if (!cancelled) retryTimer = setTimeout(attempt, 5000);
         });
     };
@@ -308,7 +340,9 @@ export function Setup({
   // Giriş varsayılanı kararının HAM girdisi. Rozetten (`liveActionCount`)
   // ayrı tutuluyor çünkü karar bir de YZ tarafının BİLİNMESİNİ bekliyor
   // (aşağı bkz.) — rozet ise ilk sayı gelir gelmez güncellenmeli.
-  const [liveCounts, setLiveCounts] = useState<PendingLiveGameCounts | null>(null);
+  const [liveCounts, setLiveCounts] = useState<PendingLiveGameCounts | null>(
+    null,
+  );
 
   // "Yapay Zeka ile" sekmesindeki rozet — misafirde tekil localStorage kaydı
   // (0 ya da 1), girişli kullanıcıda `cloudSaves`'in gerçek uzunluğu (birden
@@ -328,7 +362,7 @@ export function Setup({
   // gerekçeyle taşındı: çok sayıda devam eden YZ oyunu olan biri için "Son
   // Oynadıklarım" listesi ekranın altına düşüp scroll etmeden görünmüyordu.
   // Burada "Oyun Davetleri" kavramı olmadığından yalnızca iki tab var.
-  const [localSubTab, setLocalSubTab] = useState<'active' | 'recent'>('active');
+  const [localSubTab, setLocalSubTab] = useState<"active" | "recent">("active");
   // Sekme değişiminde (Arkadaşınla ↔ Yapay Zeka ile) "Devam Edenler"e dön.
   // `LiveGamesTab` bunu zaten yapıyordu ama KASITLI OLARAK DEĞİL: o bileşen
   // koşullu render edildiğinden (aşağıda, `mainView === 'live' ? ...`) sekme
@@ -341,7 +375,7 @@ export function Setup({
   // `LiveGamesTab`) ancak sıfırlanan bir sekmede çalışabiliyor; hatırlayan bir
   // sekme, dikkat bekleyen işi öne çıkaran o davranışı devre dışı bırakırdı.
   useEffect(() => {
-    setLocalSubTab('active');
+    setLocalSubTab("active");
   }, [mainView]);
   // Rozet artık `mainView`e (tab değişimine) bağlı DEĞİL — önceden bir davet
   // kabul edilip Canlı sekmesinden hiç çıkılmazsa (mainView 'live' olarak
@@ -428,18 +462,18 @@ export function Setup({
     refresh();
     const unsubscribe = subscribeMyOnlineGames(scheduleRefresh);
     const onForeground = () => {
-      if (document.visibilityState === 'visible') scheduleRefresh();
+      if (document.visibilityState === "visible") scheduleRefresh();
     };
-    document.addEventListener('visibilitychange', onForeground);
-    window.addEventListener('focus', onForeground);
-    window.addEventListener('online', onForeground);
+    document.addEventListener("visibilitychange", onForeground);
+    window.addEventListener("focus", onForeground);
+    window.addEventListener("online", onForeground);
     return () => {
       cancelled = true;
       if (debounceId != null) window.clearTimeout(debounceId);
       unsubscribe();
-      document.removeEventListener('visibilitychange', onForeground);
-      window.removeEventListener('focus', onForeground);
-      window.removeEventListener('online', onForeground);
+      document.removeEventListener("visibilitychange", onForeground);
+      window.removeEventListener("focus", onForeground);
+      window.removeEventListener("online", onForeground);
     };
   }, [user, onMainViewChange]);
 
@@ -492,7 +526,7 @@ export function Setup({
     const hedef = decideInitialMainView(liveCounts, cloudSaves);
     if (hedef === null) return;
     appliedLoginDefaultRef.current = true;
-    if (hedef === 'live') onMainViewChange('live');
+    if (hedef === "live") onMainViewChange("live");
   }, [user, liveCounts, cloudSaves, onMainViewChange]);
 
   // `shareKelimekiLink` (`src/utils/shareLink.ts`) — Setup.tsx VE karşılama
@@ -504,7 +538,7 @@ export function Setup({
   // için ortak dosyaya çıkarıldı).
   const handleShare = async () => {
     const result = await shareKelimekiLink();
-    if (result === 'copied') {
+    if (result === "copied") {
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
     }
@@ -573,70 +607,80 @@ export function Setup({
 
   return (
     <>
-    {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
-    {showHelp && <HelpModal onClose={closeHelp} />}
-    {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
-    {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+      {showHelp && <HelpModal onClose={closeHelp} />}
+      {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
+      {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
 
-    {showWarningPopup && (
-      <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-        <div
-          ref={warningPopupRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Giriş uyarısı"
-          tabIndex={-1}
-          className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] px-6 pb-6 pt-12 flex flex-col gap-4 outline-none relative"
-        >
-          <button
-            onClick={closeWarningPopup}
-            aria-label="Kapat"
-            className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none tap-expand w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+      {showWarningPopup && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+          <div
+            ref={warningPopupRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Giriş uyarısı"
+            tabIndex={-1}
+            className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] px-6 pb-6 pt-12 flex flex-col gap-4 outline-none relative"
           >
-            ✕
-          </button>
-          {/* ⚠ Üst dolgu `pt-12` (24 değil 48): ✕ mutlak konumlu ve kartın
+            <button
+              onClick={closeWarningPopup}
+              aria-label="Kapat"
+              className="absolute top-3 right-3 text-muted hover:text-text text-lg leading-none tap-expand w-7 h-7 flex items-center justify-center rounded active:scale-90 transition-transform"
+            >
+              ✕
+            </button>
+            {/* ⚠ Üst dolgu `pt-12` (24 değil 48): ✕ mutlak konumlu ve kartın
               SAĞ ÜST köşesini kaplıyor, metin onun ALTINDAN başlamalı.
               Alternatif olarak metne sağ dolgu vermek denendi ve ÖLÇÜLDÜ:
               `pr-8` cümleyi 2 satırdan 3 satıra çıkarıp kartı 153 → 176px
               yapıyor ve ilk satırın sağında 38px'lik boşluk bırakıyordu.
               Bu yol 2 satırı koruyor. Metnin `pr`'ı bilerek YOK — ✕ ile
               artık aynı hizada değil. */}
-          <p className="text-sm text-text font-sans leading-relaxed">
-            Oyunların istatistikleri, k-lig ve arkadaşınla canlı oyun için lütfen giriş yapın.
-          </p>
-          <div className="flex gap-2 mt-1">
-            <button
-              onClick={() => { setShowWarningPopup(false); setShowAuthModal(true); }}
-              className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
-            >
-              Giriş Yap
-            </button>
-            <button
-              onClick={() => { setShowWarningPopup(false); doStart(); }}
-              className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
-            >
-              Oyna
-            </button>
+            <p className="text-sm text-text font-sans leading-relaxed">
+              Oyunların istatistikleri, k-lig ve arkadaşınla canlı oyun için
+              lütfen giriş yapın.
+            </p>
+            <div className="flex gap-2 mt-1">
+              <button
+                onClick={() => {
+                  setShowWarningPopup(false);
+                  setShowAuthModal(true);
+                }}
+                className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Giriş Yap
+              </button>
+              <button
+                onClick={() => {
+                  setShowWarningPopup(false);
+                  doStart();
+                }}
+                className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+              >
+                Oyna
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
-    <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-5">
-      {/* `-mt-5` (−20px), kaptaki `py-6`nın (24px) üst yarısını yiyerek
+      <div className="w-full max-w-[460px] px-4 py-6 flex flex-col gap-5">
+        {/* `-mt-5` (−20px), kaptaki `py-6`nın (24px) üst yarısını yiyerek
           GİRİŞ/avatar satırı ile logo arasını 0'a indirir (17 Ağustos 2026; 13 Ağustos'ta 4'tü) — 13 Ağustos
           2026, kullanıcı isteği: "App'de logoyla avatar satırı arası ideal,
           web'de ekstra boşluk var". Mobil port da AYNI 4px'i kullanıyor
           (`setup_screen.dart`); biri değişirse öteki de değişmeli. */}
-      <div className="text-center flex flex-col items-center gap-1 -mt-6">
-        <h1 className="flex flex-col items-center gap-1" style={{ margin: 0 }}>
-          <LogoMark height={52} />
-          <span className="sr-only">
-            Kelimeki — Ücretsiz Online Türkçe Stratejik Kelime Bulmaca Oyunu
-          </span>
-        </h1>
-        {/* 17 Ağustos 2026 — bu iki öğe (tanıtım paragrafı, "Nasıl oynanır?")
+        <div className="text-center flex flex-col items-center gap-1 -mt-6">
+          <h1
+            className="flex flex-col items-center gap-1"
+            style={{ margin: 0 }}
+          >
+            <LogoMark height={52} />
+            <span className="sr-only">
+              Kelimeki — Ücretsiz Online Türkçe Stratejik Kelime Bulmaca Oyunu
+            </span>
+          </h1>
+          {/* 17 Ağustos 2026 — bu iki öğe (tanıtım paragrafı, "Nasıl oynanır?")
             yalnızca MİSAFİR (girişsiz) kullanıcıda görünür. Kullanıcı isteği:
             "girişli ise logo altındaki yazıları olmayan, direkt oyun tipi
             başlığından itibaren başlayan versiyonu görecek." Girişli
@@ -654,269 +698,306 @@ export function Setup({
             butonu var (aşağı bkz., footer'ın hemen üstü) — artık girişli/
             girişsiz FARK ETMEKSİZİN aynı tek giriş noktası, önceden ikisi
             farklı yerdeydi (misafir burada, girişli footer'da). */}
-        {!user && (
-          <>
-            <p className="text-muted text-xs font-mono mt-4">
-              Kelimeler kurarak bölgeni genişlet, rakiplerini kuşat. Ama dikkat et:
-              Hamlen rakibinin bölgesine temas ederse, kazandığın puanın bir
-              kısmını onunla paylaşmak zorunda kalırsın. Her hamle bir strateji,
-              her kelime bir mücadele.
-            </p>
-            <div className="mt-3 flex items-center gap-2">
-              <button
-                onClick={() => setShowHelp(true)}
-                className="flex items-center min-h-[48px] font-mono text-[11px] font-bold text-accent hover:underline active:opacity-70 transition-opacity"
-              >
-                Nasıl oynanır?
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
-          Oyun Tipi
+          {!user && (
+            <>
+              <p className="text-muted text-xs font-mono mt-4">
+                Kelimeler kurarak bölgeni genişlet, rakiplerini kuşat. Ama
+                dikkat et: Hamlen rakibinin bölgesine temas ederse, kazandığın
+                puanın bir kısmını onunla paylaşmak zorunda kalırsın. Her hamle
+                bir strateji, her kelime bir mücadele.
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  onClick={() => setShowHelp(true)}
+                  className="flex items-center min-h-[48px] font-mono text-[11px] font-bold text-accent hover:underline active:opacity-70 transition-opacity"
+                >
+                  Nasıl oynanır?
+                </button>
+              </div>
+            </>
+          )}
         </div>
-        <div className="flex gap-2">
-          {([
-            { key: 'local' as const, label: 'Yapay Zeka ile', badge: localSaveCount },
-            { key: 'live' as const, label: 'Arkadaşınla', badge: liveActionCount },
-          ]).map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => onMainViewChange(tab.key)}
-              className={[
-                'relative flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97] flex items-center justify-center',
-                mainView === tab.key
-                  ? 'btn-raised bg-accent text-white border-accent'
-                  : 'btn-raised-neutral bg-panel text-text border-border',
-              ].join(' ')}
-            >
-              {tab.label}
-              {tab.badge > 0 && <CountBadge count={tab.badge} className="absolute -top-1 -right-1" />}
-            </button>
-          ))}
-        </div>
-      </div>
 
-      {mainView === 'live' ? (
-        <LiveGamesTab onOpenGame={onOpenLiveGame} />
-      ) : !user && savedGame ? (
-        // Misafir, tekil localStorage kaydı — yeni oyun bu bitene/teslim
-        // olunana kadar engellenir (cihaza özel, cihazlar arası senkron yok).
         <div className="flex flex-col gap-2">
           <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
-            Devam Eden Oyun
+            Oyun Tipi
           </div>
-          <SavedGameRow
-            players={savedGameAvatars(savedGame.state.players, null, true)}
-            subtitle={`Sıra: ${savedGame.state.players[savedGame.state.current]?.name ?? '—'}`}
-            savedAtMs={savedGame.savedAt}
-            willSurrender={false}
-            onClick={onResumeGame}
-          />
-          <p className="text-[11px] text-muted font-mono leading-relaxed">
-            Bu oyun 7 gün boyunca cihazınızın hafızasında saklanır ve bir
-            sonraki gelişinizde devam edilebilir. Üye değilseniz bu oyunu
-            bitirmeden yeni oyun açamazsınız.
-          </p>
-          <MembershipPerksBox onSignup={() => setShowAuthModal(true)} className="mt-2" />
-        </div>
-      ) : user && !creatingLocal ? (
-        // Girişli kullanıcı — cihazlar arası senkron olduğundan (bkz.
-        // CLAUDE.md) çoklu oyun mümkün: `LiveGamesTab`'daki "+ Yeni Canlı
-        // Oyun" ile BİREBİR AYNI desen — liste varsayılan görünüm, kurulum
-        // formu yalnızca butona tıklanınca açılır. Devam Edenler/Son
-        // Oynananlar tabı da `LiveGamesTab`'daki BİREBİR AYNI çözüm.
-        <>
-          <button
-            onClick={() => setCreatingLocal(true)}
-            className="btn-raised-orange py-2.5 rounded-md font-sans text-sm font-bold uppercase tracking-[1.5px] bg-orange text-white active:scale-[0.97] transition-transform"
-          >
-            + Yeni Yapay Zeka Oyunu Aç
-          </button>
-
           <div className="flex gap-2">
-            {(
-              [
-                { key: 'active' as const, label: 'Devam Edenler', badge: cloudSaves?.length ?? 0 },
-                { key: 'recent' as const, label: 'Son Oynananlar', badge: 0 },
-              ]
-            ).map((tab) => (
+            {[
+              {
+                key: "local" as const,
+                label: "Yapay Zeka ile",
+                badge: localSaveCount,
+              },
+              {
+                key: "live" as const,
+                label: "Arkadaşınla",
+                badge: liveActionCount,
+              },
+            ].map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setLocalSubTab(tab.key)}
+                onClick={() => onMainViewChange(tab.key)}
                 className={[
-                  'relative flex-1 py-2.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[0.5px] border transition-transform active:scale-[0.97] flex items-center justify-center',
-                  localSubTab === tab.key
-                    ? 'btn-raised bg-accent text-white border-accent'
-                    : 'btn-raised-neutral bg-panel text-text border-border',
-                ].join(' ')}
+                  "relative flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97] flex items-center justify-center",
+                  mainView === tab.key
+                    ? "btn-raised bg-accent text-white border-accent"
+                    : "btn-raised-neutral bg-panel text-text border-border",
+                ].join(" ")}
               >
                 {tab.label}
-                {tab.badge > 0 && <CountBadge count={tab.badge} className="absolute -top-1 -right-1" />}
+                {tab.badge > 0 && (
+                  <CountBadge
+                    count={tab.badge}
+                    className="absolute -top-1 -right-1"
+                  />
+                )}
               </button>
             ))}
           </div>
+        </div>
 
-          {localSubTab === 'active' ? (
-            // Çevrimdışıyken GÖSTERİLECEK KAYIT VARSA liste aynen çizilir —
-            // devam eden YZ oyunları çevrimdışı da oynanabiliyor (bkz.
-            // `cloudSaveMirror`), o listeyi bir uyarıyla değiştirmek gerçek
-            // bir yeteneği gizlerdi. Mesaj yalnızca elde bir şey yokken.
-            // `cloudSaves === null` BİLEREK dışarıda: liste henüz
-            // bilinmiyorken "hiç oyunun yok, yeni aç" demek erken bir
-            // yargı — çevrimdışıyken ağ denemesi ~3sn sürüp ardından
-            // AYNADAN gerçek liste geliyor ve kullanıcı önce öneriyi,
-            // sonra listeyi görüyordu (14 Ağustos 2026, cihaz testi).
-            // Bilinmiyorken "Yükleniyor…" doğru cevap.
-            !online && cloudSaves !== null && cloudSaves.length === 0 ? (
-              offlineAiNotice
-            ) : cloudSaves === null ? (
-              <p className="text-center text-xs text-muted font-mono py-8">Yükleniyor…</p>
-            ) : cloudSaves.length === 0 ? (
-              <p className="text-center text-xs text-muted font-mono py-8">
-                Devam eden bir Yapay Zeka oyunun yok.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
-                  Devam Eden Oyunlar
-                </div>
-                {cloudSaves.map((save) => (
-                  <SavedGameRow
-                    key={save.id}
-                    players={savedGameAvatars(save.state.players, profile?.avatar_url, false)}
-                    subtitle={`Sıra: ${save.state.players[save.state.current]?.name ?? '—'}`}
-                    savedAtMs={Date.parse(save.updated_at)}
-                    willSurrender={save.state.turnCount >= 2}
-                    onClick={() => onResumeCloudSave(save)}
-                  />
-                ))}
-              </div>
-            )
-          ) : (
-            <RecentGamesSection
-              onlineOnly={false}
-              emptyMessage="Henüz bitmiş bir Yapay Zeka oyunun yok."
-              offlineNode={offlineAiNotice}
-            />
-          )}
-        </>
-      ) : (
-        <>
+        {mainView === "live" ? (
+          <LiveGamesTab onOpenGame={onOpenLiveGame} />
+        ) : !user && savedGame ? (
+          // Misafir, tekil localStorage kaydı — yeni oyun bu bitene/teslim
+          // olunana kadar engellenir (cihaza özel, cihazlar arası senkron yok).
           <div className="flex flex-col gap-2">
             <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
-              Oyuncu sayısı
+              Devam Eden Oyun
             </div>
+            <SavedGameRow
+              players={savedGameAvatars(savedGame.state.players, null, true)}
+              subtitle={`Sıra: ${savedGame.state.players[savedGame.state.current]?.name ?? "—"}`}
+              savedAtMs={savedGame.savedAt}
+              willSurrender={false}
+              onClick={onResumeGame}
+            />
+            <p className="text-[11px] text-muted font-mono leading-relaxed">
+              Bu oyun 7 gün boyunca cihazınızın hafızasında saklanır ve bir
+              sonraki gelişinizde devam edilebilir. Üye değilseniz bu oyunu
+              bitirmeden yeni oyun açamazsınız.
+            </p>
+            <MembershipPerksBox
+              onSignup={() => setShowAuthModal(true)}
+              className="mt-2"
+            />
+          </div>
+        ) : user && !creatingLocal ? (
+          // Girişli kullanıcı — cihazlar arası senkron olduğundan (bkz.
+          // CLAUDE.md) çoklu oyun mümkün: `LiveGamesTab`'daki "+ Yeni Canlı
+          // Oyun" ile BİREBİR AYNI desen — liste varsayılan görünüm, kurulum
+          // formu yalnızca butona tıklanınca açılır. Devam Edenler/Son
+          // Oynananlar tabı da `LiveGamesTab`'daki BİREBİR AYNI çözüm.
+          <>
+            <button
+              onClick={() => setCreatingLocal(true)}
+              className="btn-raised-orange py-2.5 rounded-md font-sans text-sm font-bold uppercase tracking-[1.5px] bg-orange text-white active:scale-[0.97] transition-transform"
+            >
+              + Yeni Yapay Zeka Oyunu Aç
+            </button>
+
             <div className="flex gap-2">
-              {([2, 4] as const).map((n) => (
+              {[
+                {
+                  key: "active" as const,
+                  label: "Devam Edenler",
+                  badge: cloudSaves?.length ?? 0,
+                },
+                { key: "recent" as const, label: "Son Oynananlar", badge: 0 },
+              ].map((tab) => (
                 <button
-                  key={n}
-                  onClick={() => setCount(n)}
+                  key={tab.key}
+                  onClick={() => setLocalSubTab(tab.key)}
                   className={[
-                    'flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97]',
-                    count === n
-                      ? 'btn-raised bg-accent text-white border-accent'
-                      : 'btn-raised-neutral bg-panel text-text border-border',
-                  ].join(' ')}
+                    "relative flex-1 py-2.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[0.5px] border transition-transform active:scale-[0.97] flex items-center justify-center",
+                    localSubTab === tab.key
+                      ? "btn-raised bg-accent text-white border-accent"
+                      : "btn-raised-neutral bg-panel text-text border-border",
+                  ].join(" ")}
                 >
-                  {n} Oyunculu
+                  {tab.label}
+                  {tab.badge > 0 && (
+                    <CountBadge
+                      count={tab.badge}
+                      className="absolute -top-1 -right-1"
+                    />
+                  )}
                 </button>
               ))}
             </div>
-          </div>
 
-          <div className="flex flex-col gap-2.5">
-            <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
-              Oyuncular
-            </div>
-            {Array.from({ length: count }, (_, i) => {
-              const col = PLAYER_COLORS[i];
-              // 1. oyuncu giriş yapan hesaptır: kilitli isim + avatar, YZ olamaz.
-              const isAccount = i === 0 && !!accountName;
-              const isPending = i === 0 && accountPending;
-              return (
-                <div
-                  key={i}
-                  className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border"
-                  style={{ background: col.tint, borderColor: col.base }}
-                >
-                  {isAccount ? (
-                    <Avatar
-                      url={profile?.avatar_url}
-                      name={accountName}
-                      size={20}
-                      className="shrink-0"
-                    />
-                  ) : isPending ? (
-                    <span className="w-5 h-5 rounded-full bg-panel border border-border shrink-0 animate-pulse" />
-                  ) : (
-                    <PlayerBadge index={i} />
-                  )}
-
-                  {isAccount ? (
-                    <span className="flex-1 min-w-0 flex items-center gap-1">
-                      <span className="font-sans text-sm font-bold text-text truncate">
-                        {accountName}
-                      </span>
-                      {rankTierOf(user?.id) && (
-                        <RankSeal tier={rankTierOf(user?.id)!} size={18} className="shrink-0" />
+            {localSubTab === "active" ? (
+              // Çevrimdışıyken GÖSTERİLECEK KAYIT VARSA liste aynen çizilir —
+              // devam eden YZ oyunları çevrimdışı da oynanabiliyor (bkz.
+              // `cloudSaveMirror`), o listeyi bir uyarıyla değiştirmek gerçek
+              // bir yeteneği gizlerdi. Mesaj yalnızca elde bir şey yokken.
+              // `cloudSaves === null` BİLEREK dışarıda: liste henüz
+              // bilinmiyorken "hiç oyunun yok, yeni aç" demek erken bir
+              // yargı — çevrimdışıyken ağ denemesi ~3sn sürüp ardından
+              // AYNADAN gerçek liste geliyor ve kullanıcı önce öneriyi,
+              // sonra listeyi görüyordu (14 Ağustos 2026, cihaz testi).
+              // Bilinmiyorken "Yükleniyor…" doğru cevap.
+              !online && cloudSaves !== null && cloudSaves.length === 0 ? (
+                offlineAiNotice
+              ) : cloudSaves === null ? (
+                <p className="text-center text-xs text-muted font-mono py-8">
+                  Yükleniyor…
+                </p>
+              ) : cloudSaves.length === 0 ? (
+                <p className="text-center text-xs text-muted font-mono py-8">
+                  Devam eden bir Yapay Zeka oyunun yok.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+                    Devam Eden Oyunlar
+                  </div>
+                  {cloudSaves.map((save) => (
+                    <SavedGameRow
+                      key={save.id}
+                      players={savedGameAvatars(
+                        save.state.players,
+                        profile?.avatar_url,
+                        false,
                       )}
-                    </span>
-                  ) : isPending ? (
-                    <span className="flex-1 min-w-0 font-sans text-sm font-bold text-muted truncate animate-pulse">
-                      Yükleniyor…
-                    </span>
-                  ) : (
-                    <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
-                      {i === 0 ? GUEST_PLAYER_NAME : `Yapay Zeka ${i + 1}`}
-                    </span>
-                  )}
-
-                  <span
-                    className="text-[9px] font-mono uppercase tracking-[1px] shrink-0 px-1"
-                    style={{ color: col.base }}
-                  >
-                    {i === 0 ? 'Sen' : `YZ${i + 1}`}
-                  </span>
+                      subtitle={`Sıra: ${save.state.players[save.state.current]?.name ?? "—"}`}
+                      savedAtMs={Date.parse(save.updated_at)}
+                      willSurrender={save.state.turnCount >= 2}
+                      onClick={() => onResumeCloudSave(save)}
+                    />
+                  ))}
                 </div>
-              );
-            })}
-          </div>
+              )
+            ) : (
+              <RecentGamesSection
+                onlineOnly={false}
+                emptyMessage="Henüz bitmiş bir Yapay Zeka oyunun yok."
+                offlineNode={offlineAiNotice}
+              />
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex flex-col gap-2">
+              <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+                Oyuncu sayısı
+              </div>
+              <div className="flex gap-2">
+                {([2, 4] as const).map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setCount(n)}
+                    className={[
+                      "flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97]",
+                      count === n
+                        ? "btn-raised bg-accent text-white border-accent"
+                        : "btn-raised-neutral bg-panel text-text border-border",
+                    ].join(" ")}
+                  >
+                    {n} Oyunculu
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={handleStart}
-              disabled={!wordsReady || accountPending}
-              className="flex-1 btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-            >
-              {/* accountPending iken de "Hazırlanıyor…" gösterilir — girişli
+            <div className="flex flex-col gap-2.5">
+              <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+                Oyuncular
+              </div>
+              {Array.from({ length: count }, (_, i) => {
+                const col = PLAYER_COLORS[i];
+                // 1. oyuncu giriş yapan hesaptır: kilitli isim + avatar, YZ olamaz.
+                const isAccount = i === 0 && !!accountName;
+                const isPending = i === 0 && accountPending;
+                return (
+                  <div
+                    key={i}
+                    className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border"
+                    style={{ background: col.tint, borderColor: col.base }}
+                  >
+                    {isAccount ? (
+                      <Avatar
+                        url={profile?.avatar_url}
+                        name={accountName}
+                        size={20}
+                        className="shrink-0"
+                      />
+                    ) : isPending ? (
+                      <span className="w-5 h-5 rounded-full bg-panel border border-border shrink-0 animate-pulse" />
+                    ) : (
+                      <PlayerBadge index={i} />
+                    )}
+
+                    {isAccount ? (
+                      <span className="flex-1 min-w-0 flex items-center gap-1">
+                        <span className="font-sans text-sm font-bold text-text truncate">
+                          {accountName}
+                        </span>
+                        {rankTierOf(user?.id) && (
+                          <RankSeal
+                            tier={rankTierOf(user?.id)!}
+                            size={18}
+                            className="shrink-0"
+                          />
+                        )}
+                      </span>
+                    ) : isPending ? (
+                      <span className="flex-1 min-w-0 font-sans text-sm font-bold text-muted truncate animate-pulse">
+                        Yükleniyor…
+                      </span>
+                    ) : (
+                      <span className="flex-1 min-w-0 font-sans text-sm font-bold text-text truncate">
+                        {i === 0 ? GUEST_PLAYER_NAME : `Yapay Zeka ${i + 1}`}
+                      </span>
+                    )}
+
+                    <span
+                      className="text-[9px] font-mono uppercase tracking-[1px] shrink-0 px-1"
+                      style={{ color: col.base }}
+                    >
+                      {i === 0 ? "Sen" : `YZ${i + 1}`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleStart}
+                disabled={!wordsReady || accountPending}
+                className="flex-1 btn-raised py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-accent text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                {/* accountPending iken de "Hazırlanıyor…" gösterilir — girişli
                   kullanıcı için profil gelmeden basılırsa oyuncu adı kısa
                   süreliğine 'Misafir' kaydedilebiliyordu (RENAME_PLAYER
                   sonradan düzeltiyordu ama önlemek daha temiz). */}
-              {wordsReady && !accountPending ? 'Oyunu Başlat' : 'Hazırlanıyor…'}
-            </button>
-            {/* Yalnızca girişli kullanıcı için (creatingLocal) — LiveGameCreateForm'un
+                {wordsReady && !accountPending
+                  ? "Oyunu Başlat"
+                  : "Hazırlanıyor…"}
+              </button>
+              {/* Yalnızca girişli kullanıcı için (creatingLocal) — LiveGameCreateForm'un
                 "Vazgeç" butonuyla BİREBİR AYNI, Devam Eden Oyunlar listesine
                 dönmeyi sağlar. Misafirde bu form zaten tek/koşulsuz gösterilen
                 yol olduğundan (dönülecek bir liste yok) hiç render edilmez. */}
-            {creatingLocal && (
-              <button
-                onClick={() => setCreatingLocal(false)}
-                className="flex-1 btn-raised-neutral py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-void border border-border text-text active:scale-[0.97] transition-transform"
-              >
-                Vazgeç
-              </button>
+              {creatingLocal && (
+                <button
+                  onClick={() => setCreatingLocal(false)}
+                  className="flex-1 btn-raised-neutral py-3.5 rounded-md font-sans text-sm font-bold uppercase tracking-[2px] bg-void border border-border text-text active:scale-[0.97] transition-transform"
+                >
+                  Vazgeç
+                </button>
+              )}
+            </div>
+
+            {!user && (
+              <MembershipPerksBox onSignup={() => setShowAuthModal(true)} />
             )}
-          </div>
+          </>
+        )}
 
-          {!user && <MembershipPerksBox onSignup={() => setShowAuthModal(true)} />}
-        </>
-      )}
-
-      {/* "Son Oynananlar" artık yalnızca girişli kullanıcının liste
+        {/* "Son Oynananlar" artık yalnızca girişli kullanıcının liste
           görünümündeki kendi tabında gösteriliyor (yukarıda) — kurulum
           formunun (creatingLocal, ör. oyuncu seçimi) hemen altında tekrar
           çıkması `LiveGamesTab`'daki aynı kullanıcı geri bildirimiyle
@@ -925,7 +1006,7 @@ export function Setup({
           kullanıcı için `null` döner), o yüzden bu satırın kaldırılması
           misafir tarafında hiçbir görsel fark yaratmıyor. */}
 
-      {/* Alt satır Landing.tsx'in "Son çağrı" footer'ıyla AYNI iki katmanlı
+        {/* Alt satır Landing.tsx'in "Son çağrı" footer'ıyla AYNI iki katmanlı
           yapı: hukuki linkler + hemen altında "© Kelimeki" (18 Ağustos 2026,
           kullanıcı isteği: "setup altındaki footer'ın altına 'c Kelimeki'
           (tanıtımdaki gibi) olsun") — `gap-3` ikisini tek bir footer bloğu
@@ -935,20 +1016,26 @@ export function Setup({
           "Son çağrı" section'ı da hukuki satır ile "© Kelimeki" arasını kendi
           `gap-3`üyle veriyor, yani iki footer artık BİREBİR aynı (ölçüldü:
           4.0 → 12.0px). Biri değişirse öteki de değişmeli. */}
-      <div className="flex flex-col items-center gap-3">
-        {/* `flex-wrap` bir emniyet ağı — 356px'in altındaki viewport'larda
+        <div className="flex flex-col items-center gap-3">
+          {/* `flex-wrap` bir emniyet ağı — 356px'in altındaki viewport'larda
             (320/344 gibi) üç öğe tek satıra sığmıyor; ÖLÇÜLDÜ, `gap-x-2 gap-y-1`
             320'de iki satıra sarıp yatay taşmayı 0'da tutuyor, 356+ genişlikte
             hiçbir şey değişmiyor. */}
-        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[10px] font-mono text-muted">
-          <button onClick={() => setShowTerms(true)} className="flex items-center min-h-[48px] hover:underline active:opacity-70 transition-opacity">
-            Kullanım Koşulları
-          </button>
-          <span>·</span>
-          <button onClick={() => setShowPrivacy(true)} className="flex items-center min-h-[48px] hover:underline active:opacity-70 transition-opacity">
-            Gizlilik Politikası
-          </button>
-          {/* "Paylaş" (18 Ağustos 2026, aynı gün üçüncü/dördüncü tur —
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-[10px] font-mono text-muted">
+            <button
+              onClick={() => setShowTerms(true)}
+              className="flex items-center min-h-[48px] hover:underline active:opacity-70 transition-opacity"
+            >
+              Kullanım Koşulları
+            </button>
+            <span>·</span>
+            <button
+              onClick={() => setShowPrivacy(true)}
+              className="flex items-center min-h-[48px] hover:underline active:opacity-70 transition-opacity"
+            >
+              Gizlilik Politikası
+            </button>
+            {/* "Paylaş" (18 Ağustos 2026, aynı gün üçüncü/dördüncü tur —
               kullanıcı: "Yanlış anladın, buton istemedim. Tanıtım
               footerındakinin aynısını istedim", sonra: "Daha önce tanıtım
               sayfasına universal paylaş ikonlu paylaş linki koymuştuk...
@@ -959,20 +1046,20 @@ export function Setup({
               olduğundan satırın `text-muted` rengini otomatik miras alıyor.
               `handleShare` girişten bağımsız çalıştığından `user &&` gibi
               bir koşula BAĞLANMADI, misafir/girişli aynı satırı görüyor. */}
-          <span>·</span>
-          <button
-            onClick={handleShare}
-            className="flex items-center min-h-[48px] gap-1 hover:underline active:opacity-70 transition-opacity"
-          >
-            <ShareIcon size={12} />
-            {shareCopied ? 'Link kopyalandı!' : 'Paylaş'}
-          </button>
+            <span>·</span>
+            <button
+              onClick={handleShare}
+              className="flex items-center min-h-[48px] gap-1 hover:underline active:opacity-70 transition-opacity"
+            >
+              <ShareIcon size={12} />
+              {shareCopied ? "Link kopyalandı!" : "Paylaş"}
+            </button>
+          </div>
+          <p className="font-mono text-[10px] text-muted" style={{ margin: 0 }}>
+            © Kelimeki
+          </p>
         </div>
-        <p className="font-mono text-[10px] text-muted" style={{ margin: 0 }}>
-          © Kelimeki
-        </p>
       </div>
-    </div>
     </>
   );
 }

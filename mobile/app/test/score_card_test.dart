@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kelimeki/src/ui/text_scale.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/data/stats_api.dart';
@@ -742,10 +743,25 @@ void main() {
     // gerekli: sütun genişliği DEĞERİN ink genişliğine eşit + değer SAĞA
     // yaslı + başlık ORTALI. Biri bozulursa merkezler ayrışır (eski hâlde
     // kutu 52 + başlık sağa yaslıydı, başlık değerin ~7px sağındaydı).
-    final ohpBox = tester.getRect(find.text('12.78'));
-    final hdrBox = tester.getRect(find.text('OHP'));
+    // ⚠ ÖLÇÜM `Text`TEN `ScaledCell`E TAŞINDI (2 Eylül 2026). Sütun sınıf
+    // 3 için `ScaledCell`e çevrildiğinde (`Align`+`FittedBox`) `Text` artık
+    // kutuyu DOLDURMUYOR, kendi mürekkebine küçülüyor: başlık 19,5 px,
+    // değer 33,7 px ölçüldü ve bu iddia düştü. Sözleşme değişmedi —
+    // ölçülecek şey KUTU, ve kutu artık `ScaledCell`.
+    Rect hucre(String metin) => tester.getRect(find.ancestor(
+        of: find.text(metin), matching: find.byType(ScaledCell)));
+    final ohpBox = hucre('12.78');
+    final hdrBox = hucre('OHP');
     expect(hdrBox.width, closeTo(ohpBox.width, 0.5),
         reason: 'başlık ve değer AYNI genişlikte kutuda olmalı');
+    // Merkezler de çakışmalı (başlık ortalı + değer sağa yaslı + kutular
+    // eşit → aynı eksen). Kutu ölçümüne geçince bu doğrudan sınanabilir.
+    // Tolerans 1,5 px ve bu ÖLÇÜLDÜ, tahmin edilmedi: başlık satırının
+    // kendi yatay dolgusu (8) veri satırınınkinden farklı olduğundan
+    // merkezler tam çakışmıyor, 1,0 px kayıyor. Asıl yakalanmak istenen
+    // 14 Ağustos'taki ~7 px'lik kayma; 1 px göze görünmüyor.
+    expect(hdrBox.center.dx, closeTo(ohpBox.center.dx, 1.5),
+        reason: 'başlık ile değer aynı eksende olmalı');
     expect(tester.widget<Text>(find.text('OHP')).textAlign, TextAlign.center);
     expect(tester.widget<Text>(find.text('12.78')).textAlign, TextAlign.right);
     // Kutu genişliği gerçekten değerin ink genişliği mi? (Sabit tahminle
