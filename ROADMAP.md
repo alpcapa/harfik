@@ -76,7 +76,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Sayaç** | 12 tester × 14 gün | ⏳ işliyor, aksiyon yok · *Android developer verification* ✅ **BİTTİ** (Console'dan doğrulandı 31 Ağustos: `com.kelimeki.kelimeki` Registered, 3 anahtar, Identity dolu) |
 | **Console (elle)** | — | ✅ **KAPANDI** (bu satır 31 Ağustos'a kadar bayat kaldı; ayrıntı aşağıda) |
 | **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) · **+ #10 hata hız sınırı** (1 Eylül'de eklendi) | ✅ **1.0.4 (467) Play'e YÜKLENDİ, incelemede** (1 Eylül 2026) |
-| **1.0.5'e binen kod** | Tahta zoom'u (+2 APK turu) · zoom tanıtım balonu · yazı ölçeği (sınıf 3+2) · mesaj kutusu etiketi · **cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar)** | ✅ cihaz onayı ALINDI, **`1.0.5 (501) — 4a0a29b` Play'e yükleniyor** (2 Eylül 2026; ayrıntı aşağıdaki 1.0.5 turu) |
+| **1.0.5'e binen kod** | Tahta zoom'u (+2 APK turu) · zoom tanıtım balonu · yazı ölçeği (sınıf 3+2) · mesaj kutusu etiketi · **cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar)** | ✅ cihaz onayı ALINDI, **`1.0.5 (501) — 4a0a29b` kapalı testte YAYINDA** (2 Eylül 2026, ~15:03; ayrıntı aşağıdaki 1.0.5 turu) |
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView · **1.0.5'in üç işi** (balon · yazı ölçeği · mesaj etiketi) + **filigranlar** | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); zoom turu 1 Eylül'de, zoom kenarı + çevrimdışı şerit 2 Eylül'de onaylandı; kalanlar bekliyor |
 | **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) | ⬜ |
 | **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
@@ -139,8 +139,8 @@ olduğundan emin olmadan aab yapılmayacak."*
    `mobile/TESTING.md` § 8 (çevrimdışı şerit + zoom kenarı + filigranlar),
    § 24 (zoom), § 25 (yazı boyutu),
    `mobile/docs/testing-arkadaslar-canli.md` → Mesajlaşma.
-3. ✅ **YÜKLENDİ, ⏳ İNCELEMEDE** — `1.0.5 (501) — 4a0a29b`, kapalı test
-   kanalı, 2 Eylül ~14:40. Kanonik kayıt:
+3. ✅ **YAYINLANDI** — `1.0.5 (501) — 4a0a29b`, kapalı test kanalı,
+   2 Eylül ~14:40 gönderim → ~15:03 Published (≈23 dk). Kanonik kayıt:
    `mobile/docs/build-and-distribution-log.md` → "Yayınlanan sürümlerin
    kütüğü". ⚠ "Published" rozeti kanala GİRDİĞİNİ söyler, cihaza indiğini
    DEĞİL — ölçülmüş çare aynı dosyada ("testçi opt-in linkine TEKRAR gir").
