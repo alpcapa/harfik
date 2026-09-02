@@ -154,7 +154,7 @@ function ChatBubbleIcon({ size = 12 }: { size?: number }) {
   );
 }
 
-/** "Nasıl Oynanır?" linkinin başındaki soru işareti ikonu. */
+/** Alt şeritteki "Yardım" linkinin başındaki soru işareti ikonu. */
 function HelpIcon({ size = 12 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -938,7 +938,7 @@ export function Board({
                 className="flex items-center gap-1 min-h-[48px] text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
               >
                 <HelpIcon />
-                Nasıl Oynanır?
+                Yardım
               </button>
             )}
           </div>

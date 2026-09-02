@@ -154,7 +154,7 @@ void main() {
         reason: 'Alt şerit taştı. İki grup da `shrink-0` olduğundan düz bir '
             '`Row` sığmadığı anda taşar — bu yüzden `Wrap` kullanılıyor.');
     // Şeridin üç kontrolü de GÖRÜNÜR kalmalı (taşmayı gizlemek çözüm değil).
-    for (final t in const ['Hamleler', 'Mesajlaşma', 'Nasıl Oynanır?']) {
+    for (final t in const ['Hamleler', 'Mesajlaşma', 'Yardım']) {
       expect(find.text(t), findsOneWidget, reason: '$t şeritten düştü');
     }
   });
@@ -202,7 +202,7 @@ void main() {
       await tester.pump();
       final tahta = tester.getRect(find.byType(BoardWidget));
       final sol = tester.getRect(find.text('Hamleler'));
-      final sag = tester.getRect(find.text('Nasıl Oynanır?'));
+      final sag = tester.getRect(find.text('Yardım'));
       return (
         solBosluk: sol.left - tahta.left,
         sagBosluk: tahta.right - sag.right,
@@ -217,7 +217,7 @@ void main() {
     //    içeride). Kümelenmiş hâlde bu 38,4 / 58,4 px çıkıyordu.
     for (final (ad, m) in [('360', dar), ('430', genis)]) {
       expect(m.sagBosluk, lessThan(dolgu + 1),
-          reason: '$ad px: "Nasıl Oynanır?" sağ kenara yaslı değil '
+          reason: '$ad px: "Yardım" sağ kenara yaslı değil '
               '(${m.sagBosluk.toStringAsFixed(1)} px içeride). `Wrap` gelen '
               'genişliği DOLDURMUYOR demektir — `SizedBox(width: '
               'double.infinity)` düşmüş olabilir (board_widget.dart '

@@ -895,7 +895,18 @@ class BoardWidget extends StatelessWidget {
                       _HelpIcon(),
                       SizedBox(width: 4),
                       Text(
-                        'Nasıl Oynanır?',
+                        // ETİKET 'Nasıl Oynanır?' → 'Yardım' (2 Eylül 2026,
+                        // kullanıcı fikri). Sebep ölçüm: 14 karakterlik
+                        // etiket ölçek tavanında şeridi İKİ SATIRA
+                        // düşürüyordu (48 → 96 px) ve punto indirimi bunu
+                        // engellemiyordu; tek satırda kalabilen en yüksek
+                        // ölçek 360 px'te yalnızca 1,10 idi. 'Yardım' ile
+                        // 320/360/390 px'in ÜÇÜNDE de tavanda tek satır.
+                        // ⚠ Yalnızca ŞERİT etiketi değişti: HelpModal'ın
+                        // başlığı, hesap menüsü maddesi ve /nasil-oynanir/
+                        // sayfası 'Nasıl Oynanır?' olarak kaldı.
+                        // Web ikizi: `Board.tsx` — biri değişirse öteki de.
+                        'Yardım',
                         style: TextStyle(
                           fontFamily: 'SpaceMono',
                           fontSize: 11,

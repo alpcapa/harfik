@@ -1650,7 +1650,7 @@ kırpar), sonra:
       başlıkları, sıra ve skorlar tek satır.
 - [ ] **Tahtada onaylı bir taşa dokun (kelime anlamı)** → madde numaraları
       (`1.`, `2.` …) tek satır.
-- [ ] **Nasıl Oynanır → k-lig kademe tablosu** → kademe harfleri tek satır.
+- [ ] **Yardım → k-lig kademe tablosu** → kademe harfleri tek satır.
 - [ ] **Setup → DEVAM EDEN OYUN kartı** (yarım bir yerel oyun bırakıp
       Setup'a dön) → `SIRA SENDE` oyuncu satırının SAĞINDA, kalan süre
       ALTTA tam genişlik satırda (Canlı oyundaki `SIRA RAKİPTE` kartıyla
@@ -1659,15 +1659,14 @@ kırpar), sonra:
 - [ ] **Rafın üstündeki mesaj satırı** → uzun bir mesaj (ör. "+9 puan
       (5 puanı X kaptı)") KESİLMEMELİ; kutu metinle birlikte büyümeli.
       (2 Eylül 2026: port sabit 30 px kullanıyordu, web ikizi `min-h`.)
-- [ ] **Board altındaki şerit** (Hamleler · Mesajlaşma · Nasıl Oynanır?) →
-      punto 11, ve ölçek tavanında İKİ SATIR olması BEKLENEN davranış
-      (kullanıcı kararı, 2 Eylül 2026: *"bence 2 satır 11px iyidir"*).
-      ÖLÇÜLDÜ: 360 ve 390 px'te tavanda şerit 48 → 96 px'e çıkıyor; punto
-      12 → 11 indirimi sarmayı engellemiyor, yalnızca metni küçültüyor.
-      Tek satırda tutmak `Wrap`+`spaceBetween` yapısını bozmadan mümkün
-      değil (düz `Row` tavanda TAŞIYOR — `text_scale_test.dart` kilitli),
-      her etiketi ölçülmüş genişlikte bir kutuya almak gerekirdi. Bilerek
-      YAPILMADI.
+- [ ] **Board altındaki şerit** (Hamleler · Mesajlaşma · **Yardım**) →
+      ölçek tavanında da TEK SATIR (48 px) kalmalı, iki satıra düşmemeli.
+      Etiket 2 Eylül 2026'da `Nasıl Oynanır?` → `Yardım` oldu (kullanıcı
+      fikri) ve ÖLÇÜLDÜ: 14 karakterlik etiketle tavanda şerit 48 → 96 px'e
+      çıkıyordu, tek satırda kalabilen en yüksek ölçek 360 px'te 1,10 idi;
+      `Yardım` ile 320/360/390 px'in üçünde de tavanda tek satır.
+      ⚠ Yalnızca ŞERİT etiketi değişti — HelpModal başlığı, hesap menüsü
+      maddesi ve `/nasil-oynanir/` sayfası `Nasıl Oynanır?` olarak kaldı.
 - [ ] Yazı boyutunu normale al → hiçbir yerde görünüm değişmemeli; DEVAM
       EDEN OYUN kartının şekli AYNI kalmalı (düzen artık ölçekten bağımsız
       — ölçeğe göre şekil değiştiren dal 2 Eylül'de kaldırıldı).

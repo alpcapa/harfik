@@ -831,7 +831,7 @@ void main() {
 
     expect(find.text('Çevrimdışı'), findsOneWidget);
     final offline = tester.widget<Text>(find.text('Çevrimdışı')).style!;
-    final sibling = tester.widget<Text>(find.text('Nasıl Oynanır?')).style!;
+    final sibling = tester.widget<Text>(find.text('Yardım')).style!;
     expect(offline.fontSize, sibling.fontSize,
         reason: 'kardeş kontrollerle aynı punto (web: ikisi de text-[12px])');
     expect(offline.fontFamily, sibling.fontFamily);
@@ -1652,7 +1652,7 @@ void main() {
   // legend'ı kalktı, yerine "Hamleler"/"Mesajlaşma" ile AYNI stilde bir
   // "Nasıl Oynanır?" linki geldi. Legend'ın taşıdığı bilgi kaybolmuyor —
   // bonus renkleri tahtada zaten büyük filigranlarla yazılı.
-  testWidgets('board alt şeridi: X2/X3 legend YOK, "Nasıl Oynanır?" VAR ve '
+  testWidgets('board alt şeridi: X2/X3 legend YOK, "Yardım" VAR ve '
       'kurallar modalını açıyor', (tester) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     await pumpGame(tester, GlobalKey());
@@ -1663,8 +1663,8 @@ void main() {
     expect(find.text('- kelime X2'), findsNothing);
     expect(find.text('- kelime X3'), findsNothing);
 
-    expect(find.text('Nasıl Oynanır?'), findsOneWidget);
-    await tester.tap(find.text('Nasıl Oynanır?'));
+    expect(find.text('Yardım'), findsOneWidget);
+    await tester.tap(find.text('Yardım'));
     await tester.pumpAndSettle();
     // HelpModal açıldı mı — varsayılan adımı "Hızlı Başlangıç"
     // (başlık KModal'dan geçtiği için trUpper).

@@ -1469,7 +1469,7 @@ test('dokunma hedefleri: modal ✕ görsel kutusunun dışından da kapanır, ra
   }
 
   // ── Modal ✕ ─────────────────────────────────────────────────────────────
-  await page.getByRole('button', { name: 'Nasıl Oynanır?' }).click();
+  await page.getByRole('button', { name: 'Yardım' }).click();
   const baslik = page.getByRole('heading', { name: /hızlı başlangıç/i });
   await expect(baslik).toBeVisible();
 

@@ -1566,8 +1566,10 @@ Bitirme modalı **otomatik ölçülüyor** (`npm run test` →
 - [ ] **Setup → devam eden oyun kartı** → `SIRA SENDE` oyuncu satırının
       sağında, kalan süre altta tam genişlik satırda (2 Eylül 2026'da
       portla birlikte değişti).
-- [ ] **Board altındaki şerit** (Hamleler · Mesajlaşma · Nasıl Oynanır?)
-      → punto 11 (12 değil); portla AYNI olmak zorunda.
+- [ ] **Board altındaki şerit** (Hamleler · Mesajlaşma · **Yardım**) →
+      punto 11 ve TEK SATIR; portla AYNI olmak zorunda. Etiket 2 Eylül
+      2026'da `Nasıl Oynanır?`dan kısaltıldı (şerit tavanda iki satıra
+      düşüyordu).
 
 **Neden ikisi farklı düzeltildi:** bitirme modalı ızgaraya çevrildi (sütunlar
 `auto`, yani genişliğini içeriğinden alıyor — elle yazılmış 29/37/20 px'in
