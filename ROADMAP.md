@@ -76,8 +76,8 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Sayaç** | 12 tester × 14 gün | ⏳ işliyor, aksiyon yok · *Android developer verification* ✅ **BİTTİ** (Console'dan doğrulandı 31 Ağustos: `com.kelimeki.kelimeki` Registered, 3 anahtar, Identity dolu) |
 | **Console (elle)** | — | ✅ **KAPANDI** (bu satır 31 Ağustos'a kadar bayat kaldı; ayrıntı aşağıda) |
 | **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) · **+ #10 hata hız sınırı** (1 Eylül'de eklendi) | ✅ **1.0.4 (467) Play'e YÜKLENDİ, incelemede** (1 Eylül 2026) |
-| **1.0.5'e binen kod** | Tahta zoom'u (+2 APK turu) · zoom tanıtım balonu · yazı ölçeği (sınıf 3+2) · mesaj kutusu etiketi | ⏳ `main`'de, `.aab` HAZIR — **Play'e yüklenmedi**, cihaz onayı bekliyor (2 Eylül 2026; ayrıntı aşağıdaki 1.0.5 turu) |
-| **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView · **1.0.5'in üç yeni işi** (balon · yazı ölçeği · mesaj etiketi) | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); zoom turu 1 Eylül'de onaylandı; kalanlar bekliyor |
+| **1.0.5'e binen kod** | Tahta zoom'u (+2 APK turu) · zoom tanıtım balonu · yazı ölçeği (sınıf 3+2) · mesaj kutusu etiketi · **cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar)** | ✅ cihaz onayı ALINDI, **`1.0.5 (501) — 4a0a29b` Play'e yükleniyor** (2 Eylül 2026; ayrıntı aşağıdaki 1.0.5 turu) |
+| **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView · **1.0.5'in üç işi** (balon · yazı ölçeği · mesaj etiketi) + **filigranlar** | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); zoom turu 1 Eylül'de, zoom kenarı + çevrimdışı şerit 2 Eylül'de onaylandı; kalanlar bekliyor |
 | **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) | ⬜ |
 | **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
@@ -100,11 +100,12 @@ yapılacak iş olmadığı anlaşıldı. Tek tek:
 kâğıdı) biri kapanırken öteki kapanmıyor. Bu tablo bir İNDEKS — bir kova
 kapandığında kaynağı `console-formlari.md`'dir, karar oradan okunur.
 
-### 🚀 1.0.5 SÜRÜM TURU — ⏳ `main`'DE, `.aab` HAZIR, Play'e YÜKLENMEDİ (2 Eylül 2026)
+### 🚀 1.0.5 SÜRÜM TURU — ✅ CİHAZDA ONAYLANDI, `1.0.5 (501)` Play'e YÜKLENİYOR (2 Eylül 2026)
 
-⚠ Bu bölüm 1 Eylül'de *"dalda hazır, KAPILI · tek içerik: tahta zoom'u"*
-diyordu; ikisi de artık DOĞRU DEĞİL. Tur `main`'e girdi ve zoom'un yanına
-üç iş daha bindi.
+⚠ Bu bölüm iki kez bayatladı: 1 Eylül'de *"dalda hazır, KAPILI · tek
+içerik: tahta zoom'u"*, 2 Eylül sabahı *"`.aab` hazır, Play'e
+yüklenmedi"*. Tur `main`'e girdi, zoom'un yanına üç iş bindi, ardından
+cihaz turundan **beş düzeltme daha** çıktı.
 
 **İçerik — `main`'e giren SIRAYLA:**
 
@@ -116,20 +117,29 @@ diyordu; ikisi de artık DOĞRU DEĞİL. Tur `main`'e girdi ve zoom'un yanına
 | #399 | Zoom **tanıtım balonu** — merkez kareyi işaret eden tek seferlik ipucu | ⬜ **HAYIR** |
 | #400 | Yazı ölçeği: sınıf 3 (sarma — bitirme modalı puanları bölüyordu) + sınıf 2 (Setup'ta devam eden oyun kartı) | ⬜ **HAYIR** |
 | #402 | Mesaj kutusunun üstüne "Oyunculara buradan mesaj gönder" | ⬜ **HAYIR** |
+| #408 | Cihaz turu: k-lig sütunları · devam eden oyun kartı · alt şerit | ✅ şerit onaylandı |
+| #410 · #411 | Hamle rozeti zoom'da tahtanın DIŞINA çiziliyordu (web; ilk klip transform'lu katmandaydı ve işe yaramıyordu) | ✅ web'de onaylandı |
+| #413 | Portta da rozet taşıyordu (piksel ölçümü: 268 px → 0) · çevrimdışıyken alt şerit tek satır · "Nasıl Oynanır?" → "Yardım", punto 11 | ✅ **2 Eylül**: *"sonunda web ile aynı olmuş"* |
+| #414 | Zoom'da kalıcı 10 px çerçeve (kırpan kutu kart−10 → kartın tamamı) · filigranlar yazı ölçeğinden muaf | ✅ çerçeve + çevrimdışı onaylandı · ⬜ **filigranlar denenmedi** |
 
 `appVersion` + `pubspec` 1.0.4 → **1.0.5** (#395'te birlikte). Tam takım
-681 → **698** test yeşil.
+681 → **702** test yeşil.
 
 **Kapılar, SIRAYLA — kullanıcı kararı:** *"Bunu apk ile test edip sorunsuz
 olduğundan emin olmadan aab yapılmayacak."*
 
 1. ✅ **467 (1.0.4) Play'e yüklendi** (1 Eylül 2026).
-2. ⏳ **YARIM.** Merge yapıldı, CI `.apk` + imzalı `.aab` üretti
-   (`mobile-latest`, `df6fcce`'den, 2 Eylül 06:41). Zoom turu cihazda
-   onaylandı; **balon + yazı ölçeği + mesaj etiketi HENÜZ denenmedi.**
-   Listeler: `mobile/TESTING.md` § 24 (zoom) ve § 25 (yazı boyutu),
+2. ✅ **AÇILDI** (2 Eylül 2026, 14:0x). CI `.apk` + imzalı `.aab` üretti
+   (`mobile-latest`, **`4a0a29b`**'den, 13:56). Kullanıcı APK'yı kurup
+   denedi: *"sonunda web ile aynı olmuş. Çevrimiçi de uçak modunda düzgün
+   çalışıyor."* — yani **zoom kenarı (çerçeve yok)** ve **Canlı oyunda
+   çevrimdışı alt şerit** doğrulandı.
+   ⚠ **Hâlâ denenmemiş:** balon · yazı ölçeği (bitirme modalı) · mesaj
+   etiketi · **filigranlar** (#414'ün ikinci yarısı). Listeler:
+   `mobile/TESTING.md` § 8 (çevrimdışı şerit + zoom kenarı + filigranlar),
+   § 24 (zoom), § 25 (yazı boyutu),
    `mobile/docs/testing-arkadaslar-canli.md` → Mesajlaşma.
-3. ⬜ Ancak o onaydan sonra `.aab` Play'e gider.
+3. ⏳ **YÜKLEME SÜRÜYOR** — `1.0.5 (501) — 4a0a29b`, kapalı test kanalı.
 
 **Turun WEB yarısı — ayrı ve ZATEN CANLIDA** (`kelimeki.com`, `b053779`),
 çünkü web merge'de anında deploy oluyor: #398 (zoom + balon, portla aynı

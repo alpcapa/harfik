@@ -310,6 +310,33 @@ birebir eşleşiyor.
 değişiklik o dalda değildi; burada değişiklik yayınlanmış ama sha eski.
 İkisinin de cevabı aynı enstrümanda — önce `Derleme <sha>`yı oku.
 
+### Yayınlanan sürümlerin kütüğü
+
+⚠ **Bu tablo 2 Eylül 2026'ya kadar YOKTU ve eksiklik ölçüldü:** bu dosya
+`1.0.2 (435)`'te duruyordu, oysa `1.0.4 (467)` 1 Eylül'de yüklenmişti —
+kaydı yalnızca `ROADMAP.md`'nin sürüm turu bölümünde vardı. Yani "hangi
+`versionCode` yayında" sorusunun cevabı İKİ dosyaya bölünmüştü ve biri
+kapanırken öteki kapanmadı (ROADMAP'in "Console (elle)" satırının aynı
+hatası). **Kanonik kütük burası**; ROADMAP sürüm TURUNU (ne girdi, hangi
+kapı açıldı) anlatır, hangi paketin yayında olduğunu değil.
+
+| Sürüm | versionCode | sha | Gönderim | Not |
+|---|---|---|---|---|
+| 1.0.0 | — | — | — | mekanizmasız; In-App Update yoktu (bkz. "Güncelleme modeli") |
+| 1.0.2 | 435 | `d3d4702` | 30 Ağu, Submission 8 | inceleme 10 dk (15:29 → Published 15:39) |
+| 1.0.4 | 467 | — | 1 Eyl | Faz 6 istemci yarısı + Faz 7 iki çökme + hata hız sınırı |
+| **1.0.5** | **501** | **`4a0a29b`** | **2 Eyl ~14:0x** | tahta zoom'u + zoom balonu + yazı ölçeği + mesaj etiketi + cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar). `.aab` 63.146.275 bayt, SHA-256 `200e82b9…451d4` |
+
+**Bir sürüm yüklendiğinde bu tabloya BİR SATIR ekle** — `versionCode`
+GitHub Actions koşu numarası olduğundan sha ile birlikte yazmak, sahadaki
+bir ekran görüntüsündeki `Derleme <sha>`yı Console'daki satıra
+bağlamanın en kısa yolu.
+
+⚠ **`mobile-latest` release'i bu kütüğün yerini TUTMAZ:** o her mobil
+derlemede üzerine yazılıyor, yani "şu an orada duran `.aab`" ile "Play'e
+yüklenmiş olan" aynı şey değil. Yükleyeceğin paketi indirdiğin anda
+SHA-256'sını buraya yaz.
+
 ## Karşılama Katmanı (web) — bilinçli ayrışma (18 Ağustos 2026, 19'unda güncellendi)
 
 Web'e 18 Ağustos 2026'da girişsiz ilk ziyaretçiye gösterilen bir karşılama/
