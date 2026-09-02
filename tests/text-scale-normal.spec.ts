@@ -18,10 +18,38 @@ test('Normal ölçekte sütun genişlikleri ve sağa yaslama DEĞİŞMEDİ', asy
   const kutular = await kutuOlcumleri(page);
   const bul = (ad: string) => kutular.find((k) => k.ad === ad)!;
 
-  // Elle yazılmış eski px değerleri (mürekkep ölçüsüyle türetilmişti).
-  expect(bul('kalan-baslik').kutu).toBeCloseTo(29, 0);
-  expect(bul('toplam-baslik').kutu).toBeCloseTo(37, 0);
-  expect(bul('klig-baslik').kutu).toBeCloseTo(20, 0);
+  // (1) IZGARANIN SÖZLEŞMESİ, ortamdan bağımsız: her sütunun genişliği o
+  // sütundaki EN GENİŞ mürekkebe eşit. Elle yazılmış 29/37/20 px zaten
+  // böyle türetilmişti; asıl korunması gereken kural bu.
+  for (const [sutun, hucreler] of [
+    ['Kalan', ['kalan-baslik', 'kalan-skor']],
+    ['Toplam', ['toplam-baslik', 'toplam-skor']],
+    ['k-lig', ['klig-baslik', 'klig-skor']],
+  ] as const) {
+    const ait = kutular.filter((k) => hucreler.includes(k.ad as never));
+    const enGenisMurekkep = Math.max(...ait.map((k) => k.murekkep));
+    for (const k of ait) {
+      expect(k.kutu, `${sutun}: ${k.ad} kutusu sütunla aynı olmalı`).toBeCloseTo(
+        enGenisMurekkep,
+        1,
+      );
+    }
+  }
+
+  // (2) Elle yazılmış eski px değerleri — ±1,5 px BANT olarak.
+  // ⚠ Nokta atışı iddia KIRILGAN ve bu ölçüldü: aynı test yerelde 37,0 px
+  // görürken CI runner'ında 36,36 px gördü (koşu 33593831957). Kutu
+  // genişliği font METRİKLERİNDEN türüyor, onlar da ortama göre kıl payı
+  // oynuyor. Bant, gerçek bir kaymayı (bir sütunun bir öncekinin yerine
+  // geçmesi ~8 px) yine de yakalar.
+  const bant = (ad: string, beklenen: number) =>
+    expect(
+      Math.abs(bul(ad).kutu - beklenen),
+      `${ad} kutusu ${beklenen}±1,5 px olmalı, ölçülen ${bul(ad).kutu.toFixed(1)}`,
+    ).toBeLessThanOrEqual(1.5);
+  bant('kalan-baslik', 29);
+  bant('toplam-baslik', 37);
+  bant('klig-baslik', 20);
 
   // Sağa yaslama: her sütunda metnin sağ kenarı kutunun sağ kenarıyla aynı.
   const yasli = await page.evaluate(() =>
