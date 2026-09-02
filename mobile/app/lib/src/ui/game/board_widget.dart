@@ -4,7 +4,7 @@
 // da sürükleme de ekran katmanının (GameScreen) pointer akışından geçer
 // (web'de Tile'ın onPointerDown/Move/Up prop'larının eşleniği). Alt bilgi
 // şeridi (solda "Hamleler" [+ Canlı oyunda "· Mesajlaşma"], sağda
-// "Çevrimdışı" uyarısı ve "Nasıl Oynanır?") kartın alt bölümü olarak
+// "Çevrimdışı" uyarısı ve "Yardım") kartın alt bölümü olarak
 // portlandı; "Mesajlaşma" butonu yalnızca Canlı oyunda çıkar (web'de de
 // prop verilmezse hiç render edilmiyor).
 import 'package:flutter/foundation.dart';
@@ -209,7 +209,7 @@ class BoardWidget extends StatelessWidget {
   /// öteki rozetleriyle aynı görsele çekildi.
   final int unreadMessageCount;
 
-  /// Alt şeridin SAĞ ucundaki "Nasıl Oynanır?" linki (14 Ağustos 2026,
+  /// Alt şeridin SAĞ ucundaki "Yardım" linki (14 Ağustos 2026,
   /// kullanıcı isteği) — buraya kadar X2/X3 açıklaması duruyordu. Bonus
   /// renkleri tahtada zaten büyük filigranlarla yazılı olduğundan legend'ın
   /// taşıdığı bilgi kaybolmuyor; kurallara her yerden erişim kazanılıyor.
@@ -715,7 +715,7 @@ class BoardWidget extends StatelessWidget {
 
   /// Alt bilgi şeridi — solda "Hamleler" (+ Canlı oyunda "· Mesajlaşma"),
   /// sağda "Çevrimdışı" uyarısı (yalnızca bağlantı yokken) ve
-  /// "Nasıl Oynanır?".
+  /// "Yardım".
   /// Dokunulabilir öğeler `TapTarget` içinde — yani kutuları en az
   /// 48×48 (`kMinTapTarget`). 22 Ağustos 2026'da buraya bir dolgu
   /// (`top: 4, bottom: 10`) konmuştu ama YETMEDİ: CI'da ölçülen gerçek
@@ -769,7 +769,7 @@ class BoardWidget extends StatelessWidget {
       // ⚠ Ekran başına ölçek TAVANI konmadı — `mobile/CLAUDE.md` kural 1
       // bunu yasaklıyor (tavan TEK yerde). Değişen taban punto.
       // ⚠ BEŞ kardeş de aynı puntoda olmak ZORUNDA (Hamleler · ayraç ·
-      // Mesajlaşma · sayaç · Nasıl Oynanır?) ve web `Board.tsx` ikizi de —
+      // Mesajlaşma · sayaç · Yardım) ve web `Board.tsx` ikizi de —
       // biri değişirse hepsi.
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
@@ -832,7 +832,10 @@ class BoardWidget extends StatelessWidget {
                       ),
                       // Konum web'de ölçülerek seçildi (`-top-1 -right-1`):
                       // rozet satır içi olsaydı şeride ~20px eklerdi ve dar
-                      // telefonlarda "Nasıl Oynanır?" ile çakışırdı. Beyaz
+                      // telefonlarda "Nasıl Oynanır?" ile çakışırdı (⚠ o
+                      // ölçüm ESKİ etiketle; 2 Eylül 2026'da "Yardım" olunca
+                      // boşluk arttı — gerekçe duruyor, rakam yeniden
+                      // ölçülmeden alıntılanmamalı). Beyaz
                       // halka web'in `ring-2 ring-panel`i — rozet altındaki
                       // mavi etiketten ayrışsın diye.
                       if (unreadMessageCount > 0)
@@ -867,7 +870,7 @@ class BoardWidget extends StatelessWidget {
                       : const Padding(
                           padding: EdgeInsets.only(right: 8),
                           // Punto/aralık, şeritteki KARDEŞ kontrollerle
-                          // (Hamleler · Mesajlaşma · Nasıl Oynanır?) birebir
+                          // (Hamleler · Mesajlaşma · Yardım) birebir
                           // aynı — yalnızca rengi farklı. Web'de bu bir kez
                           // 8px'e düşmüş ve kullanıcı cihazda "belli
                           // olmuyor" diye bildirmişti (14 Ağustos 2026): tam
@@ -1501,7 +1504,7 @@ class _ChatBubbleIconPainter extends CustomPainter {
   bool shouldRepaint(_ChatBubbleIconPainter oldDelegate) => false;
 }
 
-/// "Nasıl Oynanır?" linkinin başındaki soru işareti ikonu — web `HelpIcon`
+/// "Yardım" linkinin başındaki soru işareti ikonu — web `HelpIcon`
 /// SVG'sinin (daire + soru işareti kancası + nokta) portu. Path verisi
 /// KOPYALANMAMALI; aynı şeyi açan iki kontrol aynı görünmeli.
 class _HelpIcon extends StatelessWidget {

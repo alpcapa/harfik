@@ -56,7 +56,7 @@ interface BoardProps {
    */
   unreadMessageCount?: number;
   /**
-   * Alt şeridin SAĞ ucundaki "Nasıl Oynanır?" linki (14 Ağustos 2026,
+   * Alt şeridin SAĞ ucundaki "Yardım" linki (14 Ağustos 2026,
    * kullanıcı isteği) — buraya kadar X2/X3 açıklaması duruyordu. Kurallar
    * her zaman erişilebilir olmalı; bonus renkleri zaten tahtada filigranla
    * yazılı olduğundan legend'ın taşıdığı bilgi kaybolmuyor. Verilmezse
@@ -78,7 +78,7 @@ interface BoardProps {
   onTilePointerMove?: (e: React.PointerEvent<HTMLDivElement>) => void;
   onTilePointerUp?: (e: React.PointerEvent<HTMLDivElement>) => void;
   onTilePointerCancel?: (e: React.PointerEvent<HTMLDivElement>) => void;
-  /** Alt bilgi şeridini (Hamleler linki + Mesajlaşma butonu + "Nasıl Oynanır?" linki) gizler — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
+  /** Alt bilgi şeridini (Hamleler linki + Mesajlaşma butonu + "Yardım" linki) gizler — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
   hideFooter?: boolean;
   /** Taşları küçük/puan göstermeden çizer — salt-okunur önizlemelerde (bkz. `GameBoardPreview`). */
   compact?: boolean;
@@ -869,9 +869,16 @@ export function Board({
       {/* PUNTO 12 → 11 (2 Eylül 2026): portun ikizinde kullanıcı cihazda
           şeridin sistem yazı ölçeğiyle çok büyüdüğünü bildirdi. Web'de
           sistem ölçeği böyle uygulanmıyor, yani buradaki değişikliğin tek
-          sebebi PARİTE — dört kardeş de portla aynı puntoda kalmalı
-          (`board_widget.dart`, TESTING.md "aynı puntoda olmalı" maddesi). */}
-      {/* Alt bilgi şeridi (Hamleler / Mesajlaşma / Nasıl Oynanır?) — kartın
+          sebebi PARİTE — BEŞ kardeş de portla aynı puntoda kalmalı
+          (`board_widget.dart`, TESTING.md "aynı puntoda olmalı" maddesi).
+          ⚠ Bu satır bu turda "dört kardeş" diyordu ve SAYIM HATASIYDI:
+          şeritte beş öğe var (Hamleler · ayraç · Mesajlaşma · Çevrimdışı ·
+          Yardım). Yanlış sayı zararsız bir yazım hatası değildi — 12 → 11
+          turu bu yorumun sayısına güvenip satır ARALIĞIYLA düzenlendi ve
+          beşinci (Yardım) aralığın dışında kalıp 12'de unutuldu; kullanıcı
+          cihazda fark etti. Bir "hepsi aynı olmalı" kuralı yazarken KAÇ
+          tane olduğunu da yaz ve tek tek say. */}
+      {/* Alt bilgi şeridi (Hamleler / Mesajlaşma / Yardım) — kartın
           kendi zemini ve gölgesiyle bütünleşik bir alt bölüm; ayrı, asılı
           kalan bir beyaz şerit değil. */}
       {/* Şeridin DİKEY ölçüsü KABIN değil her ÖĞENİN üzerinde ve asgari
@@ -913,7 +920,10 @@ export function Board({
                     {/* Konum ÖLÇÜLEREK seçildi, tercihle değil: rozet mutlak
                         konumlu olmak ZORUNDA (satır içi olsaydı 20px eklerdi
                         ve 360px'lik bir telefonda "Nasıl Oynanır?" ile çakışan
-                        şerit zaten yalnızca 7.8px boşluk taşıyor). Aynı
+                        şerit zaten yalnızca 7.8px boşluk taşıyor — ⚠ bu ölçüm
+                        ESKİ etiketle yapıldı; etiket 2 Eylül 2026'da "Yardım"
+                        olunca boşluk arttı, yani gerekçe hâlâ geçerli ama 7.8
+                        rakamı artık DEĞİL, yeniden ölçmeden alıntılama). Aynı
                         sebeple sağa taşma 4px'ten (`-right-1`) fazla olamaz.
                         `ring-2 ring-panel`: rozet, altındaki mavi etiketten
                         ayrışsın diye — halkasız hâli ölçüm turunda okunaksız
@@ -932,7 +942,7 @@ export function Board({
           </div>
           <div className="flex items-center gap-2 justify-end flex-wrap">
             {/* Punto/aralık, alt şeritteki KARDEŞ kontrollerle (Hamleler ·
-                Mesajlaşma · Nasıl Oynanır?) birebir aynı — yalnızca rengi
+                Mesajlaşma · Yardım) birebir aynı — yalnızca rengi
                 farklı. Önceden 8px'ti ve kullanıcı cihazda "belli olmuyor"
                 diye bildirdi (14 Ağustos 2026): tam da çevrimdışıyken
                 okunması gereken tek gösterge, şeridin en küçük yazısıydı. */}
