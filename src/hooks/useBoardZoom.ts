@@ -166,8 +166,19 @@ export function useBoardZoom(
       const el = boxOf.current;
       if (!el) return;
       const r = el.getBoundingClientRect();
-      // Kutu ZOOM'LU ölçüldüğünden bölünür: pan hesabı ölçeksiz uzayda.
-      setZoom((z) => panZoom(z, dx, dy, r.width / BOARD_ZOOM_SCALE, r.height / BOARD_ZOOM_SCALE));
+      // ⚠ BURADA `/ BOARD_ZOOM_SCALE` YOK ve OLMAMALI. İlk sürümde vardı,
+      // gerekçesi "kutu zoom'lu ölçülüyor" diye yazılmıştı — YANLIŞTI:
+      // `boxOf` GÖRÜNÜR KARE (`absolute inset-0`) ve ölçeklenen o değil
+      // İÇİNDEKİ ızgara, yani bu dikdörtgen her zaman ölçeksiz. Bölme
+      // izinli öteleme menzilini yarıya indiriyordu ve tahtanın alt/sağ
+      // yarısına ASLA kaydırılamıyordu (bir kullanıcı gerçek oyunda
+      // bildirdi: *"zoom yapınca alt kısım altta kalıyor ve görünmüyor"*).
+      // ÖLÇÜLDÜ (390 px, kare 366 px): en uç öteleme −183 px'te
+      // duruyordu, doğrusu −366. `toggleAt` doğru menzili kullandığından
+      // odaklı açılış çalışıyor, sonra ilk pan onu geri ZIPLATIYORDU.
+      // Port ikizinde böyle bir bölme hiç olmadı (`panBy(delta, gridSize)`).
+      // Kapı: smoke.spec.ts → "zoom açıkken SONA kadar kaydırılabilir".
+      setZoom((z) => panZoom(z, dx, dy, r.width, r.height));
     },
     [],
   );

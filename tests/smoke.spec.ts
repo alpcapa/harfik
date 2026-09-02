@@ -1698,6 +1698,86 @@ test.describe('tahta zoom', () => {
     expect(await doluMu(page, '0,0')).toBe(true);
   });
 
+  /** Parmakla kaydırma — CDP ile gerçek touchmove dizisi (Playwright'ın
+   *  `dragTo`su pointer olayı üretiyor ama pan kodu dokunuş akışını
+   *  dinliyor). Eşiği (10 px) geçmek için adım adım ilerliyor. */
+  async function kaydir(page: Page, x: number, y: number, dx: number, dy: number) {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Input.dispatchTouchEvent', {
+      type: 'touchStart',
+      touchPoints: [{ x, y }],
+    });
+    const adim = 12;
+    for (let i = 1; i <= adim; i++) {
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        touchPoints: [{ x: x + (dx * i) / adim, y: y + (dy * i) / adim }],
+      });
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await cdp.detach();
+    await page.waitForTimeout(60);
+  }
+
+  /** Izgaranın uygulanmış ötelemesi (transform matrisi e/f). */
+  async function oteleme(page: Page): Promise<{ x: number; y: number }> {
+    return page.locator('[data-board-grid]').evaluate((el) => {
+      const t = getComputedStyle(el).transform;
+      if (!t || t === 'none') return { x: 0, y: 0 };
+      const m = new DOMMatrixReadOnly(t);
+      return { x: m.e, y: m.f };
+    });
+  }
+
+  // 2 Eylül 2026 — bir kullanıcı GERÇEK oyunda bildirdi: *"Web'te zoom'da
+  // ciddi problem. Zoom yapınca alt kısım altta kalıyor ve görünmüyor."*
+  //
+  // Kök sebep `useBoardZoom.ts`teydi: pan, sınırlama boyutunu
+  // `r.width / BOARD_ZOOM_SCALE` diye veriyordu ("kutu zoom'lu ölçülüyor"
+  // varsayımıyla) — ama `boxOf` GÖRÜNÜR KARE ve ölçeklenen o değil İÇİNDEKİ
+  // ızgara. Sonuç: izinli öteleme menzili yarıya iniyor ve tahtanın alt/sağ
+  // yarısına ASLA kaydırılamıyordu. Aç/kapa (`toggleAt`) doğru menzili
+  // kullandığından odaklı açılış çalışıyor, sonra ilk pan onu geri
+  // ZIPLATIYORDU. Portta böyle bir bölme YOK (`panBy(delta, gridSize)`).
+  //
+  // Test davranışı ölçüyor, matematiği değil: sonuna kadar kaydırınca
+  // tahtanın SON satırı/sütunu görünür kareye girebilmeli.
+  test('zoom açıkken SONA kadar kaydırılabilir — son satır görünür olur', async ({
+    page,
+  }) => {
+    await oyunEkrani(page);
+    const kare = (await page.locator('[data-board-viewport]').boundingBox())!;
+
+    // Sol üstte bir kareden zoom aç (odak orada kalır).
+    const b = await hucreKutusu(page, 1, 1);
+    await ciftDokun(page, b.x + b.width / 2, b.y + b.height / 2);
+    expect(await olcek(page)).toBeCloseTo(2, 1);
+
+    // Sağ-alta ulaşmak için parmakla sol-yukarı doğru, kareden TAŞACAK
+    // kadar kaydır (sınırlama zaten durduracak).
+    for (let i = 0; i < 4; i++) {
+      await kaydir(
+        page,
+        kare.x + kare.width * 0.8,
+        kare.y + kare.height * 0.8,
+        -kare.width,
+        -kare.height,
+      );
+    }
+
+    // İzinli en uç öteleme: içerik 2× olduğundan −(bir kare boyu).
+    const o = await oteleme(page);
+    expect(o.x).toBeCloseTo(-kare.width, 0);
+    expect(o.y).toBeCloseTo(-kare.height, 0);
+
+    // Ve kullanıcının gördüğü şey: son hücre görünür karenin İÇİNDE.
+    // Son satır/sütun — `SIZE` üretimden okunuyor, sabit yazılmıyor.
+    const { SIZE } = await import('../src/game/constants');
+    const son = await hucreKutusu(page, SIZE - 1, SIZE - 1);
+    expect(son.y + son.height).toBeLessThanOrEqual(kare.y + kare.height + 1);
+    expect(son.y).toBeGreaterThanOrEqual(kare.y - 1);
+  });
+
   test('KENARDAN (kareler dışı) çift dokunuş da zoom açar', async ({ page }) => {
     await oyunEkrani(page);
     const vp = (await page.locator('[data-board-viewport]').boundingBox())!;

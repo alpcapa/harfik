@@ -991,3 +991,37 @@ eklendi; komşu hücre ölçüleri DOM'daki `data-cell` özniteliğinden okunuyo
 test çatısı yok — `verify-cloud-save-mirror`la aynı esbuild+node deseni) ve
 **negatif eş kuruldu:** eşitlik kuralı kaldırılınca "tam orta dokunuş →
 null" kontrolü gerçekten düşüyor.
+
+## Zoom pan menzili YARIYDI — "kutu zoom'lu ölçülüyor" varsayımı (2 Eylül 2026, web)
+
+Bir kullanıcı gerçek bir oyunda bildirdi: *"Web'te zoom'da ciddi problem.
+Zoom yapınca alt kısım altta kalıyor ve görünmüyor."*
+
+**Kök sebep `useBoardZoom.ts`'te tek bir bölme:** pan, sınırlama boyutunu
+`r.width / BOARD_ZOOM_SCALE` diye veriyordu; yorumu da gerekçeyi yazıyordu
+— *"kutu ZOOM'LU ölçüldüğünden bölünür"*. **Varsayım yanlıştı:** `boxOf`
+GÖRÜNÜR KARE (`absolute inset-0`) ve ölçeklenen o değil İÇİNDEKİ ızgara
+(`transform` iç `div`de). Yani o dikdörtgen her zaman ölçeksiz.
+
+**ÖLÇÜLDÜ** (390 px görünüm, kare 366 px): erişilebilen en uç öteleme
+**−183 px**'te duruyordu, doğrusu **−366**. Tam yarısı, yani tahtanın
+alt/sağ yarısına ASLA kaydırılamıyor.
+
+⚠ **Belirti neden "ciddi" göründü:** `toggleAt` DOĞRU menzili kullanıyor,
+yani dokunulan noktaya odaklı açılış çalışıyordu; kullanıcı alt yarıdan
+zoom açtığında doğru yeri görüyor, sonra parmağını kaydırdığı anda ilk
+`panZoom` daha dar sınırla yeniden kırpıp tahtayı geri ZIPLATIYORDU.
+İki kod yolunun aynı sınırı paylaşmaması hatayı hem gizledi hem büyüttü.
+
+**Port ETKİLENMEDİ:** orada `panBy(delta, gridSize)` ve `toggleAt(focal,
+gridSize)` AYNI boyutu alıyor, bölme hiç yok. Yani bu bir parite kayması
+değil, web'e sonradan giren bir varsayımdı (PR #398).
+
+**Ders:** ölçekli bir düzende "hangi kutu ölçekli" sorusunu yorumla
+cevaplama, ÖLÇ. Ve aç/kapa ile sürükleme aynı sınırı kullanmalı — ayrı
+hesaplanırsa biri doğru çalışıp ötekini örter.
+
+**Kapı:** `tests/smoke.spec.ts` → *"zoom açıkken SONA kadar kaydırılabilir
+— son satır görünür olur"*. Test matematiği değil DAVRANIŞI ölçüyor: sonuna
+kadar kaydırınca son hücre görünür karenin içine girmeli. Negatif eşi
+kanıtlandı — bölme geri konunca −366 yerine −183 ölçülüp düşüyor.
