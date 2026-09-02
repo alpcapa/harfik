@@ -1156,3 +1156,37 @@ fark SATIR olarak sayılıyor: tek satır kırpma sınırındaki kenar
 yumuşatması, iki ve fazlası gerçek taşma. Negatif eş: eski `inset(-4px)`
 geri konunca test "kartın üstüne 4 satır fazladan boyadı (51,52,54,55)"
 diyerek düşüyor — tam olarak 4 px'lik pay.
+
+### Rozetin 14 px PAYI taşmanın KENDİSİYDİ (2 Eylül 2026, dördüncü halka)
+
+Kullanıcı: *"deneme rozeti hâlâ dışarı taşıyormuş. Her kenardan denedim.
+Onun içeride kalması lazım. Header ve kenar sınırlarının altına giriyor."*
+— ve haklı olarak *"bu kaçıncı deneme"* diye sordu.
+
+**Bu yeni bir hata değildi, benim BİLİNÇLİ tercihimdi.** Rozet katmanına
+14 px pay bırakılmıştı, gerekçesi "kenardaki rozet kesilmesin"di (1 Eylül
+vakası). O pay tam olarak kullanıcının gördüğü taşmaydı. Karar
+netleştirildi: **rozet kartın İÇİNDE kalır, gerekirse kesilir** —
+taşların kenarda kesilmesiyle aynı davranış. Pay 0, kırpma ızgarayla
+birebir aynı: `inset(0 round 18px 18px 0 0)`. Dinlenme hâli bozulmuyor,
+çünkü ızgaranın 10 px dolgusu rozetin 1×'teki ≈7 px taşmasını yutuyor.
+
+**Testi ÜÇ kez yanlış kurdum, üçünü de ölçüm düzeltti** — kurulum
+hesapla seçilmezse test yanlışlıkla geçiyor:
+1. Tahtanın köşesine dayamak YETMEZ: ızgaranın 10 px dolgusu 2×'te 20 px
+   olup taşmayı yutuyor.
+2. Taşı ilk sütuna koymak YETMEZ: rozet yatayda da kareden çıkıyor
+   (ölçüldü, x=−165) ve tamamen kırpılıyor, yani test hiçbir şey
+   kanıtlamıyor.
+3. Doğru kurulum HESAPLANDI: `rozet üstü = 2·(10 + satır·28) + öteleme −
+   14`. En uç öteleme −366, satır 6 → −24 px, yani kartın 24 px üstünde;
+   sütun 6 ise yatayda içeride tutuyor. Bu kurulumda hata ölçüldü:
+   **kartın dışına 126 piksel**. Düzeltmeden sonra 0.
+
+⚠ `once` (zoom öncesi dış piksel) SIFIR DEĞİL ve olmamalı: geçersiz
+hamlede kartın altındaki "Kelime geçersiz" yazısı da rozetin kırmızısında
+(4 piksel). Bu yüzden iddia MUTLAK değil FARK.
+
+**Ders:** bir kullanıcı "hâlâ oluyor" diyorsa önce şunu sor — bu bir hata
+mı, yoksa benim seçtiğim bir tolerans mı? İkincisiyse düzeltilecek şey
+kod değil KARAR.
