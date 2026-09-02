@@ -41,30 +41,48 @@ import 'support/test_view.dart';
 ///     **54 anlam** (`meanings.json` üzerinde sayıldı) → "54." gerçek.
 ///   • Oyun skoru: 100 taşlık torbayla üç hane; dört hane oluşamıyor.
 ///     Lider tablosundaki skor ise k-lig TOPLAMI, beş haneye çıkabilir.
-const _sutunlar = <(String, double, String, double, List<String>)>[
-  ('GameOver · KALAN başlığı', 29, 'SpaceGrotesk', 9, ['KALAN']),
-  ('GameOver · TOPLAM başlığı', 37, 'SpaceGrotesk', 9, ['TOPLAM']),
-  ('GameOver · k-lig başlığı', 20, 'SpaceGrotesk', 9, ['k-lig']),
-  ('GameOver · kalan taş', 29, 'SpaceMono', 13, ['-12']),
-  ('GameOver · toplam skor', 37, 'SpaceMono', 20, ['499']),
-  ('GameOver · k-lig katkısı', 20, 'SpaceMono', 13, ['-2', '+2']),
-  ('Leaderboard · sıra', 28, 'SpaceMono', 14, ['100']),
-  ('Leaderboard · skor', 44, 'SpaceMono', 14, ['12500']),
-  ('GameHistory · PUAN başlığı', 40, 'SpaceMono', 9, ['PUAN']),
-  ('GameHistory · k-lig başlığı', 32, 'SpaceMono', 9, ['k-lig']),
-  ('GameHistory · sıra', 18, 'SpaceMono', 12, ['4.']),
-  ('GameHistory · skor', 40, 'SpaceMono', 12, ['499']),
-  ('GameHistory · k-lig katkısı', 32, 'SpaceMono', 12, ['-2']),
-  ('MeaningModal · madde no', 20, 'SpaceMono', 13, ['54.']),
-  ('HelpModal · kademe harfi', 26, 'SpaceMono', 12, ['K']),
+/// (yer, kutu px, font ailesi, punto, HARF ARALIĞI, en kötü metinler)
+///
+/// ⚠ `letterSpacing` 2 Eylül 2026'da EKLENDİ. Öncesinde modellenmiyordu ve
+/// envanter gerçek genişliği OLDUĞUNDAN DAR sanıyordu — "SIRA" başlığı 1 px
+/// aralıkla 4 px daha geniş. Yeni bir satır eklerken widget'taki değeri
+/// birebir yaz, 0 bırakma.
+const _sutunlar = <(String, double, String, double, double, List<String>)>[
+  ('GameOver · KALAN başlığı', 29, 'SpaceGrotesk', 9, 0.4, ['KALAN']),
+  ('GameOver · TOPLAM başlığı', 37, 'SpaceGrotesk', 9, 0.4, ['TOPLAM']),
+  ('GameOver · k-lig başlığı', 20, 'SpaceGrotesk', 9, 0.4, ['k-lig']),
+  ('GameOver · kalan taş', 29, 'SpaceMono', 13, 0, ['-12']),
+  ('GameOver · toplam skor', 37, 'SpaceMono', 20, 0, ['499']),
+  ('GameOver · k-lig katkısı', 20, 'SpaceMono', 13, 0, ['-2', '+2']),
+  ('Leaderboard · sıra', 28, 'SpaceMono', 14, 0, ['100']),
+  ('Leaderboard · skor', 44, 'SpaceMono', 14, 0, ['12500']),
+  // 2 Eylül 2026 — cihazda yakalandı: OHP "13.17" iki satıra bölünüyordu,
+  // "SIRA" başlığı "SIR"/"A" oluyordu. Bu ÜÇÜ envanterde HİÇ YOKTU; 1 Eylül
+  // turunda aynı satırın sıra/skor hücreleri çevrilmiş, aradaki OHP ve
+  // BAŞLIK satırının tamamı atlanmıştı. Ders: bir satırı çevirirken o
+  // satırın BAŞLIĞINI ve ARADAKİ sütunları da say.
+  ('Leaderboard · SIRA başlığı', 28, 'SpaceMono', 9, 1, ['SIRA']),
+  ('Leaderboard · OHP başlığı', 34, 'SpaceMono', 9, 1, ['OHP']),
+  ('Leaderboard · PUAN başlığı', 44, 'SpaceMono', 9, 1, ['PUAN']),
+  ('Leaderboard · OHP değeri', 34, 'SpaceMono', 11, 0, ['13.17', '100.00']),
+  ('GameHistory · PUAN başlığı', 40, 'SpaceMono', 9, 1, ['PUAN']),
+  ('GameHistory · k-lig başlığı', 32, 'SpaceMono', 9, 1, ['k-lig']),
+  ('GameHistory · sıra', 18, 'SpaceMono', 12, 0, ['4.']),
+  ('GameHistory · skor', 40, 'SpaceMono', 12, 0, ['499']),
+  ('GameHistory · k-lig katkısı', 32, 'SpaceMono', 12, 0, ['-2']),
+  ('MeaningModal · madde no', 20, 'SpaceMono', 13, 0, ['54.']),
+  ('HelpModal · kademe harfi', 26, 'SpaceMono', 12, 0, ['K']),
 ];
 
 /// Metnin TEK SATIR doğal genişliği (sarma yok — `ScaledCell` içinde
 /// `maxLines: 1` + `softWrap: false` var, yani gerçek widget da sarmaz).
-double _dogalGenislik(String metin, String aile, double punto, double olcek) {
+double _dogalGenislik(
+    String metin, String aile, double punto, double aralik, double olcek) {
   final tp = TextPainter(
     text: TextSpan(
-        text: metin, style: TextStyle(fontFamily: aile, fontSize: punto)),
+        text: metin,
+        style: TextStyle(
+            fontFamily: aile, fontSize: punto, letterSpacing: aralik)),
     textDirection: TextDirection.ltr,
     textScaler: TextScaler.linear(olcek),
   )..layout();
@@ -81,10 +99,10 @@ void main() {
 
   test('sabit genişlikli sütunlar: metin sığar ya da en çok %20 küçülür', () {
     final bozuk = <String>[];
-    for (final (yer, kutu, aile, punto, metinler) in _sutunlar) {
+    for (final (yer, kutu, aile, punto, aralik, metinler) in _sutunlar) {
       for (final olcek in const [1.0, kMaxTextScale]) {
         for (final m in metinler) {
-          final gerekli = _dogalGenislik(m, aile, punto, olcek);
+          final gerekli = _dogalGenislik(m, aile, punto, aralik, olcek);
           // ScaledCell'in kutusu: sabit genişlik × yazı ölçeği.
           final kutuOlcekli = kutu * olcek;
           final oran = kutuOlcekli / gerekli;
@@ -108,9 +126,9 @@ void main() {
   // tavanda gerçekten sarardı — yani bu kapı boş yere durmuyor.
   test('NEGATİF EŞ: ölçeksiz kutu tavanda yetersiz kalırdı', () {
     final yetersiz = <String>[];
-    for (final (yer, kutu, aile, punto, metinler) in _sutunlar) {
+    for (final (yer, kutu, aile, punto, aralik, metinler) in _sutunlar) {
       for (final m in metinler) {
-        if (kutu / _dogalGenislik(m, aile, punto, kMaxTextScale) < enAzOran) {
+        if (kutu / _dogalGenislik(m, aile, punto, aralik, kMaxTextScale) < enAzOran) {
           yetersiz.add('$yer · "$m"');
         }
       }

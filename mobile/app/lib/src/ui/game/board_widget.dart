@@ -719,6 +719,15 @@ class BoardWidget extends StatelessWidget {
       // sıkışıyordu (kenar boşluğu 10 yerine 38,4); düzeltmeden sonra
       // 10,0..380,0. Regresyon: `test/text_scale_test.dart` → "tahta alt
       // şeridi ŞERİDİ DOLDURUR".
+      // PUNTO 12 → 11 (2 Eylül 2026, kullanıcı cihazda: *"Board altındaki
+      // Hamleler, Mesajlaşma, Nasıl Oynanır? alt bölümü çok büyütmüş"*).
+      // Sistem yazı ölçeği 1,3'te 12 px → 15,6 px oluyordu ve şerit iki
+      // satıra sarıp kartın altını yiyordu; 11'de 14,3.
+      // ⚠ Ekran başına ölçek TAVANI konmadı — `mobile/CLAUDE.md` kural 1
+      // bunu yasaklıyor (tavan TEK yerde). Değişen taban punto.
+      // ⚠ BEŞ kardeş de aynı puntoda olmak ZORUNDA (Hamleler · ayraç ·
+      // Mesajlaşma · sayaç · Nasıl Oynanır?) ve web `Board.tsx` ikizi de —
+      // biri değişirse hepsi.
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
         crossAxisAlignment: WrapCrossAlignment.center,
@@ -738,7 +747,7 @@ class BoardWidget extends StatelessWidget {
                         'Hamleler',
                         style: TextStyle(
                           fontFamily: 'SpaceMono',
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
                           color: kAccent,
@@ -751,7 +760,7 @@ class BoardWidget extends StatelessWidget {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 6),
                   child:
-                      Text('·', style: TextStyle(fontSize: 12, color: kMuted)),
+                      Text('·', style: TextStyle(fontSize: 11, color: kMuted)),
                 ),
                 TapTarget(
                   onTap: onOpenMessaging,
@@ -770,7 +779,7 @@ class BoardWidget extends StatelessWidget {
                             'Mesajlaşma',
                             style: TextStyle(
                               fontFamily: 'SpaceMono',
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
                               color: kAccent,
@@ -826,7 +835,7 @@ class BoardWidget extends StatelessWidget {
                             'Çevrimdışı',
                             style: TextStyle(
                               fontFamily: 'SpaceMono',
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
                               color: kRed,
@@ -846,7 +855,7 @@ class BoardWidget extends StatelessWidget {
                         'Nasıl Oynanır?',
                         style: TextStyle(
                           fontFamily: 'SpaceMono',
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
                           color: kAccent,

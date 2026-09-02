@@ -825,6 +825,11 @@ export function Board({
       )}
       </div>
 
+      {/* PUNTO 12 → 11 (2 Eylül 2026): portun ikizinde kullanıcı cihazda
+          şeridin sistem yazı ölçeğiyle çok büyüdüğünü bildirdi. Web'de
+          sistem ölçeği böyle uygulanmıyor, yani buradaki değişikliğin tek
+          sebebi PARİTE — dört kardeş de portla aynı puntoda kalmalı
+          (`board_widget.dart`, TESTING.md "aynı puntoda olmalı" maddesi). */}
       {/* Alt bilgi şeridi (Hamleler / Mesajlaşma / Nasıl Oynanır?) — kartın
           kendi zemini ve gölgesiyle bütünleşik bir alt bölüm; ayrı, asılı
           kalan bir beyaz şerit değil. */}
@@ -845,17 +850,17 @@ export function Board({
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={onOpenHistory}
-              className="flex items-center gap-1 min-h-[48px] text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+              className="flex items-center gap-1 min-h-[48px] text-[11px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
             >
               <DocumentIcon />
               Hamleler
             </button>
             {onOpenMessaging && (
               <>
-                <span className="text-muted text-[12px] flex items-center min-h-[48px] shrink-0">·</span>
+                <span className="text-muted text-[11px] flex items-center min-h-[48px] shrink-0">·</span>
                 <button
                   onClick={onOpenMessaging}
-                  className="flex items-center min-h-[48px] text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+                  className="flex items-center min-h-[48px] text-[11px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
                 >
                   {/* `relative` iç span'de: rozet Flutter'daki gibi METİN
                       kutusuna çapalı kalsın diye (orada da Stack, TapTarget'ın
@@ -891,7 +896,7 @@ export function Board({
                 diye bildirdi (14 Ağustos 2026): tam da çevrimdışıyken
                 okunması gereken tek gösterge, şeridin en küçük yazısıydı. */}
             {!online && (
-              <div className="text-[12px] font-mono font-bold tracking-[0.5px] text-red flex items-center min-h-[48px] shrink-0">
+              <div className="text-[11px] font-mono font-bold tracking-[0.5px] text-red flex items-center min-h-[48px] shrink-0">
                 Çevrimdışı
               </div>
             )}

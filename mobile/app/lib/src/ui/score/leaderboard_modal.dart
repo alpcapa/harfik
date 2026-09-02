@@ -177,12 +177,13 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
               _syncOhpHint();
             },
             behavior: HitTestBehavior.opaque,
-            child: const SizedBox(
+            child: const ScaledCell(
               // Kutu genişliği OHP DEĞERİNİN ink genişliğine eşit
               // (`12.78` = 5 monospace karakter × 11px × 0.612 ≈ 34) —
               // sağa hizalı değerlerle ORTALI başlık aynı merkeze düşsün
               // diye. Bkz. `_kOhpColumnWidth`.
               width: _kOhpColumnWidth,
+              align: Alignment.center,
               child: _HeadLabel('OHP',
                   align: TextAlign.center, underline: true),
             ),
@@ -329,10 +330,20 @@ class _LeaderboardModalState extends State<LeaderboardModal> {
               child: Row(children: [
                 // 28: "SIRA" 9px SpaceMono + 1px letter-spacing'te 24'e
                 // sığmayıp alt satıra kayıyordu (ekran görüntüsü yakaladı).
-                const SizedBox(width: 28, child: _HeadLabel('SIRA')),
+                // ⚠ AYNI şey ölçek 1,3'te 28'de de oldu (2 Eylül 2026, cihaz
+                // görüntüsü: "SIR"/"A") — kutuyu büyütmek çözüm DEĞİL,
+                // ölçekle büyümesi gerekiyor. Satırın veri hücreleri
+                // 1 Eylül'de `ScaledCell`e çevrilmişti ama BAŞLIKLAR ve OHP
+                // sütunu ATLANMIŞTI; bu tur onu kapatıyor.
+                const ScaledCell(
+                    width: 28,
+                    align: Alignment.centerLeft,
+                    child: _HeadLabel('SIRA')),
                 const Expanded(child: _HeadLabel('OYUNCU')),
                 _buildOhpHeader(),
-                const SizedBox(width: 44, child: _HeadLabel('PUAN', align: TextAlign.right)),
+                const ScaledCell(
+                    width: 44,
+                    child: _HeadLabel('PUAN', align: TextAlign.right)),
               ]),
             ),
             const SizedBox(height: 4),
@@ -512,6 +523,10 @@ class _HeadLabel extends StatelessWidget {
   Widget build(BuildContext context) => Text(
         text,
         textAlign: align,
+        // SINIF 3 — başlıklar da sarmaz. "SIRA" ölçek 1,3'te 28 px kutuda
+        // "SIR"/"A" diye bölünüyordu (2 Eylül 2026, cihaz görüntüsü).
+        maxLines: 1,
+        softWrap: false,
         style: TextStyle(
           fontFamily: 'SpaceMono',
           fontSize: 9,
@@ -600,9 +615,15 @@ class _Row extends StatelessWidget {
               // OHP düz gri, KALIN DEĞİL ve satırın kendi 14px'inden küçük
               // (kullanıcı isteği) — asıl sıralama ölçütü olan "Puan"la
               // görsel olarak yarışmasın diye.
-              SizedBox(
+              // Cihazda ölçek 1,3'te "13.17" → "13."/"17" diye bölünüyordu
+              // (2 Eylül 2026, kullanıcı görüntüsü). 1 Eylül turunda bu
+              // satırın SIRA ve PUAN hücreleri çevrilmiş, aradaki OHP
+              // atlanmıştı.
+              ScaledCell(
                 width: _kOhpColumnWidth,
                 child: Text(formatOhp(avgMoveScore),
+                    maxLines: 1,
+                    softWrap: false,
                     textAlign: TextAlign.right,
                     style: const TextStyle(
                         fontFamily: 'SpaceMono', fontSize: 11, color: _muted)),

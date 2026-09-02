@@ -1640,20 +1640,28 @@ kırpar), sonra:
 - [ ] **Bir oyunu bitir** → bitirme modalında `KALAN`/`TOPLAM`/`k-lig`
       başlıkları ve skorlar TEK SATIR olmalı; `241` gibi bir sayı
       `24`/`1` diye bölünmemeli.
-- [ ] **Skor Kartı → k-lig lider tablosu** → sıra ve puan sütunları tek
-      satır.
+- [ ] **Skor Kartı → k-lig lider tablosu** → `SIRA`/`OHP`/`PUAN`
+      BAŞLIKLARI ve altlarındaki değerler tek satır. Özellikle **OHP
+      değeri** (`13.17`) ve **`SIRA` başlığı**: 2 Eylül 2026'da cihazda
+      ikisi de bölünüyordu (`13.`/`17` ve `SIR`/`A`) — 1 Eylül turunda bu
+      satırın yalnızca sıra/skor hücreleri çevrilmiş, başlıklar ve aradaki
+      OHP atlanmıştı.
 - [ ] **Oyun geçmişi (Tüm Oyunlarım → bir oyun)** → `PUAN`/`k-lig`
       başlıkları, sıra ve skorlar tek satır.
 - [ ] **Tahtada onaylı bir taşa dokun (kelime anlamı)** → madde numaraları
       (`1.`, `2.` …) tek satır.
 - [ ] **Nasıl Oynanır → k-lig kademe tablosu** → kademe harfleri tek satır.
 - [ ] **Setup → DEVAM EDEN OYUN kartı** (yarım bir yerel oyun bırakıp
-      Setup'a dön) → `SIRA SENDE` etiketi oyuncu satırının SAĞINDA değil
-      ALTINDA olmalı; oyuncu adları kırpılmamalı. (Sınıf 2, sessiz sıkışma:
-      2 Eylül 2026'da ölçülüp düzeltildi — tek satırda isim alanı %36
-      daralıyordu.)
-- [ ] Yazı boyutunu normale al → hiçbir yerde görünüm değişmemeli; **DEVAM
-      EDEN OYUN kartı tek satıra geri dönmeli** (etiket yine sağda).
+      Setup'a dön) → `SIRA SENDE` oyuncu satırının SAĞINDA, kalan süre
+      ALTTA tam genişlik satırda (Canlı oyundaki `SIRA RAKİPTE` kartıyla
+      aynı şekil). Etiket kartın ORTASINDA durmamalı. Oyuncu adları
+      kırpılmamalı.
+- [ ] **Board altındaki şerit** (Hamleler · Mesajlaşma · Nasıl Oynanır?) →
+      okunur ama kartın altını yiyecek kadar büyük OLMAMALI (punto 2 Eylül
+      2026'da kullanıcı isteğiyle 12 → 11 indirildi, web ikizi de).
+- [ ] Yazı boyutunu normale al → hiçbir yerde görünüm değişmemeli; DEVAM
+      EDEN OYUN kartının şekli AYNI kalmalı (düzen artık ölçekten bağımsız
+      — ölçeğe göre şekil değiştiren dal 2 Eylül'de kaldırıldı).
 
 ## 24. Tahta zoom'u — çift dokunuş + pan (1 Eylül 2026, Parça 175)
 
