@@ -31,6 +31,7 @@
 import 'dart:async' show Timer, unawaited;
 
 import 'package:flutter/material.dart';
+import '../text_scale.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/analytics.dart';
@@ -1981,10 +1982,16 @@ class _SavedGameRow extends StatelessWidget {
           color: _panel, borderColor: _border, radius: 6,
           shadows: kRaisedShadows, // web shadow-raised
         ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
+        child: _DevamEdenGovde(
+          // SINIF 2 (sessiz sıkışma) — ÖLÇÜLDÜ (2 Eylül 2026, 320 px, ölçek
+          // 1,0 → 1,3, `setup_screen_test.dart`): sol sütun 114,9 → 73,9 px,
+          // yani **%36** kayıp. Risk kütüğündeki DÖRT adayın ölçülen en
+          // kötüsü; sebebi sağdaki `SIRA SENDE` etiketinin ölçekle büyüyüp
+          // `Expanded` olan sol taraftan yer yemesi. Çözüm dokümanda yazılı
+          // olan: eşiği aşınca satırı İKİYE BÖL (ui/text_scale.dart → sınıf
+          // 2). Bölündükten sonra aynı ölçüm: 114,9 → 266,0 px.
+          ikiyeBol: buyukOlcek(context),
+          sol: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Ortak bileşen (parça 5c'de çıkarıldı) — "Son
@@ -2013,8 +2020,7 @@ class _SavedGameRow extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-            Column(
+          sag: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 // Metin ve punto `live_games_tab`ın aktif oyun kartıyla
@@ -2050,9 +2056,44 @@ class _SavedGameRow extends StatelessWidget {
                 ),
               ],
             ),
-          ],
         ),
       ),
+    );
+  }
+}
+
+/// "Devam eden oyun" kartının gövdesi — normalde tek satır (sol: oyuncular,
+/// sağ: durum), yazı ölçeği eşiği aşınca İKİ satır.
+///
+/// Ayrı bir widget: aynı iki parça iki düzende de kullanılıyor ve `Row`↔
+/// `Column` geçişini çağrı yerinde yapmak kartın JSX'ini iki kez yazdırırdı
+/// (bu projenin kayıtlı hata sınıfı: kopyalanan dal sessizce ayrışıyor).
+class _DevamEdenGovde extends StatelessWidget {
+  final bool ikiyeBol;
+  final Widget sol;
+  final Widget sag;
+  const _DevamEdenGovde(
+      {required this.ikiyeBol, required this.sol, required this.sag});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!ikiyeBol) {
+      return Row(children: [Expanded(child: sol), sag]);
+    }
+    // İki satır: durum etiketi artık isim alanını YEMİYOR, altına geçiyor.
+    // Hizası da sola dönüyor — sağa dayalı tek başına bir etiket, altında
+    // durduğu satırla ilişkisiz görünürdü.
+    return Column(
+      // `stretch` ŞART, `start` DEĞİL: `start` sol sütunu kendi içeriğine
+      // shrink-wrap eder ve isim alanı — artık kimse yemediği hâlde — yine
+      // dar kalır (ölçüldü: 114,9 → 93,0 px). Gerilmiş hâlde alan kartın
+      // TAMAMI olur, yani sıkışma gerçekten kapanır.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        sol,
+        const SizedBox(height: 6),
+        Align(alignment: Alignment.centerLeft, child: sag),
+      ],
     );
   }
 }

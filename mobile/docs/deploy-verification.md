@@ -119,11 +119,37 @@ Desen izole edilip ölçüldü (`Expanded(isim)` + metin kardeş, uzun ad
 eden oyun kartı, çünkü kardeşi projenin en uzun etiketi (`SENİN HAMLEN
 BEKLENİYOR`). Kalan üçü "birkaç karakter" tahmininin içinde kaldı — 2028
 Ağustos'taki karar bu üçü için DOĞRU çıktı, dördüncüsü için değil.
-67,8 px ≈ 7 karakter: kimlik korunuyor ama zayıf. Sıfıra inmediği için
-bu turda da düzeltilmedi; düzeltilecekse çözüm yine `buyukOlcek`.
+67,8 px ≈ 7 karakter: kimlik korunuyor ama zayıf.
 
 ⚠ **Ölçüm sentetik desen üzerinde** (gerçek kartta avatar/rozet de var),
 yani gerçek kayıp bundan biraz DAHA fazla olabilir.
+
+### ✅ 2 Eylül 2026 — o tek gerçek risk DÜZELTİLDİ (kullanıcı: "İkisini de yap")
+
+Sentetik desen bırakılıp **gerçek kart** ölçüldü (`setup_screen_test.dart`,
+320 px, kayıtlı yarım oyun, ölçek 1,0 → 1,3; ölçülen şey avatar dizisi
+değil onu barındıran SOL SÜTUNUN eni):
+
+| Düzen | 1,0 → 1,3 | |
+|---|---|---|
+| eski (tek satır) | 114,9 → **73,9 px** | −36 % |
+| yeni (eşikte ikiye bölünür) | 114,9 → **266,0 px** | +131 % |
+
+Çare dokümanda zaten yazılıydı: `buyukOlcek(context)` eşiğinde satır ikiye
+bölünüyor — durum etiketi avatar satırının ALTINA geçiyor
+(`_DevamEdenGovde`). Sentetik ölçümün −41'i gerçek kartta −36 çıktı; sıra
+büyüklüğü aynı, yani desen doğru yeri işaret etmişti.
+
+⚠ **Bölmede `CrossAxisAlignment.stretch` ŞART.** İlk sürüm `start`
+kullanıyordu ve sol sütun kendi içeriğine shrink-wrap ettiğinden alan —
+artık kimse yemediği hâlde — 93,0 px'te kaldı (ölçüldü, %19 kayıp). Yani
+"etiketi alta aldım" tek başına sıkışmayı KAPATMIYOR; ölçüm olmasa bu
+sessizce yarım düzeltme olarak kalırdı.
+
+Test iki AYRI şeyi kilitliyor (biri olmadan öteki aldatıcı): satır gerçekten
+bölündü mü, ve sol sütun daralmadı mı. Negatif eşi koşuldu — `ikiyeBol`
+sabitlenince test düşüyor. Normal ölçekte düzenin DEĞİŞMEDİĞİ de ayrıca
+kilitli (web paritesi).
 
 ### ⚠ SINIF 3'ün düzeltmesi SINIF 2'yi tetikliyordu — kısmi ölçek kararı
 

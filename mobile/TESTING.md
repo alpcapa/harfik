@@ -1647,7 +1647,13 @@ kırpar), sonra:
 - [ ] **Tahtada onaylı bir taşa dokun (kelime anlamı)** → madde numaraları
       (`1.`, `2.` …) tek satır.
 - [ ] **Nasıl Oynanır → k-lig kademe tablosu** → kademe harfleri tek satır.
-- [ ] Yazı boyutunu normale al → hiçbir yerde görünüm değişmemeli.
+- [ ] **Setup → DEVAM EDEN OYUN kartı** (yarım bir yerel oyun bırakıp
+      Setup'a dön) → `SIRA SENDE` etiketi oyuncu satırının SAĞINDA değil
+      ALTINDA olmalı; oyuncu adları kırpılmamalı. (Sınıf 2, sessiz sıkışma:
+      2 Eylül 2026'da ölçülüp düzeltildi — tek satırda isim alanı %36
+      daralıyordu.)
+- [ ] Yazı boyutunu normale al → hiçbir yerde görünüm değişmemeli; **DEVAM
+      EDEN OYUN kartı tek satıra geri dönmeli** (etiket yine sağda).
 
 ## 24. Tahta zoom'u — çift dokunuş + pan (1 Eylül 2026, Parça 175)
 
