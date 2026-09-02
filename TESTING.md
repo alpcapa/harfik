@@ -217,6 +217,11 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       YZ oyununda hiç olmamalı.
 - [ ] **Gönderme.** 200 karakter sınırı ve canlı "x/200" sayacı çalışmalı.
       Kendi mesajın sağda/kendi renginde, karşınınki solda.
+- [ ] **Yönlendirme etiketi (2 Eylül 2026, kullanıcı isteği).** Mesaj
+      kutusunun HEMEN ÜSTÜNDE "Oyunculara buradan mesaj gönder" yazmalı;
+      yazmaya başlayınca kaybolan `Mesajınızı girin` yer tutucusu da
+      YERİNDE kalmalı (etiket onun yerine geçmedi, ona EK). Aynı satır
+      portta da var — ikisi birlikte kontrol edilmeli.
 - [ ] **Sıralama — en yeni EN ÜSTTE, ÜÇ ekranda birden.** Sohbet penceresi
       (`ChatModal`), biten oyunun sohbet arşivi (Tüm Oyunlarım → konuşma
       balonu rozeti) ve admin sohbet dökümü (Şikayetler → "Sohbeti
