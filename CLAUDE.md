@@ -42,6 +42,8 @@ npm run generate-klig-paths      # KLigMark.tsx + portun klig_mark_data.dart'ın
 npm run generate-icons           # favicon / app icon (public/) — og-image DEĞİL
 npm run generate-og-image        # public/og-image.png (sosyal paylaşım kartı)
 npm run generate-play-assets     # Play mağaza ikonu (512) + öne çıkan görsel (1024×500)
+# Öteki pazarlama üreticileri (generate-reel, generate-fb-cover) bu listede
+# DEĞİL, kendi kararlarıyla birlikte docs/decisions/marketing-assets.md'de.
 ```
 
 ⚠ **Web CI mobil testleri de koşuyor** (`.github/workflows/web-ci.yml` →
