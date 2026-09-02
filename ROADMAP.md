@@ -13,7 +13,7 @@ Kalıcı bir ders üretmişse dersin kendisi ayrıca ilgili bölümün tarihli
 notuna geçer (projenin genel "değişiklik = tarihli not" disiplini).
 
 ⚠ **Aşağıda bir bölüme atıf görüp bulamıyorsan arşive bak** — "Faz 1-7",
-"1.0.3/1.0.4 sürüm turu", "madde 1/6/10/11/12" ve "Sürüm A" 2 Eylül
+"1.0.3/1.0.4 sürüm turu", "madde 1/6/10/11/12/13/16" ve "Sürüm A" 2 Eylül
 2026'da oraya taşındı. O gün ölçüldü: dosyanın **%45'i** kapanmış işti ve
 118 KB'a bu yüzden çıkmıştı — eşik düşük olduğu için değil, bu kural
 uygulanmadığı için.
@@ -124,25 +124,6 @@ arşivde "Faz 6".
 **iOS/APNs** Apple Developer üyeliğine takılı; tasarım bilerek FCM üzerinden
 yazıldığı için iOS günü gelince kalan iş "APNs anahtarını Firebase'e yükle +
 Push capability ekle" — ikinci bir gönderici YAZILMAYACAK.
-
-### #13'ün ölçülen durumu (29 Ağustos 2026) — yarısı BİTTİ
-
-Aşağıdaki #13 sıfırdan bir iş gibi okunuyor; artık değil. Canlıdan ve
-koddan ölçülen hâl:
-
-| Parça | Durum |
-|---|---|
-| Altyapı (`push_tokens`, `register_push_token`, hesap silmede temizlik) | ✅ |
-| `POST_NOTIFICATIONS` izni · `kelimeki_oyun` kanalı (IMPORTANCE_HIGH) | ✅ |
-| `push_notifications_enabled` tercihi (e-postadan bağımsız) | ✅ |
-| **Teslim uyarısı push'u** | ✅ canlıda (`notify-deadline-warnings` v12) |
-| Oyun daveti · arkadaş daveti push kanalı | ✅ canlıda (30 Ağustos) |
-| Bildirime dokununca yönlendirme | ✅ **1.0.3'le SAHADA** (31 Ağustos) — cihaz testi §3c bekliyor |
-| Firebase Analytics olayları | ✅ **1.0.3'le SAHADA** (31 Ağustos) — GA4 DebugView bekliyor |
-| "Sıra sende" olayı | ✅ canlıda (30 Ağustos) |
-| Play Data safety formu | ✅ (29 Ağustos) |
-
----
 
 ## Sürüm sıralaması, force update ve davetliler (27 Ağustos 2026)
 
@@ -685,164 +666,6 @@ gerekçeyle 27 Ağustos'ta Sürüm A'ya alınmadı.
    düşürdü).
 6. **Düzen testinin boyu** ürünün göründüğü EN DAR/EN KISA yüzeyi temsil
    etmeli — etmiyorsa yeşil olması hiçbir şey garanti etmez.
-
----
-
-## 13. Push bildirimleri + Firebase Analytics — **YENİ, 26 Ağustos 2026**
-
-Dört olay: **teslim uyarısı** · oyun daveti · arkadaş daveti · hamle sırası.
-
-Kullanıcı isteği: *"App'de notification özelliği açanlara hamle sırası, oyun
-daveti, arkadaş daveti geldiğinde uyarıları çıkmalı."*
-
-**Ölçülen başlangıç noktası — hiç push altyapısı YOK:** `pubspec.yaml`'da
-Firebase/messaging paketi yok, `AndroidManifest`'te `POST_NOTIFICATIONS`
-izni yok, token tutan bir tablo yok. Yani bu sıfırdan bir altyapı işi.
-
-**Ama olayların İKİSİ zaten sunucuda var** (e-posta kanalı olarak):
-
-| Olay | Sunucu tarafı | Push için ek iş |
-|---|---|---|
-| **Teslim uyarısı** ("24 saat içinde hamle yapmazsan…") | `notify-deadline-warnings` — tetikleyici, metin ve `deadline_warning_sent_at` tekrar koruması **HAZIR** | **en ucuz**: aynı noktada ikinci kanal |
-| Oyun daveti | `notify-game-invite` | ucuz — kanal eklemek |
-| Arkadaş daveti | `notify-friend-request` | ucuz — kanal eklemek |
-| **Hamle sırası** ("sıra sende") | **YOK** | **en pahalı** — anlık olay sıfırdan |
-
-**SIRALAMA (26 Ağustos 2026'da DÜZELTİLDİ):** teslim uyarısı → davetler →
-sıra sende. İlk taslakta "önce sıra sende" yazıyordu; yanlıştı. Ölçünce
-çıktı ki teslim uyarısı hem **en ucuz** (üç parçası da hazır) hem **en
-değerli**: ötekiler bir fırsatı kaçırtır, bu bir KAYBI önler — oyun teslim
-sayılıyor ve k-lig puanından 2 düşüyor. E-postayı görmeyen için push tam
-da bunun içindir.
-
-Mevcut e-posta metni kullanıcının istediği cümlenin ta kendisi ve İKİ
-durumu birden kapsıyor: Canlı oyunlarda 48 saatlik `turn_deadline`, YZ
-oyunlarında 7 günlük terk penceresi — ikisinde de son 24 saate girince.
-
-✅ **Bu satır KAPANDI (29 Ağustos 2026, canlıdan okundu):**
-`notify-deadline-warnings` **v11** yayında — *"takdirde"* yazımı doğru,
-push kanalı (`sendDeadlinePush`) İÇİNDE ve `verify_jwt: false`. Yani teslim
-uyarısı bugün hem e-posta hem push gönderiyor; bu satırda yapılacak iş yok.
-Buraya 26 Ağustos'tan kalma bir *"bekleyen deploy"* uyarısı yazılıydı ve
-**bayattı** — kaldırıldı. Faz 2'de öteki üç fonksiyona dokunulurken
-`verify_jwt` tuzağı yine geçerli: `deploy_edge_function`'a parametre
-geçilmezse araç `true` varsayar ve kapıyı sessizce kapatır, o yüzden önce
-`list_edge_functions` ile mevcut değeri oku, AYNI değeri açıkça geçir
-(kök `CLAUDE.md` → "Edge Function deploy").
-
-Yani "sıra sende" bildiriminin bir sunucu olayı hiç yok; hamle
-gönderiminde tetiklenen yeni bir kanca gerekiyor.
-
-### iOS: bugün çıkamaz, ama tasarım onu BEKLİYOR olacak
-
-APNs anahtarı **Apple Developer üyeliği** istiyor; üyelik süreci Apple'dan
-dönüş beklediği için ilerlemiyor (TestFlight'ı bloklayan aynı şey — madde 8
-ön koşulu). Kullanıcı kararı (26 Ağustos 2026): *"orada da bu fonksiyon
-ileride olacakmış gibi plan yapmak lazım."*
-
-**Bunun somut karşılığı — iOS sonradan EKLENMELİ, YENİDEN YAZILMAMALI:**
-
-- **Tek gönderici: FCM.** FCM iOS'a da teslim ediyor (arka planda APNs'i
-  kendisi kullanıyor). Sunucu tarafı FCM üzerinden yazılırsa iOS günü
-  gelince yapılacak iş "ikinci bir gönderici yazmak" DEĞİL, yalnızca
-  **APNs anahtarını Firebase'e yüklemek + uygulamaya Push capability
-  eklemek**. APNs'e doğrudan konuşan bir yol seçilirse bu kazanç kaybolur.
-- **İstemci: `firebase_messaging`** iki platformu birden karşılıyor; ayrı
-  bir iOS yolu yazma.
-- **`push_tokens.platform` baştan var** (`android`/`ios`) — sonradan kolon
-  eklemek, var olan satırların platformunu tahmin etmek demek olurdu.
-  `util/platform.dart` zaten bu değer kümesini üretiyor, onu kullan.
-- **İzin akışı ortak yazılsın:** iOS da açık izin istiyor (üstelik
-  "provisional" seçeneği var). İzni isteyen kod platforma DALLANMAMALI,
-  eklentinin ortak API'sini kullanmalı.
-- **Bildirime dokununca gitme** (deep link, madde 1) zaten platform
-  bağımsız — orada iOS'a özgü tek iş Associated Domains.
-
-Yani madde iOS'u BEKLEMEZ: Android'le çıkar, iOS bir anahtar yüklemesiyle
-açılır.
-
-### Yapılacaklar
-
-1. **Altyapı:** FCM (Android), cihaz token tablosu (`push_tokens`:
-   `user_id`, `token`, `platform`, `updated_at`; aynı kullanıcı birden
-   çok cihaz), token yenilenmesi ve **çıkışta/hesap silmede temizlenmesi**
-   (`delete_account_cascade`'e satır!).
-2. **İzin:** Android 13+ `POST_NOTIFICATIONS` runtime izni. İzin İSTEME
-   ANI önemli — açılışta sormak reddi artırır; ilk Canlı oyun ya da ilk
-   davet anında sor.
-3. **Tercih — KARAR VERİLDİ (26 Ağustos 2026): e-posta KALIR, iki BAĞIMSIZ
-   anahtar, otomatik bastırma YOK.** Kullanıcı önce *"app kullananlara
-   email gitmesine gerek yok"* dedi, ama kontrolün zorluğu sorulunca
-   *"zor ise kalabilir, isteyen ayarlardan kapatabilir"* diye bıraktı.
-   Ölçülen durum: kontrol teknik olarak KOLAY (push tablosu zaten
-   gerekiyor, e-posta fonksiyonlarına tek bir `exists` kontrolü yeterdi) —
-   ama **yanlış olurdu**:
-   - Token bayatlarsa (uygulama silinmiş, bildirim sistem ayarından
-     kapatılmış, token yenilenmemiş) push GİTMEZ; e-postayı da bastırmışsak
-     kullanıcı **hiçbir şey** almaz. Bu, iki bildirim almaktan çok daha kötü
-     ve **SESSİZ** bir arıza: kimse şikayet etmez, yalnızca oyunlar ölür.
-   - Uygulama telefonda olsa bile bazı kullanıcılar bildirimi mailde görmeyi
-     tercih ediyor (masaüstünde çalışırken).
-
-   Bu yüzden: `profiles.email_notifications_enabled` (VAR) + yeni
-   `push_notifications_enabled`, ikisi de AÇIK gelir, Hesap Ayarları'nda
-   ayrı ayrı görünür. İleride "çok mail geliyor" diye GERÇEK bir şikayet
-   gelirse tek güvenli bastırma biçimi şudur: e-postayı yalnızca push'un
-   GERÇEKTEN teslim edildiği olayda bastırmak (FCM `UNREGISTERED` dönerse
-   token'ı silip e-postaya düşmek). Bu ek iştir ve şikayet gelmeden
-   yapılmaz.
-4. **"Sıra sende" olayı:** hamle gönderiminde tetiklenen kanca.
-   ⚠ İki tuzak: (a) hamleyi YAPANA gönderme; (b) hızlı gidip gelen bir
-   oyunda her hamlede bildirim spam olur — e-posta tarafındaki
-   `deadline_warning_sent_at` deseninin karşılığı bir bastırma gerekir.
-5. **Tıklayınca doğru yere git:** bildirime dokunmak ilgili oyunu/daveti
-   AÇMALI. Deep link altyapısı madde 1'le kesişiyor — ikisi birlikte
-   planlanmalı.
-6. **Play Data safety formu:** FCM token bir cihaz tanımlayıcısıdır;
-   `marketing/play-store/console-formlari.md`'deki eşleme güncellenmeli.
-   Bu form yanlışsa mağaza reddi gelir.
-
-### Firebase Analytics — aynı pakette (26 Ağustos 2026, kullanıcı kararı)
-
-Kullanıcı: *"Bence hepsini bir kerede halletmek iyi olur."* FCM için
-Firebase zaten kurulacağından Analytics'i o anda açmak neredeyse bedava.
-
-**Neden gerekli — ÖLÇÜLDÜ:** bugünkü şema sonuçları görüyor, davranışı
-görmüyor. `guest_visits`/`device_visits` → `profiles` → `game_starts` →
-`game_finishes` zinciri "ne oldu"yu veriyor; ekran görüntülenmesi, sekme
-geçişi, akış içi terk noktası, oturum uzunluğu YOK. **Bedeli bu proje
-zaten ödedi:** insanlar tanıtım ekranında takılıyordu (3 günde 2 kayıt) ve
-sebebi veriden GÖRÜLMEDİ — kullanıcı insanlarla konuşunca öğrenildi.
-`game_starts` bunu gösteremezdi, çünkü o insanlar oyuna hiç ulaşamamıştı.
-
-İlk olay kümesi (değeri en yüksek altı): `intro_slide_viewed`,
-`signup_started`, `signup_completed`, `live_game_form_opened`,
-`live_game_created`, `invite_link_shared`.
-
-⚠ **Admin panelinden metrik KALDIRMA — kanıta bağlı.** Kullanıcı
-*"admin'de olup FB tarafında daha iyisi olan dataları admin'den
-kaldırabiliriz bile"* dedi. Doğru, ama **kaldırmalar paralel koşu
-sonrasına**: GA4 şunların yerini ALAMAZ — (a) kaynak hunisi web'de
-başlıyor (`utm_source` karşılama katmanında; uygulamadaki GA4 o yarıyı
-görmez), (b) retention/aktivasyon hesap+oyun kayıtlarından hesaplanıyor,
-GA4'ünki cihaz kapsamlı ve web+app'i aynı kişide birleştirmez, (c) join
-edilebilirlik ("k-lig'de yükselenler daha çok davet mi gönderiyor?" senin
-şemanda tek sorgu), (d) GA4 örnekleme yapar ve olayı 2-14 ay tutar,
-`games` sonsuza kadar sende. Kaldırılmaya net aday: cihaz/OS kırılımı
-(`device_visits`). Gerisi ancak GA4'ün daha iyi verdiği ÖLÇÜLDÜKTEN sonra.
-Gerekçe bu projeye özgü: ölçümü, yerine geçecek şeye güvenmeden kaldırmak
-"sessiz kayıp" sınıfından bir hatadır ve fark edilmesi en zor olanıdır.
-
-### Sıra
-
-1. **Teslim uyarısı push'u** (en ucuz + en değerli, yukarıdaki tabloya bak)
-2. Oyun daveti · arkadaş daveti kanalları
-3. **"Sıra sende"** — sunucu olayı sıfırdan
-4. Analytics olayları
-
-Not: oyun daveti ve arkadaş daveti için e-posta ZATEN gidiyor, yani o
-ikisinin push katkısı en düşük olan.
-
 
 ---
 
