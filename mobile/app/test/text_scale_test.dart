@@ -340,6 +340,74 @@ void main() {
             'board_widget.dart\'taki notu güncelle.');
   });
 
+  // ——— 2d. Tahta FİLİGRANLARI sistem yazı boyutundan MUAF ———
+  //
+  // 2 Eylül 2026, kullanıcı cihazda (zoom ekran görüntüsüyle): *"en büyük
+  // fontta bölge watermarklar da büyüyüp bölgenin dışına taşıyor. Onu da
+  // sabitlemek lazım."*
+  //
+  // Bunlar okunacak METİN değil: puntosu tahtanın GEOMETRİSİNDEN türeyen
+  // (`fluidSize(screenWidth, …)`) dekoratif zemin şekilleri — bir ikon
+  // gibi. Büyütmek okunurluğa hiçbir şey katmıyor, yalnızca bölge sınırını
+  // bozuyor. Ve ölçüt web: orada CSS `clamp()` px tabanlı, tarayıcı tüm
+  // SAYFAYI zoom'lar; yani sabitlemek pariteyi KURUYOR, bozmuyor.
+  // ⚠ `mobile/CLAUDE.md` kural 1'in ("ekran başına ölçek kısıtı YAZMA")
+  // ihlali DEĞİL — o kural okunan metni korur.
+  //
+  // ÖLÇÜLDÜ (düzeltmeden önce, tavan 1,3 — köşe rakamı ↔ 4×4 blok kenarı):
+  //   320 px → 104,0 / 90,2  = %115 TAŞIYOR
+  //   360 px → 104,0 / 102,5 = %101 TAŞIYOR
+  //   390 px → %93 · 412 px → %88 · 430 px → %84
+  testWidgets('tahta filigranları yazı ölçeğiyle BÜYÜMEZ (bölgeyi taşırmaz)',
+      (tester) async {
+    Future<Map<String, Size>> olc(double olcek) async {
+      await setPhoneViewSize(tester, const Size(360, 800));
+      await tester.pumpWidget(_olcekli(
+        olcek,
+        BoardWidget(
+          state: _state(),
+          onOpenHistory: () {},
+          onOpenHelp: () {},
+        ),
+      ));
+      await tester.pump();
+      final m = <String, Size>{};
+      for (final t in const ['X2', 'X3', '1', '2']) {
+        final f = find.text(t);
+        if (f.evaluate().isNotEmpty) m[t] = tester.getRect(f.first).size;
+      }
+      return m;
+    }
+
+    final normal = await olc(1.0);
+    final tavan = await olc(kMaxTextScale);
+
+    expect(normal.keys, contains('X2'),
+        reason: 'fikstür bozuk: bonus filigranı hiç çizilmemiş');
+
+    for (final k in normal.keys) {
+      expect(tavan[k]!.width, closeTo(normal[k]!.width, 0.01),
+          reason: '"$k" filigranı ölçekle büyümüş '
+              '(${normal[k]!.width} → ${tavan[k]!.width}). '
+              '`textScaler: TextScaler.noScaling` düşmüş olabilir — '
+              'board_widget.dart `_watermarks` / merkez "X3".');
+      expect(tavan[k]!.height, closeTo(normal[k]!.height, 0.01),
+          reason: '"$k" filigranının YÜKSEKLİĞİ ölçekle büyümüş.');
+    }
+
+    // Ve gerçekten bölgeye sığıyor olmalı — yukarıdaki iddia yalnızca
+    // "değişmedi" diyor, bu "yeterince küçük" diyor.
+    final grid = tester.getRect(find.byType(GridView).first);
+    final hucre = (grid.width - 12 * 3) / boardSize;
+    final kose4x4 = 4 * hucre + 3 * 3;
+    for (final k in const ['1', '2']) {
+      if (!tavan.containsKey(k)) continue;
+      expect(tavan[k]!.height, lessThan(kose4x4),
+          reason: '"$k" köşe filigranı 4×4 bloğun dışına taşıyor '
+              '(${tavan[k]!.height} > $kose4x4).');
+    }
+  });
+
   // ——— 3. SIFIRA SIKIŞMA: arkadaşlık isteği satırı ———
   //
   // Kullanıcının BİLDİRDİĞİ hata. Taşma üretmediğinden yukarıdaki envantere

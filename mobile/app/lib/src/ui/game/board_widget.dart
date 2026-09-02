@@ -37,32 +37,46 @@ int debugBoardBuildCountForTests = 0;
 const double _outlineRadius = 0.16;
 const double _outlineStroke = 2.5;
 
-/// Görünür karenin kırpma PAYI (1 Eylül 2026, kullanıcı APK'da gördü:
-/// *"Bölge çizgisi kenarlarda inceliyor"*): bölge dış hattının yolu hücre
-/// sınırının ÜZERİNDE, yani ızgara kutusunun dış kenarında stroke'un yarısı
-/// (2.5/2) kutunun DIŞINA taşar ve zoom'da bu taşma ×2 olur (2.5 px).
-/// ClipRect tam kutudan kırptığında kenardaki çizgi yarıya iniyordu — zoom
-/// ÖNCESİNDE hiç kırpma olmadığından taşma 10 px'lik tahta dolgusuna
-/// çiziliyordu ve özgün görünüm buydu. Pay = zoom'lu taşma + AA; dolgunun
-/// içinde kalır. Zoom'la kenar ortadan kesilirken pay kadar fazla hücre
-/// içeriği görünür — 3.5 px, gözle seçilemiyor ve alternatifi (pay yok)
-/// kullanıcının bildirdiği inceltme.
-const double _zoomClipSlack = _outlineStroke * kBoardZoomScale / 2 + 1;
-
-class _ZoomClipSlackClipper extends CustomClipper<Rect> {
-  const _ZoomClipSlackClipper();
-  @override
-  Rect getClip(Size size) => Rect.fromLTRB(-_zoomClipSlack, -_zoomClipSlack,
-      size.width + _zoomClipSlack, size.height + _zoomClipSlack);
-  @override
-  bool shouldReclip(covariant CustomClipper<Rect> oldClipper) => false;
-}
+/// ⚠ Burada 1 Eylül 2026'dan 2 Eylül 2026'ya kadar bir `_zoomClipSlack`
+/// (≈3.5 px) ve onu uygulayan `_ZoomClipSlackClipper` vardı. KALDIRILDI,
+/// çünkü var olma sebebi ortadan kalktı: pay, "dış hat ızgara kutusunun
+/// kenarında stroke'un yarısı kadar dışarı taşıyor ve tam kutudan kırpınca
+/// inceliyor" diye konmuştu — o gün 10 px'lik dolgu kırpmanın DIŞINDAYDI.
+/// Artık dolgu ölçeklenen içeriğin İÇİNDE (aşağıdaki `_zoomWrap` notu),
+/// yani dış hattın taşması kırpma sınırından ≥10 px (zoom'da ≥20 px)
+/// içeride kalıyor ve pay hiçbir şey korumuyor. Web ikizi de tam bu
+/// gerekçeyle pay taşımıyor (`Board.tsx` → "Pay neden 0").
 
 /// Tahtanın iç dolgusu ve kartın köşe yarıçapı — İKİSİ de birden fazla
 /// yerde kullanılıyor (dolgu `_zoomWrap`te, yarıçap kartın dekorasyonunda
-/// ve rozet kırpıcısında). Sabit olarak duruyorlar ki ayrışmasınlar.
-const double _boardPad = 10;
+/// ve kırpıcılarda). Sabit olarak duruyorlar ki ayrışmasınlar.
+///
+/// [kBoardPad] PUBLIC: iki oyun ekranı da zoom odak noktasını ızgara
+/// uzayından tahta uzayına çevirirken bunu ekliyor (ızgara, ölçeklenen
+/// kutunun içinde bu kadar sağa/aşağı duruyor). Web'de böyle bir çeviri
+/// yok çünkü orada `elementFromPoint` ve `getBoundingClientRect` aynı
+/// elemanı okuyor; portta odak `grid.globalToLocal` ile alınıyor (ters
+/// transform'u Flutter'ın kendisi yapsın diye) ve o eleman dolgunun
+/// İÇİNDEKİ ızgara.
+const double kBoardPad = 10;
 const double _cardRadius = 18;
+
+/// Tahta kartının kutusu, ÜST iki köşesi yuvarlanmış — zoom'da hem ızgarayı
+/// hem rozet katmanını kırpar. Web ikizi: `inset(0 round 18px 18px 0 0)`.
+/// Alt köşeler bilerek KARE: kartın altında alt bilgi şeridi var, onları
+/// yuvarlamak tahtanın alt köşelerini keserdi.
+class _CardClipper extends CustomClipper<Path> {
+  const _CardClipper();
+  @override
+  Path getClip(Size size) => Path()
+    ..addRRect(RRect.fromRectAndCorners(
+      Offset.zero & size,
+      topLeft: const Radius.circular(_cardRadius),
+      topRight: const Radius.circular(_cardRadius),
+    ));
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
 
 /// Hamle rozeti KATMANININ kırpması — web ikizinin BİREBİR karşılığı
 /// (`Board.tsx` → `clipPath: inset(0 round 18px 18px 0 0)`).
@@ -80,13 +94,19 @@ const double _cardRadius = 18;
 /// Katmanın kutusu ızgaranın DOLGULU alanı, kırpma ise TAHTANIN kutusu
 /// olmalı — bu yüzden dolgu kadar genişletiliyor. Pay YOK: rozet kartın
 /// içinde kalır, kenarda gerekirse kesilir (kullanıcı kararı, web ile aynı).
+///
+/// ⚠ 2 Eylül 2026'dan beri YALNIZCA zoom'suz dalda (salt-okunur önizlemeler,
+/// `zoom` verilmemiş testler). Zoom'lu dalda katmanın kutusu artık tahtanın
+/// KENDİSİ olduğundan orada genişletmesiz `_CardClipper` kullanılıyor —
+/// ikisini birleştirmek, biri genişletmeli biri değil oldukları için
+/// rozeti bir dalda 10 px yanlış kırpardı.
 class _BadgeCardClipper extends CustomClipper<Path> {
   const _BadgeCardClipper();
   @override
   Path getClip(Size size) => Path()
     ..addRRect(RRect.fromRectAndCorners(
-      Rect.fromLTRB(-_boardPad, -_boardPad, size.width + _boardPad,
-          size.height + _boardPad),
+      Rect.fromLTRB(-kBoardPad, -kBoardPad, size.width + kBoardPad,
+          size.height + kBoardPad),
       topLeft: const Radius.circular(_cardRadius),
       topRight: const Radius.circular(_cardRadius),
     ));
@@ -226,8 +246,31 @@ class BoardWidget extends StatelessWidget {
   /// (verilmezse — önizlemeler, testlerin çoğu — uyarı hiç çizilmez).
   final OnlineStatus? onlineStatus;
 
-  /// Zoom sarmalayıcısı (1.0.5): ızgara Stack'i ClipRect + Transform +
-  /// translucent Listener ile sarılır. `zoom` verilmemişse ESKİ DAVRANIŞ
+  /// Zoom sarmalayıcısı (1.0.5): ızgara Stack'i ClipPath + Transform +
+  /// translucent Listener ile sarılır.
+  ///
+  /// ⚠ KATMAN SIRASI WEB'İN BİREBİR AYNISI OLMAK ZORUNDA (2 Eylül 2026,
+  /// kullanıcı APK'da bildirdi: *"zoomdayken kenarlarda çerçeve duruyor.
+  /// Web'deki gibi yuvarlak kenarlı alanın tamamına kadar gitmeli."*).
+  /// Doğru sıra — dıştan içe: `Listener → ClipPath(kart) → Transform →
+  /// Padding(10) → ızgara`. Yani **dolgu ölçeklenen içeriğin İÇİNDE**,
+  /// kırpma ise kartın TAMAMI.
+  ///
+  /// Öncesinde dolgu en DIŞTAydı (`Listener → Padding → ClipRect →
+  /// Transform → ızgara`) ve sonuç ölçüldü: kart 390×390 iken kırpan kutu
+  /// 10..380, yani dört kenarda ölçeklenmeyen 10 px'lik kalıcı bir çerçeve.
+  /// Web'de o kutu (`data-board-viewport`) `absolute inset-0`, yani kartın
+  /// tamamı; dolgu `data-board-grid`in İÇİNDE (`p-[10px]`) ve transform
+  /// onun üzerinde. Bu yüzden web'de çerçeve zoom'la birlikte ölçeklenip
+  /// kaydırmayla ekrandan çıkıyor, portta ise sabit duruyordu.
+  ///
+  /// ⚠ Bunun matematiksel yan etkisi VAR ve ekranlar buna göre çağırıyor:
+  /// ölçeklenen kutu artık ızgara (kart−20) değil KARTIN kendisi, yani
+  /// `toggleAt`/`panBy`e verilen boyut görünür kare olmalı (web `boxOf`
+  /// ile aynı) ve odak noktası ızgara uzayından tahta uzayına `kBoardPad`
+  /// eklenerek çevrilmeli. Boyut ızgaradan verilseydi izinli öteleme 20 px
+  /// kısa kalırdı — 1 Eylül'de web'de tam bu sınıftan bir hata yaşandı
+  /// (`useBoardZoom.ts`'teki "`/ BOARD_ZOOM_SCALE` YOK ve OLMAMALI" notu). `zoom` verilmemişse ESKİ DAVRANIŞ
   /// BİREBİR — hiçbir sarmalayıcı kurulmaz (salt-okunur önizlemeler,
   /// mevcut testler).
   ///
@@ -248,9 +291,10 @@ class BoardWidget extends StatelessWidget {
   /// zoom'lu ızgara da taşar ve kartın gövdesine sızardı.
   Widget _zoomWrap(Widget grid, {Widget? unclipped}) {
     final z = zoom;
+    const pad = EdgeInsets.all(kBoardPad);
     // Kırpılan gövde + kırpılmayan rozet TEK matrisi paylaşır (iki ayrı
     // tween ikisini animasyon boyunca ayrıştırırdı).
-    Widget katmanla(Widget govde, Matrix4? m) {
+    Widget katmanla(Widget govde, Matrix4? m, {required bool zoomlu}) {
       final u = unclipped;
       if (u == null) return govde;
       return Stack(
@@ -262,10 +306,22 @@ class BoardWidget extends StatelessWidget {
             // kapatma animasyonu boyunca rozeti kartın dışından süzülerek
             // geçirirdi. Dinlenmede zaten kesmiyor — rozetin 1×'teki
             // taşması tahtanın 10 px dolgusundan küçük.
-            child: ClipPath(
-              clipper: const _BadgeCardClipper(),
-              child: m == null ? u : Transform(transform: m, child: u),
-            ),
+            //
+            // ⚠ Rozet katmanı ızgarayla AYNI kutuyu ve AYNI dolguyu almak
+            // ZORUNDA: rozet hücre indeksinden yüzdeyle konumlanıyor
+            // (`_moveBadge` → LayoutBuilder), yani kutusu ızgaranınkinden
+            // 10 px kayarsa rozet de kayar.
+            child: zoomlu
+                ? ClipPath(
+                    clipper: const _CardClipper(),
+                    child: Transform(
+                        transform: m!,
+                        child: Padding(padding: pad, child: u)),
+                  )
+                : ClipPath(
+                    clipper: const _BadgeCardClipper(),
+                    child: m == null ? u : Transform(transform: m, child: u),
+                  ),
           ),
         ],
       );
@@ -275,7 +331,6 @@ class BoardWidget extends StatelessWidget {
     // (aşağıdaki Listener) çerçeveyi de kapsasın diye (1 Eylül 2026,
     // kullanıcı APK'da bildirdi: "zoom sadece karelerde çalışıyor,
     // kenarlar da dahil olmalı"). zoom verilmemişken ağaç ESKİSİYLE aynı.
-    const pad = EdgeInsets.all(_boardPad);
     if (z == null) {
       return Padding(
           padding: pad,
@@ -283,7 +338,8 @@ class BoardWidget extends StatelessWidget {
               viewportKey == null
                   ? grid
                   : KeyedSubtree(key: viewportKey, child: grid),
-              null));
+              null,
+              zoomlu: false));
     }
     Widget w = AnimatedBuilder(
       animation: z,
@@ -298,15 +354,16 @@ class BoardWidget extends StatelessWidget {
         // dokümantasyonu — kapı kutunun BOYUTUNU okur, clipper'ın payı onu
         // değiştirmez).
         builder: (context, m, c) => katmanla(
-          ClipRect(
+          ClipPath(
             key: viewportKey,
-            clipper: const _ZoomClipSlackClipper(),
+            clipper: const _CardClipper(),
             child: Transform(
                 key: const ValueKey('board-zoom-transform'),
                 transform: m,
-                child: c),
+                child: Padding(padding: pad, child: c)),
           ),
           m,
+          zoomlu: true,
         ),
         child: child,
       ),
@@ -318,7 +375,7 @@ class BoardWidget extends StatelessWidget {
       onPointerUp: onBoardPointerUp,
       onPointerCancel:
           onBoardPointerCancel == null ? null : (_) => onBoardPointerCancel!(),
-      child: Padding(padding: pad, child: w),
+      child: w,
     );
   }
 
@@ -1072,6 +1129,7 @@ class BoardWidget extends StatelessWidget {
         content = Center(
           child: Text(
             'X3',
+            textScaler: TextScaler.noScaling,
             style: TextStyle(
               color: _centerText,
               fontFamily: 'SpaceMono',
@@ -1169,6 +1227,28 @@ class BoardWidget extends StatelessWidget {
   /// 4/13'lük alanından (680px'lik tahtada ~203) büyük olabiliyor — web'de
   /// de taşıyor. `FractionallySizedBox` çocuğuna TIGHT kısıt verdiğinden,
   /// araya konmazsa yazı ortalanmak yerine kutunun üstünden çizilirdi.
+  /// Köşe numarası + "X2" bölge filigranları.
+  ///
+  /// ⚠ `textScaler: TextScaler.noScaling` — sistem yazı boyutundan MUAF
+  /// (2 Eylül 2026, kullanıcı cihazda bildirdi: *"en büyük fontta bölge
+  /// watermarklar da büyüyüp bölgenin dışına taşıyor"*).
+  ///
+  /// **Bu, `mobile/CLAUDE.md` kural 1'in ("ekran başına ölçek kısıtı
+  /// YAZMA") ihlali DEĞİL.** O kural OKUNAN metni korur; buradakiler
+  /// okunacak metin değil, punto'su tahtanın GEOMETRİSİNDEN türeyen
+  /// dekoratif zemin şekilleri (`fluidSize(screenWidth, …)` — ekran
+  /// genişliğinin fonksiyonu, tıpkı bir ikon gibi). Büyütmek okunurluğa
+  /// hiçbir şey katmıyor, yalnızca bölge sınırını bozuyor. Ve asıl ölçüt
+  /// şu: **web bunları hiç ölçeklemiyor** (CSS `clamp()` px tabanlı,
+  /// tarayıcı tüm SAYFAYI zoom'lar), yani sabitlemek pariteyi KURUYOR.
+  ///
+  /// ÖLÇÜLDÜ (tavan 1,3; köşe rakamı ↔ 4×4 bloğun kenarı):
+  ///   320 px → 104,0 / 90,2 = **%115 (taşıyor)**
+  ///   360 px → 104,0 / 102,5 = **%101 (taşıyor)**
+  ///   390 px → %93 · 412 px → %88 · 430 px → %84
+  /// "X2" (en fazla %69) ve "X3" (en fazla %84) tavanda taşmıyordu ama
+  /// %30 büyüyorlardı; üçü de aynı sınıf olduğundan üçü de sabitlendi —
+  /// yalnızca taşanı düzeltmek, ikisini web'den ayrık bırakmak olurdu.
   Widget _watermarks(List<PlayerColor?> cornerColor, List<int?> cornerNumber,
       double screenWidth) {
     const cornerFrac = cornerSize / boardSize;
@@ -1195,6 +1275,7 @@ class BoardWidget extends StatelessWidget {
                       maxHeight: double.infinity,
                       child: Text(
                         '${cornerNumber[i]}',
+                        textScaler: TextScaler.noScaling,
                         style: TextStyle(
                           color: cornerColor[i]!.base,
                           fontFamily: 'SpaceMono',
@@ -1220,6 +1301,7 @@ class BoardWidget extends StatelessWidget {
                   maxHeight: double.infinity,
                   child: Text(
                     'X2',
+                    textScaler: TextScaler.noScaling,
                     style: TextStyle(
                       color: const Color(0xFF92660A),
                       fontFamily: 'SpaceMono',

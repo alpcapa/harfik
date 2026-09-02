@@ -20,6 +20,78 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 179 — zoom'da kalıcı 10 px çerçeve + filigranların yazı
+     ölçeğiyle bölgeyi taşırması (2 Eylül 2026; değişen:
+     `ui/game/board_widget.dart`, `ui/game/game_screen.dart`,
+     `ui/live/online_game_screen.dart`, `test/board_zoom_test.dart`,
+     `test/text_scale_test.dart`):**
+     - **Kullanıcı APK'da bildirdi (ekran görüntüsüyle):** *"App'de
+       zoomdayken kenarlarda çerçeve duruyor. Web'deki gibi yuvarlak
+       kenarlı alanın tamamına kadar gitmeli. Web'e bak, aynısını uygula.
+       Bir de en büyük fontta bölge watermarklar da büyüyüp bölgenin
+       dışına taşıyor."*
+     - **A) ÇERÇEVE — fark YAPISALDI, değer değil.** Kural gereği önce web
+       okundu:
+
+       | | Web | Port (önce) |
+       |---|---|---|
+       | Kırpan kutu | kartın TAMAMI (`inset-0`) | kart − 10 px |
+       | 10 px dolgu | transform'un İÇİNDE | transform'un DIŞINDA |
+
+       ÖLÇÜLDÜ: kart 390×390 iken portun kırpan kutusu **10..380** —
+       dört kenarda ölçeklenmeyen, kaydırmayla da kaybolmayan bir çerçeve.
+       Web'de dolgu `data-board-grid`in içinde (`p-[10px]`) ve transform
+       onun üzerinde, yani çerçeve zoom'la ölçeklenip kaydırmayla ekrandan
+       çıkıyor.
+     - **Düzeltme = web'in katman sırasının birebir portu:**
+       `Listener → ClipPath(kart) → Transform → Padding(10) → ızgara`.
+       Kırpma artık kartın kendisi (üst iki köşe yuvarlak, web
+       `inset(0 round 18px 18px 0 0)`).
+     - **Matematiksel yan etkisi VAR ve atlanmadı:** ölçeklenen kutu artık
+       ızgara değil KART, yani `toggleAt`/`panBy`e verilen boyut görünür
+       kare olmalı ve odak `kBoardPad` eklenerek ızgara uzayından tahta
+       uzayına çevrilmeli. Verilmeseydi izinli öteleme 20 px kısa kalırdı —
+       1 Eylül'de web'de tam bu sınıftan bir hata yaşanmıştı.
+     - **Parite ÖLÇÜLDÜ, varsayılmadı:** web'de (görünür kare 366 px) en uç
+       ötelemede ızgara elemanının sağ kenarı görünür kareninkine tam
+       oturuyor (378 = 378), yani öteleme −366 = −(kare genişliği). Portta
+       düzeltmeden sonra −390 = −(kare genişliği 390). Aynı kural.
+     - **`_zoomClipSlack` (≈3.5 px) KALDIRILDI.** Var olma sebebi "dolgu
+       kırpmanın dışında"ydı; artık dış hattın ≤2.5 px'lik taşması kırpma
+       sınırından ≥10 px (zoom'da ≥20 px) içeride. Web de tam bu gerekçeyle
+       pay taşımıyor. Onu iddia eden test SİLİNMEDİ, aynı değişmezi
+       MESAFEYLE ölçen bir testle değiştirildi.
+     - ⚠ **Yanındaki test SESSİZCE BOŞA DÜŞMÜŞ.** Rozetin kırpılmadığını
+       iddia eden test `ClipRect && clipper != null` arıyordu; görünür kare
+       `ClipPath`e dönünce predicate hiçbir şeye uymaz oldu ve test yeşil
+       kalarak bir şey kanıtlamamaya başladı. Ayırt edici ızgaranın kendi
+       transform anahtarına çevrildi. **Ders: bir widget TİPİNİ değiştiren
+       her düzeltmede, o tipi arayan testleri de ara** — yeşil kalmaları
+       düzeltmenin doğru olduğunu değil, testin körleştiğini gösterebilir.
+     - **B) FİLİGRANLAR.** Köşe numarası / "X2" / merkez "X3" puntoları
+       `fluidSize(screenWidth, …)` ile GEOMETRİDEN türüyor ama sistem yazı
+       ölçeği onları ayrıca çarpıyordu; `OverflowBox` içinde oldukları için
+       de kırpılmadan bölgeden taşıyorlardı. ÖLÇÜLDÜ (tavan 1,3; köşe
+       rakamı ↔ 4×4 blok kenarı): **320 px %115 · 360 px %101 (ikisi de
+       taşıyor)** · 390 %93 · 412 %88 · 430 %84. "X2" (≤%69) ve "X3"
+       (≤%84) taşmıyordu ama %30 büyüyorlardı.
+     - **Çözüm `textScaler: TextScaler.noScaling`** — üçüne birden.
+       ⚠ Bu, `mobile/CLAUDE.md` kural 1'in ("ekran başına ölçek kısıtı
+       YAZMA") ihlali DEĞİL: o kural OKUNAN metni korur, bunlar puntosu
+       geometriden türeyen dekoratif zemin şekilleri (ikon gibi).
+       Büyütmek okunurluğa bir şey katmıyor, yalnızca bölge sınırını
+       bozuyor. Ve ölçüt web: orada `clamp()` px tabanlı, tarayıcı tüm
+       SAYFAYI zoom'lar — yani sabitlemek pariteyi KURUYOR. Yalnızca
+       taşanı düzeltmek ikisini web'den ayrık bırakırdı, o yüzden üçü de.
+     - **İki negatif eş de koşuldu:** filigran sabitlemesi kaldırılınca
+       yeni test *"X2 filigranı ölçekle büyümüş (73,4 → 95,5)"* ile,
+       dolgu tekrar dışa alınınca zoom testi *"görünür karenin içinde tam
+       dolgu kadar durmalı"* ile düşüyor.
+     - ⚠ **Testin kendisi ilk yazılışta yanlış kuruldu ve ölçüm düzeltti:**
+       köşeye çift dokunmak odak ötelemesi yarattığından mesafe 20 yerine
+       −3,1 çıktı. Kurulum "ötelemeyi 0'a daya, sonra ölç" hâline geldi.
+     - **Doğrulama:** `dart analyze` temiz · `flutter test` 701 → **702**.
+
    - ✅ **Parça 178 — şerit ÇEVRİMDIŞIYKEN iki satıra düşüyordu; "taşma
      yok" testi bunu göremez (2 Eylül 2026; değişen:
      `ui/game/board_widget.dart`, `test/text_scale_test.dart`):**

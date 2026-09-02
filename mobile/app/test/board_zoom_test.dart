@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/auth_service.dart';
 import 'package:kelimeki/src/game/game_controller.dart';
+import 'package:kelimeki/src/ui/game/board_widget.dart' show kBoardPad;
 import 'package:kelimeki/src/ui/game/board_zoom.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/theme.dart';
@@ -408,20 +409,72 @@ void main() {
   });
 
   testWidgets(
-      'görünür karenin kırpma payı bölge çizgisinin taşmasını kapsar — '
-      '"bölge çizgisi kenarlarda inceliyor" düzeltmesi', (tester) async {
+      'kırpan kutu KARTIN TAMAMI, dolgu ölçeklenen içeriğin İÇİNDE — '
+      'zoom kenarda çerçeve bırakmaz (2 Eylül 2026)', (tester) async {
+    // Kullanıcı APK'da bildirdi: *"zoomdayken kenarlarda çerçeve duruyor.
+    // Web'deki gibi yuvarlak kenarlı alanın tamamına kadar gitmeli."*
+    //
+    // ⚠ BU TEST BİR ÖNCEKİNİN YERİNİ ALDI. Öncesinde burada "görünür
+    // karenin kırpma PAYI (≈3.5 px) bölge çizgisinin taşmasını kapsar"
+    // iddiası vardı. O pay, dolgu kırpmanın DIŞINDAYKEN gerekliydi; artık
+    // dolgu ölçeklenen içeriğin içinde, yani dış hattın ≤2.5 px'lik
+    // taşması kırpma sınırından ≥10 px (zoom'da ≥20 px) içeride. Aynı
+    // değişmez (kenardaki çizgi incelmez) KORUNUYOR, mekanizması değişti —
+    // ve bu test onu payla değil MESAFEYLE ölçüyor.
     await pumpZoomGame(tester);
-    final clip = tester.widget<ClipRect>(find.byWidgetPredicate(
-        (w) => w is ClipRect && w.clipper != null));
-    final r = clip.clipper!.getClip(const Size(100, 100));
-    // Dış hat stroke'u (2.5) yolun merkezinde: kutu dışına yarım kalınlık,
-    // zoom'da ×2 → 2.5 px taşar. Pay bunu (+AA) kapsamalı, yoksa kenardaki
-    // çizgi yarıya iner (kullanıcı cihazda gördü).
-    const beklenenTasma = 2.5;
-    expect(r.left, lessThanOrEqualTo(-beklenenTasma));
-    expect(r.top, lessThanOrEqualTo(-beklenenTasma));
-    expect(r.right, greaterThanOrEqualTo(100 + beklenenTasma));
-    expect(r.bottom, greaterThanOrEqualTo(100 + beklenenTasma));
+
+    // Görünür kare = zoom transform'unun ÜSTÜNDEKİ ClipPath.
+    final zoomTransform = find.byKey(const ValueKey('board-zoom-transform'));
+    final vpFinder =
+        find.ancestor(of: zoomTransform, matching: find.byType(ClipPath)).first;
+
+    // 1) Kırpma payı YOK: yol tam kutunun sınırlarında (web `inset(0 …)`).
+    final clip = tester.widget<ClipPath>(vpFinder);
+    final b = clip.clipper!.getClip(const Size(100, 100)).getBounds();
+    expect(b, const Rect.fromLTRB(0, 0, 100, 100),
+        reason: 'Kırpma kutudan taşıyor ya da içeride kalıyor. Web ikizi '
+            '`inset(0 round 18px 18px 0 0)` — pay 0.');
+
+    // 2) ASIL İDDİA: ızgaranın içeriği görünür karenin İÇİNDE, dolgu kadar.
+    //    Eski yapıda (dolgu en dışta) bu mesafe 0'dı ve aradaki 10 px
+    //    ölçeklenmeyen bir çerçeve olarak duruyordu.
+    double dolguMesafesi() {
+      final vp = tester.getRect(vpFinder);
+      // Izgara İÇERİĞİ = dolgunun içindeki kutu. `GridView` onunla aynı
+      // kutuyu kaplıyor (kardeş katmanlar `Positioned.fill`).
+      final grid = tester.getRect(find.byType(GridView).first);
+      return grid.left - vp.left;
+    }
+
+    expect(dolguMesafesi(), closeTo(kBoardPad, 0.5),
+        reason: 'Zoom KAPALIYKEN ızgara, görünür karenin içinde tam dolgu '
+            'kadar durmalı. 0 çıkıyorsa dolgu yine en dışa taşınmış '
+            'demektir (çerçeve hatası geri geldi).');
+
+    // 3) Zoom AÇILINCA dolgu da ölçeklenir — çerçevenin sabit kalmadığının
+    //    kanıtı. Sabit kalsaydı bu sayı yine kBoardPad olurdu.
+    await doubleTapAt(tester, tester.getCenter(boardCell(6, 6)));
+    await tester.pumpAndSettle();
+    expect(isZoomedIn(tester), isTrue);
+
+    // ÖTELEMEYİ SIFIRA DAYA: çift dokunuş odaklı açtığından ölçüm aksi
+    // hâlde odak ötelemesini de içerir (ilk yazılışta tam bu yüzden −3,1
+    // çıktı, 20 değil). Sağa/aşağı kaydırmak offset'i 0'a kırpar.
+    final g = await tester.startGesture(tester.getCenter(boardCell(6, 6)));
+    await tester.pump(const Duration(milliseconds: 20));
+    for (var i = 0; i < 8; i++) {
+      await g.moveBy(const Offset(120, 120));
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    await g.up();
+    await tester.pumpAndSettle();
+    expect(zoomMatrix(tester).getTranslation().x, closeTo(0, 0.01),
+        reason: 'öteleme 0\'a dayanmadı — ölçüm odak kaymasını içerir');
+
+    expect(dolguMesafesi(), closeTo(kBoardPad * kBoardZoomScale, 1.0),
+        reason: 'Zoom AÇIKKEN dolgu ölçeklenmiyor — demek ki transform\'un '
+            'DIŞINDA kalmış. Web\'de dolgu `data-board-grid`in içinde ve '
+            'onunla birlikte ölçekleniyor.');
   });
 
   testWidgets(
@@ -440,16 +493,21 @@ void main() {
         (w) => w is Text && (w.data ?? '').startsWith('+'));
     expect(rozet, findsOneWidget, reason: 'hamle rozeti hiç çizilmemiş');
 
-    // Kanıt YAPISAL: rozetin üstünde kırpıcılı ClipRect (görünür kare)
-    // OLMAMALI. Piksel karşılaştırması bu ortamda kırpmayı göstermez —
+    // Kanıt YAPISAL: rozet, IZGARANIN kırpılan dalında OLMAMALI (kendi
+    // katmanı var). Piksel karşılaştırması bu ortamda kırpmayı göstermez —
     // getRect kırpılmış widget'ın da tam kutusunu döndürür.
+    //
+    // ⚠ Bu iddia 2 Eylül 2026'ya kadar `ClipRect && clipper != null`
+    // arıyordu ve görünür kare `ClipPath`e dönünce SESSİZCE HİÇBİR ŞEYE
+    // UYMAZ hâle geldi — yani test yeşil kalıp bir şey kanıtlamıyordu.
+    // Ayırt edici artık ızgaranın kendi transform'u: rozet onun altına
+    // düşerse kırpılan dala girmiş demektir.
     expect(
       find.ancestor(
           of: rozet,
-          matching: find.byWidgetPredicate(
-              (w) => w is ClipRect && w.clipper != null)),
+          matching: find.byKey(const ValueKey('board-zoom-transform'))),
       findsNothing,
-      reason: 'rozet görünür karenin İÇİNDE kalmış — kenarda kesilir',
+      reason: 'rozet ızgaranın kırpılan dalına girmiş — kenarda kesilir',
     );
 
     // Ve rozet gerçekten ızgaranın dışına taşıyor olmalı (test aksi hâlde
@@ -465,8 +523,7 @@ void main() {
     expect(
       find.ancestor(
           of: rozet,
-          matching: find.byWidgetPredicate(
-              (w) => w is ClipRect && w.clipper != null)),
+          matching: find.byKey(const ValueKey('board-zoom-transform'))),
       findsNothing,
     );
     expect(controller.state.placed, hasLength(1));

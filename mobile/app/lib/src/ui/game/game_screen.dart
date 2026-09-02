@@ -554,7 +554,18 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     // Zoom KAPALIYKEN transform birim matristir → `globalToLocal` ölçeksiz
     // yerel noktayı verir (toggleAt'in beklediği uzay). Açıkken odak zaten
     // kullanılmaz — kapanış offset'i sıfırlar.
-    _zoom.toggleAt(grid.globalToLocal(global), grid.size);
+    //
+    // ⚠ ÖLÇEKLENEN KUTU IZGARA DEĞİL, TAHTANIN KENDİSİ (2 Eylül 2026):
+    // `board_widget.dart` → `_zoomWrap` artık web'le aynı sırada
+    // (`ClipPath(kart) → Transform → Padding(10) → ızgara`), yani zoom
+    // matematiğinin kutusu görünür kare (web `boxOf` ile aynı) ve odak
+    // ızgara uzayından tahta uzayına `kBoardPad` eklenerek çevriliyor.
+    // Izgara boyutu verilseydi izinli öteleme 20 px kısa kalırdı.
+    final vp = _boxOf(_viewportKey);
+    _zoom.toggleAt(
+      grid.globalToLocal(global) + const Offset(kBoardPad, kBoardPad),
+      vp?.size ?? grid.size,
+    );
   }
 
   Future<void> _handlePlay(MoveStatus? moveStatus) async {
@@ -729,9 +740,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
     final grid = _boxOf(_gridKey);
     if (grid == null) return;
-    // grid.size LAYOUT boyutudur (transform boyutu değiştirmez) — clamp
-    // matematiği ölçeksiz kare üzerinden.
-    _zoom.panBy(e.delta, grid.size);
+    // Kutu LAYOUT boyutudur (transform boyutu değiştirmez) — clamp
+    // matematiği ölçeksiz kare üzerinden. Görünür kare (= ölçeklenen
+    // kutu, kartın tamamı) varsa O kullanılır; gerekçe `_toggleZoomAt`.
+    _zoom.panBy(e.delta, _boxOf(_viewportKey)?.size ?? grid.size);
   }
 
   void _boardPointerUp(PointerUpEvent e) {

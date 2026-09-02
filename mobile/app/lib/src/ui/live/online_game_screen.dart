@@ -1227,7 +1227,13 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     _zoomDenendiIsaretle();
     final grid = _boxOf(_gridKey);
     if (grid == null) return;
-    _zoom.toggleAt(grid.globalToLocal(global), grid.size);
+    // ⚠ Ölçeklenen kutu ızgara DEĞİL tahtanın kendisi — gerekçe
+    // game_screen.dart'ın ikizindeki not (2 Eylül 2026).
+    final vp = _boxOf(_viewportKey);
+    _zoom.toggleAt(
+      grid.globalToLocal(global) + const Offset(kBoardPad, kBoardPad),
+      vp?.size ?? grid.size,
+    );
   }
 
   RenderBox? _boxOf(GlobalKey key) =>
@@ -1307,7 +1313,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     }
     final grid = _boxOf(_gridKey);
     if (grid == null) return;
-    _zoom.panBy(e.delta, grid.size);
+    _zoom.panBy(e.delta, _boxOf(_viewportKey)?.size ?? grid.size);
   }
 
   void _boardPointerUp(PointerUpEvent e) {
