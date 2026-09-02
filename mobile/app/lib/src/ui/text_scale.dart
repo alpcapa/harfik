@@ -12,6 +12,17 @@
 //      Çözümü [kMaxTextScale]: tavan koymak. ÖLÇÜLDÜ (tüm takım, ölçek
 //      enjekte edilerek): 1,0 → 0 taşma · 1,3 → 10 · 1,6 → 27 · 2,0 → 73.
 //
+//   3. SARMA (1 Eylül 2026, kullanıcı cihazda bildirdi: *"fontlarını büyüten
+//      kişilerde bitirme modalı puanları bölüyor"*) — taşma YOK, sıkışma YOK,
+//      ama SABİT PİKSEL genişlikli bir kutudaki metin büyüyünce kutuya
+//      sığmayıp SATIR KIRIYOR: `241` ekranda `24` / `1` diye okunuyor. Hiçbir
+//      hata basılmaz. Tavan bunu ÇÖZMEZ (1,3'te de sarıyor) ve bazı vakalar
+//      ölçek 1,0'da BİLE sarıyor (4 haneli skor `1000`, `+12`, `12.`).
+//      ÖLÇÜLDÜ (gerçek fontlarla, 14 sabit genişlikli sütun): 1,3'te 10
+//      nokta sarıyor, 4'ü zaten 1,0'da sarıyordu.
+//      Çözümü [scaledWidth] + [ScaledCell]: kutu yazı ölçeğiyle BİRLİKTE
+//      büyür, buna rağmen sığmayan içerik SARMAK yerine KÜÇÜLTÜLÜR.
+//
 //   2. SIFIRA SIKIŞMA — taşma YOK, ama satırdaki tek esnek öğe (genelde
 //      isim) sabit genişlikli komşuları büyüdükçe eziliyor. Hiçbir hata
 //      basılmaz; kullanıcı sadece bilginin kaybolduğunu görür. Tavan bunu
@@ -45,3 +56,63 @@ const double kWideLayoutScale = 1.15;
 /// Kullanımı: `if (buyukOlcek(context)) ...` → satırı ikiye böl.
 bool buyukOlcek(BuildContext context) =>
     MediaQuery.textScalerOf(context).scale(100) / 100 >= kWideLayoutScale;
+
+/// Sabit piksel genişliğin yazı ölçeğiyle BÜYÜTÜLMÜŞ hâli (SINIF 3).
+///
+/// Sütun genişlikleri web'de ölçülen mürekkebe göre seçilmiş sabitler
+/// (`GameOverModal`: Kalan 29 · Toplam 37 · k-lig 20). Metin ölçekle
+/// büyürken kutu sabit kalırsa metin sarıyor — kutu da aynı oranda
+/// büyütülünce sarma kökten ortadan kalkıyor. Satırdaki esnek öğe (isim,
+/// `Expanded` + `ellipsis`) bu büyümeyi soğurur.
+double scaledWidth(BuildContext context, double px) {
+  final olcek = MediaQuery.textScalerOf(context).scale(100) / 100;
+  // ⚠ KISMİ ölçek — tam ölçek SINIF 3'ü çözerken SINIF 2'yi tetikliyordu.
+  // ÖLÇÜLDÜ (GameOver, uzun ad "Abdurrahman Çelebioğlu", tavan 1,3):
+  //   kutu sabit  → isim 124,0 px (skorlar BÖLÜNÜYOR — asıl hata)
+  //   tam ölçek   → isim  98,2 px (−25,8; skor tam boy)
+  //   1,15 tavanı → isim 111,1 px (−12,9; skor 1,0'dakinden hâlâ %15 büyük,
+  //                 gerekirse %11 küçültülüyor — okunurluk sınırının içinde)
+  // Yani satırdaki esnek öğenin (isim) bedeli YARIYA iniyor ve skor yine de
+  // büyüyor. Tavan [kWideLayoutScale] ile AYNI sayı ve bu tesadüf değil:
+  // ikisi de "düzenin bir satırda taşıyabileceği büyüme" sınırını tarif
+  // ediyor. Üstündeki büyümeyi `ScaledCell`in `FittedBox`u soğuruyor.
+  return px * (olcek > kWideLayoutScale ? kWideLayoutScale : olcek);
+}
+
+/// Sabit genişlikli bir SÜTUN hücresi — sarmayı YAPISAL olarak imkânsız
+/// kılar (SINIF 3'ün tek çözüm noktası).
+///
+/// Üç katman, üçü de gerekli:
+///   1. Genişlik [scaledWidth] ile ölçekle büyür.
+///   2. Metin `maxLines: 1` + `softWrap: false` — sarma kapalı.
+///   3. Yine de sığmazsa `FittedBox(scaleDown)` KÜÇÜLTÜR. Bu, tavanın
+///      çözemediği "1,0'da bile sarıyor" vakalarının (4 haneli skor)
+///      cevabı: sayı küçülür ama BÖLÜNMEZ ve okunur kalır.
+///
+/// [align] hücrenin hizası — skor sütunları sağa dayalı.
+class ScaledCell extends StatelessWidget {
+  final double width;
+  final Widget child;
+  final Alignment align;
+  const ScaledCell({
+    super.key,
+    required this.width,
+    required this.child,
+    this.align = Alignment.centerRight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: scaledWidth(context, width),
+      child: Align(
+        alignment: align,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: align,
+          child: child,
+        ),
+      ),
+    );
+  }
+}

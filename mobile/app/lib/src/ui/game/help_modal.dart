@@ -6,6 +6,7 @@
 // yazılmaz. Web metni değişirse buraya da aynen taşınmalı (iki taraf tek
 // kaynaktan üretilmiyor; ayrık ama birebir).
 import 'package:flutter/material.dart';
+import '../text_scale.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show bingoBonus, trUpper;
 
 import 'modal_shell.dart';
@@ -210,10 +211,13 @@ class _RankRow extends StatelessWidget {
   Widget build(BuildContext context) => Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
+          ScaledCell(
             width: 26,
+            align: Alignment.topCenter,
             child: Text(
               tier.letter,
+              maxLines: 1,
+              softWrap: false,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'SpaceMono',

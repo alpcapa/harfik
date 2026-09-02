@@ -33,7 +33,9 @@ import 'package:kelimeki/src/ui/game/logo_mark.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/intro/intro_screen.dart';
 import 'package:kelimeki/src/ui/live/live_games_tab.dart';
+import 'package:kelimeki/src/ui/game/player_avatar_row.dart';
 import 'package:kelimeki/src/ui/setup/setup_screen.dart';
+import 'package:kelimeki/src/ui/text_scale.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -907,5 +909,91 @@ void main() {
     await tester.pumpAndSettle();
     expect(arkadaslaRozeti(), findsNothing,
         reason: 'oyundan dönüş, listeninki gibi, rozet için de KESİN bir an');
+  });
+
+  // ─────────────────────────────────────────────────────────────────────
+  // SINIF 2 (sessiz sıkışma) — "Devam Eden Oyun" satırı.
+  //
+  // ÖLÇÜLDÜ (2 Eylül 2026, 320 px, ölçek 1,0 → 1,3): sol sütun 114,9 → 73,9
+  // px, yani %36 kayıp. Risk kütüğündeki dört class-2 adayının ölçülen EN
+  // KÖTÜSÜ. Sebep: sağdaki durum etiketi (`SIRA SENDE` + ok) ölçekle
+  // büyürken `Expanded` olan sol taraf ondan artakalanı alıyor.
+  // Bölünmüş düzende aynı ölçüm 114,9 → 266,0 px.
+  //
+  // Test iki AYRI şeyi birden kilitliyor, çünkü ikisi ayrı ayrı bozulabilir:
+  //   1. ölçek tavanında isim alanı ARTIK DARALMIYOR (sıkışma kapandı),
+  //   2. bunu düzeltmenin YOLU satırı ikiye bölmek — etiket avatar
+  //      satırının ALTINA geçmiş olmalı (yoksa 1. şart, etiketi kırparak
+  //      da sağlanabilirdi).
+  testWidgets(
+      'DEVAM EDEN OYUN: ölçek tavanında satır İKİYE bölünür, isim alanı sıkışmaz',
+      (tester) async {
+    late AppStorage storage;
+    await tester.runAsync(() async {
+      storage = await openTestStorage();
+      final repo = LocalGameRepo(storage);
+      final c =
+          GameController(words: words, autoPlayAi: false, nowIso: () => '');
+      final session = repo.attach(c);
+      c.dispatch(StartAction(const [
+        PlayerSetup(name: guestPlayerName, isAI: false),
+        PlayerSetup(name: 'Yapay Zeka 2', isAI: true),
+      ]));
+      c.dispatch(const PassAction());
+      c.dispatch(const AiPlayAction());
+      await session.end();
+    });
+
+    // (genislik, altAlta) döndürür — isim alanının genişliği ve durum
+    // etiketinin avatar satırının altına geçip geçmediği.
+    Future<(double, bool)> olc(double olcek) async {
+      // En dar desteklenen telefon: sıkışma burada en sert.
+      await setPhoneViewSize(tester, const Size(320, 900));
+      await tester.pumpWidget(MaterialApp(
+        theme: kelimekiTheme(),
+        navigatorObservers: [kRouteObserver],
+        home: Builder(
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(olcek)),
+            child: SetupScreen(services: services(storage: Future.value(storage))),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      for (var i = 0;
+          i < 50 && tester.any(find.text('KAYITLAR KONTROL EDİLİYOR…'));
+          i++) {
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 20)));
+        await tester.pump();
+      }
+      expect(find.text('DEVAM EDEN OYUN'), findsOneWidget);
+      // Ölçülen şey avatar dizisi DEĞİL, onu barındıran sol sütunun eni:
+      // sıkışan alan bu (`Expanded` düzeninde sağdaki etiketten artakalan).
+      final solSutun = find
+          .ancestor(
+              of: find.byType(PlayerAvatarRow), matching: find.byType(Column))
+          .first;
+      final isim = tester.getRect(solSutun);
+      final etiket = tester.getRect(find.textContaining('SIRA SENDE'));
+      return (isim.width, etiket.top >= isim.bottom);
+    }
+
+    final (genislikNormal, boluNormal) = await olc(1.0);
+    final (genislikTavan, boluTavan) = await olc(kMaxTextScale);
+
+    // Normal ölçekte düzen DEĞİŞMEMELİ — tek satır, etiket sağda.
+    expect(boluNormal, isFalse,
+        reason: 'ölçek 1,0da satır bölünmemeli (web paritesi)');
+    // Tavanda ikiye bölünmüş olmalı…
+    expect(boluTavan, isTrue,
+        reason: 'ölçek ${kMaxTextScale}te durum etiketi alt satıra geçmeli');
+    // …ve isim alanı daralmamalı (eskiden %41 kaybediyordu).
+    expect(genislikTavan, greaterThanOrEqualTo(genislikNormal),
+        reason: 'isim alanı ${genislikNormal.toStringAsFixed(1)} → '
+            '${genislikTavan.toStringAsFixed(1)} px daraldı');
+
+    await tester.runAsync(() => storage.close());
   });
 }
