@@ -423,6 +423,13 @@ class _SetupScreenState extends State<SetupScreen>
         source: FeedbackSource.general);
   }
 
+  /// Footer'daki "Paylaş" linkinin kendi kutusu — iPad popover ankrajı
+  /// BURADAN alınmalı. `State.context` kullanmak ekranın TAMAMINI ankraj
+  /// yapıyordu ve iPad'de paylaşım sessizce asılı kalıyordu (2 Eylül 2026,
+  /// ölçüldü — bkz. `shareOriginFrom`). Desen oyun geçmişindeki
+  /// `_captureKey.currentContext ?? context` ile aynı.
+  final GlobalKey _shareLinkKey = GlobalKey();
+
   Future<void> _handleShare() {
     // GA4 `invite_link_shared` {source: setup_footer} — gerekçe ve ölçüm
     // sınırı friends_modal'daki eş çağrının yorumunda.
@@ -431,7 +438,7 @@ class _SetupScreenState extends State<SetupScreen>
       png: null,
       text: 'Hemen ücretsiz dene!',
       url: '$webOrigin/?ref=arkadas',
-      origin: shareOriginFrom(context),
+      origin: shareOriginFrom(_shareLinkKey.currentContext ?? context),
     );
   }
 
@@ -1299,6 +1306,7 @@ class _SetupScreenState extends State<SetupScreen>
                             // taraması çocuğun TÜRÜNE değil, kutuya bir
                             // ölçü veren bir şey olup olmadığına bakmalı.
                             TapTarget(
+                              key: _shareLinkKey,
                               onTap: _handleShare,
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,

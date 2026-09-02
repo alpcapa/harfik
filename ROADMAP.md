@@ -578,7 +578,7 @@ AYNI PR'da.
 
 ---
 
-## 8. FAZ A1 Bölüm 6 (Paylaşma) — iPad popover ankrajı, cihazda kapatılacak
+## 8. FAZ A1 Bölüm 6 (Paylaşma) — iPad popover ankrajı · **HATA BULUNDU, düzeltme yazıldı, yeniden test bekliyor**
 
 **Kod işi YOK, bekleyen tek şey bir DOĞRULAMA.** Parça 86 (13 Ağustos
 2026): `share_plus`ın iOS eklentisi iPad'de paylaş sayfasını popover
@@ -588,6 +588,47 @@ yerine `FlutterError` döndürüyor, iki `catch` onu yutuyor ve kullanıcıya
 typedef'te zorunlu, iki katmanlı test) — kalan tek soru gerçek iPad'de
 popover'ın çıkıp çıkmadığı. Üç yol da denenmeli: (a) oyun geçmişinde tahta
 paylaşımı, (b) Setup'ta "Arkadaşınla paylaş", (c) Arkadaşlar'da davet linki.
+
+### ✅ 2 Eylül 2026 — DOĞRU ORTAMDA KOŞULDU ve İKİ YOL KIRIK ÇIKTI
+
+Appetize → **iPad Air / iOS 16.2** (yani native iOS kanalı, doğru cihaz
+tipi). Sonuç:
+
+| Yol | Ankraj nereden geliyordu | Sonuç |
+|---|---|---|
+| Oyun geçmişi → tahta paylaşımı | `_captureKey.currentContext` — tahtanın `RepaintBoundary`si, **küçük ve gerçek** kutu | ✅ popover açıldı |
+| Setup → "Arkadaşınla paylaş" | `_SetupScreenState.context` — **ekranın TAMAMI** | ❌ "hiç tepki vermiyor" |
+| Arkadaşlar → davet linki | `_FriendsModalState.context` — **ekranın TAMAMI** | ❌ buton `…` (meşgul) durumunda kilitli |
+
+**KÖK SEBEP:** Parça 86 ankraj vermemeyi düzeltmişti; ankrajın KENDİSİNİN
+geçerli olması gerektiğini kimse kontrol etmemişti. Ekranı kaplayan bir
+dikdörtgen "boş değil" ve "kök view'ın içinde"dir — yani her iki eski
+kontrolden de geçer — ama iPad'de popover görünmüyor ve
+`SharePlus.share` **hiç dönmüyor**.
+
+**Fırlatma DEĞİL, ASILMA — kanıt ekran görüntüsünde:** `_handleInvite`in
+`finally`si `_inviteBusy`i sıfırlıyor; buton yine de `…`ta kaldı. Yani
+future dönmedi. Setup'ta meşgul durumu olmadığı için aynı asılma "hiçbir
+şey olmuyor" gibi görünüyor.
+
+**TESTLER NEDEN YEŞİLDİ:** `share_recent_test`in ankraj iddiası yalnızca
+"boş değil" + "ekranın içinde" diyordu; ekran boyutunda bir kutu ikisini de
+sağlıyor. Üstelik test yalnızca ÇALIŞAN yolu (oyun geçmişi) kapsıyordu.
+
+**DÜZELTME (aynı gün, dalda):**
+- `shareOriginFrom` artık ekranı iki eksende birden (≥%95) kaplayan bir
+  kutuyu ankraj SAYMIYOR, 1×1 merkez yedeğine düşüyor — popover ekranın
+  ortasında görünür oluyor. ⚠ Eşik bilerek "büyük" değil "ekranın tamamı":
+  ilk yazılan %50 ALAN eşiği ÇALIŞAN yolu kırardı (tahtanın ankrajı
+  telefonda alanın ~%46'sı).
+- İki kırık çağrı yeri artık kendi düğmesinin kutusuna bağlanıyor
+  (`_shareLinkKey`, `_inviteButtonKey`) — oyun geçmişindeki
+  `_captureKey.currentContext ?? context` deseninin aynısı.
+- `shareOriginFrom` için doğrudan sözleşme testi + akış testine üçüncü
+  iddia. Negatif eş: eşik kaldırılırsa test düşüyor.
+
+⏳ **KALAN: aynı üç yolun Appetize/iPad'de YENİDEN denenmesi.** Üçünde de
+paylaş kutusu açılmalı ve buton `…`ta kalmamalı.
 
 ⚠ **BU MADDEYİ NE KAPATMAZ — ölçüldü, 2 Eylül 2026.** Kullanıcı üç yolu da
 GERÇEK bir iPad'de denedi ve *"sorun yok"* dedi, ama derleme
