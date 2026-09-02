@@ -935,7 +935,12 @@ export function Board({
             {onOpenHelp && (
               <button
                 onClick={onOpenHelp}
-                className="flex items-center gap-1 min-h-[48px] text-[12px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
+                /* ⚠ 11px — BEŞ kardeşin hepsi aynı puntoda olmak zorunda.
+                   2 Eylül 2026: puntolar 12 → 11 indirilirken BU SATIR
+                   atlanmıştı (aralığın dışında kaldı) ve tek başına 12'de
+                   kaldı; kullanıcı cihazda fark etti (*"Nasıl Oynanır hâlâ
+                   12px sanki"*) ama o an geçiştirildi. */
+                className="flex items-center gap-1 min-h-[48px] text-[11px] font-mono font-bold tracking-[0.5px] text-accent shrink-0"
               >
                 <HelpIcon />
                 Yardım
