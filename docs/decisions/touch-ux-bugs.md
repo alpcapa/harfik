@@ -1127,3 +1127,32 @@ da kırmızı olduğundan bant rafın üstünden başlamak zorunda.
 
 **Ders:** bir iddia "şu ayar kurulu mu" diyorsa hatayı değil niyeti test
 ediyordur. Kırpma/boyama iddiaları pikselle ölçülür.
+
+### Kırpma KARE ve kartın DIŞINDAYDI (2 Eylül 2026, aynı zincirin üçüncü halkası)
+
+Rozet düzeldikten sonra kullanıcı preview'da üçüncü bir şey gördü:
+*"rozet artık taşmıyor, alt kısım ok ama tahtanın üstünde ve sağında da
+taşma var"*.
+
+Görünür karenin kırpması `inset(-4px)` idi — yani kartın **4 px DIŞINDA**
+ve **KARE**. Kart `rounded-[18px]`; kare kırpma o yuvarlak üst köşeleri de
+dolduruyor, üstelik dört yandan 4 px taşıyordu. Zoom kapalıyken görünmez
+(ızgaranın 10 px dolgusu var), zoom açıkken taşlar kenara dayandığı için
+ortaya çıkıyor.
+
+**Pay neden vardı ve neden gereksizdi:** dış hattın stroke'u hücre
+sınırının ÜZERİNDE çizildiğinden yarısı dışarı taşar diye konmuştu. Ama
+zoom'da dış hat ızgaranın 10 px dolgusunun içinde, yani 2×'te kenardan
+≥20 px içeride — kırpma sınırına hiç yaklaşmıyor. Pay hiçbir şey
+korumuyor, yalnızca kartın köşesini dolduruyordu. Kaldırıldı; kırpma artık
+kartın şeklini taşıyor: `inset(0 round 18px 18px 0 0)` — **yalnızca ÜST**
+iki köşe, çünkü alt iki köşe kartın ortasında (altında alt şerit var) ve
+onları yuvarlamak tahtanın alt köşelerini keserdi.
+
+**Ölçüm FARK ölçümü olmak zorundaydı:** skor kutucuklarının zemini de taş
+tonunda, mutlak sayım yanlış pozitif veriyor — ilk deneme "43 px taşma"
+raporladı, hepsi kutucuklardı. Zoom öncesi ↔ sonrası karşılaştırılıyor ve
+fark SATIR olarak sayılıyor: tek satır kırpma sınırındaki kenar
+yumuşatması, iki ve fazlası gerçek taşma. Negatif eş: eski `inset(-4px)`
+geri konunca test "kartın üstüne 4 satır fazladan boyadı (51,52,54,55)"
+diyerek düşüyor — tam olarak 4 px'lik pay.

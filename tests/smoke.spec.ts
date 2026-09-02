@@ -1882,6 +1882,72 @@ test.describe('tahta zoom', () => {
     ).toBe(false);
   });
 
+  // 2 Eylül 2026 — kullanıcı zoom'u preview'da denedi: *"rozet artık
+  // taşmıyor, alt kısım ok ama tahtanın üstünde ve sağında da taşma var"*.
+  // Görünür karenin kırpması KARE ve kartın 4 px DIŞINDAYDI, yani kartın
+  // 18 px'lik yuvarlak üst köşelerini de dolduruyordu. Kırpma artık kartın
+  // şeklini taşıyor (`inset(0 round 18px 18px 0 0)`).
+  //
+  // Ölçüm FARK ölçümü: skor kutucuklarının zemini de taş tonunda olduğundan
+  // mutlak sayım yanlış pozitif veriyor (ölçüldü: "43 px taşma" aslında
+  // kutucuklardı). Zoom ÖNCESİ ile SONRASI karşılaştırılıyor ve fark SATIR
+  // olarak sayılıyor — tek satırlık fark kırpma sınırındaki kenar
+  // yumuşatması, iki ve fazlası gerçek taşma.
+  test('zoom tahtayı kartın DIŞINA taşırmaz', async ({ page }) => {
+    await oyunEkrani(page);
+    const kart = (await page.locator('[data-board-viewport]').evaluate((el) => {
+      const c = el.closest('.rounded-\\[18px\\]') as HTMLElement;
+      const r = (c ?? el).getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    })) as { x: number; y: number; width: number; height: number };
+
+    async function tasanSatirlar(): Promise<number[]> {
+      const png = (await page.screenshot()).toString('base64');
+      return page.evaluate(
+        async ({ b64, kart }) => {
+          const bmp = await createImageBitmap(
+            await (await fetch(`data:image/png;base64,${b64}`)).blob(),
+          );
+          const c = document.createElement('canvas');
+          c.width = bmp.width;
+          c.height = bmp.height;
+          c.getContext('2d')!.drawImage(bmp, 0, 0);
+          const d = c.getContext('2d')!
+            .getImageData(0, 0, c.width, c.height)
+            .data;
+          // Taş zemini — camgöbeği oyuncunun tint'i (#A9E4EF).
+          const tas = (i: number) =>
+            Math.abs(d[i] - 169) < 25 &&
+            Math.abs(d[i + 1] - 228) < 25 &&
+            Math.abs(d[i + 2] - 239) < 25;
+          const satirlar: number[] = [];
+          for (let y = Math.max(0, Math.round(kart.y) - 30); y < kart.y; y++) {
+            for (let x = Math.round(kart.x); x < kart.x + kart.width; x++) {
+              if (tas((y * c.width + x) * 4)) {
+                satirlar.push(y);
+                break;
+              }
+            }
+          }
+          return satirlar;
+        },
+        { b64: png, kart },
+      );
+    }
+
+    const once = await tasanSatirlar();
+    const b = await hucreKutusu(page, 6, 6);
+    await ciftDokun(page, b.x + b.width / 2, b.y + b.height / 2);
+    expect(await olcek(page)).toBeCloseTo(2, 1);
+    const sonra = await tasanSatirlar();
+
+    const yeni = sonra.filter((y) => !once.includes(y));
+    expect(
+      yeni.length,
+      `zoom kartın üstüne ${yeni.length} satır fazladan boyadı (${yeni.join(",")})`,
+    ).toBeLessThanOrEqual(1);
+  });
+
   test('KENARDAN (kareler dışı) çift dokunuş da zoom açar', async ({ page }) => {
     await oyunEkrani(page);
     const vp = (await page.locator('[data-board-viewport]').boundingBox())!;

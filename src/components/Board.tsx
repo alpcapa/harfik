@@ -15,7 +15,6 @@ import type { GameState, MoveStatus } from '../game/types';
 import { key } from '../utils/board';
 import { buildRoundedOutlinePath } from '../utils/outline';
 import {
-  BOARD_CLIP_SLACK,
   BOARD_BADGE_CLIP_SLACK,
   ZOOM_ANIM_MS,
   ZOOM_OFF,
@@ -580,8 +579,8 @@ export function Board({
           açıkken kurulur — kapalıyken `clipPath: none`, yani eski render
           BİREBİR korunur (kırpmanın kendisi bir tur önce portta rozeti ve
           bölge çizgisini kesmişti; web'de o riski hiç doğurmuyoruz).
-          Pay (`BOARD_CLIP_SLACK`) dış hattın stroke taşması için: yol hücre
-          sınırının ÜZERİNDE, yarısı kutunun dışına düşüyor.
+          Kırpma KARE DEĞİL, kartın üst köşelerinin yuvarlağını taşır —
+          gerekçe aşağıdaki `clipPath` yorumunda.
           ⚠ `elementFromPoint` transform'u kendisi tersine çevirdiğinden
           hücre bulma/bırakma kodunun HİÇBİRİ değişmedi (portta bu iş için
           ayrı bir "görünür kare kapısı" yazmak gerekmişti). */}
@@ -591,7 +590,20 @@ export function Board({
         data-board-viewport=""
         className="absolute inset-0"
         style={{
-          clipPath: zoom.zoomed ? `inset(-${BOARD_CLIP_SLACK}px)` : undefined,
+          // ⚠ KARE DEĞİL, KARTIN ŞEKLİ. Önce `inset(-4px)` idi: kırpma
+          // kartın dışına 4 px taşıyor ve KARE olduğu için kartın 18 px'lik
+          // yuvarlak ÜST köşelerini de dolduruyordu — kullanıcı zoom'da
+          // "tahtanın üstünde ve sağında taşma" olarak gördü. ÖLÇÜLDÜ
+          // (fark ölçümü, zoom öncesi ↔ sonrası): kartın üstündeki bantta
+          // 462 → 527 taş renkli piksel, yani zoom 65 px² fazladan boyuyor.
+          // Yalnızca ÜST iki köşe yuvarlanıyor: alt iki köşe kartın
+          // ortasında (altında alt şerit var), onları yuvarlamak tahtanın
+          // alt köşelerini keserdi.
+          // Pay neden 0: zoom'da dış hat ızgaranın 10 px dolgusunun
+          // içinde, yani 2×'te kenardan ≥20 px içeride — kırpma sınırına
+          // hiç yaklaşmıyor; bu yüzden pay 0 ve eski `BOARD_CLIP_SLACK`
+          // sabiti kaldırıldı (rozetin KENDİ payı ayrı ve duruyor).
+          clipPath: zoom.zoomed ? 'inset(0 round 18px 18px 0 0)' : undefined,
           // Zoom'luyken parmak tahtayı kaydırır; tarayıcının kendi kaydırma
           // jesti devreye girerse pan hiç başlamaz.
           touchAction: zoom.zoomed ? 'none' : undefined,
