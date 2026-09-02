@@ -92,7 +92,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
-| **Sayaç bitince (~10 Eylül)** | **#17 Google ile giriş** — sunucu → web → mobil; migration BLOKER (OAuth bugün `handle_new_user`'da patlar) | ⏳ bilerek bekletiliyor, gerekçe #17'de |
+| **Play Store'a girdikten sonra** | **#17 Google ile giriş** — sunucu → web → mobil; migration BLOKER (OAuth bugün `handle_new_user`'da patlar) | ⏳ ERTELENDİ — acelesi yok, çalışan kimlik akışına şimdi dokunulmuyor (2 Eylül, kullanıcı). ⚠ Sayaçla İLİŞKİSİ YOK; o bağ aynı gün koptu, gerekçe #17'de |
 | **iOS/APNs** | Apple Developer üyeliğine bloke; iş "APNs anahtarını yükle + Push capability" kadar | 🔒 |
 
 ⚠ **"Console (elle)" satırı 31 Ağustos'a kadar BAYAT kaldı** — dört maddesi
@@ -667,39 +667,53 @@ gerekçeyle 27 Ağustos'ta Sürüm A'ya alınmadı.
 
 ---
 
-## 17. Google ile giriş/kayıt — **YENİ, 2 Eylül 2026** · ⏳ sayaç bitene kadar BEKLİYOR
+## 17. Google ile giriş/kayıt — **ERTELENDİ** (2 Eylül 2026) · Play Store'a girdikten SONRA
 
 Kullanıcı sordu: *"Google ve Apple signup/signin özelliği eklemek zor mu?
 Belki şimdilik sadece Google ile başlanabilir"* ve *"test sürecinde yapmak
-mantıklı mı?"*. Cevap: Google tek başına makul; **ama kapalı test sayacı
-bitmeden BAŞLAMA.**
+mantıklı mı?"*. Cevap: Google tek başına makul, **ama sıraya girdi.**
 
-### Neden şimdi değil (~10 Eylül'den sonra)
+### Neden ertelendi — kullanıcı kararı, 2 Eylül 2026
 
-**Sürüm çıkarmak sorun DEĞİL, bu ölçüldü:** sayaç 27/28 Ağustos'ta başladı
-ve o gün bugündür `1.0.4 (467)` (1 Eylül) ile `1.0.5 (501)` (2 Eylül)
-yüklendi; 14. gün hâlâ ~10 Eylül. Yani kapalı teste paket göndermek sayacı
-kırmıyor. Risk **hangi kodun** değiştiğinde:
+> *"Google signin olayını erteledik çünkü bu dönemde bu işi yapmanın
+> acelesi yok. Çalışan düzene çomak sokmak olur boşuna. O nedenle önce
+> Play Store'a girelim, sonra yaparız dedik. O kadar."*
 
-1. **Sayaçta pay olduğu KANITLANMADI** — kart 12 yazıyor, ama bunun gerçek
-   opt-in adedi mi şartın tavanı mı olduğu ölçülmedi (bkz. yukarıda
-   **"12" gerçek sayı mı, tavan mı**). Gerçek sayı tam 12 ise biri düşünce
-   sayaç sıfırlanır ve 13 gün kaybedilir; tavansa böyle bir risk yok.
-   ⚠ **Belirsizlik bu maddeyi erteleme yönünde etkiler, tersi yönde
-   DEĞİL:** bilinmeyen bir payın üstüne risk almak, bilinen bir payın
-   üstüne almaktan daha kötüdür. Gerekçenin ağırlığı zaten 2-4'te.
-2. **Giriş, bir tester'ı kaybettiren tek hata sınıfı.** Tahtadaki bir aksaklığı
-   tolere eden kullanıcı, "giriş yapamıyorum"da uygulamayı siler. Kazanç birkaç
-   gün erken çıkmak, kayıp 8 günün tamamı — asimetrik.
-3. **"Yalnızca web'de yaparım" kaçışı tam çalışmıyor:** `handle_new_user` web
-   ile portun ORTAK trigger'ı; hatalı bir migration mobil tarafta yeni kayıt
-   açılmasını da bozar.
-4. Production başvurusu penceresi açılırken stabil bir derleme isteniyor
-   (başvuru "nasıl test ettirdin, ne geri bildirim aldın" diye soruyor).
+Gerekçe bu: **öncelik sıralaması.** Yeni bir giriş yolu bugün hiçbir şeyi
+açmıyor — kimse "Google ile giremiyorum" diye şikayet etmedi — ve çalışan
+bir kimlik akışına dokunmanın karşılığı yok. Play Store'a girildikten
+sonra yapılır.
 
-Acele bir sebep çıkarsa tek makul ara yol: **yalnızca adım 0**'ı (katı biçimde
-EKLEMELİ migration, hiçbir mevcut alanın davranışını değiştirmeyen) yapıp
-`execute_sql` ile doğrulamak, kullanıcıya görünen hiçbir şeyi açmamak.
+⚠ **BU MADDE SAYAÇLA İLİŞKİLİ DEĞİL — 2 Eylül 2026'da AYRILDI.** Burada
+*"kapalı test sayacı bitmeden BAŞLAMA"* diye dört maddelik bir risk
+analizi vardı: özü, bozuk bir girişin tester'ı kaybettirip 12/14 sayacını
+sıfırlayabileceğiydi. Kullanıcı sordu (*"17 Google sign-in işi değil mi?
+Test süreciyle ne alakası var?"*) ve zincir açılınca ÜÇ yerden koptu:
+
+- **Uygulamayı silmek testerlıktan çıkmak değil** — deponun kendi tester
+  mesajı bunu söylüyor (*"uygulamayı silsen bile testerlıktan çıkma"*) ve
+  kaldırmanın opt-in'i düşürüp düşürmediği zaten ÖLÇÜLMEMİŞ.
+- **Mevcut tester'lar çoktan kayıtlı.** Google girişi EK bir yol; e-posta/
+  şifreyle girenler yeni bir butondan etkilenmez. "Giriş yapamıyorum"
+  asıl olarak YENİ kayıt olanı vurur.
+- **Sayacın "tam 12" olduğu da artık kesin değil** (yukarıdaki açık soru).
+
+**Ders:** bir erteleme kararının gerekçesi, kararın KENDİSİNDEN daha
+karmaşık yazılmışsa muhtemelen sonradan uydurulmuştur. Gerçek sebep bir
+öncelik tercihiydi; yerine bir risk zinciri yazılınca hem yanlış hem de
+sahte bir takvim bağı ("~10 Eylül") doğdu.
+
+### İşin KENDİ riski — takvimden bağımsız, ne zaman yapılırsa yapılsın
+
+Yukarıdaki zincir düştü ama şu ikisi düşmedi; ikisi de "ne zaman"la değil
+"nasıl"la ilgili:
+
+1. **`handle_new_user` web ile portun ORTAK trigger'ı.** "Yalnızca web'de
+   yaparım" diye bir kaçış YOK — hatalı bir migration mobil tarafta da yeni
+   kayıt açılmasını bozar. Migration adımı (aşağıda "0.") bu yüzden BLOKER.
+2. **Hesap birleştirme ölçülmedi** — aynı e-postayla önce şifreyle kayıt
+   olup sonra Google ile girmek. Bu, MEVCUT bir kullanıcıyı da vurabilir
+   (bkz. aşağıda "Ölçülmesi gereken, varsayılmayacak iki şey").
 
 ### Sıra: sunucu → web → mobil
 
