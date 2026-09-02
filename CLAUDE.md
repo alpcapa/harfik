@@ -19,7 +19,7 @@ npm run build   # TypeScript derleme + üretim build
 npm run dev     # Geliştirme sunucusu
 npm run preview # Üretim derlemesini yerelde önizle
 npm run lint    # tsc --noEmit (ayrı bir ESLint kurulumu yok)
-npm run test    # Playwright duman testleri (tests/smoke.spec.ts)
+npm run test    # Playwright duman testleri (tests/*.spec.ts)
 npm run generate-golden-vectors  # Flutter portu parite fixture'ları (bkz. "Flutter / Mobil Port")
 npm run generate-meanings-db     # Flutter portu için meanings.json → SQLite asset'i
 npm run generate-demo-board-dart # Karşılama tahtası → portun intro ekranı için demo_board_data.dart
@@ -43,6 +43,12 @@ npm run generate-icons           # favicon / app icon (public/) — og-image DE�
 npm run generate-og-image        # public/og-image.png (sosyal paylaşım kartı)
 npm run generate-play-assets     # Play mağaza ikonu (512) + öne çıkan görsel (1024×500)
 ```
+
+`tests/` altında üç spec var: `smoke.spec.ts` (kritik yol) ve
+`text-scale.spec.ts` + `text-scale-normal.spec.ts` (yazı ölçeği; ikisi ayrı
+dosya çünkü `--blink-settings` `launchOptions`ta ve Playwright onu DOSYA
+düzeyinde istiyor — `describe` içinde kullanılamıyor). Ortak kurulum
+`tests/gameOverFixture.ts`'te (`.spec.ts` değil, `testMatch` onu toplamaz).
 
 **`npm run test` neyi kapsıyor, neyi kapsamıyor:** `tests/smoke.spec.ts` kapsamlı bir test paketi DEĞİL — "uygulama açılıyor, 2 kişilik bir oyun başlatılabiliyor, YZ hamle yapıyor, bilinmeyen bir path SPA fallback'iyle açılıyor" düzeyinde bir kritik-yol kontrolü. Buraya kadar hatasız gelmek reducer/YZ/skor/bölge hesaplama zincirinin ucuna kadar çalıştığı ve `ErrorBoundary`'nin devreye girmediği anlamına geliyor.
 

@@ -1533,3 +1533,36 @@ olduğu gibi geçerli.
 - `destek@` ya da `noreply@` adresinden gelen kopyalar da elenmelidir
   (döngü koruması).
 
+
+## 24. Tarayıcı yazı boyutu ayarı — hiçbir sütun bölünmüyor (2 Eylül 2026)
+
+Mobil portta 1 Eylül 2026'da bulunan hata sınıfının web eşleniği (kullanıcı:
+*"fontlarını büyüten kişilerde bitirme modalı puanları bölüyor… Her koşulda
+modallar, butonlar, vb genel olarak hiç bir şey patlamamalı"*).
+
+⚠ **Tarayıcı ZOOM'u bu hatayı ÜRETMEZ** — zoom kutuları da büyütür. Doğru
+ayar **asgari yazı boyutu**: Chrome → Ayarlar → Görünüm → *Yazı tipi boyutunu
+özelleştir* → **Minimum yazı tipi boyutu = 16** (Safari: Tercihler →
+Gelişmiş → "Yazı tipi boyutu asla şundan küçük olmasın"). Yalnızca eşiğin
+altındaki puntoları yukarı çeker, px genişlikli kutular yerinde kalır.
+
+Bitirme modalı **otomatik ölçülüyor** (`npm run test` →
+`tests/text-scale.spec.ts`, `--blink-settings=minimumFontSize=16`); aşağıdaki
+üçü ise gerçek bir Supabase oturumu gerektirdiğinden ELLE:
+
+- [ ] **Skor Kartı → k-lig lider tablosu** → `Sıra`/`OHP`/`Puan` sütunları
+      tek satır; sayılar rakam rakam bölünmemeli, komşusunun üstüne
+      binmemeli.
+- [ ] **Tüm Oyunlarım → bir oyun kartı** → `Puan` ve `k-lig` başlıkları ve
+      altlarındaki sayılar tek satır.
+- [ ] **Nasıl Oynanır → Rütbeler ve Ödüller** → rütbe harfi tek satır.
+- [ ] Ayarı normale al → üç yüzeyde de görünüm ESKİSİYLE AYNI olmalı
+      (sütun genişlikleri ve aralıklar değişmemeli).
+
+**Neden ikisi farklı düzeltildi:** bitirme modalı ızgaraya çevrildi (sütunlar
+`auto`, yani genişliğini içeriğinden alıyor — elle yazılmış 29/37/20 px'in
+türetildiği kuralın kendisi; normal ölçekte AYNI sayıları verdiği ölçüldü).
+Ötekilerde `w-*` → `min-w-* whitespace-nowrap` yapıldı: normal ölçekte
+kanıtlanabilir biçimde etkisiz (kutular zaten içerikten geniş), büyüyünce
+kutu içeriğe göre açılıyor. Izgaraya çevirmek oralarda görünümü kaydırırdı,
+çünkü o genişlikler içeriğe tıpatıp oturmuyor (ör. `k-lig` için `w-8`).
