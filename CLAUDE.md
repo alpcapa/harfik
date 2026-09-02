@@ -44,6 +44,15 @@ npm run generate-og-image        # public/og-image.png (sosyal paylaşım kartı
 npm run generate-play-assets     # Play mağaza ikonu (512) + öne çıkan görsel (1024×500)
 ```
 
+⚠ **Web CI mobil testleri de koşuyor** (`.github/workflows/web-ci.yml` →
+`parite` işi, 2 Eylül 2026). Sebep: mobil testlerin bir bölümü web KAYNAK
+dosyalarını okuyor (`readRepoFile`; ör. `layout_parity_test.dart`
+`GameOver.tsx`teki `w-[29px]` sınıfından sayı çekiyor), yani saf bir web
+değişikliği bir mobil testi düşürebiliyor. Bu bir kez gerçekleşti ve `main`
+kırmızıya döndü. **Mobil testlere `mobile/` dışından yeni bir dosya
+okutursan** o yolun `web-ci.yml`in `paths` listesinde karşılığı olduğundan
+emin ol.
+
 `tests/` altında üç spec var: `smoke.spec.ts` (kritik yol) ve
 `text-scale.spec.ts` + `text-scale-normal.spec.ts` (yazı ölçeği; ikisi ayrı
 dosya çünkü `--blink-settings` `launchOptions`ta ve Playwright onu DOSYA
