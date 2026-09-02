@@ -13,6 +13,32 @@
 #
 # TETİKLEYİCİ: yalnızca web'i ilgilendiren dosyalar değiştiğinde (mobil
 # port kendi workflow'unda kapsanıyor, `mobile/**` burada YOK).
+#
+# ⚠ İKİNCİ İŞ — `parite` (2 Eylül 2026'da eklendi, GERÇEK BİR VAKADAN):
+# `mobile-build.yml` yalnızca `mobile/**` değişince tetikleniyor. Ama mobil
+# testlerin bir bölümü web KAYNAK DOSYALARINI OKUYOR (`readRepoFile`,
+# `test/support/web_source.dart`) — ör. `layout_parity_test.dart`,
+# `GameOver.tsx`teki `w-[29px]` sınıfından sayıyı çekip portun
+# `_ColHeader(width: 29)`'uyla karşılaştırıyor. Yani SAF BİR WEB PR'I bir
+# mobil testi düşürebilir ve HİÇBİR kontrol bunu görmez.
+# Olan tam olarak buydu: PR #401 o sınıfları ızgaraya çevirdi, iki PR ayrı
+# ayrı yeşildi, `main` merge'den SONRA kırmızıya döndü (697 geçti, 1 düştü).
+# Bu iş o deliği kapatıyor: web dosyaları değişince mobil test paketi de
+# koşuyor.
+#
+# NEDEN TAMAMI, "yalnızca parite testleri" DEĞİL: hangi testin web dosyası
+# okuduğunu grep'le seçmek kırılgan — desen kayarsa seçim SESSİZCE boşalır
+# ve iş yeşil kalır (bu depoda kayıtlı en kötü CI arızası tipi: kırmızı
+# değil, HİÇ ÇALIŞMAYAN kontrol). Tam paket ~2 dk sürüyor, `test` işiyle
+# PARALEL koşuyor, yani duvar saatine maliyeti yok.
+#
+# ⚠ `paths` LİSTESİ BU İŞİN DE KAPSAMI. Mobil testlerin okuduğu depo
+# dosyaları (2 Eylül 2026'da sayıldı): `src/**` (13 bileşen/util),
+# `scripts/verify-error-reporting.ts`, `supabase/migrations/**`,
+# `tailwind.config.js` — dördü de yukarıdaki listede VAR. Mobil testlere
+# `mobile/` DIŞINDAN yeni bir dosya okutulursa o yolun burada karşılığı
+# olduğundan emin ol, yoksa delik yeniden açılır.
+#
 # SÜRÜM NOTU (18 Ağustos 2026): action'lar Node 20 tabanlı `@v4`lerden
 # çıkarıldı — GitHub runner'ları Node 20'yi kullanımdan kaldırıyor ve her
 # koşuda "Node.js 20 is deprecated … forced to run on Node.js 24" uyarısı
@@ -134,3 +160,24 @@ jobs:
           path: playwright-report/
           retention-days: 7
           if-no-files-found: ignore
+
+  # Web kaynağını OKUYAN mobil testler (yukarıdaki başlık notuna bkz.).
+  # `test` işinden bağımsız ve paralel: Node'a da npm'e de ihtiyacı yok.
+  parite:
+    name: Mobil parite testleri (web kaynağını okuyanlar)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      # `mobile-build.yml`in "Uygulama analiz + testleri" adımıyla AYNI
+      # komut — ikisi ayrışmasın diye bilerek birebir. Analiz burada YOK:
+      # bu iş web değişikliğinin mobil tarafta ne kırdığını arıyor, Dart
+      # kodunun kendi statik analizi mobil workflow'un sorumluluğunda.
+      - name: Mobil test paketi
+        working-directory: mobile/app
+        run: |
+          flutter pub get
+          flutter test
