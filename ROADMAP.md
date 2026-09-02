@@ -76,9 +76,9 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Sayaç** | 12 tester × 14 gün | ⏳ işliyor, aksiyon yok · *Android developer verification* ✅ **BİTTİ** (Console'dan doğrulandı 31 Ağustos: `com.kelimeki.kelimeki` Registered, 3 anahtar, Identity dolu) |
 | **Console (elle)** | — | ✅ **KAPANDI** (bu satır 31 Ağustos'a kadar bayat kaldı; ayrıntı aşağıda) |
 | **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) · **+ #10 hata hız sınırı** (1 Eylül'de eklendi) | ✅ **1.0.4 (467) Play'e YÜKLENDİ, incelemede** (1 Eylül 2026) |
-| **1.0.5'e binen kod** | Tahta zoom'u (+2 APK turu) · zoom tanıtım balonu · yazı ölçeği (sınıf 3+2) · mesaj kutusu etiketi · **cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar)** | ✅ cihaz onayı ALINDI, **`1.0.5 (501) — 4a0a29b` Play'e yükleniyor** (2 Eylül 2026; ayrıntı aşağıdaki 1.0.5 turu) |
-| **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView · **1.0.5'in üç işi** (balon · yazı ölçeği · mesaj etiketi) + **filigranlar** | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); zoom turu 1 Eylül'de, zoom kenarı + çevrimdışı şerit 2 Eylül'de onaylandı; kalanlar bekliyor |
-| **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) | ⬜ |
+| **1.0.5'e binen kod** | Tahta zoom'u (+2 APK turu) · zoom tanıtım balonu · yazı ölçeği (sınıf 3+2) · mesaj kutusu etiketi · **cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar)** | ✅ cihaz onayı ALINDI, **`1.0.5 (501) — 4a0a29b` kapalı testte YAYINDA** (2 Eylül 2026, ~15:03; ayrıntı aşağıdaki 1.0.5 turu) |
+| **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView · **1.0.5'in üç işi** (balon · yazı ölçeği · mesaj etiketi) | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); zoom turu 1 Eylül'de, zoom kenarı + çevrimdışı şerit + **filigranlar** 2 Eylül'de onaylandı; kalan üç iş bekliyor |
+| **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) · **#16 devam eden oyun kartlarının düzen ayrışması** (2 Eyl, aşağıda) | ⬜ |
 | **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
@@ -120,7 +120,7 @@ cihaz turundan **beş düzeltme daha** çıktı.
 | #408 | Cihaz turu: k-lig sütunları · devam eden oyun kartı · alt şerit | ✅ şerit onaylandı |
 | #410 · #411 | Hamle rozeti zoom'da tahtanın DIŞINA çiziliyordu (web; ilk klip transform'lu katmandaydı ve işe yaramıyordu) | ✅ web'de onaylandı |
 | #413 | Portta da rozet taşıyordu (piksel ölçümü: 268 px → 0) · çevrimdışıyken alt şerit tek satır · "Nasıl Oynanır?" → "Yardım", punto 11 | ✅ **2 Eylül**: *"sonunda web ile aynı olmuş"* |
-| #414 | Zoom'da kalıcı 10 px çerçeve (kırpan kutu kart−10 → kartın tamamı) · filigranlar yazı ölçeğinden muaf | ✅ çerçeve + çevrimdışı onaylandı · ⬜ **filigranlar denenmedi** |
+| #414 | Zoom'da kalıcı 10 px çerçeve (kırpan kutu kart−10 → kartın tamamı) · filigranlar yazı ölçeğinden muaf | ✅ **TAMAMEN ONAYLANDI** — çerçeve + çevrimdışı + filigranlar (2 Eylül, kullanıcı: *"Filigranlar düzgün (en büyük fontta)"*) |
 
 `appVersion` + `pubspec` 1.0.4 → **1.0.5** (#395'te birlikte). Tam takım
 681 → **702** test yeşil.
@@ -139,8 +139,8 @@ olduğundan emin olmadan aab yapılmayacak."*
    `mobile/TESTING.md` § 8 (çevrimdışı şerit + zoom kenarı + filigranlar),
    § 24 (zoom), § 25 (yazı boyutu),
    `mobile/docs/testing-arkadaslar-canli.md` → Mesajlaşma.
-3. ✅ **YÜKLENDİ, ⏳ İNCELEMEDE** — `1.0.5 (501) — 4a0a29b`, kapalı test
-   kanalı, 2 Eylül ~14:40. Kanonik kayıt:
+3. ✅ **YAYINLANDI** — `1.0.5 (501) — 4a0a29b`, kapalı test kanalı,
+   2 Eylül ~14:40 gönderim → ~15:03 Published (≈23 dk). Kanonik kayıt:
    `mobile/docs/build-and-distribution-log.md` → "Yayınlanan sürümlerin
    kütüğü". ⚠ "Published" rozeti kanala GİRDİĞİNİ söyler, cihaza indiğini
    DEĞİL — ölçülmüş çare aynı dosyada ("testçi opt-in linkine TEKRAR gir").
@@ -1826,3 +1826,42 @@ Gerekçe bu projeye özgü: ölçümü, yerine geçecek şeye güvenmeden kaldı
 Not: oyun daveti ve arkadaş daveti için e-posta ZATEN gidiyor, yani o
 ikisinin push katkısı en düşük olan.
 
+
+---
+
+## 16. Devam eden oyun kartlarının düzen AYRIŞMASI — ⬜ **YENİ** (2 Eylül 2026)
+
+Kullanıcı iki ekran görüntüsüyle bildirdi (1.0.5 kapalı test paketi,
+`Derleme 4a0a29b`): Setup'ın "DEVAM EDEN OYUNLAR" listesi **Arkadaşınla**
+ve **Yapay Zeka** sekmelerinde farklı diziliyor.
+
+| | Yapay Zeka | Arkadaşınla |
+|---|---|---|
+| Satır 1 | `Sıra: Ironman` + **SIRA SENDE ▶** | `Ironman açtı` + **SIRA SENDE ▶** |
+| Kalan süre | ALT satırda, kendi başına | **AYNI satırda — "Ironman açtı" yazısına biniyor** |
+
+**Kullanıcının istediği düzen (ikisi de aynı olacak):**
+
+1. **YZ'deki `Sıra: X` KALDIRILSIN** — gereksiz: yanında zaten kocaman
+   `SIRA SENDE` yazıyor, ikisi aynı şeyi söylüyor.
+   ⚠ `Ironman açtı` (Arkadaşınla) buna benzemez ve KALIR — o kimin
+   açtığını söylüyor, sıra bilgisi değil.
+2. **Kalan süre ile durum arasında bir satır boşluk** olsun (YZ'de zaten
+   alt satırda, oraya nefes payı gelecek).
+3. **Arkadaşınla'da kalan süre bir satır aşağı insin** — böylece iki
+   sekme aynı düzene gelir.
+
+**Yarısı ZATEN YAPILMIŞ ve desen orada:** #408'de (2 Eylül) Setup'ın YZ
+kartı tam bu şekle sokulmuştu — `_DevamEdenGovde` (`setup_screen.dart`),
+regresyonu `setup_screen_test.dart` → *"DEVAM EDEN OYUN: durum satırda
+kalır, süre alta iner, isim alanı sıkışmaz"*. Canlı oyun listesi
+(`live/live_games_tab.dart`, "X açtı" satırı) o turda dokunulmadan
+kalmış — ayrışma buradan doğuyor. Yani iş **yeni bir düzen icat etmek
+değil, var olanı ikinci yere taşımak**.
+
+⚠ **Web ikizleri aynı PR'da:** kartların web karşılıkları da var
+(`Setup.tsx` ve Canlı oyun listesi). Kural: ikizler birlikte değişir;
+web'de sorun yoksa bile "aynı sonuç" korunmalı — önce web'e bakılır
+(`mobile/CLAUDE.md` → "Sorun Bildirildiğinde İLK ADIM").
+
+**Kapsam dışı:** bu bir düzen işi, veri/mantık değişmiyor.

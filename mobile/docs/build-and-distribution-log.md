@@ -325,7 +325,15 @@ kapı açıldı) anlatır, hangi paketin yayında olduğunu değil.
 | 1.0.0 | — | — | — | mekanizmasız; In-App Update yoktu (bkz. "Güncelleme modeli") |
 | 1.0.2 | 435 | `d3d4702` | 30 Ağu, Submission 8 | inceleme 10 dk (15:29 → Published 15:39) |
 | 1.0.4 | 467 | — | 1 Eyl | Faz 6 istemci yarısı + Faz 7 iki çökme + hata hız sınırı |
-| **1.0.5** | **501** | **`4a0a29b`** | **2 Eyl, ~14:40 — ⏳ In review** | tahta zoom'u + zoom balonu + yazı ölçeği + mesaj etiketi + cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar). `.aab` 63.146.275 bayt, SHA-256 `200e82b9…451d4`. APK cihazda önce onaylandı (kullanıcı kuralı: *"apk ile test edip sorunsuz olduğundan emin olmadan aab yapılmayacak"*) |
+| **1.0.5** | **501** | **`4a0a29b`** | **2 Eyl ~14:40 → ✅ Published ~15:03** (≈23 dk) | tahta zoom'u + zoom balonu + yazı ölçeği + mesaj etiketi + cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar). `.aab` 63.146.275 bayt, SHA-256 `200e82b9…451d4`. APK cihazda önce onaylandı (kullanıcı kuralı: *"apk ile test edip sorunsuz olduğundan emin olmadan aab yapılmayacak"*) |
+
+**İnceleme süresi — iki ölçüm, aralık geniş:** 30 Ağustos'ta `1.0.2 (435)`
+**10 dakikada** (15:29 → 15:39, Console saatleri) Published olmuştu; 2
+Eylül'de `1.0.5 (501)` **≈23 dakika** sürdü (~14:40 → ~15:03). ⚠ İkinci
+ölçüm Console'dan değil KULLANICININ BİLDİRDİĞİ anlardan geliyor, yani
+gerçek süre biraz daha kısa olabilir — üst sınır sayılmalı. Çıkarım: "10
+dakika" bir kural değil, **alt sınır**; 20-30 dakikayı normal say ve
+"yayınlanmadı herhâlde" teşhisini yarım saatten önce kurma.
 
 **Bir sürüm yüklendiğinde bu tabloya BİR SATIR ekle** — `versionCode`
 GitHub Actions koşu numarası olduğundan sha ile birlikte yazmak, sahadaki
