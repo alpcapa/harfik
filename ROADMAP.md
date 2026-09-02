@@ -83,12 +83,12 @@ her şey o pencerenin içinde ya da yanında duruyor.
 
 | Kova | Ne | Durum |
 |---|---|---|
-| **Sayaç** | 12 tester × 14 gün | ⏳ işliyor, aksiyon yok · *Android developer verification* ✅ **BİTTİ** (Console'dan doğrulandı 31 Ağustos: `com.kelimeki.kelimeki` Registered, 3 anahtar, Identity dolu) |
+| **Sayaç** | 12 tester × 14 gün | ⏳ işliyor, aksiyon yok · ⚠ karttaki **12**'nin gerçek adet mi şartın tavanı mı olduğu ÖLÇÜLMEDİ (2 Eylül, kullanıcı itirazı — aşağıda) · *Android developer verification* ✅ **BİTTİ** (Console'dan doğrulandı 31 Ağustos: `com.kelimeki.kelimeki` Registered, 3 anahtar, Identity dolu) |
 | **Console (elle)** | — | ✅ **KAPANDI** (bu satır 31 Ağustos'a kadar bayat kaldı; ayrıntı aşağıda) |
 | **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) · **+ #10 hata hız sınırı** (1 Eylül'de eklendi) | ✅ **1.0.4 (467) Play'e YÜKLENDİ, incelemede** (1 Eylül 2026) |
 | **1.0.5'e binen kod** | Tahta zoom'u (+2 APK turu) · zoom tanıtım balonu · yazı ölçeği (sınıf 3+2) · mesaj kutusu etiketi · **cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar)** | ✅ **TUR KAPANDI** — `1.0.5 (501) — 4a0a29b` kapalı testte yayında (~15:03) ve üç işin cihaz doğrulaması da alındı (2 Eylül, kullanıcı). Ayrıntı: arşiv → "1.0.5 SÜRÜM TURU" |
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); **1.0.5'in tamamı 2 Eylül'de onaylandı** (zoom turu, çevrimdışı şerit, filigranlar, balon, yazı ölçeği, mesaj etiketi) — kalan iki kalem bu ikisi |
-| **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) | ⬜ · **#16 devam eden oyun kartlarının düzen ayrışması ✅ YAPILDI** (2 Eylül 2026, arşivde) |
+| **Karar verilmiş, yapılmamış** | #8 Paylaşma (iPad popover) — cihaz istiyor | ⬜ · **#3 hatırlatma** ✅ KAPANDI (2 Eylül, zaten yürüyen alışkanlık) ve **#16 kart düzeni** ✅ YAPILDI — ikisi de arşivde |
 | **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
@@ -127,9 +127,13 @@ Push capability ekle" — ikinci bir gönderici YAZILMAYACAK.
 
 ## Sürüm sıralaması, force update ve davetliler (27 Ağustos 2026)
 
-Bu üçü bir "madde" değil — biri bir SIRALAMA kuralı, biri ERTELENMİŞ bir
-karar, biri bir HATIRLATMA. Hiçbiri koda yazılamadığı için buraya yazıldı;
-oturum kapanınca kaybolmasınlar.
+Bunlar bir "madde" değil — biri bir SIRALAMA kuralı, biri ERTELENMİŞ bir
+karar, biri de açık pencerenin İŞLETİM bilgisi. Hiçbiri koda yazılamadığı
+için buraya yazıldı; oturum kapanınca kaybolmasınlar.
+
+⚠ Başlıktaki üçüncü konu ("davetliler") 2 Eylül 2026'da bir HATIRLATMA
+maddesiydi ve kapandı; yerinde yalnızca sayacın işletim bilgisi kaldı.
+Başlık, atıflar kırılmasın diye değiştirilmedi.
 
 ### 2. Zorunlu güncelleme (force update) — ERTELENDİ
 
@@ -190,52 +194,46 @@ tamamen açılmaz hâle getirir ve düzeltmesi ancak YENİ bir sürüm yayınlam
 mümkündür. Bu yüzden erteleme doğru karar; yapılacaksa önce yukarıdaki iki
 ön koşul, sonra kademeli (`flexible`) akış.
 
-### 3. Davetlilere hatırlatma — ARTIK GÖNDERİLEBİLİR (Sürüm A çıktıktan sonra)
+### Sayaç — nerede okunur, 14. gün ne zaman
 
-Kapalı test listesi 54 kişiye çıktı ama büyük bölümü uygulamayı hâlâ
-**yüklememiş**. Bu bir hata değil bir pazarlama işi, ama sıralaması vardı:
-Sürüm A'nın dört düzeltmesi (taş yakalama, ✕ ıskalama, arkadaş listesinin
-sonuna inememe, bayat rozet) tam da **ilk deneyimi** vuruyordu — hatırlatma
-o yüzden A'dan SONRAYA bırakılmıştı.
+⚠ Bu bir MADDE değil, açık pencerenin işletim bilgisi. *"Davetlilere
+hatırlatma"* maddesi 2 Eylül 2026'da KAPANDI (kullanıcı: *"Hep ben
+hatırlatıyorum zaten, burada madde olarak durmasına gerek yok"*) — arşivde:
+`docs/decisions/roadmap-arsiv.md` → *"3. Davetlilere hatırlatma"*. Aşağısı
+o maddeyle birlikte kaybolmasın diye burada kaldı.
 
-**ENGEL KALKTI — `1.0.0 (407)` KAPALI TESTTE YAYINDA (28 Ağustos 2026,
-kullanıcı Play Console'dan doğruladı: yayın durumu "Update live").** A
-(`403`) ve A2 (`405` → `407`) çıktı, cihaz testi onaylandı, paket kanalda.
-**Hatırlatma artık gönderilebilir — bekleyen tek adım bu.**
+**Sayacın yeri:** Dashboard → (aşağı kaydır) Production → `Apply for access
+to production` kartı. Test menüsünde DEĞİL; track sayfasında da yok
+(ölçüldü). **14. gün ~10 Eylül 2026** (sayaç 27/28 Ağustos'ta başladı;
+Console'un günü nasıl saydığı ölçülmedi, ±1 gün kabul et ve tarihi kartın
+kendi metninden takip et).
 
-⚠ **Play Console'da sürümün ADI ile version code AYNI şey değil** (28
-Ağustos 2026, kullanıcı haklı olarak sordu: *"Son release 1.0.0 (405)
-gözüküyor"*). "Latest releases and bundles" satırı `1.0.0 (405)` yazıyordu
-ama yanındaki version code sütunu `407`di. Sürüm adı taslak açılırken bir
-kez doldurulan **serbest metin bir etikettir ve paket değişince kendini
-güncellemez**; kimliği belirleyen tek şey `.aab`'nin içinden gelen version
-code. Aynı ekranın "Latest app bundles" tablosu kanıt: **407 → Active**,
-401/378/372/349 → Inactive ve **405 listede hiç yok** (o paket Play'e hiç
-yüklenmedi, yalnızca cihazda `.apk` olarak denendi). Zincir: koşu **#407**
-→ sha **`0651e5e`** → `mobile-latest` `.aab` (27 Ağu 21:07) → Play paketi
-(21:42). **Şüphe halinde ada değil, cihazdaki teşhis satırına bak:
-`Derleme 0651e5e`.**
+**Katılan/indiren sayısı:** Test → Closed testing → (track) → **Testers**
+sekmesi — ⚠ oradaki sayı opt-in DEĞİL, **izin listesi**; indirme adedi için
+**Statistics**.
 
-**14 GÜNLÜK SAYAÇ BAŞLADI — 28 Ağustos 2026, 1. gün.** Yeri:
-**Dashboard → (aşağı kaydır) Production → `Apply for access to production`
-kartı** (Test menüsünde DEĞİL; track sayfasında da yok — ölçüldü). Kartın
-yazdığı: *"12 testers have currently been opted in for 1 day"*, ilk iki
-şart ✅. **14. gün ~10 Eylül 2026.**
+**14 gün dolmadan yapılabilecek iki iş** (ikisi de hâlâ açık): karttaki
+**`Preview questions`**'dan başvuru sorularını okuyup cevapları hazırlamak,
+ve tester'lardan **yazılı geri bildirim** toplamak (başvuru "testi nasıl
+yürüttün" diye soruyor).
 
-⚠ **Sayı tam 12 — pay yok.** İzin listesi 56 kişi ama opt-in olan 12; biri
-çıkarsa sayaç SIFIRLANIR ve 13 gün kaybedilir. Hatırlatmanın hedefi artık
-"12'ye ulaşmak" değil **12'nin üstünde tampon** (15-20). Ayrıntı ve tuzaklar:
-`marketing/play-store/console-formlari.md` §7.
+#### ⚠ "12" gerçek sayı mı, tavan mı — AÇIK SORU (2 Eylül 2026)
 
-14 gün beklerken yapılacak iki iş: karttaki **`Preview questions`**'dan
-başvuru sorularını okuyup cevapları hazırlamak, ve tester'lardan **yazılı
-geri bildirim** toplamak (başvuru "testi nasıl yürüttün" diye soruyor).
+Burada *"Sayı tam 12 — pay yok"* yazıyordu ve bu bir ÖLÇÜM gibi
+okunuyordu. Kullanıcı 2 Eylül'de itiraz etti: *"12'den fazla katılım
+olduğunu düşünüyorum, çünkü dashboard'da sadece limit olan 12 kişi opt-in
+oldu diyormuş."* Kayıt bugün şunu söylüyor ve fazlasını söylemiyor:
 
-Katılan/indiren sayısı Play Console'da: **Test → Closed testing → (track) →
-Testers sekmesi** (⚠ oradaki sayı opt-in DEĞİL, izin listesi), ve indirme
-adedi için **Statistics**. (Kullanıcı bunu iki kez sordu — yeri burada
-yazılı.)
----
+| Kanıt | Hangi tezi destekliyor |
+|---|---|
+| Kart 26 Ağustos'ta **10** yazdı (eşiğin ALTINDA gerçek sayıyı gösterdi) | sayı GERÇEK |
+| Kart 28 Ağustos'tan beri **12** yazıyor ve şart tam 12 | `min(gerçek, 12)` bir tavan da aynı görünürdü |
+
+İkisi de aynı verilere uyuyor; **bu oturumdan ölçülemez** (Play Console
+erişimi yok). Ayırt eden tek gözlem: sayının 12'nin ÜSTÜNE çıktığının bir
+kez görülmesi — o an tez biter. Görülene kadar planlama **12'yi taban**
+kabul etsin, ama *"biri düşerse sayaç sıfırlanır"* iddiası KESİN
+yazılmasın. Kaynak kayıt: `marketing/play-store/console-formlari.md` §7.
 
 ## Modeller — hangi iş için hangisi
 
@@ -683,8 +681,13 @@ ve o gün bugündür `1.0.4 (467)` (1 Eylül) ile `1.0.5 (501)` (2 Eylül)
 yüklendi; 14. gün hâlâ ~10 Eylül. Yani kapalı teste paket göndermek sayacı
 kırmıyor. Risk **hangi kodun** değiştiğinde:
 
-1. **Sayaçta pay YOK** — `console-formlari.md` §7: izin listesinde 56 adres,
-   opt-in olan **tam 12**. Biri düşerse sayı 11'e iner ve **sayaç sıfırlanır**.
+1. **Sayaçta pay olduğu KANITLANMADI** — kart 12 yazıyor, ama bunun gerçek
+   opt-in adedi mi şartın tavanı mı olduğu ölçülmedi (bkz. yukarıda
+   **"12" gerçek sayı mı, tavan mı**). Gerçek sayı tam 12 ise biri düşünce
+   sayaç sıfırlanır ve 13 gün kaybedilir; tavansa böyle bir risk yok.
+   ⚠ **Belirsizlik bu maddeyi erteleme yönünde etkiler, tersi yönde
+   DEĞİL:** bilinmeyen bir payın üstüne risk almak, bilinen bir payın
+   üstüne almaktan daha kötüdür. Gerekçenin ağırlığı zaten 2-4'te.
 2. **Giriş, bir tester'ı kaybettiren tek hata sınıfı.** Tahtadaki bir aksaklığı
    tolere eden kullanıcı, "giriş yapamıyorum"da uygulamayı siler. Kazanç birkaç
    gün erken çıkmak, kayıp 8 günün tamamı — asimetrik.

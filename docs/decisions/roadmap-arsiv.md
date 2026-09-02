@@ -25,6 +25,7 @@
 | Madde 6 — taranabilir `/nasil-oynanir/` sayfası | 31 Ağustos 2026 |
 | Madde 10 — hata raporlama hız sınırı zamana bağlandı | 31 Ağustos 2026 |
 | Madde 11 — hata panelinde platform filtresi | 31 Ağustos 2026 |
+| Madde 3 — davetlilere hatırlatma (kullanıcı: zaten yürüyen alışkanlık) | 2 Eylül 2026 |
 | Madde 12 — sürüm dağılımının kapsamı | 31 Ağustos 2026 |
 | Madde 13 — push bildirimleri + Firebase Analytics (spesifikasyon; gövdesi Faz 1-7'de) | 2 Eylül 2026 |
 | Madde 16 — devam eden oyun kartlarının düzen ayrışması | 2 Eylül 2026 |
@@ -1332,3 +1333,67 @@ Gerekçe bu projeye özgü: ölçümü, yerine geçecek şeye güvenmeden kaldı
 
 Not: oyun daveti ve arkadaş daveti için e-posta ZATEN gidiyor, yani o
 ikisinin push katkısı en düşük olan.
+
+---
+
+### 3. Davetlilere hatırlatma — ✅ **KAPANDI** (2 Eylül 2026, kullanıcı kararı)
+
+Kapalı test listesi 54 kişiye çıktı ama büyük bölümü uygulamayı hâlâ
+**yüklememiş**. Bu bir hata değil bir pazarlama işi, ama sıralaması vardı:
+Sürüm A'nın dört düzeltmesi (taş yakalama, ✕ ıskalama, arkadaş listesinin
+sonuna inememe, bayat rozet) tam da **ilk deneyimi** vuruyordu — hatırlatma
+o yüzden A'dan SONRAYA bırakılmıştı.
+
+**ENGEL KALKTI — `1.0.0 (407)` KAPALI TESTTE YAYINDA (28 Ağustos 2026,
+kullanıcı Play Console'dan doğruladı: yayın durumu "Update live").** A
+(`403`) ve A2 (`405` → `407`) çıktı, cihaz testi onaylandı, paket kanalda.
+**Hatırlatma artık gönderilebilir — bekleyen tek adım bu.**
+
+⚠ **Play Console'da sürümün ADI ile version code AYNI şey değil** (28
+Ağustos 2026, kullanıcı haklı olarak sordu: *"Son release 1.0.0 (405)
+gözüküyor"*). "Latest releases and bundles" satırı `1.0.0 (405)` yazıyordu
+ama yanındaki version code sütunu `407`di. Sürüm adı taslak açılırken bir
+kez doldurulan **serbest metin bir etikettir ve paket değişince kendini
+güncellemez**; kimliği belirleyen tek şey `.aab`'nin içinden gelen version
+code. Aynı ekranın "Latest app bundles" tablosu kanıt: **407 → Active**,
+401/378/372/349 → Inactive ve **405 listede hiç yok** (o paket Play'e hiç
+yüklenmedi, yalnızca cihazda `.apk` olarak denendi). Zincir: koşu **#407**
+→ sha **`0651e5e`** → `mobile-latest` `.aab` (27 Ağu 21:07) → Play paketi
+(21:42). **Şüphe halinde ada değil, cihazdaki teşhis satırına bak:
+`Derleme 0651e5e`.**
+
+**14 GÜNLÜK SAYAÇ BAŞLADI — 28 Ağustos 2026, 1. gün.** Yeri:
+**Dashboard → (aşağı kaydır) Production → `Apply for access to production`
+kartı** (Test menüsünde DEĞİL; track sayfasında da yok — ölçüldü). Kartın
+yazdığı: *"12 testers have currently been opted in for 1 day"*, ilk iki
+şart ✅. **14. gün ~10 Eylül 2026.**
+
+⚠ **Sayı tam 12 — pay yok.** İzin listesi 56 kişi ama opt-in olan 12; biri
+çıkarsa sayaç SIFIRLANIR ve 13 gün kaybedilir. Hatırlatmanın hedefi artık
+"12'ye ulaşmak" değil **12'nin üstünde tampon** (15-20). Ayrıntı ve tuzaklar:
+`marketing/play-store/console-formlari.md` §7.
+
+14 gün beklerken yapılacak iki iş: karttaki **`Preview questions`**'dan
+başvuru sorularını okuyup cevapları hazırlamak, ve tester'lardan **yazılı
+geri bildirim** toplamak (başvuru "testi nasıl yürüttün" diye soruyor).
+
+Katılan/indiren sayısı Play Console'da: **Test → Closed testing → (track) →
+Testers sekmesi** (⚠ oradaki sayı opt-in DEĞİL, izin listesi), ve indirme
+adedi için **Statistics**. (Kullanıcı bunu iki kez sordu — yeri burada
+yazılı.)
+
+**KAPANIŞ (2 Eylül 2026), kullanıcı kararı:** *"Hep ben hatırlatıyorum
+zaten. Burada madde olarak durmasına gerek yok."* Yani iş bir "yapılacak"
+değil, zaten yürüyen bir alışkanlık — ROADMAP'te madde olarak durması onu
+her turda tekrar bir eksik gibi gösteriyordu.
+
+⚠ **Bu maddenin içindeki işletim bilgileri ROADMAP'te KALDI** (sayacın
+Console'daki yeri, 14. gün, opt-in ↔ izin listesi ayrımı, 14 gün dolmadan
+yapılacak iki iş) — bkz. ROADMAP → *"Sayaç — nerede okunur, 14. gün ne
+zaman"*. Bir madde kapanırken içine park edilmiş CANLI bilgiyi de
+götürmemeli.
+
+⚠ **Aşağıdaki *"Sayı tam 12 — pay yok"* satırı ARTIK KESİN DEĞİL** — 2
+Eylül'de kullanıcı sayının bir TAVAN olabileceğini söyledi; iki tez de
+mevcut kanıta uyuyor. Tartışma ROADMAP'in yukarıdaki bölümünde ve
+`console-formlari.md` §7'de.
