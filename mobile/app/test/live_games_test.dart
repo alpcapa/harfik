@@ -13,6 +13,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/ui/game/neo_box.dart';
+import 'package:kelimeki/src/ui/text_scale.dart';
 import 'package:kelimeki/src/ui/theme.dart';
 import 'package:kelimeki/src/ui/tokens.dart';
 import 'package:kelimeki/src/bootstrap.dart';
@@ -23,6 +24,7 @@ import 'package:kelimeki/src/data/error_reporter.dart';
 import 'package:kelimeki/src/data/meaning_store.dart';
 import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/ui/live/live_game_create_form.dart';
+import 'package:kelimeki/src/ui/devam_eden_govde.dart';
 import 'package:kelimeki/src/ui/live/live_games_tab.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show SetWordSource, trUpper;
 
@@ -740,12 +742,17 @@ void main() {
       // Metin 30 Ağustos 2026'da yalnızca "… KALDI"ya indi (fiil düştü).
       expect(find.textContaining('SONRA TESLİM'), findsOneWidget);
 
-      // Punto web ile aynı (Parça 55): durum etiketi text-[13px], hemen
-      // altındaki kalan-süre text-[8px]. Bu İKİSİ web'de de farklı — biri
-      // ötekine uydurulmamalı. (30 Ağustos 2026'da 11/8 → 13/10, kullanıcı
-      // isteği; oran korundu.)
+      // Punto web ile aynı (Parça 55): durum etiketi text-[15px], alttaki
+      // kalan-süre text-[8px]. Bu İKİSİ web'de de farklı — biri ötekine
+      // uydurulmamalı. (30 Ağustos 2026'da 11 → 13; 2 Eylül 2026'da 13 → 15,
+      // kullanıcı isteği: *"Sıra Sende ve Sıra Rakipte fontu biraz daha
+      // büyüt"*.) Sabitin kendisi ortak gövdede — iki kart aynı puntoyu iki
+      // ayrı yerde tekrar ettiği için 30 Ağustos'taki değişiklik ELLE
+      // taşınmıştı; bu iddia artık o tek kaynağa bakıyor.
       final status = tester.widget<Text>(find.textContaining('SIRA SENDE'));
-      expect(status.style!.fontSize, 13);
+      expect(status.style!.fontSize, kDevamEdenDurumPunto);
+      expect(kDevamEdenDurumPunto, 15,
+          reason: 'punto sessizce değişmesin — web `text-[15px]` ile eş');
       final left =
           tester.widget<Text>(find.textContaining('SONRA TESLİM').first);
       expect(left.style!.fontSize, 8);
@@ -762,6 +769,91 @@ void main() {
           reason: 'oyun kartı/pasif sekme gölgesiz kalmamalı');
       expect(raised.where((d) => d.shadows == kRaisedAccentShadows), isNotEmpty,
           reason: 'seçili alt sekme btn-raised gölgesini almalı');
+    });
+
+    // BİLDİRİLEN HATANIN NEGATİF EŞİ (2 Eylül 2026, kullanıcı iki ekran
+    // görüntüsüyle, 1.0.5 kapalı test paketi `Derleme 4a0a29b`): bu kartta
+    // kalan süre durum etiketiyle AYNI sağ sütundaydı, dolayısıyla sütunun
+    // enini süre belirliyor ve süre satırı "X açtı" yazısına BİNİYORDU.
+    // Setup'ın YZ kartı aynı gün doğru şekle sokulmuştu (#408) ama gövde
+    // orada private kalınca burası dokunulmadan kalmıştı.
+    //
+    // İki iddia AYRI AYRI bozulabilir, bu yüzden ikisi de var:
+    //   1. durum etiketi oyuncu satırıyla AYNI satırda (alta kaymıyor),
+    //   2. süre "X açtı" satırının ALTINDA — bildirilen "biniyor" tam bu.
+    //
+    // ⚠ Sıkışma ORANI bilerek BURADA ölçülmüyor: onu ölçen iddia
+    // `setup_screen_test.dart` → *"DEVAM EDEN OYUN: … isim alanı sıkışmaz"*
+    // ve ölçtüğü şey artık iki kartın PAYLAŞTIĞI `DevamEdenGovde`nin
+    // geometrisi. Buraya ikinci bir eşik yazmak, kimsenin ölçmediği bir
+    // sayıyı depoya sokmak olurdu (kök `CLAUDE.md`, kural 4).
+    testWidgets(
+        'Devam Edenler kartı: durum satırda kalır, süre "X açtı"nın ALTINA iner',
+        (tester) async {
+      final deadline =
+          DateTime.now().toUtc().add(const Duration(hours: 30, minutes: 5));
+      final gw = FakeOnlineGamesGateway()
+        ..rows = [gameRow(id: 'mine', myId: 'u-duzen', status: 'active')]
+        ..turnRows = [
+          {'online_game_id': 'mine', 'current': 1}, // self indeksi 1
+        ]
+        ..deadlineRows = [
+          {'online_game_id': 'mine', 'turn_deadline': iso(deadline)},
+        ];
+
+      // En dar desteklenen telefon: sıkışma burada en sert, üstelik
+      // kullanıcının bildirdiği "biniyor" hâli de dar ekranda doğmuştu.
+      // Yazı ölçeği tavanı da denenir — düzen ölçekten BAĞIMSIZ tek şekil
+      // olmalı (setup kartında `buyukOlcek` dalı tam bu yüzden kalkmıştı).
+      Future<(bool, bool)> olc(double olcek) async {
+        await setPhoneViewSize(tester, const Size(320, 900));
+        await tester.pumpWidget(MaterialApp(
+          theme: kelimekiTheme(),
+          home: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: TextScaler.linear(olcek)),
+              child: Scaffold(
+                body: SingleChildScrollView(
+                  padding: const EdgeInsets.all(12),
+                  child: LiveGamesTab(
+                      services:
+                          liveServices(userId: 'u-duzen', gateway: gw)),
+                ),
+              ),
+            ),
+          ),
+        ));
+        await tester.pump();
+        await tester.pump();
+
+        // Ortak gövdenin anahtarladığı sol alan (bkz. kDevamEdenSolKey) —
+        // iki kart da aynı anahtarı taşır, bulucu kartın yapısına bağlı
+        // değil.
+        final sol = tester.getRect(find.byKey(kDevamEdenSolKey));
+        final durum = tester.getRect(find.textContaining('SIRA SENDE'));
+        final sure = tester.getRect(find.textContaining('SONRA TESLİM'));
+        return (
+          // durum oyuncu satırıyla DİKEYDE örtüşüyor mu (aynı satır mı)
+          durum.top < sol.bottom && durum.bottom > sol.top,
+          sure.top >= sol.bottom, // süre "X açtı" satırının ALTINDA mı
+        );
+      }
+
+      final (satirdaNormal, altaNormal) = await olc(1.0);
+      final (satirdaTavan, altaTavan) = await olc(kMaxTextScale);
+
+      expect(satirdaNormal, isTrue, reason: 'ölçek 1,0da durum satırda olmalı');
+      expect(satirdaTavan, isTrue,
+          reason: 'ölçek ${kMaxTextScale}te de durum satırda KALMALI');
+      expect(altaNormal, isTrue,
+          reason: 'süre "X açtı" satırına biniyor — bildirilen hata bu');
+      expect(altaTavan, isTrue,
+          reason: 'süre tavanda da "X açtı" satırının altında olmalı');
+
+      // Bu dosyadaki kalıp: iki kez pump edilen testler ağacı boşaltarak
+      // bitiyor (asılı zamanlayıcı/istek kalmasın).
+      await tester.pumpWidget(const SizedBox.shrink());
     });
   });
 

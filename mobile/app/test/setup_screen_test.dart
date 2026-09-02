@@ -33,8 +33,8 @@ import 'package:kelimeki/src/ui/game/logo_mark.dart';
 import 'package:kelimeki/src/ui/game/game_screen.dart';
 import 'package:kelimeki/src/ui/intro/intro_screen.dart';
 import 'package:kelimeki/src/ui/live/live_games_tab.dart';
-import 'package:kelimeki/src/ui/game/player_avatar_row.dart';
 import 'package:kelimeki/src/ui/setup/setup_screen.dart';
+import 'package:kelimeki/src/ui/devam_eden_govde.dart';
 import 'package:kelimeki/src/ui/text_scale.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -967,13 +967,16 @@ void main() {
         await tester.pump();
       }
       expect(find.text('DEVAM EDEN OYUN'), findsOneWidget);
-      // Ölçülen şey avatar dizisi DEĞİL, onu barındıran sol sütunun eni:
+      // Ölçülen şey avatar dizisi DEĞİL, onu barındıran sol ALANIN eni:
       // `Expanded` düzeninde sağdakinden artakalan alan bu.
-      final solSutun = find
-          .ancestor(
-              of: find.byType(PlayerAvatarRow), matching: find.byType(Column))
-          .first;
-      final isim = tester.getRect(solSutun);
+      //
+      // ⚠ Bulucu 2 Eylül 2026'da anahtara çevrildi. Öncesi
+      // `find.ancestor(of: PlayerAvatarRow, matching: Column).first`di ve
+      // sol taraf "avatar + Sıra: X" olduğu sürece doğru sütunu buluyordu;
+      // o alt satır KALKINCA sol taraf tek bir `PlayerAvatarRow`a indi
+      // (kendi eni sabit 36 px) ve bulucu DIŞ sütuna sıçrayıp kartın
+      // tamamını ölçmeye başlardı — test düşmez, SESSİZCE anlamsızlaşırdı.
+      final isim = tester.getRect(find.byKey(kDevamEdenSolKey));
       final durum = tester.getRect(find.textContaining('SIRA SENDE'));
       final sure = tester.getRect(find.textContaining('SONRA'));
       return (

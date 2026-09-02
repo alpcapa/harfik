@@ -1565,7 +1565,12 @@ Bitirme modalı **otomatik ölçülüyor** (`npm run test` →
       (sütun genişlikleri ve aralıklar değişmemeli).
 - [ ] **Setup → devam eden oyun kartı** → `SIRA SENDE` oyuncu satırının
       sağında, kalan süre altta tam genişlik satırda (2 Eylül 2026'da
-      portla birlikte değişti).
+      portla birlikte değişti). Avatarların altında `Sıra: X` YAZMAMALI.
+- [ ] **İki sekmeyi yan yana karşılaştır** ("Yapay Zeka" ↔ "Arkadaşınla"):
+      Canlı oyun kartında da kalan süre **"X açtı" yazısının ALTINDAKİ**
+      kendi satırında olmalı, o yazıya binmemeli (2 Eylül 2026'da bu iki
+      kart AYRIŞMIŞTI). ⚠ "X açtı" satırı KALIR. `SIRA SENDE`/
+      `SIRA RAKİPTE` puntosu 15 px — iki kartta da aynı.
 - [ ] **Board altındaki şerit** (Hamleler · Mesajlaşma · **Yardım**) →
       punto 11 ve TEK SATIR; portla AYNI olmak zorunda. Etiket 2 Eylül
       2026'da `Nasıl Oynanır?`dan kısaltıldı (şerit tavanda iki satıra

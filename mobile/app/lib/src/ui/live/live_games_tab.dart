@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 
 import '../../bootstrap.dart';
+import '../devam_eden_govde.dart';
 import '../../data/online_games_api.dart';
 import '../push/push_permission_flow.dart';
 import '../auth/auth_modal.dart';
@@ -645,64 +646,51 @@ class _GameRow extends StatelessWidget {
           color: _panel, borderColor: _border, radius: 6,
           shadows: kRaisedShadows, // web shadow-raised
         ),
-        child: Row(children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                PlayerAvatarRow(players: [
-                  for (final s in game.slots)
-                    s.isAi
-                        ? const AvatarRowPlayer(name: 'Yapay Zeka', isAi: true)
-                        : AvatarRowPlayer(
-                            name: s.name ?? 'Oyuncu', avatarUrl: s.avatarUrl),
-                ]),
-                const SizedBox(height: 2),
-                Text('${game.creatorSlot?.name ?? 'Bir arkadaşın'} açtı',
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        fontFamily: 'SpaceMono', fontSize: 9, color: _muted)),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+        // 2 EYLÜL 2026 — DÜZEN AYRIŞMASI DÜZELTİLDİ (kullanıcı, cihazda,
+        // 1.0.5 `Derleme 4a0a29b`): süre buradaki sağ sütunun İÇİNDEYDİ,
+        // yani sütunun enini o belirliyordu ve "X açtı" satırına biniyordu.
+        // Setup'ın YZ kartı aynı gün doğru şekle sokulmuştu ama gövde orada
+        // PRIVATE kalınca bu kart dokunulmadan kaldı. Ortak gövde artık
+        // `devam_eden_govde.dart`'ta; ölçümler ve gerekçe orada.
+        child: DevamEdenGovde(
+          sol: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text.rich(
-                TextSpan(
-                  text: trUpper(onlineStatusLabel(game, isMyTurn: isMyTurn)),
-                  children: [
-                    if (game.status == OnlineGameStatus.active)
-                      isMyTurn
-                          ? turnTriangleSpan(_green)
-                          : turnDotSpan(_red),
-                  ],
-                ),
-                style: TextStyle(
-                  fontFamily: 'SpaceMono',
-                  fontSize: 13, // web text-[13px] (30 Ağustos 2026: 11 → 13)
-                  height: 1, // web leading-none — ok satırı büyütmesin
-                  letterSpacing: 1,
-                  fontWeight: FontWeight.bold,
-                  color: isMyTurn ? _green : _red,
-                ),
-              ),
-              // 8 px — web `gap-0.5` + `mt-1.5`: süre satırı durum
-              // etiketine YAPIŞMASIN (kullanıcı isteği).
-              if (remaining != null) const SizedBox(height: 8),
-              if (remaining != null)
-                Text(
-                  trUpper(remaining.text),
-                  style: TextStyle(
-                    fontFamily: 'SpaceMono',
-                    fontSize: 8, // web text-[8px] (30 Ağustos: 8 → 10 → 9 → 8)
-                    letterSpacing: 0.5,
-                    color: remaining.urgent ? _red : _muted,
-                  ),
-                ),
+              PlayerAvatarRow(players: [
+                for (final s in game.slots)
+                  s.isAi
+                      ? const AvatarRowPlayer(name: 'Yapay Zeka', isAi: true)
+                      : AvatarRowPlayer(
+                          name: s.name ?? 'Oyuncu', avatarUrl: s.avatarUrl),
+              ]),
+              const SizedBox(height: 2),
+              // ⚠ Setup'ın YZ kartındaki "Sıra: X" 2 Eylül'de KALKTI (durum
+              // etiketiyle aynı şeyi söylüyordu); bu satır ona BENZEMEZ ve
+              // KALIR — kimin açtığını söylüyor, sıra bilgisi değil.
+              Text('${game.creatorSlot?.name ?? 'Bir arkadaşın'} açtı',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontFamily: 'SpaceMono', fontSize: 9, color: _muted)),
             ],
           ),
-        ]),
+          durum: Text.rich(
+            TextSpan(
+              text: trUpper(onlineStatusLabel(game, isMyTurn: isMyTurn)),
+              children: [
+                if (game.status == OnlineGameStatus.active)
+                  isMyTurn ? turnTriangleSpan(_green) : turnDotSpan(_red),
+              ],
+            ),
+            style: devamEdenDurumStil(isMyTurn ? _green : _red),
+          ),
+          sure: remaining == null
+              ? null
+              : Text(
+                  trUpper(remaining.text),
+                  style: devamEdenSureStil(
+                      remaining.urgent ? _red : _muted),
+                ),
+        ),
       ),
     );
   }
@@ -737,7 +725,12 @@ const double kTurnDotGap = 25;
 /// üçgenler çizerdi. Geometri web ikiziyle ELLE senkron ama senkronu
 /// ZORLAYAN bir test var (`relation_icon_parity_test.dart`).
 ///
-/// Ölçü büyük harflerin mürekkep yüksekliğinden: 13 px puntoda 9,0 px.
+/// Ölçü büyük harflerin mürekkep yüksekliğinden. 13 px puntoda 9,0 px
+/// ÖLÇÜLMÜŞTÜ (Space Mono, oran 0,692); punto 2 Eylül 2026'da 15'e çıkınca
+/// karşılığı 10,4 px'e denk geliyor ve **10**'a yuvarlandı — %4'lük fark
+/// göz için yok, tam sayı ise web SVG'siyle elle senkronu okunur tutuyor.
+/// ⚠ Bu sayı yeniden ÖLÇÜLMEDİ, kayıtlı 13 px ölçümünden türetildi
+/// (bu ortamda Flutter yok — kök `CLAUDE.md`, kural 4).
 WidgetSpan turnTriangleSpan(Color color) => WidgetSpan(
       alignment: PlaceholderAlignment.baseline,
       baseline: TextBaseline.alphabetic,
@@ -745,8 +738,8 @@ WidgetSpan turnTriangleSpan(Color color) => WidgetSpan(
         padding: const EdgeInsets.only(left: kTurnMarkGap),
         child: SizedBox(
           key: const Key('turn-triangle'),
-          width: 8,
-          height: 9,
+          width: 9,
+          height: 10,
           child: CustomPaint(painter: _TurnTrianglePainter(color)),
         ),
       ),
@@ -757,11 +750,11 @@ class _TurnTrianglePainter extends CustomPainter {
 
   final Color color;
 
-  /// Web `<path d="M0 0L8 4.5L0 9Z" />` — üç nokta, birebir.
+  /// Web `<path d="M0 0L9 5L0 10Z" />` — üç nokta, birebir.
   Path ucgen() => Path()
     ..moveTo(0, 0)
-    ..lineTo(8, 4.5)
-    ..lineTo(0, 9)
+    ..lineTo(9, 5)
+    ..lineTo(0, 10)
     ..close();
 
   @override
@@ -781,8 +774,9 @@ class _TurnTrianglePainter extends CustomPainter {
 /// ⚠ **Glif DEĞİL, çizilmiş bir kutu.** `●` (U+25CF) Space Mono'da YOK;
 /// kullanılsaydı iki platform ayrı yedek fonta düşüp farklı daire çizerdi.
 /// Ölçü ölçümden: 13 px puntoda büyük harflerin mürekkep yüksekliği 9,0
-/// mantıksal px, yuvarlak da 9 — taban çizgisine oturunca harf bandını tam
-/// dolduruyor. `PlaceholderAlignment.baseline` + metin taşımayan bir kutu =
+/// mantıksal px'ti; punto 15'e çıkınca (2 Eylül 2026) karşılığı 10,4 →
+/// yuvarlak da **10** — taban çizgisine oturunca harf bandını tam
+/// dolduruyor. Üçgenle aynı türetme, aynı uyarı (yeniden ölçülmedi). `PlaceholderAlignment.baseline` + metin taşımayan bir kutu =
 /// taban çizgisi ALT kenar, yani nokta harflerin üstünde yüzmez.
 WidgetSpan turnDotSpan(Color color) => WidgetSpan(
       alignment: PlaceholderAlignment.baseline,
@@ -792,8 +786,8 @@ WidgetSpan turnDotSpan(Color color) => WidgetSpan(
         child: Container(
           // Testlerin bunu avatar çemberlerinden ayırabilmesi için.
           key: const Key('turn-dot'),
-          width: 9,
-          height: 9,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
       ),

@@ -88,7 +88,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) · **+ #10 hata hız sınırı** (1 Eylül'de eklendi) | ✅ **1.0.4 (467) Play'e YÜKLENDİ, incelemede** (1 Eylül 2026) |
 | **1.0.5'e binen kod** | Tahta zoom'u (+2 APK turu) · zoom tanıtım balonu · yazı ölçeği (sınıf 3+2) · mesaj kutusu etiketi · **cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar)** | ✅ **TUR KAPANDI** — `1.0.5 (501) — 4a0a29b` kapalı testte yayında (~15:03) ve üç işin cihaz doğrulaması da alındı (2 Eylül, kullanıcı). Ayrıntı: arşiv → "1.0.5 SÜRÜM TURU" |
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); **1.0.5'in tamamı 2 Eylül'de onaylandı** (zoom turu, çevrimdışı şerit, filigranlar, balon, yazı ölçeği, mesaj etiketi) — kalan iki kalem bu ikisi |
-| **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) · **#16 devam eden oyun kartlarının düzen ayrışması** (2 Eyl, aşağıda) | ⬜ |
+| **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) | ⬜ · **#16 devam eden oyun kartlarının düzen ayrışması ✅ YAPILDI** (2 Eylül 2026, arşivde) |
 | **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
@@ -831,45 +831,6 @@ Gerekçe bu projeye özgü: ölçümü, yerine geçecek şeye güvenmeden kaldı
 Not: oyun daveti ve arkadaş daveti için e-posta ZATEN gidiyor, yani o
 ikisinin push katkısı en düşük olan.
 
-
----
-
-## 16. Devam eden oyun kartlarının düzen AYRIŞMASI — ⬜ **YENİ** (2 Eylül 2026)
-
-Kullanıcı iki ekran görüntüsüyle bildirdi (1.0.5 kapalı test paketi,
-`Derleme 4a0a29b`): Setup'ın "DEVAM EDEN OYUNLAR" listesi **Arkadaşınla**
-ve **Yapay Zeka** sekmelerinde farklı diziliyor.
-
-| | Yapay Zeka | Arkadaşınla |
-|---|---|---|
-| Satır 1 | `Sıra: Ironman` + **SIRA SENDE ▶** | `Ironman açtı` + **SIRA SENDE ▶** |
-| Kalan süre | ALT satırda, kendi başına | **AYNI satırda — "Ironman açtı" yazısına biniyor** |
-
-**Kullanıcının istediği düzen (ikisi de aynı olacak):**
-
-1. **YZ'deki `Sıra: X` KALDIRILSIN** — gereksiz: yanında zaten kocaman
-   `SIRA SENDE` yazıyor, ikisi aynı şeyi söylüyor.
-   ⚠ `Ironman açtı` (Arkadaşınla) buna benzemez ve KALIR — o kimin
-   açtığını söylüyor, sıra bilgisi değil.
-2. **Kalan süre ile durum arasında bir satır boşluk** olsun (YZ'de zaten
-   alt satırda, oraya nefes payı gelecek).
-3. **Arkadaşınla'da kalan süre bir satır aşağı insin** — böylece iki
-   sekme aynı düzene gelir.
-
-**Yarısı ZATEN YAPILMIŞ ve desen orada:** #408'de (2 Eylül) Setup'ın YZ
-kartı tam bu şekle sokulmuştu — `_DevamEdenGovde` (`setup_screen.dart`),
-regresyonu `setup_screen_test.dart` → *"DEVAM EDEN OYUN: durum satırda
-kalır, süre alta iner, isim alanı sıkışmaz"*. Canlı oyun listesi
-(`live/live_games_tab.dart`, "X açtı" satırı) o turda dokunulmadan
-kalmış — ayrışma buradan doğuyor. Yani iş **yeni bir düzen icat etmek
-değil, var olanı ikinci yere taşımak**.
-
-⚠ **Web ikizleri aynı PR'da:** kartların web karşılıkları da var
-(`Setup.tsx` ve Canlı oyun listesi). Kural: ikizler birlikte değişir;
-web'de sorun yoksa bile "aynı sonuç" korunmalı — önce web'e bakılır
-(`mobile/CLAUDE.md` → "Sorun Bildirildiğinde İLK ADIM").
-
-**Kapsam dışı:** bu bir düzen işi, veri/mantık değişmiyor.
 
 ---
 

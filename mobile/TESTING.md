@@ -1684,7 +1684,16 @@ kırpar), sonra:
       Setup'a dön) → `SIRA SENDE` oyuncu satırının SAĞINDA, kalan süre
       ALTTA tam genişlik satırda (Canlı oyundaki `SIRA RAKİPTE` kartıyla
       aynı şekil). Etiket kartın ORTASINDA durmamalı. Oyuncu adları
-      kırpılmamalı.
+      kırpılmamalı. **Avatarların ALTINDA `Sıra: X` YAZMAMALI** (2 Eylül
+      2026'da kaldırıldı — yanındaki `SIRA SENDE` ile aynı şeyi söylüyordu).
+- [ ] **İKİ SEKMEYİ YAN YANA KARŞILAŞTIR** (2 Eylül 2026 — bildirilen hata
+      buydu): "Yapay Zeka" ve "Arkadaşınla" sekmelerindeki devam eden oyun
+      kartları AYNI düzende olmalı. Canlı karttaki **kalan süre, "X açtı"
+      yazısının ALTINDAKİ kendi satırında** olmalı — o yazıya BİNMEMELİ.
+      ⚠ "X açtı" satırının KENDİSİ kalır (YZ'deki `Sıra: X`'e benzemez).
+      `SIRA SENDE`/`SIRA RAKİPTE` puntosu 15 px'e çıktı — iki kartta da
+      aynı büyüklükte görünmeli, yanındaki üçgen/nokta harflerle aynı
+      bantta durmalı (küçük kalmamalı).
 - [ ] **Rafın üstündeki mesaj satırı** → uzun bir mesaj (ör. "+9 puan
       (5 puanı X kaptı)") KESİLMEMELİ; kutu metinle birlikte büyümeli.
       (2 Eylül 2026: port sabit 30 px kullanıyordu, web ikizi `min-h`.)

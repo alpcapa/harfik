@@ -1081,3 +1081,57 @@ penceresi ertelenir" mekanizmaları kullanıcı tarafından reddedildi
 tablosunun zoom olayıyla ne ilgisi var"*) ve silindi — artık çiftin
 İKİNCİSİ yutulur, İLKİNİN işi kalır; joker ANINDA açılır ve
 `game_screen_test.dart` origin/main ile bayt bayt aynı. Ayrıntı: Parça 175.
+
+---
+
+## 16. Devam eden oyun kartlarının düzen AYRIŞMASI — ✅ **YAPILDI** (2 Eylül 2026)
+
+Kullanıcı iki ekran görüntüsüyle bildirdi (1.0.5 kapalı test paketi,
+`Derleme 4a0a29b`): Setup'ın "DEVAM EDEN OYUNLAR" listesi **Arkadaşınla**
+ve **Yapay Zeka** sekmelerinde farklı diziliyor.
+
+| | Yapay Zeka | Arkadaşınla |
+|---|---|---|
+| Satır 1 | `Sıra: Ironman` + **SIRA SENDE ▶** | `Ironman açtı` + **SIRA SENDE ▶** |
+| Kalan süre | ALT satırda, kendi başına | **AYNI satırda — "Ironman açtı" yazısına biniyor** |
+
+**Kullanıcının istediği düzen (ikisi de aynı olacak):**
+
+1. **YZ'deki `Sıra: X` KALDIRILSIN** — gereksiz: yanında zaten kocaman
+   `SIRA SENDE` yazıyor, ikisi aynı şeyi söylüyor.
+   ⚠ `Ironman açtı` (Arkadaşınla) buna benzemez ve KALIR — o kimin
+   açtığını söylüyor, sıra bilgisi değil.
+2. **Kalan süre ile durum arasında bir satır boşluk** olsun (YZ'de zaten
+   alt satırda, oraya nefes payı gelecek).
+3. **Arkadaşınla'da kalan süre bir satır aşağı insin** — böylece iki
+   sekme aynı düzene gelir.
+
+**Yarısı ZATEN YAPILMIŞ ve desen orada:** #408'de (2 Eylül) Setup'ın YZ
+kartı tam bu şekle sokulmuştu — `_DevamEdenGovde` (`setup_screen.dart`),
+regresyonu `setup_screen_test.dart` → *"DEVAM EDEN OYUN: durum satırda
+kalır, süre alta iner, isim alanı sıkışmaz"*. Canlı oyun listesi
+(`live/live_games_tab.dart`, "X açtı" satırı) o turda dokunulmadan
+kalmış — ayrışma buradan doğuyor. Yani iş **yeni bir düzen icat etmek
+değil, var olanı ikinci yere taşımak**.
+
+⚠ **Web ikizleri aynı PR'da:** kartların web karşılıkları da var
+(`Setup.tsx` ve Canlı oyun listesi). Kural: ikizler birlikte değişir;
+web'de sorun yoksa bile "aynı sonuç" korunmalı — önce web'e bakılır
+(`mobile/CLAUDE.md` → "Sorun Bildirildiğinde İLK ADIM").
+
+**Kapsam dışı:** bu bir düzen işi, veri/mantık değişmiyor.
+
+---
+
+**KAPANIŞ (2 Eylül 2026):** üçü de yapıldı. Gövde artık iki kartın
+PAYLAŞTIĞI tek kaynakta (`mobile/app/lib/src/ui/devam_eden_govde.dart`) —
+ayrışmanın sebebi düzenin yanlış olması değil, doğrusunun `setup_screen`
+içinde PRIVATE kalmasıydı. Web ikizleri (`Setup.tsx`, `LiveGamesTab.tsx`)
+aynı PR'da. Kullanıcı ayrıca durum etiketinin puntosunu büyüttü
+(13 → 15; üçgen/nokta ölçüsü ona çapalı olduğundan onlar da 9×10/10×10).
+Ölçümler, testteki sessiz tuzak (`kDevamEdenSolKey`) ve gerekçenin tamamı:
+`docs/decisions/components.md` → *"Devam eden oyun" kartı — İKİ SEKME
+AYRIŞMIŞTI*.
+
+⚠ **Cihazda henüz DENENMEDİ** — bir sonraki mobil sürüm turuyla çıkar.
+

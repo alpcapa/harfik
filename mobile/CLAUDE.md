@@ -608,7 +608,13 @@ mobile/
                              # eşiği — bkz. "Sistem Yazı Boyutu"),
                              # loading_note.dart (ortak
                              # "Yükleniyor…" göstergesi; web
-                             # LoadingNote.tsx ile birebir), ve:
+                             # LoadingNote.tsx ile birebir),
+                             # devam_eden_govde.dart ("devam eden oyun"
+                             # kartının ORTAK gövdesi + tipografisi —
+                             # Setup'ın YZ kartı ile Canlı oyun kartı
+                             # buradan beslenir; 2 Eylül 2026'da düzen
+                             # private kaldığı için iki kart AYRIŞMIŞTI),
+                             # ve:
       ui/auth/               # giriş-kayıt-şifremi-unuttum modalı, hesap
                              # butonu, avatar, Terms/Privacy,
                              # reset_password_modal (recovery kapısı),
