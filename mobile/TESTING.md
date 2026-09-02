@@ -814,7 +814,10 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       ⚠ Kaydırdığın YÖNÜN ters ucunda tahtanın kendi iç boşluğunun
       ölçeklenmiş hâli (≈20 px) görünür; bu NORMAL ve web'de de öyle —
       çerçeve o değil, dört kenarda birden duran sabit şerittir.
-- [ ] **En büyük fontta bölge filigranları BÜYÜMEMELİ (Parça 179).**
+- [x] **En büyük fontta bölge filigranları BÜYÜMEMELİ (Parça 179).**
+      ✅ 2 Eylül 2026, `1.0.5 (501) — 4a0a29b` ile cihazda doğrulandı
+      (kullanıcı: *"Filigranlar düzgün (en büyük fontta)"*).
+      Madde DURUYOR — sonraki sürümlerde yeniden koşulacak.
       Sistem yazı boyutunu en büyüğe al, oyunu aç: köşelerdeki büyük
       oyuncu numarası, ortadaki "X2" ve merkez karedeki "X3" **normal
       fonttakiyle aynı boyutta** kalmalı ve numara 4×4 köşe bloğunun
