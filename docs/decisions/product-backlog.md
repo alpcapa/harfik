@@ -91,23 +91,6 @@ bölümün kendi tarihli notuna taşınır.
     girişli herkese zaten açık) ama bilerek karar verilmeli.
 
 
-### Bu listeden çıkanlar (yeniden açılmasın)
-
-- **Hesap silme (KVKK "unutulma hakkı")** — ✅ yapıldı 25 Ağustos 2026.
-  Hesap Ayarları › "Hesabımı Sil" + `delete-my-account`, web ve port.
-  Kaydı: `docs/decisions/account-deletion.md`. Bir sonraki oturum bunu
-  "hukuki eksik" ya da "mağaza blokeri" diye YENİDEN AÇMASIN — hukuken
-  zaten zorunlu değildi, mağaza şartı da karşılandı.
-- **Taranabilir `/nasil-oynanir` sayfası** — ✅ yapıldı 31 Ağustos 2026
-  (#386), build-time statik üretim; içerik `HelpModal`'dan İTHAL ediliyor,
-  kopyalanmıyor. Kaydı: `ROADMAP.md` madde 6.
-- **`game_finishes.anon_id`** — ✅ yapıldı 31 Ağustos 2026. Huniye "Bitiren
-  Cihaz" (`finishers`) eklendi; `anon_id` YALNIZCA `user_id` null iken
-  yazılıyor (trigger + CHECK), yani gizlilik taahhüdü ayakta. Kaydı:
-  `docs/decisions/admin-panel.md` → "Bitiren Cihaz".
-  ⚠ Geriye dönük doldurulamayan kolonların listesi hâlâ geçerli: bir sonraki
-  ölçüm boşluğu da reklam harcamasından ÖNCE kapatılmalı.
-
 - **Miras isimler: `sharedxp_pending_profile` ve kalan `harfik` izleri (2
   Eylül 2026, ölçüldü — ertelendi):** Projenin soyağacı **SharedXP →
   Harfik → Kelimeki** ve iki ad hâlâ canlı kodda duruyor. Kullanıcı
@@ -130,7 +113,8 @@ bölümün kendi tarihli notuna taşınır.
     ancak `mobile_min_supported_version` eski sürümü kestikten sonra.
   - **Ne zaman:** `handle_new_user`'a zaten dokunulacak ilk PR'da — en
     güçlü aday **Google ile giriş** (o iş trigger'ı değiştirmek zorunda,
-    bkz. aşağıdaki not). Ayrı bir PR açmak bedelini iki katına çıkarır.
+    bkz. `ROADMAP.md` → madde 16). Ayrı bir PR açmak bedelini iki
+    katına çıkarır.
   - **`harfik` izlerinin ÖLÇÜLEN durumu (2 Eylül 2026):**
     - **Canlı veritabanı TEMİZ.** `pg_proc`/`information_schema`/
       `storage.buckets` taraması `harfik` içeren tek bir ad döndürmedi —
@@ -167,6 +151,23 @@ bölümün kendi tarihli notuna taşınır.
     kayıtlı Google/Firebase OAuth redirect'leri ÖNCE okunmalı; (3)
     `main`'e bir sonraki merge'den sonra `curl -s https://kelimeki.com/ |
     grep kelimeki-build` ile deploy zincirinin sağlam kaldığı doğrulanmalı.
+
+### Bu listeden çıkanlar (yeniden açılmasın)
+
+- **Hesap silme (KVKK "unutulma hakkı")** — ✅ yapıldı 25 Ağustos 2026.
+  Hesap Ayarları › "Hesabımı Sil" + `delete-my-account`, web ve port.
+  Kaydı: `docs/decisions/account-deletion.md`. Bir sonraki oturum bunu
+  "hukuki eksik" ya da "mağaza blokeri" diye YENİDEN AÇMASIN — hukuken
+  zaten zorunlu değildi, mağaza şartı da karşılandı.
+- **Taranabilir `/nasil-oynanir` sayfası** — ✅ yapıldı 31 Ağustos 2026
+  (#386), build-time statik üretim; içerik `HelpModal`'dan İTHAL ediliyor,
+  kopyalanmıyor. Kaydı: `ROADMAP.md` madde 6.
+- **`game_finishes.anon_id`** — ✅ yapıldı 31 Ağustos 2026. Huniye "Bitiren
+  Cihaz" (`finishers`) eklendi; `anon_id` YALNIZCA `user_id` null iken
+  yazılıyor (trigger + CHECK), yani gizlilik taahhüdü ayakta. Kaydı:
+  `docs/decisions/admin-panel.md` → "Bitiren Cihaz".
+  ⚠ Geriye dönük doldurulamayan kolonların listesi hâlâ geçerli: bir sonraki
+  ölçüm boşluğu da reklam harcamasından ÖNCE kapatılmalı.
 
 
 ## ✅ KAPANDI — Tahta çiziminin önbelleğe alınması (26 Ağustos 2026)

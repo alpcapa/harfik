@@ -82,6 +82,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
+| **Sayaç bitince (~10 Eylül)** | **#16 Google ile giriş** — sunucu → web → mobil; migration BLOKER (OAuth bugün `handle_new_user`'da patlar) | ⏳ bilerek bekletiliyor, gerekçe #16'da |
 | **iOS/APNs** | Apple Developer üyeliğine bloke; iş "APNs anahtarını yükle + Push capability" kadar | 🔒 |
 
 ⚠ **"Console (elle)" satırı 31 Ağustos'a kadar BAYAT kaldı** — dört maddesi
@@ -1826,3 +1827,110 @@ Gerekçe bu projeye özgü: ölçümü, yerine geçecek şeye güvenmeden kaldı
 Not: oyun daveti ve arkadaş daveti için e-posta ZATEN gidiyor, yani o
 ikisinin push katkısı en düşük olan.
 
+
+---
+
+## 16. Google ile giriş/kayıt — **YENİ, 2 Eylül 2026** · ⏳ sayaç bitene kadar BEKLİYOR
+
+Kullanıcı sordu: *"Google ve Apple signup/signin özelliği eklemek zor mu?
+Belki şimdilik sadece Google ile başlanabilir"* ve *"test sürecinde yapmak
+mantıklı mı?"*. Cevap: Google tek başına makul; **ama kapalı test sayacı
+bitmeden BAŞLAMA.**
+
+### Neden şimdi değil (~10 Eylül'den sonra)
+
+**Sürüm çıkarmak sorun DEĞİL, bu ölçüldü:** sayaç 27/28 Ağustos'ta başladı
+ve o gün bugündür `1.0.4 (467)` (1 Eylül) ile `1.0.5 (501)` (2 Eylül)
+yüklendi; 14. gün hâlâ ~10 Eylül. Yani kapalı teste paket göndermek sayacı
+kırmıyor. Risk **hangi kodun** değiştiğinde:
+
+1. **Sayaçta pay YOK** — `console-formlari.md` §7: izin listesinde 56 adres,
+   opt-in olan **tam 12**. Biri düşerse sayı 11'e iner ve **sayaç sıfırlanır**.
+2. **Giriş, bir tester'ı kaybettiren tek hata sınıfı.** Tahtadaki bir aksaklığı
+   tolere eden kullanıcı, "giriş yapamıyorum"da uygulamayı siler. Kazanç birkaç
+   gün erken çıkmak, kayıp 8 günün tamamı — asimetrik.
+3. **"Yalnızca web'de yaparım" kaçışı tam çalışmıyor:** `handle_new_user` web
+   ile portun ORTAK trigger'ı; hatalı bir migration mobil tarafta yeni kayıt
+   açılmasını da bozar.
+4. Production başvurusu penceresi açılırken stabil bir derleme isteniyor
+   (başvuru "nasıl test ettirdin, ne geri bildirim aldın" diye soruyor).
+
+Acele bir sebep çıkarsa tek makul ara yol: **yalnızca adım 0**'ı (katı biçimde
+EKLEMELİ migration, hiçbir mevcut alanın davranışını değiştirmeyen) yapıp
+`execute_sql` ile doğrulamak, kullanıcıya görünen hiçbir şeyi açmamak.
+
+### Sıra: sunucu → web → mobil
+
+Web'de oturmuş bir profil-tamamlama akışını porta taşımak, tersinden yapmaktan
+belirgin biçimde ucuz.
+
+**0. Migration — BLOKER, ilk iş.** Bugün Google girişi açılsa ilk denemede
+patlar (ölçülmedi ama kaynak kesin): OAuth'ta `sharedxp_pending_profile`
+metadata'sı HİÇ gelmez → `handle_new_user` ad/soyadı `coalesce(..., '')` ile
+boşa düşürür → `profiles_first_name_not_blank` (`20260717164244`) ihlal edilir
+→ trigger patlar, `auth.users` insert'i geri alınır, kullanıcı *"Database error
+saving new user"* görür. Yapılacaklar:
+- Ad/soyadı Google'ın `raw_user_meta_data`'sından türet (`full_name` /
+  `given_name` / `family_name`), yoksa kısıtı sağlayan geçici bir değer.
+- `display_name` **not null + `profiles_display_name_tr_lower_key` (Türkçe
+  duyarsız UNIQUE)** — `split_part(email,'@',1)` fallback'i iki Gmail
+  kullanıcısında çakışır; benzersiz geçici bir ad üret.
+- **"Profili tamamla" bayrağı** (yeni kolon); `agreed_to_terms` OAuth'ta false
+  doğar, modalda yazılır. `signup_channel`/`signup_utm_source` damgalanmaya
+  devam etmeli.
+- ⚠ **Aynı migration'da `sharedxp_pending_profile` borcunu da kapat** — trigger
+  İKİ anahtarı birden okusun (`docs/decisions/product-backlog.md` → "Miras
+  isimler"). Bu iş zaten trigger'a dokunuyor; ayrı PR bedeli ikiye katlar.
+- Proje kuralı: uygula → `execute_sql` ile DOĞRULA → `list_migrations` ile
+  dosya adını eşleştir.
+
+**1. Konsol (kod değil, panelden).**
+- Google Cloud: OAuth consent screen — yalnızca `email` + `profile` kapsamı
+  (Google doğrulaması gerekmez); gizlilik + kullanım koşulları URL'leri zaten
+  yayında (`/gizlilik/`, `/kullanim-kosullari/`).
+- Web client ID + secret → Supabase → Authentication → Providers → Google.
+- Supabase → URL Configuration → Redirect URLs (`kelimeki.com`, preview
+  adresleri, `harfik.vercel.app` durduğu sürece o da — bkz. backlog'daki
+  Vercel rename planı, ikisi çakışıyor).
+- Android: **upload anahtarının VE Play App Signing anahtarının SHA-1'i**
+  Firebase'e girilecek (Firebase Android OAuth istemcisini kendisi üretir).
+  SHA-256 zaten `assetlinks.json` için çıkarılmıştı — `console-formlari.md` §6.6,
+  aynı sayfa.
+
+**2. Web (`src/`).** `signInWithGoogle()` (`api.ts`) · `AuthModal`'a buton ·
+işin AĞIRLIĞI olan **profil tamamlama modalı** (takma isim — mevcut
+`useNicknameAvailability`/`check_nickname_available` yeniden kullanılır —,
+ad/soyad, şartlar, isteğe bağlı pazarlama izni) · OAuth-only hesapta şifre
+yollarının gizlenmesi (`ResetPasswordModal`, `AccountSettingsModal`) ·
+`useAuth`'un "profil eksik" durumunu yayması.
+
+**3. Mobil (`mobile/app`).** `google_sign_in` + `signInWithIdToken` (web'in
+redirect akışı DEĞİL, native akış; `supabase_flutter ^2.10.2` destekliyor) ·
+aynı modalın portu · sürüm artışı (`pubspec.yaml` + `env.dart`, ikisi birlikte) ·
+yeni `.aab` + Play incelemesi.
+
+**4. Beyan ve doküman.** `TermsModal`/`PrivacyModal` + statik `/gizlilik/`
+(Google'a giden veri) · Play **Data safety** formunun yeniden okunması ·
+`TESTING.md` + `mobile/TESTING.md` — **gerçek bir Google hesabı gerektirdiği
+için otomatik test EDİLEMEZ**, elle koşulan listeye girer · `CLAUDE.md`/`README`.
+
+### Ölçülmesi gereken, varsayılmayacak iki şey
+
+- **Hesap birleştirme:** aynı e-postayla önce şifreyle kayıt olup sonra Google
+  ile girmek. Supabase'in kimlik birleştirme davranışı ayara bağlı; iki hesap
+  mı bir hesap mı olduğu kullanıcının puanını ve k-lig geçmişini etkiler.
+- **Hoş geldiniz e-postası:** `on_auth_user_welcome` `after insert or update of
+  email_confirmed_at` — OAuth kullanıcısı DOĞRULANMIŞ doğduğundan bugüne kadar
+  "ulaşılamaz" sayılan INSERT dalı devreye girer. Beklenen davranış doğru (mail
+  gider), ama migration'ın yorumundaki "bugün ulaşılamaz" cümlesi o PR'da
+  güncellenmeli.
+
+### Apple neden bu maddede YOK
+
+Apple Developer üyeliği alınmadı ve iOS yayında değil. Ayrıca **App Store 4.8:**
+iOS uygulaması üçüncü taraf girişi (Google) sunuyorsa eşdeğer bir gizlilik
+odaklı seçenek de sunmak zorunda — yani **iOS'a Google girişi koyulan gün Apple
+girişi de zorunlu olur**; ikisi orada birlikte gider. Web ve Android'de böyle bir
+kural YOK. Günü gelince iki tuzak: kullanıcı e-postasını gizleyebilir
+(`@privaterelay.appleid.com`) ve **ad/soyad yalnızca ilk yetkilendirmede bir kez**
+döner — o an kaydedilmezse bir daha alınamaz.
