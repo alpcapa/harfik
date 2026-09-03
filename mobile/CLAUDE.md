@@ -328,6 +328,7 @@ grep -rn "await newRepo(" app/test/*_test.dart              # testWidgets İÇİ
 grep -rn "Path.combine\|PathOperation" app/lib/             # CanvasKit'te PathOps GÜVENİLMEZ (bkz. Parça 18) — evenOdd kullan
 grep -rn "Color(0xFF" app/lib/src/ui/ | grep -v tokens.dart # renk paleti TEK kaynaktan: ui/tokens.dart (bkz. Parça 54)
 grep -rn "MaskFilter" app/lib/ --include=*.dart -l | grep -v neo_box  # gölge çizimi TEK yerden (bkz. Parça 144)
+grep -rn "shareOriginFrom(context)" app/lib/                # iPad ankrajı: DÜĞMENİN kutusu şart, State.context ekranın TAMAMI olur ve paylaşım iPad'de ASILI KALIR (bkz. Parça 181)
 ```
 
 Sonuncusu bir PERFORMANS değişmezi, görsel değil: keyfi bir `Path` üzerine

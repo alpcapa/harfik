@@ -726,6 +726,20 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       artık `XFile.fromData` + `fileNameOverrides` ile share_plus'ın
       kendisi yazıyor.) Web ile yan yana koy — ikisi AYNI görseli
       göndermeli.
+- [ ] ⚠ **iPad'DE ÜÇ YOLU DA DENE — 2 Eylül 2026'da İKİSİ KIRIKTI
+      (Parça 181).** Ankraj geçersizken `SharePlus.share` FIRLATMIYOR,
+      ASILI KALIYOR; belirti çağrı yerine göre değişiyor:
+      (a) oyun geçmişinde tahta paylaşımı — o gün çalışan tek yol,
+      (b) Setup footer "Paylaş" — bozukken *"hiç tepki vermiyor"*,
+      (c) Arkadaşlar "+ ARKADAŞINI DAVET ET" — bozukken buton **`…`
+      durumunda KİLİTLİ kalıyor** (meşgul göstergesi hiç sıfırlanmıyor).
+      Üçünde de paylaş kutusu AÇILMALI ve buton `…`ta kalmamalı.
+      ⚠ **Simülatörde hedef uygulama (WhatsApp vb.) OLMAMASI normaldir** —
+      ölçülen şey kutunun AÇILIP açılmadığı, içinin dolu olması değil.
+      ⚠ **Web derlemesi bu maddeyi KANITLAMAZ** (`kelimeki.com`/Pages):
+      orada `navigator.share` çalışıyor, iOS kanalına hiç uğranmıyor.
+      Cihazın iPad olması yetmez, DERLEMENİN native olması gerekir —
+      Appetize → iOS simülatörü → iPad cihaz tipi.
 - [ ] **İptal ikinci sayfa açmamalı.** Paylaş sayfasını kapat/iptal et →
       arkasından ikinci bir paylaş sayfası AÇILMAMALI (`share_plus`
       iptalde fırlatmaz, yedek zincire düşmemeli).
