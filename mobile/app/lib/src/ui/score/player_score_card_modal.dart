@@ -17,6 +17,7 @@ import '../../data/auth_service.dart';
 import '../../data/friends_api.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
+import '../../util/head_to_head.dart';
 import '../auth/k_avatar.dart';
 import '../friends/friends_modal.dart'
     show confirmFriendAction, showFriendInfoDialog;
@@ -66,7 +67,7 @@ class PlayerScoreCardModal extends StatefulWidget {
   final String name;
   final String? avatarUrl;
 
-  /// null ise "Tüm Oyunları Gör" çizilmez (offline mod).
+  /// null ise "Tüm Oyunlar" çizilmez (offline mod).
   final Future<GamesRepo>? games;
 
   /// null ise arkadaşlık simgesi çizilmez (offline/test).
@@ -95,6 +96,11 @@ class PlayerScoreCardModal extends StatefulWidget {
 }
 
 class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
+  /// Kafa kafaya — yalnızca BAŞKASININ kartında ve giriş yapılmışken
+  /// anlamlı. Sunucu kendi kartında zaten 0 döner, ama gereksiz istek de
+  /// atmıyoruz (bkz. `_kafaKafayaYukle`).
+  HeadToHead? _h2h;
+
   StatsTab _tab = StatsTab.all;
   final _statsByTab = <StatsTab, PlayerStats?>{};
   final _loaded = <StatsTab>{};
@@ -123,6 +129,23 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
     widget.stats.ageGenderLabel(widget.userId).then((label) {
       if (mounted) setState(() => _ageGender = label);
     });
+    // Kendi kartında kafa kafaya anlamsız — sunucu da 0 döndürür ama
+    // isteği hiç atmıyoruz.
+    // ⚠ Ayrı bir `myUserId`/`myAvatarUrl` parametresi EKLENMEDİ: modal
+    // zaten `auth` alıyor. Yeni parametre beş imzayı da değiştirir ve
+    // birinde unutulursa blok o ekranda SESSİZCE kaybolurdu.
+    // ⚠⚠ Ve tam olarak bu SESSİZ kayıp bir kez yaşandı: beş çağrı yerinin
+    // DÖRDÜ `auth` geçiyordu, "Beğenenler" listesinden açılan kart
+    // (`game_history_modal.dart`) geçmiyordu — çubuk yalnızca orada
+    // çizilmiyordu ve hiçbir şey bunu söylemiyordu. `showGameHistory`
+    // artık `auth`u da taşıyor. Web'de bu tuzak YOK: orada "ben kimim"
+    // `useAuth()` bağlamından geliyor, parametreyle taşınmıyor.
+    final benId = widget.auth?.user?.id;
+    if (benId != null && benId != widget.userId) {
+      widget.stats.headToHead(widget.userId).then((h) {
+        if (mounted) setState(() => _h2h = h);
+      });
+    }
     for (final t in StatsTab.values) {
       widget.stats.playerStats(widget.userId, t).then((s) {
         if (!mounted) return;
@@ -401,8 +424,18 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
           ),
           if (widget.games != null) ...[
             const SizedBox(height: 8),
-            Center(
-              child: GestureDetector(
+            // 3 Eylül 2026 (kullanıcı isteği): satır SOLA dayandı, etiket
+            // "TÜM OYUNLARI GÖR" → "TÜM OYUNLAR" oldu (web'de de aynı ad;
+            // öncesinde web "Tüm Geçmiş Oyunlar" diyordu) ve sağ tarafa
+            // aramızdaki kafa kafaya oran çubuğu geldi.
+            // ⚠ KENDİ skor kartının butonu ("TÜM GEÇMİŞ OYUNLAR",
+            // `score_card_modal.dart`) BİLEREK dokunulmadan bırakıldı —
+            // kullanıcının isteği başkasının kartını tarif ediyordu.
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+              GestureDetector(
                 onTap: () async {
                   final games = await widget.games!;
                   if (!context.mounted) return;
@@ -414,13 +447,14 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
                     currentName: widget.name,
                     isMe: false,
                     stats: widget.stats,
+                    auth: widget.auth,
                   );
                 },
                 behavior: HitTestBehavior.opaque,
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 4),
                   child: Text(
-                    'TÜM OYUNLARI GÖR',
+                    'TÜM OYUNLAR',
                     style: TextStyle(
                         fontFamily: 'SpaceMono',
                         fontSize: 11,
@@ -430,10 +464,93 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
                   ),
                 ),
               ),
-            ),
+              if (hasHeadToHead(_h2h))
+                _KafaKafaya(
+                  data: _h2h!,
+                  theirAvatarUrl: widget.avatarUrl,
+                  theirName: widget.name,
+                  myAvatarUrl: widget.auth?.profile?.avatarUrl,
+                ),
+            ]),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Kafa kafaya oran çubuğu — kullanıcı tarifi (3 Eylül 2026): *"Sağ tarafa
+/// dayalı bir % çubuğu, üstünde oyun sayısı, barın sol tarafına bakılan kişi
+/// avatar, sağ tarafına bakan kişi avatar. İsim yazmayacak."*
+///
+/// ⚠ **Yön TERS okunuyor:** RPC çağıranın (BAKANIN) bakış açısından dönüyor
+/// (`wins` = bakan kazandı), ama barın SOL ucu BAKILAN kişiye ait — yani
+/// sol dilim `losses`. Kural `util/head_to_head.dart`ta ve web ikizi de
+/// onu okuyor.
+///
+/// İsim yazılmıyor ama `Semantics` etiketi var: iki yuvarlak arasındaki
+/// farkı anlatan başka hiçbir işaret yok.
+class _KafaKafaya extends StatelessWidget {
+  final HeadToHead data;
+  final String? theirAvatarUrl;
+  final String theirName;
+  final String? myAvatarUrl;
+  const _KafaKafaya({
+    required this.data,
+    required this.theirAvatarUrl,
+    required this.theirName,
+    required this.myAvatarUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bar = headToHeadBar(data);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('${data.games} oyun',
+            style: const TextStyle(
+                fontFamily: 'SpaceMono', fontSize: 9, color: kMuted)),
+        const SizedBox(height: 2),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          KAvatar(url: theirAvatarUrl, name: theirName, size: 18),
+          const SizedBox(width: 6),
+          Semantics(
+            label: '$theirName ${data.losses} - ${data.wins} sen',
+            child: Container(
+              width: 96,
+              height: 8,
+              decoration: BoxDecoration(
+                color: kVoid,
+                border: Border.all(color: kBorder),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              clipBehavior: Clip.antiAlias,
+              // Sol = bakılan kişi, orta = beraberlik (nötr), sağ = bakan.
+              //
+              // ⚠ SIFIR dilimler hiç ÇİZİLMİYOR: `Expanded(flex: 0)` bu
+              // düzende güvenilir değil (esnek olmayan çocuk kendi
+              // ölçüsüne düşer, `ColoredBox`ın ölçüsü yok). Üç dilim
+              // toplamı 100 olduğundan en az biri > 0 ve oranlar bozulmaz.
+              // Web'de karşılığı zararsız (`width: 0%`), yani bu koruma
+              // PORTA ÖZGÜ — ikizde aramaya gerek yok.
+              child: Row(children: [
+                if (bar.left > 0)
+                  Expanded(flex: bar.left, child: const ColoredBox(color: kRed)),
+                if (bar.middle > 0)
+                  Expanded(
+                      flex: bar.middle, child: const ColoredBox(color: kMuted)),
+                if (bar.right > 0)
+                  Expanded(
+                      flex: bar.right, child: const ColoredBox(color: kGreen)),
+              ]),
+            ),
+          ),
+          const SizedBox(width: 6),
+          KAvatar(url: myAvatarUrl, name: 'Sen', size: 18),
+        ]),
+      ],
     );
   }
 }

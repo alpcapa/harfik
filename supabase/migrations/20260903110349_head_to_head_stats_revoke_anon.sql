@@ -1,0 +1,14 @@
+-- Supabase'in ALTER DEFAULT PRIVILEGES ayarı yeni fonksiyonlara `anon`
+-- için de EXECUTE veriyor; `revoke ... from public` bunu KALDIRMIYOR
+-- (açık bir grant, PUBLIC varsayılanı değil). Zararsız — `auth.uid()`
+-- girişsizde null olduğundan `g.user_id = auth.uid()` hiçbir satır
+-- eşleştirmiyor ve fonksiyon 0/0/0/0 dönüyor — ama yetki yüzeyi gereksiz
+-- geniş kalmasın diye açıkça geri alınıyor.
+--
+-- ⚠ Ders: `revoke all ... from public` + `grant ... to authenticated`
+-- yazmak bu projede yetkiyi DARALTMAYA YETMİYOR. Yeni bir fonksiyon
+-- eklerken `proacl`i OKU (aşağıdaki sorgu) — `anon=X` görürsen ayrıca
+-- revoke gerekiyor:
+--   select proacl from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+--   where n.nspname='public' and p.proname='<ad>';
+revoke execute on function public.head_to_head_stats(uuid) from anon;

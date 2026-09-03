@@ -233,6 +233,7 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
                     // "Beğenenler" listesinden bir isme dokununca o kişinin
                     // skor kartı açılabilsin diye.
                     stats: widget.stats,
+                    auth: widget.auth,
                   );
                 },
                 child: const Padding(

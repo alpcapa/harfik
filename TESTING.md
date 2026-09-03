@@ -238,6 +238,26 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       Kendi katıldığın oyunlarda normal görünmeli; admin hepsini görebilmeli.
       (O tarihe kadar `games.messages` girişli HERKESE açıktı — skor/tahta
       herkese görünür olsa da yazışma değil.)
+- [ ] **Kafa kafaya oran çubuğu (3 Eylül 2026) — İKİ HESAP GEREKİR.**
+      A hesabıyla gir, k-lig listesinden B'nin kartını aç. Alt satırda solda
+      `Tüm Oyunlar` butonu, sağda: üstte oyun sayısı, altta **B'nin avatarı ·
+      üç renkli çubuk · A'nın (senin) avatarı**. İsim YAZMAMALI.
+      - Renkler soldan sağa: **B'nin kazandıkları (kırmızı) · beraberlik
+        (gri) · senin kazandıkların (yeşil)** — yani her avatar kendi
+        tarafındaki dilime bakıyor.
+      - **AYNA KONTROLÜ (asıl kontrol bu):** B hesabıyla gir ve A'nın
+        kartını aç. Oyun sayısı AYNI olmalı, kazanma/kaybetme rakamları
+        TERSİNE dönmeli (A'da 5-9 ise B'de 9-5). Tutmuyorsa sunucudaki
+        eşleme yanlış.
+      - **Kendi kartında ÇUBUK HİÇ ÇIKMAMALI** (hesap menüsü → Skor Kartı).
+      - Hiç oynamadığın birinin kartında da çıkmamalı — çubuk yerine
+        yalnızca `Tüm Oyunlar` butonu görünür.
+      - **YALNIZCA 2 kişilik Canlı oyunlar sayılır** (kullanıcı kararı): 4
+        kişilik ortak bir oyununuz varsa sayıya girmemeli. YZ oyunları da
+        girmemeli.
+      - Teslim olarak biten bir oyununuz varsa teslim olan taraf KAYBETMİŞ
+        sayılmalı — iki taraf da 0 puanla bitmiş olsa bile beraberlik
+        görünmemeli.
 - [ ] **Hamle geçmişi ikonu (12 Ağustos 2026).** Tüm Oyunlarım'da, dökümü
       OLAN kartlarda küçük bir döküman ikonu olmalı; dokununca o oyunun TAM
       hamle dökümü açılmalı (kelime + ham puan + ×2/×3 rozetleri,

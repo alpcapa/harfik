@@ -12,8 +12,14 @@ import { RankInfoModal } from './RankInfoModal';
 import { tierFor } from '../utils/leagueRank';
 import { HowToRegIcon, PersonAddIcon, PersonPendingIcon } from './RelationIcons';
 import { useAuth } from '../hooks/useAuth';
+import {
+  headToHeadBar,
+  hasHeadToHead,
+  type HeadToHead,
+} from '../utils/headToHead';
 import { useModalA11y } from '../hooks/useModalA11y';
 import {
+  fetchHeadToHead,
   fetchAdminMemberActivityLog,
   fetchFriendRelation,
   fetchMyLeaderboardRank,
@@ -144,15 +150,87 @@ function friendDialogCopy(relation: FriendRelation | null, name: string) {
   }
 }
 
+
+/**
+ * Kafa kafaya oran çubuğu — kullanıcı tarifi (3 Eylül 2026):
+ * *"Sağ tarafa dayalı bir % çubuğu, üstünde oyun sayısı, barın sol
+ * tarafına bakılan kişi avatar, sağ tarafına bakan kişi avatar. İsim
+ * yazmayacak."*
+ *
+ * ⚠ **Yön TERS okunuyor:** RPC çağıranın (BAKANIN) bakış açısından dönüyor
+ * (`wins` = bakan kazandı), ama barın SOL ucu BAKILAN kişiye ait — yani sol
+ * dilim `losses`. Kural `utils/headToHead.ts`te ve iki platform da onu
+ * okuyor.
+ *
+ * İsim yazılmıyor ama avatarlar `title`/`aria-label` taşıyor: görme
+ * engelli bir kullanıcı için iki yuvarlak arasındaki farkı anlatan başka
+ * hiçbir işaret yok.
+ */
+function HeadToHeadBarView({
+  data,
+  theirAvatar,
+  theirName,
+  myAvatar,
+  myName,
+}: {
+  data: HeadToHead;
+  theirAvatar: string | null;
+  theirName: string;
+  myAvatar: string | null;
+  myName: string;
+}) {
+  const bar = headToHeadBar(data);
+  return (
+    <div className="flex flex-col items-end gap-0.5 min-w-0">
+      <span className="text-[9px] font-mono text-muted leading-none">
+        {data.games} oyun
+      </span>
+      <span className="flex items-center gap-1.5">
+        <Avatar url={theirAvatar} name={theirName} size={18} />
+        <span
+          className="flex h-2 w-24 overflow-hidden rounded-full bg-void border border-border"
+          role="img"
+          aria-label={`${theirName} ${data.losses} - ${data.wins} ${myName}`}
+          title={`${theirName} ${data.losses} · Beraberlik ${data.draws} · ${myName} ${data.wins}`}
+        >
+          {/* Sol = bakılan kişi, orta = beraberlik (nötr), sağ = bakan. */}
+          <span className="bg-red h-full" style={{ width: `${bar.left}%` }} />
+          <span className="bg-muted h-full" style={{ width: `${bar.middle}%` }} />
+          <span className="bg-green h-full" style={{ width: `${bar.right}%` }} />
+        </span>
+        <Avatar url={myAvatar} name={myName} size={18} />
+      </span>
+    </div>
+  );
+}
+
 export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCardProps) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [statsByTab, setStatsByTab] = useState<
     Record<TabKey, PlayerStats | null | undefined>
   >({ all: undefined, 2: undefined, 4: undefined });
   const [tab, setTab] = useState<TabKey>('all');
   const [showAllGames, setShowAllGames] = useState(false);
+  // Kafa kafaya (3 Eylül 2026): yalnızca BAŞKASININ kartında ve yalnızca
+  // giriş yapılmışken anlamlı. Kendi kartında sunucu zaten 0 döner, ama
+  // gereksiz bir istek de atmıyoruz.
+  const [headToHead, setHeadToHead] = useState<HeadToHead | null>(null);
   const [showLeague, setShowLeague] = useState(false);
   const [showRankInfo, setShowRankInfo] = useState(false);
+
+  useEffect(() => {
+    if (!user || user.id === member.id) {
+      setHeadToHead(null);
+      return;
+    }
+    let iptal = false;
+    void fetchHeadToHead(member.id).then((h) => {
+      if (!iptal) setHeadToHead(h);
+    });
+    return () => {
+      iptal = true;
+    };
+  }, [user, member.id]);
   const [rank, setRank] = useState<MyLeaderboardRank | null>(null);
   // "Y:59/C:E" satırı — `profiles` RLS'i başkasının satırını okutmadığından
   // ayrı bir RPC'den gelir (bkz. `fetchProfileAgeGender`); yüklenene kadar
@@ -339,13 +417,29 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
         }
       />
 
-      <div className="text-center mt-1.5">
+      {/* 3 Eylül 2026 (kullanıcı isteği): satır SOLA dayandı ve etiket
+          "Tüm Geçmiş Oyunlar" → "Tüm Oyunlar" oldu; sağ tarafa aramızdaki
+          kafa kafaya oran çubuğu geldi. Port ikizinde etiket "Tüm Oyunları
+          Gör"dü, o da "TÜM OYUNLAR" oldu.
+          ⚠ KENDİ skor kartının butonu (`ScoreCard.tsx`, "Tüm Geçmiş
+          Oyunlar") BİLEREK dokunulmadan bırakıldı — istek başkasının
+          kartını tarif ediyordu, orada çubuk da yok. */}
+      <div className="mt-1.5 flex items-end justify-between gap-3">
         <button
           onClick={() => setShowAllGames(true)}
-          className="text-[11px] font-mono font-bold uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
+          className="shrink-0 text-[11px] font-mono font-bold uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
         >
-          Tüm Geçmiş Oyunlar
+          Tüm Oyunlar
         </button>
+        {hasHeadToHead(headToHead) && (
+          <HeadToHeadBarView
+            data={headToHead}
+            theirAvatar={member.avatar_url ?? null}
+            theirName={memberDisplayName(member)}
+            myAvatar={profile?.avatar_url ?? null}
+            myName={profile?.display_name ?? 'Sen'}
+          />
+        )}
       </div>
 
       {isAdminView && (

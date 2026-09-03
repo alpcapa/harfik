@@ -456,12 +456,13 @@ Bütçeyi `npm run check-doc-size` ölçüyor, sınıra gelince yeni cilt açıl
 
 | Konu | Dosya |
 |---|---|
-| Backend hazırlığı (submit_move idempotency, 5 Ağustos 2026) + Depolama katmanı + Flutter iskeleti + uygulama ikonu/splash + MembershipPerksBox | `mobile/docs/setup-log.md` |
+| Backend hazırlığı (submit_move idempotency, 5 Ağustos 2026) + Depolama katmanı + Flutter iskeleti + uygulama ikonu/splash + MembershipPerksBox + ilk doğrulama durumu (5 Ağustos 2026) | `mobile/docs/setup-log.md` |
 | Web derlemesi (test ortamı), Appetize, Play Store imzalama/.aab, karşılama katmanının web'e özgü ayrışması | `mobile/docs/build-and-distribution-log.md` |
 | **Web ↔ Uygulama Arasındaki Kabul Edilmiş Farklar — Parça günlüğü** (DÖRT cilt, yukarıdaki tabloya bak) | `mobile/docs/parca-log.md` + `-110-138` + `-49-109` + `-1-48` |
 | FAZ A1 — cihaz testi tur durumu | `mobile/docs/cihaz-testi-log.md` |
 | Cihaz testi — Arkadaşlar + Canlı oyun bölümleri (iki gerçek oturum ister) | `mobile/docs/testing-arkadaslar-canli.md` |
 | Cihaz testi — web ile yan yana GÖRSEL karşılaştırma (parite denetimi, §0.5) | `mobile/docs/testing-gorsel-karsilastirma.md` |
+| Cihaz testi — etkileşim/görünüm turları (tarihli: dokunma hedefleri, sürükleme eşiği, yazı boyutu, akıcılık, zoom) | `mobile/docs/testing-ux-turlari.md` |
 | Cihaz testi — push bildirimleri + derin bağlantılar + **güncelleme** (çoğu Play imzalı derleme ister) | `mobile/docs/testing-bildirimler.md` |
 | Deploy doğrulaması — tarihli post-mortem'ler (dal hijyeni, "koşu yok" filtresi, PR #267, sınıf 2 risk kütüğü) **+ 31 Ağustos 2026'da buradan taşınan gerekçeler: 15/29 Ağustos deploy vakaları, güncelleme modelinin 1.0.1 ölçümü ve 1.0.0 süpürmesi, yazı boyutu envanteri** | `mobile/docs/deploy-verification.md` |
 | Sonraya bırakılan mobil işler (karar verildi, henüz yapılmadı — KGP uyarısı, iOS borçları) | `mobile/docs/sonraya-birakilanlar.md` |
@@ -725,6 +726,18 @@ mobile/
       util/push_rules.dart   # "izin sorulsun mu?" saf kararı (en çok 3 kez,
                              # 7 gün arayla) + platform adı doğrulaması
       util/semver.dart, util/uuid.dart, util/share_board.dart,
+      util/game_list_order.dart # devam eden oyun/davet listelerinin sıralaması
+                             # (web `gameListOrder.ts` ikizi) — ⚠ Dart `List.sort`
+                             # KARARLI DEĞİL, eşitlikte indeks tie-break'i şart
+      util/recent_game_avatars.dart # "Son Oynadıklarım" satırındaki rakip
+                             # avatarı: eşleme OYUNLA sınırlı (donmuş `players`
+                             # anlık görüntüsü `user_id` taşımaz, isimle eşleme
+                             # yanlış yüz gösterirdi) — web `recentGameAvatars.ts`
+      util/head_to_head.dart # skor kartındaki kafa kafaya oran çubuğunun
+                             # dilimleri — KÜMÜLATİF yuvarlama (üç bağımsız
+                             # yuvarlama 33+33+33=99 verir), web `headToHead.ts`
+                             # ikizi; `test/head_to_head_test.dart` ↔
+                             # `npm run verify-head-to-head` aynı vakalar
       util/platform.dart      # bu istemcinin platformu (ios/android/app-web) —
                              # telemetri; web `src/utils/platform.ts` karşılığı,
                              # değer kümesi sunucu kısıtıyla ELLE senkron
@@ -1012,16 +1025,6 @@ ASIL hata bile listede çıkmamıştı, çünkü tarama yalnızca testlerin ger�
 çizdiği ekranı ve veriyi görür. Envanter ve ölçümler:
 `mobile/docs/deploy-verification.md` → "Sınıf 2 risk kütüğü".
 
-## Sınıf 2 risk kütüğü
-
-Kullanıcı sordu: *"Bir de başka sessiz sıkışma olan yerler var mı?"* İki
-yöntemle (dinamik tarama + yapısal tarama) arandı; ölçülen tek vaka
-`game_history_modal.dart`, beş yapısal aday daha var ve hiçbiri ölçülmedi.
-⚠ Taramanın körlüğü de ölçüldü: kullanıcının bildirdiği ASIL hata bile
-listede çıkmadı, çünkü tarama yalnızca testlerin gerçekten çizdiği ekranı
-ve veriyi görür. Envanter ve ölçümler:
-`mobile/docs/deploy-verification.md` → "Sınıf 2 risk kütüğü".
-
 ## `KModal`'ın gövdesi ZATEN kaydırılabilir — içine ikincisini koyma
 
 27 Ağustos 2026, bir kullanıcı bildirdi: *"Arkadaşlar - Ara&Ekle'de scroll
@@ -1183,17 +1186,6 @@ bağlı değil.)
   YZ'nin `freshCorners` çok-köşe dalı (üretimde erişilemez, TS'te de not
   düşülmüş); `boardSnapshot`/`outline` (henüz port edilmedi — outline UI
   fazının işi, boardSnapshot depolama fazının).
-
-## Doğrulama Durumu (5 Ağustos 2026)
-
-- Dart 3.12.2 (Linux x64) ile: `dart analyze` temiz, `dart run
-  test/run_all.dart` → **6.746 kontrol, 0 hata** — İLK üretimden itibaren
-  tam parite (tek düzeltme turu bile gerekmedi; port TS satır satır
-  izlenerek yazıldı).
-- `npm run lint` (tsc) web tarafında temiz — `random.ts` kancası davranış
-  değiştirmez (varsayılan hâlâ `Math.random`).
-- Dart SDK repoya/CI'a bağlanmadı — bu ortamda scratchpad'e indirilip
-  kullanıldı; geliştirici makinesinde standart `dart` kurulumu yeterli.
 
 ## Sonraya Bırakılan İşler (mobil)
 

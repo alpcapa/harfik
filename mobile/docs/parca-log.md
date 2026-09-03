@@ -20,6 +20,70 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 185 — kafa kafaya istatistik: skor kartının alt şeridi (3
+     Eylül 2026, kullanıcı isteği; yeni `util/head_to_head.dart` +
+     `test/head_to_head_test.dart`, değişen `data/stats_api.dart`,
+     `ui/score/player_score_card_modal.dart` + web ikizleri; yeni RPC
+     `head_to_head_stats`):**
+     - **Kullanıcı:** *"Skor kartın altında tüm geçmiş oyunlar tüm oyunlar
+       olsun ve sola dayansın. Sağ tarafa dayalı bir % çubuğu, üstünde oyun
+       sayısı, barın sol tarafına bakılan kişi avatar, sağ tarafına bakan
+       kişi avatar. İsim yazmayacak."* Alt satır tek ortalanmış butondan
+       `spaceBetween` bir şeride döndü; etiket `TÜM OYUNLARI GÖR` → **`TÜM
+       OYUNLAR`** (web'de de `Tüm Oyunlar`).
+     - **Sayım SUNUCUDA, çünkü istemcide DOĞRU yapılamıyordu:** `games`in
+       donmuş `players` anlık görüntüsü `user_id` TAŞIMIYOR — istemcide
+       eşleme ancak İSİMLE olurdu ve takma ad değiştirilebildiği için
+       sessizce yanlış sayardı. `online_games.slots` gerçek `user_id`
+       taşıyor. (İkincil sebep: geçmiş sayfalı, tamamını saymak tüm
+       geçmişi sayfalamak demekti.)
+     - **Güvenlik sınırı TEK koşul:** `g.user_id = auth.uid()` — fonksiyon
+       yalnızca çağıranın KENDİ `games` satırlarını okuyor. ⚠ Ve
+       `revoke ... from public` `anon`u KALDIRMADI (Supabase'in
+       `alter default privileges`i ayrı bir grant veriyor); ikinci bir
+       migration gerekti. Yeni bir `security definer` fonksiyonda grant'leri
+       `execute_sql` ile GERÇEKTEN oku.
+     - **Yalnızca 2 KİŞİLİK oyunlar (kullanıcı kararı):** 4 kişilikte
+       ikinizin arasındaki sonucu öteki iki oyuncu belirlemiş olabilir.
+       Aynı filtre `ai_score`u da doğrudan rakibin skoru yapıyor.
+     - ⚠ **Yuvarlama KÜMÜLATİF olmak zorunda:** üç oranı bağımsız
+       yuvarlamak 1/3-1/3-1/3'te 33+33+33=**99** verir ve çubukta bir
+       piksellik boşluk açar. Kural saf ve iki tarafta birebir:
+       `head_to_head.dart` ↔ `src/utils/headToHead.ts`, aynı vakalar
+       `test/head_to_head_test.dart` + `npm run verify-head-to-head` (14
+       kontrol).
+     - ⚠ **`Expanded(flex: 0)` KULLANILMADI** — Flutter'da sıfır flex
+       güvenilir davranmıyor; sıfır genişlikli dilim `if (bar.left > 0)`
+       ile satırdan tamamen çıkarılıyor. Web'de karşılığı yüzde genişlik,
+       o dal gerekmiyor.
+     - `StatsGateway`'e metot eklemek `implements` eden **BEŞ** test
+       sahtesini birden bozdu (Parça 152'nin `profileAgeGender` notuyla
+       aynı refleks) — hepsi aynı PR'da tamamlandı.
+     - ⚠⚠ **"Ben kimim" PARAMETREYLE taşındığı için bir yerde SESSİZCE
+       kayboldu.** Modal `auth`u zaten alıyor ve beş çağrı yerinin DÖRDÜ
+       geçiyordu; "Beğenenler" listesinden açılan kart
+       (`game_history_modal.dart`) geçmiyordu — çubuk yalnızca o yoldan
+       açılan kartta çizilmiyor, hiçbir derleyici/test bunu söylemiyordu.
+       `showGameHistory` artık `auth`u taşıyor. **Web'de bu tuzak YOK:**
+       orada `useAuth()` bir BAĞLAM, parametre değil — port karşılığı
+       `OnlineScope` deseni olurdu (bkz. `mobile/CLAUDE.md`, `KAvatar`ın
+       19 çağrı yeri gerekçesi). Bugün eklenmedi çünkü çağrı yeri beş;
+       altıncıda kapsam yazmak parametre taşımaktan ucuz.
+     - ⚠ **`_LikersModal` ayrı bir `StatelessWidget`, orada `widget.` YOK**
+       — `auth` alan olarak eklendi. Aynı hata 2 Eylül'de `_RecentRow`da da
+       yapılmıştı; "web'de derledi" Dart tarafı için kanıt değil,
+       `dart analyze` şart.
+     - **Regresyon (`test/score_card_test.dart`, 3 test):** başkasının
+       kartında oyun sayısı + TAM İKİ dilim (0 beraberlikte orta dilim
+       ÇİZİLMEZ) ve isim yazılmaz · KENDİ kartında hiç çizilmez · games=0'da
+       hiç çizilmez. Negatif eş koşuldu: sıfır dilim koruması kaldırılınca
+       ilk test GERÇEKTEN düşüyor.
+     - İsim yazılmadığı için çubuk web'de `role="img"` + açıklayıcı
+       `aria-label` taşıyor: ekran okuyucuda iki avatar arasındaki renk
+       şeridi hiçbir şey ifade etmezdi.
+     - **Doğrulama sınırı:** iki GERÇEK hesap gerektiriyor — `flutter test`
+       sahte uçla çiziyor. Cihaz kontrolü `mobile/TESTING.md`'de.
+
    - ✅ **Parça 184 — liste sıralaması: "bitmeye en yakın üstte" (3 Eylül
      2026, kullanıcı isteği; yeni `util/game_list_order.dart`, değişen
      `data/online_games_api.dart`, `ui/setup/setup_screen.dart` + web
