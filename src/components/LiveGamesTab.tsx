@@ -839,6 +839,50 @@ export function LiveGamesTab({
     liveGamesCache.set(user.id, { games, turns, deadlines });
   }, [user, games, turns, deadlines]);
 
+  // ⚠ AŞAĞIDAKİ İKİ HOOK ERKEN `return`LERİN ÜSTÜNDE KALMAK ZORUNDA.
+  // 3 Eylül 2026: eklendikleri turda dosyanın SONUNA, yani `if (creating)` /
+  // `if (!user)` dallarının ALTINA yazılmışlardı. Sonuç: "Yeni Canlı Oyun"a
+  // basınca bileşen erkenden dönüp önceki render'dan DAHA AZ hook çalıştırdı
+  // ve React #300 ile ErrorBoundary'ye düştü (canlıda yakalandı, kullanıcı
+  // bildirdi). Bu bileşene yeni bir hook eklerken yerini dalların ÜSTÜNE koy.
+  // "YENİ" rozetlerinin ZİYARET BOYUNCA sabit kalan enstantanesi (3 Eylül
+  // 2026, kullanıcı isteği).
+  //
+  // Kullanıcının tarifi iki ayrı an içeriyor ve ikisi aynı anda olmuyor:
+  //   "Bir kere girip gördüğünde tab numarası SIFIRLANIR"  → giriş anında
+  //   "…ve yeni kalkar, sadece Oyun bitti kalır"           → ÇIKIŞTA
+  // Yani sunucudaki işaret sekmeye girer girmez temizleniyor (sayı hemen
+  // sıfırlanıyor), ama satırdaki rozetler ziyaret bitene kadar duruyor.
+  // Anlık listeyi doğrudan bağlasaydık rozetler kullanıcı tam bakarken
+  // gözünün önünde kaybolurdu.
+  const [freshFinished, setFreshFinished] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  useEffect(() => {
+    if (subTab !== 'recent') {
+      // Çıkış: "bir daha girdiğinde yeni rozetleri gösterilmez".
+      setFreshFinished((prev) => (prev.size === 0 ? prev : new Set()));
+      return;
+    }
+    // Boşken erken çıkmak ŞART: işaretleme başarılı olunca liste [] olarak
+    // geri gelip bu effect'i tekrar koşturuyor — enstantaneyi burada
+    // temizleseydik rozetler girişten saniyeler sonra silinirdi.
+    if (newlyFinishedIds.length === 0) return;
+    setFreshFinished(new Set(newlyFinishedIds));
+    let cancelled = false;
+    void markGameFinishesSeen().then((ok) => {
+      // ⚠ Yalnızca sunucu ONAYLARSA sıfırla. Çevrimdışıyken yerelde
+      // sıfırlamak rozeti kaybettirir, sunucuda ise hâlâ görülmemiş durur —
+      // bir sonraki tazelemede geri gelir ve "kayboldu sonra döndü" diye
+      // tuhaf görünürdü. Bu kod tabanında tek seferlik kararların BAŞARISIZ
+      // veriyle tüketilmesi üç kez hata olarak kayıtlı.
+      if (!cancelled && ok) onFinishesSeen();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [subTab, newlyFinishedIds, onFinishesSeen]);
+
   if (authLoading) return null;
 
   if (creating) {
@@ -966,43 +1010,6 @@ export function LiveGamesTab({
   const myTurnCount = active.filter((g) => turns[g.id] === mySlotIndex(g)).length;
   const inviteCount = invites.length;
 
-  // "YENİ" rozetlerinin ZİYARET BOYUNCA sabit kalan enstantanesi (3 Eylül
-  // 2026, kullanıcı isteği).
-  //
-  // Kullanıcının tarifi iki ayrı an içeriyor ve ikisi aynı anda olmuyor:
-  //   "Bir kere girip gördüğünde tab numarası SIFIRLANIR"  → giriş anında
-  //   "…ve yeni kalkar, sadece Oyun bitti kalır"           → ÇIKIŞTA
-  // Yani sunucudaki işaret sekmeye girer girmez temizleniyor (sayı hemen
-  // sıfırlanıyor), ama satırdaki rozetler ziyaret bitene kadar duruyor.
-  // Anlık listeyi doğrudan bağlasaydık rozetler kullanıcı tam bakarken
-  // gözünün önünde kaybolurdu.
-  const [freshFinished, setFreshFinished] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
-  useEffect(() => {
-    if (subTab !== 'recent') {
-      // Çıkış: "bir daha girdiğinde yeni rozetleri gösterilmez".
-      setFreshFinished((prev) => (prev.size === 0 ? prev : new Set()));
-      return;
-    }
-    // Boşken erken çıkmak ŞART: işaretleme başarılı olunca liste [] olarak
-    // geri gelip bu effect'i tekrar koşturuyor — enstantaneyi burada
-    // temizleseydik rozetler girişten saniyeler sonra silinirdi.
-    if (newlyFinishedIds.length === 0) return;
-    setFreshFinished(new Set(newlyFinishedIds));
-    let cancelled = false;
-    void markGameFinishesSeen().then((ok) => {
-      // ⚠ Yalnızca sunucu ONAYLARSA sıfırla. Çevrimdışıyken yerelde
-      // sıfırlamak rozeti kaybettirir, sunucuda ise hâlâ görülmemiş durur —
-      // bir sonraki tazelemede geri gelir ve "kayboldu sonra döndü" diye
-      // tuhaf görünürdü. Bu kod tabanında tek seferlik kararların BAŞARISIZ
-      // veriyle tüketilmesi üç kez hata olarak kayıtlı.
-      if (!cancelled && ok) onFinishesSeen();
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [subTab, newlyFinishedIds, onFinishesSeen]);
 
   const SUB_TABS: { key: SubTab; label: string; badge: number }[] = [
     { key: 'active', label: 'Devam Edenler', badge: myTurnCount },

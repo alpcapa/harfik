@@ -25,6 +25,7 @@
     "verify-draft-rescue": "esbuild scripts/verify-draft-rescue.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-draft-rescue.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-draft-rescue.mjs",
     "verify-cloud-save-mirror": "esbuild scripts/verify-cloud-save-mirror.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-cloud-save-mirror.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-cloud-save-mirror.mjs",
     "verify-fetch-my-games": "node scripts/run-verify-fetch-my-games.mjs",
+    "verify-hook-order": "node scripts/verify-hook-order.mjs",
     "verify-error-reporting": "node scripts/run-verify-error-reporting.mjs",
     "verify-live-games-load": "node scripts/run-verify-live-games-load.mjs",
     "verify-remaining-tiles": "esbuild scripts/verify-remaining-tiles.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-remaining-tiles.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-remaining-tiles.mjs",
