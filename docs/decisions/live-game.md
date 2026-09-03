@@ -710,3 +710,73 @@ sağ kenarı kayıyordu) ama aynı sınıftı.
 
 **Doğrulama:** hiza artık testli — skor sağ kenarı 375,0, k-lig 401,0, üç
 satırda (2 kişilik · 4 kişilik · tek basamaklı skor) BİREBİR aynı.
+
+### ⚠⚠ CANLIDA ÇÖKME — hook'lar erken `return`lerin ALTINA yazıldı (3 Eylül 2026)
+
+Kullanıcı bildirdi: *"Şu anda canlı web'de sorun var acil müdahale
+gerekiyor"* — ekran görüntüsü `ErrorBoundary`'nin "Bir şeyler ters gitti"
+kartıydı. Sonra tetikleyiciyi verdi: **"Canlı yeni oyun aç"a basınca.**
+
+**Teşhis tahminle değil TELEMETRİYLE yapıldı.** `client_errors` tablosunda
+dört satır vardı, hepsi aynı dakikada (kullanıcının "yeniden yükle"
+denemeleri), hepsi `build = 1bfb997`:
+
+```
+Minified React error #300 · kind=boundary · route=/ · platform=web
+```
+
+React #300 = *"Rendered fewer hooks than expected."* Yani bileşen bir
+render'da öncekinden AZ hook çalıştırdı.
+
+**Kök sebep:** `LiveGamesTab.tsx`'in `freshFinished` state'i ve onun
+effect'i — "Oyun Bitti (Yeni)" turunda (Parça 186) eklenenler — dosyanın
+SONUNA, yani bileşenin üç erken dalının **ALTINA** yazılmıştı:
+
+```
+if (authLoading) return null;
+if (creating)    return <LiveGameCreateForm … />;   // ← "Yeni Canlı Oyun"
+if (!user)       return <giriş çağrısı />;
+…
+const [freshFinished, setFreshFinished] = useState(…);   // ← 979. satır
+useEffect(() => { … }, [subTab, newlyFinishedIds, …]);   // ← 982. satır
+```
+
+İlk render'da (`creating === false`) hepsi çalışıyor. Kullanıcı butona
+basınca `creating` true oluyor, bileşen ikinci daldan dönüyor ve o iki hook
+HİÇ çalışmıyor → React sırayı kaybediyor → `ErrorBoundary`.
+
+**Neden hiçbir kontrol yakalamadı — dördü de yapısal:**
+
+| Kontrol | Neden görmedi |
+|---|---|
+| `tsc --noEmit` | hook SIRASI tip sistemine görünmez |
+| ESLint `react-hooks/rules-of-hooks` | **bu repoda ESLint kurulu değil** (`npm run lint` = `tsc`) |
+| Playwright duman testi | Canlı oyun formuna girmek gerçek bir Supabase oturumu ister |
+| Kod incelemesi | hook'lar 979. satırda, dallar 842'de — 130 satır arayla, aynı ekranda görünmüyorlar |
+
+⚠ **Ve bu, "yalnızca ilk render'da çalışan" bir hatanın tipik imzası:**
+sayfa açılıyor, liste geliyor, her şey doğru görünüyor. Bozulma yalnızca
+belirli bir DALA girildiğinde doğuyor. Bu yüzden "web yayında ve düzelmiş
+gözüküyor" demek yeterli bir doğrulama değildi — o tur `creating` dalına
+hiç girilmemişti.
+
+**Düzeltme:** iki hook erken dalların ÜSTÜNE taşındı (ikisi de yalnızca
+`subTab` + iki prop'a bakıyor, taşınmaları için başka bir koşul yoktu).
+Davranış aynı; dosyada yerlerini koruyan bir ⚠ yorumu bırakıldı.
+
+**Kalıcı kapı — `npm run verify-hook-order`:** bağımlılıksız bir node
+betiği `src/**/*.tsx`'te "bir fonksiyonun gövdesinde ilk erken `return`den
+SONRA gelen hook çağrısı" arıyor. Web CI'da `npm run lint`in hemen yanında
+koşuyor (milisaniyeler). **Negatif eş koşuldu:** düzeltme geri alınınca
+betik TEK bulguyla, tam da o satırla düşüyor; düzeltilmiş ağaçta sıfır
+bulgu veriyor — yani ne kör ne gürültülü.
+
+Kapsamı bilinçli olarak dar: koşullu hook (`if` içinde `useState`) ya da
+döngüde hook gibi öteki ihlalleri GÖRMEZ. Bu kod tabanında o sınıflar hiç
+yaşanmadı; yaşanırsa deseni betiğe eklenir. Gerçek çözüm ESLint kurmak
+olurdu, ama bu repo bilinçli olarak ESLint'siz (`lint` = `tsc`) ve o karar
+bu hata için tek başına yeniden açılmadı.
+
+**Ders (bu dosyadaki en pahalı satır):** bir bileşene hook eklerken yerini
+"ilgili kodun yanına" değil **tüm erken dalların üstüne** koy. Bu bileşende
+üç dal var ve ikisi kullanıcının her gün bastığı butonlar.

@@ -100,6 +100,12 @@ jobs:
 
       - run: npm run lint
 
+      # React hook sırası: erken `return`den SONRA hook yok. `tsc` bunu
+      # göremez ve bu repoda ESLint (react-hooks/rules-of-hooks) yok —
+      # 3 Eylül 2026'da LiveGamesTab'a eklenen bir hook `if (creating)`
+      # dalının ALTINA düşüp CANLIDA React #300 üretti. Milisaniyeler.
+      - run: npm run verify-hook-order
+
       # Saf fonksiyon kontrolü: "Kalan Taşlar" dökümü ile oyun sonu raf
       # düşümü arasındaki değişmez (bkz. kök `CLAUDE.md` → "Kalan Taşlar").
       # Playwright'a gerek yok, saniyeler sürüyor — lint'in hemen yanında.
