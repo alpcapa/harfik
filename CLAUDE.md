@@ -312,6 +312,27 @@ girmişti** — kuralı yazmak, kuralın konusu olan dosyayı büyüttü. Öngö
 `docs/decisions/local-game-persistence.md`'ye taşındı, dosya 76 KB'a indi.
 Bu, "active" sınıfı için beklenen davranışın örneği: sınıra çarpmadan böl.
 
+## Oturum Hijyeni — yeni oturum ÖNERİSİ ajanın işi (3 Eylül 2026)
+
+Kullanıcı isteği, sözleri birebir: *"Bana gerektiğinde yeni session önerisi
+yap"*. Gerekçe aynı gün yaşandı: tek bir oturum "avatar boyutu → APK →
+canlıda çökme" zincirini taşıdı, birkaç kez sıkıştırma (compaction) yedi.
+Sıkıştırma repoyu etkilemez, ama erken turların ÖLÇÜMLERİ özete iner.
+
+**Kullanıcıdan beklenmiyor — bunu ben söyleyeceğim.** Bir iş kapandığında
+(merge edildi, doğrulandı) ve sıradaki iş ONDAN BAĞIMSIZSA, tek cümlelik bir
+öneri: *"Bu iş kapandı; sıradakine `/clear` ile temiz bir oturumda başlamak
+daha verimli olur."*
+
+| Öner | ÖNERME |
+|---|---|
+| İş kapandı + sıradaki konu ilgisiz | Zincir sürüyor: teşhis → düzeltme → PR → merge → doğrulama |
+| Oturumda zaten sıkıştırma olduysa ve yeni bir konuya geçiliyorsa | Kullanıcı bir hata bildirmiş ve bağlam DEĞERLİ (bugünkü React #300 turu: eski turların kararları teşhisi hızlandırdı) |
+| Çok okuma gerektiren bir tur başlıyorsa (cihaz testi turu, doküman bölme, sözlük işi) | Yalnızca "uzun sürdü" diye — süre değil KONU DEĞİŞİMİ ölçüt |
+
+⚠ **Öneriyle birlikte devir notunu da ver:** dal adı, açık PR numarası,
+bekleyen iş. Yeni oturum repoyu okuyabilir ama bu üçünü tahmin edemez.
+
 ## Karar Kayıtları (`docs/decisions/`) — geçmiş, arşivlenmiş
 
 Bu dosya artık **yaşayan bir indeks**: mimari, komutlar, klasör yapısı,
