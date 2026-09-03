@@ -20,6 +20,29 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 183 — avatarlar 26 px, bindirme 4 → 6 (2 Eylül 2026,
+     kullanıcı isteği; değişen `ui/game/player_avatar_row.dart`,
+     `ui/live/live_games_tab.dart` + web ikizleri):**
+     - Kullanıcı sordu: *"kutuyu genişletmeden, yazıları bozmadan
+       avatarları biraz daha büyütecek yerimiz var mı?"* — ölçüldü, VAR:
+       davet kartında ada kalan 218 px'e karşılık 10 karakterlik takma ad
+       (`maxLength: 10`) tavanda bile ~117 px. Genişlik hiç darboğaz
+       değildi; gerçek bedel satır YÜKSEKLİĞİ.
+     - Kullanıcı *"hepsi 26 olsun"* dedi; `PlayerAvatarRow` varsayılanı
+       20 → 26 (üç kartı birden besliyor) ve davet kartının insan+robot
+       avatarları 22 → 26 (robot ikonu 13 → 15, kutuyla orantılı).
+     - ⚠ **BİNDİRME 4 → 6 ve bu kozmetik DEĞİL, ölçümden geliyor.** Şerit
+       `Expanded` bir alanın içinde; yazı ölçeği tavanında o alan 320 px
+       ekranda 92,5 px'e iniyor (`setup_screen_test`in CI ölçümü). 4
+       oyunculu oyunda şeridin eni `size + 3*(size − overlap)`:
+       26/4 → **92 px** (0,5 px marj, pratikte taşma), 26/6 → **86 px**
+       (6,5 px marj). Kullanıcının istediği BOYUT korundu, taşmayı önleyen
+       bindirme ayarlandı. Web'de `-space-x-1` → `-space-x-1.5`.
+     - Yol üstünde `PlayerAvatarRow`un doküman yorumu BAYAT çıktı: "İki
+       çağrı yeri var" diyordu, ÜÇ tane (Canlı kartı sonradan eklenmiş).
+       Boyut değiştirmeye gelen biri kapsamı eksik ölçerdi.
+     - ✅ **CİHAZDA DOĞRULANDI (3 Eylül 2026, kullanıcı — Appetize).**
+
    - ✅ **Parça 182 — "Son Oynananlar"da avatarlar (2 Eylül 2026, kullanıcı
      isteği; yeni `util/recent_game_avatars.dart`, değişen
      `ui/setup/recent_games_section.dart`, `ui/live/live_games_tab.dart`,
@@ -53,6 +76,8 @@
        eşi iki tarafta da testli ("başka oyundaki aynı isim sızmaz").
      - Kural saf bir dosyada ve İKİ tarafta aynı vakalarla koşuyor:
        `npm run verify-recent-game-avatars` + `recent_game_avatars_test.dart`.
+     - ✅ **CİHAZDA DOĞRULANDI (3 Eylül 2026, kullanıcı — Appetize):**
+       *"Avatar maddeleri de ok."* Fotoğraflar listede görünüyor.
 
    - ✅ **Parça 181 — iPad'de paylaşım İKİ yolda ASILI KALIYORDU: ankrajın
      kendisi geçersizdi (2 Eylül 2026; değişen: `util/share_board.dart`,
@@ -146,6 +171,12 @@
        tamamını ölçerdi: test düşmez, **anlamsızlaşırdı**. Sol alan artık
        ortak gövdede anahtarlı (`kDevamEdenSolKey`). **Bir düzeni ölçen
        test, o düzenin İÇERİĞİ değişince yeniden okunmalı.**
+     - ⏳ **CİHAZDA HENÜZ DENENMEDİ (3 Eylül 2026 itibarıyla).** Aynı turda
+       çıkan öteki üç iş (iPad paylaşımı, avatar 26, Son Oynananlar
+       avatarları) doğrulandı; BU madde onların içinde DEĞİL. Kontrol:
+       "Yapay Zeka" ↔ "Arkadaşınla" sekmelerini yan yana koy, kalan süre
+       iki kartta da kendi alt satırında olmalı ("X açtı" yazısına
+       binmemeli). ⚠ Onaylananların yanında sessizce onaylanmış SAYMA.
 
    - ✅ **Parça 179 — zoom'da kalıcı 10 px çerçeve + filigranların yazı
      ölçeğiyle bölgeyi taşırması (2 Eylül 2026; değişen:
