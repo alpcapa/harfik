@@ -524,6 +524,346 @@ void main() {
     expect(find.byType(ScoreBoxRow), findsOneWidget);
   });
 
+  // 3 Eylül 2026, kullanıcı: *"YZ'de oyun bitti yazmasına gerek yok. Bu
+  // sadece canlı oyunlar için geçerli."* Gerekçe: YZ oyunu SENİN cihazında
+  // bitiyor, bitişini zaten gözünle görüyorsun — orada etiket bilgi taşımaz.
+  // Canlı'da ise oyun sen yokken bitiyor, asıl mesele o.
+  // ⚠⚠ 3 Eylül 2026, kullanıcı CİHAZDA bildirdi: *"Son oynananlar … puan ve
+  // k-lig bozulmuş, sağda hizalı olmaları lazım."* İKİ ayrı sebep vardı ve
+  // ikisi de bu testin YOKLUĞUNDA gizlenmişti:
+  //   (1) skor/k-lig düz `Text`ti → genişlikleri İÇERİĞE göre değişiyordu
+  //       ("0" bir karakter, "253" üç) → satırın sonu kayıyordu.
+  //   (2) sol sütun Canlı'da `Flexible`di (loose fit) → avatar SAYISI
+  //       genişliği değiştiriyordu (2 kişilik 46 px, 4 kişilik 86 px) ve
+  //       artan boşluk `MainAxisAlignment.start` gereği en sağda kalıyordu.
+  // ÖLÇÜLDÜ (düzeltme öncesi, 412 px): k-lig sağ kenarı 289,9 / 289,9 /
+  // **320,8** / **283,2** / 289,9 — dört farklı yerde.
+  //
+  // Bu test SAĞ KENARLARIN eşitliğini ölçüyor; ikisinden biri geri alınırsa
+  // GERÇEKTEN düşer.
+  testWidgets(
+      'Son Oynadıklarım: puan ve k-lig sütunları SAĞDA hizalı — satır '
+      'içeriği (avatar sayısı, skor basamağı) değişse bile', (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        // 2 kişilik, üç basamaklı skor
+        gameRow(id: 'g1', onlineGameId: 'o1', playerScore: 253, aiScore: 100,
+            rank: 1, createdAt: '2026-09-03T10:00:00.000Z',
+            players: [snap('Ben', 253, colorIndex: 0), snap('Be', 100, colorIndex: 1)]),
+        // 4 KİŞİLİK (sol sütun daha geniş) + tek basamaklı k-lig farkı
+        gameRow(id: 'g2', onlineGameId: 'o2', playerScore: 123, aiScore: 200,
+            rank: 2, playerCount: 4, createdAt: '2026-09-02T10:00:00.000Z',
+            players: [snap('Ben', 123, colorIndex: 0), snap('Fb', 200, colorIndex: 1),
+                      snap('X', 90, colorIndex: 2), snap('Y', 80, colorIndex: 3)]),
+        // TEK BASAMAKLI skor
+        gameRow(id: 'g3', onlineGameId: 'o3', playerScore: 0, aiScore: 100,
+            rank: 1, createdAt: '2026-09-02T09:00:00.000Z',
+            players: [snap('Ben', 0, colorIndex: 0), snap('Vi', 100, colorIndex: 1)]),
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, const Size(412, 900));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: RecentGamesSection(
+            games: repo,
+            userId: 'u-me',
+            onlineOnly: true,
+            // Bir satırda "YENİ" rozeti VAR — ortadaki blok genişliği
+            // değişse de sağ sütunlar kıpırdamamalı.
+            newlyFinishedIds: const {'g1'}),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // ⚠ Aynı metin BİRDEN FAZLA satırda olabilir ("+2" iki kez) — finder
+    // tekil değil, hepsini topla.
+    List<double> sagKenarlar(String metin) => [
+          for (final e in find.text(metin).evaluate())
+            tester.getRect(find.byWidget(e.widget)).right
+        ];
+
+    // Skorlar: 253 (2 kişi) · 123 (4 KİŞİ) · 0 (tek basamak)
+    final skorlar = [
+      ...sagKenarlar('253'),
+      ...sagKenarlar('123'),
+      ...sagKenarlar('0'),
+    ];
+    expect(skorlar, hasLength(3));
+    for (final x in skorlar) {
+      expect(x, closeTo(skorlar.first, 0.5),
+          reason: 'skor sütunu sağda hizalı DEĞİL: $skorlar');
+    }
+    // k-lig: +2 (iki satır) · +1
+    final kligler = [...sagKenarlar('+2'), ...sagKenarlar('+1')];
+    expect(kligler, hasLength(3));
+    for (final x in kligler) {
+      expect(x, closeTo(kligler.first, 0.5),
+          reason: 'k-lig sütunu sağda hizalı DEĞİL: $kligler');
+    }
+    // ignore: avoid_print
+    print('[ÖLÇÜM] skor sağ=${skorlar.first.toStringAsFixed(1)} '
+        'k-lig sağ=${kligler.first.toStringAsFixed(1)} (üç satır AYNI)');
+  });
+
+  testWidgets('Son Oynadıklarım: "OYUN BİTTİ" YZ tarafında ÇİZİLMEZ',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(id: 'g-ai', players: [
+          snap('Ironman', 238, colorIndex: 0),
+          snap('Yapay Zeka 2', 179, ai: true, colorIndex: 1),
+        ])
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, const Size(420, 780));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: RecentGamesSection(
+            games: repo, userId: 'u-me', onlineOnly: false),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Satır GERÇEKTEN çizilmiş olmalı — yoksa test hiçbir şey kanıtlamaz.
+    expect(find.text('238'), findsOneWidget);
+    expect(find.text('OYUN BİTTİ'), findsNothing);
+  });
+
+  testWidgets('Son Oynadıklarım: "OYUN BİTTİ" CANLI tarafta çizilir',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(id: 'g-live', onlineGameId: 'og-1', players: [
+          snap('Ironman', 238, colorIndex: 0),
+          snap('Esiner', 179, colorIndex: 1),
+        ])
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, const Size(420, 780));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: RecentGamesSection(
+            games: repo, userId: 'u-me', onlineOnly: true),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('OYUN BİTTİ'), findsOneWidget);
+    // "YENİ" yalnızca bitişini görmediklerinde — burada verilmedi.
+    expect(find.text('YENİ'), findsNothing);
+  });
+
+  // 3 Eylül 2026, kullanıcı sordu: süre yüzünden teslim senaryosunda satırda
+  // teslim göstergesi yoktu. Ayrı bir sütun yer sorunu çıkarırdı (kullanıcı
+  // da bunu söyledi), o yüzden AYNI kutunun metni değişiyor.
+  testWidgets('Son Oynadıklarım: teslimle biten oyunda etiket "TESLİM OLDUN"',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(
+            id: 'g-live',
+            onlineGameId: 'og-1',
+            surrendered: true,
+            rank: 2,
+            playerScore: 0,
+            aiScore: 147,
+            players: [
+              snap('Ironman', 0, colorIndex: 0),
+              snap('Esiner', 147, colorIndex: 1),
+            ])
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, const Size(420, 780));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: RecentGamesSection(
+            games: repo, userId: 'u-me', onlineOnly: true),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('TESLİM OLDUN'), findsOneWidget);
+    expect(find.text('OYUN BİTTİ'), findsNothing);
+    // Sağdaki -2 k-lig puanı DURUYOR — teslimin asıl sayısal işareti o.
+    expect(find.text('-2'), findsOneWidget);
+  });
+
+  // ⚠ Bayrak SATIR SAHİBİNE ait: rakibin süresi dolduysa BENİM satırım
+  // "OYUN BİTTİ" kalmalı (ben kazandım). `games.surrendered` kişi başına.
+  testWidgets('Son Oynadıklarım: RAKİBİN teslimi benim satırımı DEĞİŞTİRMEZ',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(
+            id: 'g-live',
+            onlineGameId: 'og-1',
+            surrendered: false,
+            rank: 1,
+            playerScore: 147,
+            aiScore: 0,
+            players: [
+              snap('Ironman', 147, colorIndex: 0),
+              snap('Esiner', 0, colorIndex: 1),
+            ])
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, const Size(420, 780));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: RecentGamesSection(
+            games: repo, userId: 'u-me', onlineOnly: true),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('OYUN BİTTİ'), findsOneWidget);
+    expect(find.text('TESLİM OLDUN'), findsNothing);
+  });
+
+  // ⚠ 3 Eylül 2026, kullanıcı sordu: *"Bir de ekran büyütenler için en büyük
+  // font nasıl davranıyor?"* Web'de bu soru YOK (px metin sistem yazı
+  // boyutuyla ölçeklenmiyor, sayfanın tamamı zoom'lanıyor) ama PORTTA var:
+  // ölçek tavana (kMaxTextScale = 1,3) kadar metni büyütür, kutular sabit
+  // kalır. Bu satır tam o riskin sınıfı: dar bir şeritte yan yana iki metin.
+  //
+  // İlk yazımda burası `Row`du ve ÖLÇÜM KIRPILMA BULDU: 320 px / ölçek 1,3'te
+  // etiket 111 px istiyor, 74,9 px alıyordu → `TESLİ…`. Çözüm `Wrap`:
+  // sığdığı sürece rozet YANDA, sığmadığında ALTA iner (satır uzar, harf
+  // kaybolmaz).
+  //
+  // 32 bileşim ölçüldü (320/360/390/430 px × 2-4 kişi × iki etiket × iki
+  // ölçek). Oyuncu SAYISI hiç fark etmiyor (avatar şeridi zaten sabit-ish);
+  // belirleyen genişlik + etiket uzunluğu + ölçek:
+  //   ölçek 1,0 → 360 px ve üstünde HEPSİ yanda; 320 px'te yalnızca
+  //               "TESLİM OLDUN" alta iniyor
+  //   ölçek 1,3 → 430 px'te hepsi yanda, 390 px'te "OYUN BİTTİ" yanda,
+  //               daha darda alta iniyor
+  // Yani "yanda" iddiası gerçekçi tabanda (360 px, yaygın Android alt
+  // sınırı) tutuluyor; alta inme yalnızca gerçekten sığmadığında oluyor.
+
+  /// Etiket kırpıldı mı (`ellipsis` sessizce kısaltır, HATA BASMAZ — yani
+  /// "taşma yok" tek başına hiçbir şey kanıtlamaz).
+  ({bool kirpildi, bool yanda, double isteyen, double alan}) olcRozet(
+      WidgetTester tester, String etiket) {
+    final rp = tester.renderObject<RenderParagraph>(find.descendant(
+        of: find.text(etiket), matching: find.byType(RichText)));
+    final isteyen = rp.getMaxIntrinsicWidth(double.infinity);
+    return (
+      kirpildi: rp.size.width + 0.5 < isteyen || rp.didExceedMaxLines,
+      yanda: (tester.getCenter(find.text(etiket)).dy -
+                  tester.getCenter(find.text('YENİ')).dy)
+              .abs() <=
+          1.0,
+      isteyen: isteyen,
+      alan: rp.size.width,
+    );
+  }
+
+  Future<void> pumpTeslimSatiri(WidgetTester tester,
+      {required double genislik, required double olcek}) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(
+            id: 'g-live',
+            onlineGameId: 'og-1',
+            surrendered: true,
+            rank: 2,
+            playerScore: 0,
+            aiScore: 147,
+            playerCount: 4,
+            players: [
+              snap('Ironman', 0, colorIndex: 0),
+              snap('Esiner', 147, colorIndex: 1),
+              snap('Ayla', 90, colorIndex: 2),
+              snap('Murat', 70, colorIndex: 3),
+            ])
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, Size(genislik, 700));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      // ⚠ `Builder` ŞART: `MediaQuery.of` context istiyor ve
+      // `tester.element(...)` burada henüz YOK (pumpWidget'in argümanı
+      // eagerly değerlendiriliyor). Repo'nun kendi deseni bu.
+      home: Builder(
+        builder: (context) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(olcek)),
+          child: Scaffold(
+            body: RecentGamesSection(
+                games: repo,
+                userId: 'u-me',
+                onlineOnly: true,
+                newlyFinishedIds: const {'g-live'}),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+  }
+
+  // SÖZLEŞME: yaygın taban (360 px) + normal ölçekte rozet etiketin
+  // YANINDA (kullanıcı isteği) ve etiket kırpılmamış.
+  testWidgets('Son Oynadıklarım: 360 px normal ölçek — rozet YANDA, kırpma yok',
+      (tester) async {
+    await pumpTeslimSatiri(tester, genislik: 360, olcek: 1.0);
+    final m = olcRozet(tester, 'TESLİM OLDUN');
+    expect(m.kirpildi, isFalse,
+        reason: 'etiket kırpıldı (isteyen ${m.isteyen.toStringAsFixed(1)}, '
+            'alan ${m.alan.toStringAsFixed(1)})');
+    expect(m.yanda, isTrue, reason: 'rozet alta inmiş — yanda kalmalı');
+  });
+
+  // EN KÖTÜ DURUM: en dar ekran + tavandaki yazı boyutu. Burada rozetin
+  // alta inmesi KABUL EDİLEN davranış; kabul edilmeyen şey KIRPILMA.
+  testWidgets(
+      'Son Oynadıklarım: 320 px + ölçek 1.3 (tavan) — etiket KIRPILMAZ '
+      '(rozet alta inebilir)', (tester) async {
+    await pumpTeslimSatiri(tester, genislik: 320, olcek: 1.3);
+    final m = olcRozet(tester, 'TESLİM OLDUN');
+    // ignore: avoid_print
+    print('[ÖLÇÜM] 320px ölçek 1.3: etiket isteyen '
+        '${m.isteyen.toStringAsFixed(1)} px, alan '
+        '${m.alan.toStringAsFixed(1)} px · '
+        '${m.yanda ? "rozet YANDA" : "rozet ALTA indi"}');
+    expect(m.kirpildi, isFalse,
+        reason: 'tavandaki ölçekte etiket kırpıldı — `Wrap` yerine `Row` '
+            'kullanılırsa bu GERÇEKTEN düşer (ilk yazımda düşmüştü)');
+    expect(find.text('YENİ'), findsOneWidget);
+  });
+
+  testWidgets('Son Oynadıklarım: görülmemiş oyunda "YENİ" rozeti çıkar',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(id: 'g-live', onlineGameId: 'og-1', players: [
+          snap('Ironman', 238, colorIndex: 0),
+          snap('Esiner', 179, colorIndex: 1),
+        ])
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, const Size(420, 780));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: RecentGamesSection(
+            games: repo,
+            userId: 'u-me',
+            onlineOnly: true,
+            newlyFinishedIds: const {'g-live'}),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('OYUN BİTTİ'), findsOneWidget);
+    expect(find.text('YENİ'), findsOneWidget);
+  });
+
   testWidgets('Son Oynadıklarım: ağ hatası "oyunun yok" DEĞİL "yüklenemedi"',
       (tester) async {
     // Çevrimdışıyken "Henüz bitmiş bir Yapay Zeka oyunun yok." demek

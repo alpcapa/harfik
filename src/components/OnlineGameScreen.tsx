@@ -65,6 +65,7 @@ import {
   fetchOnlineGameState,
   getMyOnlineRack,
   isValidWordRemote,
+  markGameFinishesSeen,
   sendOnlineGameMessage,
   setOnlineGamePlatform,
   submitMove,
@@ -262,6 +263,28 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
   const [scoreCardPlayer, setScoreCardPlayer] = useState<PlayerSummary | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [gameOverDismissed, setGameOverDismissed] = useState(false);
+
+  // Bitiş modalını GÖRDÜ → bu oyun için "Son Oynananlar"da "YENİ" rozeti
+  // çıkmasın (3 Eylül 2026). Bunu yapmazsak oyunu bitiren hamleyi yapan
+  // kişi — yani modalı gözüyle gören kişi — kendi oyunu için de haber
+  // rozeti alırdı.
+  //
+  // ⚠ TEK oyun işaretleniyor, toplu DEĞİL: o sırada görülmemiş BAŞKA
+  // oyunları da temizlemek, kullanıcının hiç görmediği haberleri sessizce
+  // yutardı.
+  //
+  // Sonucuna bakılmıyor: düşerse işaret sunucuda durur ve kullanıcı bu oyun
+  // için bir kez fazladan "YENİ" görür — zararsız yön. Tersi (görmediğini
+  // görülmüş saymak) bilgi kaybı olurdu.
+  // Ref bir boolean DEĞİL, işaretlenen oyunun kimliği: bileşen açıkken
+  // başka bir oyuna geçilirse (bildirimden yönlendirme) boolean ikinci oyunu
+  // sessizce atlardı.
+  const finishMarkedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!state.isGameOver || finishMarkedRef.current === game.id) return;
+    finishMarkedRef.current = game.id;
+    void markGameFinishesSeen(game.id);
+  }, [state.isGameOver, game.id]);
   const [showPassConfirm, setShowPassConfirm] = useState(false);
   /**
    * Oyun bitince "Tekrar Oyna" akışı: onay → aynı kadroyla yeni bir Canlı

@@ -721,6 +721,23 @@ void main() {
         .toList();
     expect(dilimler.length, 2);
     expect(dilimler.map((b) => b.color), [kRed, kGreen]);
+    // ⚠ VARLIK YETMEZ, BOYANAN ALAN ÖLÇÜLMELİ. 3 Eylül 2026'da cihazda
+    // çubuk BOŞ göründü (kullanıcı bildirdi) ve bu test yeşildi: sebep,
+    // `ColoredBox`ın çocuğu ve kendi ölçüsü olmaması — saran `Row`
+    // `crossAxisAlignment: center` (varsayılan) olduğu için dikey kısıt
+    // GEVŞEKTİ ve dilimler SIFIR YÜKSEKLİĞE düşüyordu. Widget ağacında
+    // duruyorlardı ama hiçbir piksel boyanmıyordu.
+    for (final renk in [kRed, kGreen]) {
+      final kutu = tester.renderObject<RenderBox>(find
+          .descendant(
+              of: find.byType(Semantics),
+              matching: find.byWidgetPredicate(
+                  (w) => w is ColoredBox && w.color == renk))
+          .first);
+      expect(kutu.size.height, greaterThan(0),
+          reason: 'dilim SIFIR yükseklikte — saran Row `stretch` olmalı');
+      expect(kutu.size.width, greaterThan(0), reason: 'dilim sıfır genişlikte');
+    }
     // İsim çubuğun yanında YAZILMAZ — yalnızca başlıkta geçer.
     expect(find.text('Esiner'), findsOneWidget);
     expect(find.text('Sen'), findsNothing);

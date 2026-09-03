@@ -64,7 +64,24 @@ final Map<String, OnlineGamesSnapshot> _liveGamesCache = {};
 class LiveGamesTab extends StatefulWidget {
   final AppServices services;
 
-  const LiveGamesTab({super.key, required this.services});
+  /// Bitişini kullanıcının GÖRMEDİĞİ oyunların `games.id`'leri (3 Eylül
+  /// 2026). "Son Oynananlar" alt sekmesinin kırmızı sayısı ve satırlardaki
+  /// "YENİ" rozetleri bundan geliyor.
+  ///
+  /// ⚠ Sahibi `SetupScreen` — aynı sayı ÜST sekmenin ("Arkadaşınla")
+  /// rozetine de giriyor. Burada ayrıca çekilseydi iki kopya birbirinden
+  /// saparadı. Web ikizinde de aynı sahiplik (`Setup.tsx`).
+  final List<String> newlyFinishedIds;
+
+  /// Sekme ziyaret edilip sunucu işaretlemeyi ONAYLADIĞINDA çağrılır.
+  final VoidCallback onFinishesSeen;
+
+  const LiveGamesTab({
+    super.key,
+    required this.services,
+    this.newlyFinishedIds = const [],
+    required this.onFinishesSeen,
+  });
 
   @override
   State<LiveGamesTab> createState() => _LiveGamesTabState();
@@ -423,7 +440,11 @@ class _LiveGamesTabState extends State<LiveGamesTab>
           _subTabBtn(LiveSubTab.invites, 'Oyun Davetleri',
               badge: invites.length),
           const SizedBox(width: 8),
-          _subTabBtn(LiveSubTab.recent, 'Son Oynananlar'),
+          // 3 Eylül 2026: bu rozet "yapacak iş" DEĞİL, HABER — bitişini
+          // görmediğin oyunlar. İlk ikisinden farkı bu; yine de aynı görsel
+          // dille gösteriliyor çünkü fark ettirmek istediğimiz şey aynı.
+          _subTabBtn(LiveSubTab.recent, 'Son Oynananlar',
+              badge: widget.newlyFinishedIds.length),
         ]),
         const SizedBox(height: 20),
         // Liste ekranda ama tazelenemedi: veri BAYAT, yanlış değil. Şerit
@@ -537,6 +558,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
                         onlineOnly: true,
                         stats: services.stats,
                         emptyMessage: 'Henüz bitmiş bir Canlı oyunun yok.',
+                        newlyFinishedIds: _freshFinished,
                         // Avatar çözümü için canlı koltuklar (2 Eylül 2026).
                         // Liste ZATEN elde: `list_my_online_games` durum
                         // filtresi taşımıyor, bitmiş oyunlar da içinde.
@@ -565,13 +587,79 @@ class _LiveGamesTabState extends State<LiveGamesTab>
     );
   }
 
+  /// "YENİ" rozetlerinin ZİYARET BOYUNCA sabit kalan enstantanesi (3 Eylül
+  /// 2026, kullanıcı isteği).
+  ///
+  /// Kullanıcının tarifi iki ayrı an içeriyor ve ikisi aynı anda olmuyor:
+  ///   "Bir kere girip gördüğünde tab numarası SIFIRLANIR"  → giriş anında
+  ///   "…ve yeni kalkar, sadece Oyun bitti kalır"           → ÇIKIŞTA
+  /// Yani sunucudaki işaret sekmeye girer girmez temizleniyor (sayı hemen
+  /// sıfırlanıyor), ama satır rozetleri ziyaret bitene kadar duruyor. Anlık
+  /// listeyi doğrudan bağlasaydık rozetler kullanıcı tam bakarken gözünün
+  /// önünde kaybolurdu. Web ikizindeki `freshFinished` ile aynı kural.
+  Set<String> _freshFinished = const {};
+
+  /// Alt sekme değişiminin TEK kapısı — elle dokunuş da varsayılan-sekme
+  /// kararı da buradan geçmeli, yoksa "Son Oynananlar"a başka bir yoldan
+  /// girildiğinde işaretleme atlanır.
+  void _setSubTab(LiveSubTab t) {
+    if (_subTab == t) return;
+    setState(() {
+      _subTab = t;
+      if (t == LiveSubTab.recent) {
+        if (widget.newlyFinishedIds.isNotEmpty) {
+          _freshFinished = widget.newlyFinishedIds.toSet();
+        }
+      } else {
+        // Çıkış: "bir daha girdiğinde yeni rozetleri gösterilmez".
+        _freshFinished = const {};
+      }
+    });
+    if (t == LiveSubTab.recent) _isaretle();
+  }
+
+  /// Sunucudaki "görülmedi" işaretini temizler ve ONAYLANIRSA sayacı
+  /// sıfırlatır.
+  ///
+  /// ⚠ Yalnızca sunucu onaylarsa: çevrimdışıyken yerelde sıfırlamak rozeti
+  /// kaybettirir ama sunucuda görülmemiş bırakır — bir sonraki tazelemede
+  /// geri gelip "kayboldu sonra döndü" diye tuhaf görünürdü. Bu kod
+  /// tabanında tek seferlik kararların BAŞARISIZ veriyle tüketilmesi üç kez
+  /// hata olarak kayıtlı.
+  void _isaretle() {
+    if (widget.newlyFinishedIds.isEmpty) return;
+    final repo = widget.services.onlineGames;
+    if (repo == null) return;
+    repo.markFinishesSeen().then((ok) {
+      if (mounted && ok) widget.onFinishesSeen();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant LiveGamesTab old) {
+    super.didUpdateWidget(old);
+    // Kullanıcı ZATEN "Son Oynananlar"dayken bir oyun bitebilir (rakip
+    // oynadı, Realtime tazeledi). O hâlde de rozetler görünmeli ve işaret
+    // temizlenmeli — yoksa haber sekmenin açık olduğu süre boyunca sessizce
+    // birikir ve kullanıcı çıkıp girene kadar hiç görünmez.
+    if (_subTab == LiveSubTab.recent &&
+        widget.newlyFinishedIds.isNotEmpty &&
+        !widget.newlyFinishedIds.every(_freshFinished.contains)) {
+      setState(() => _freshFinished = {
+            ..._freshFinished,
+            ...widget.newlyFinishedIds,
+          });
+      _isaretle();
+    }
+  }
+
   Widget _subTabBtn(LiveSubTab t, String label, {int badge = 0}) {
     final active = _subTab == t;
     return Expanded(
       child: GestureDetector(
         onTap: () {
           _appliedDefaultTab = true; // elle seçim varsayılanı devre dışı bırakır
-          setState(() => _subTab = t);
+          _setSubTab(t);
         },
         // Rozet web'deki gibi SEKME KUTUSUNUN sağ üst köşesinde (`absolute
         // -top-1 -right-1` = -4px) — Stack metni değil kutuyu sarmalı, yoksa

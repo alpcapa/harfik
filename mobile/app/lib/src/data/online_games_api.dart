@@ -280,6 +280,15 @@ abstract class OnlineGamesGateway {
   Future<void> checkTurnTimeout(String gameId);
   Future<void> checkInviteExpiry(String gameId);
 
+  /// Bitişini GÖRMEDİĞİM Canlı oyunlarımın `games.id`'leri (3 Eylül 2026).
+  /// Web `fetchUnseenFinishedGames` ikizi.
+  Future<List<String>> unseenFinishedGames();
+
+  /// Biten Canlı oyun(lar)ı "gördüm" işaretler. [onlineGameId] verilirse
+  /// yalnızca o oyun (bitiş modalı gösterildi), verilmezse görülmemiş
+  /// TÜM oyunlar ("Son Oynananlar" sekmesi ziyaret edildi).
+  Future<void> markFinishesSeen({String? onlineGameId});
+
   /// online_games + game_invites + online_game_states değişikliklerini
   /// dinler; dönüş aboneliği kapatır. Debounce ÇAĞIRANIN işi (web kuralı).
   ///
@@ -335,6 +344,19 @@ class SupabaseOnlineGamesGateway implements OnlineGamesGateway {
   @override
   Future<List<Map<String, Object?>>> listMine() async =>
       _rows(await client.rpc('list_my_online_games'));
+
+  @override
+  Future<List<String>> unseenFinishedGames() async {
+    // `returns setof uuid` → düz dizi.
+    final data = await client.rpc('unseen_finished_online_games');
+    return [for (final r in (data as List? ?? const [])) r as String];
+  }
+
+  @override
+  Future<void> markFinishesSeen({String? onlineGameId}) async {
+    await client.rpc('mark_game_finishes_seen',
+        params: {'p_online_game_id': onlineGameId});
+  }
 
   @override
   Future<String> create(
@@ -718,11 +740,37 @@ class OnlineGamesRepo {
   Future<PendingLiveGameCounts?> pendingCounts() async {
     final snap = await load();
     if (snap == null) return null;
+    // ⚠ EN SONDA ve `load()`tan SONRA (web ikizinin aynı sırası): yukarıdaki
+    // erken `return null` yolu bu isteği hiç atmıyor — sayılar zaten
+    // kullanılmayacakken bir istek daha atmanın anlamı yok.
+    //
+    // Kendi başına düşmesi sayıları düşürMEZ: `null` döner ve çağıran son
+    // bilinen rozeti korur (bkz. alanın notu).
+    List<String>? unseen;
+    try {
+      unseen = await gateway.unseenFinishedGames();
+    } catch (_) {
+      unseen = null;
+    }
     return PendingLiveGameCounts(
       inviteBucket(snap.games).length,
       myTurnCount(snap.games, snap.turns),
       snap.games.where((g) => g.status == OnlineGameStatus.active).length,
+      finishedUnseenIds: unseen,
     );
+  }
+
+  /// Biten Canlı oyun(lar)ı "gördüm" işaretler. Dönüş: sunucuya ULAŞTI mı —
+  /// `false` iken çağıran rozeti yerelde SIFIRLAMAMALI (web ikiziyle aynı
+  /// gerekçe: sunucuda hâlâ görülmemiş durur, bir sonraki tazelemede geri
+  /// gelip "kayboldu sonra döndü" diye tuhaf görünür).
+  Future<bool> markFinishesSeen({String? onlineGameId}) async {
+    try {
+      await gateway.markFinishesSeen(onlineGameId: onlineGameId);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 }
 
@@ -734,8 +782,24 @@ class PendingLiveGameCounts {
   /// Rozette KULLANILMAZ (rozet "bekleyen iş" sayar); tek tüketicisi
   /// giriş varsayılanı, bkz. [decideInitialMainView].
   final int activeCount;
+
+  /// Bitişini GÖRMEDİĞİ Canlı oyunların `games.id`'leri (3 Eylül 2026).
+  /// `null` = bilinmiyor (istek düştü) — boş liste DEĞİL.
+  ///
+  /// ⚠ Bu "bekleyen iş" DEĞİL, **HABER**. [inviteCount] + [myTurnCount]
+  /// toplamına KATILMAZ ve katılmamalı: o toplam girişte hangi sekmenin
+  /// açılacağını ([decideInitialMainView]) besliyor ve "yapacak işin var"
+  /// demek; biten bir oyun yapılacak iş değil. Kullanıcı kararı (3 Eylül
+  /// 2026): rozet "Arkadaşınla" sekmesine kadar çıksın, giriş kuralına
+  /// dokunmasın. Web ikizi: `pendingLiveGames.ts` → `finishedUnseenIds`.
+  final List<String>? finishedUnseenIds;
+
   const PendingLiveGameCounts(
-      this.inviteCount, this.myTurnCount, this.activeCount);
+    this.inviteCount,
+    this.myTurnCount,
+    this.activeCount, {
+    this.finishedUnseenIds,
+  });
 }
 
 /// Girişte HANGİ sekmeyle karşılanacağı — web

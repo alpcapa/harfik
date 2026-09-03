@@ -20,6 +20,157 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 187 — cihazda çıkan İKİ hata: boş çubuk ve bozuk hiza
+     (3 Eylül 2026, kullanıcı APK testi; değişen
+     `ui/score/player_score_card_modal.dart`,
+     `ui/setup/recent_games_section.dart` + web ikizi):**
+     - ⚠⚠ **Kafa kafaya çubuğu İÇİ BOŞ geliyordu** ve testler yeşildi.
+       Sebep saran `Row`un `crossAxisAlignment` VARSAYILANI (`center`):
+       gevşek dikey kısıtta çocuğu ve ölçüsü olmayan `ColoredBox` **en küçük
+       boyutu (0)** alıyor. Dilimler ağaçta duruyor, sıfır yükseklikte.
+       Çare `CrossAxisAlignment.stretch`.
+       **Testin hatası:** `ColoredBox`ların VARLIĞINI ölçüyordu, boyanan
+       ALANINI değil. Artık `RenderBox.size` ölçülüyor; düzeltme öncesi
+       `Actual: <0.0>` ölçüldü. **Genel kural: "widget ağaçta var" bir
+       GÖRÜNÜRLÜK iddiası DEĞİLDİR.**
+     - ⚠ **Puan/k-lig sağda hizalı değildi — İKİ sebep:** (a) sütunlar düz
+       `Text`ti, genişlik içeriğe göre değişiyordu; (b) sol sütun Canlı'da
+       `Flexible`di (loose fit), avatar SAYISI genişliği değiştiriyordu ve
+       artan boşluk `MainAxisAlignment.start` gereği en sağda kalıyordu.
+       ÖLÇÜLDÜ (412 px): k-lig sağ kenarı dört farklı yerde, 4 kişilik satır
+       **30,9 px** sağda. Çözüm: sayısal sütunlar `ScaledCell` + sol sütun
+       `Expanded`.
+     - ⚠ **İkinci parça ortadaki etiketten genişlik ALDI:** 1:1 bölüşüm
+       320 px/ölçek 1,3'te etiketi 0,4 px kırpıyordu (111,0 ↔ 110,6). Flex
+       **2:3** ikisini birden karşılıyor. İki test birden kilitliyor —
+       flex'i değiştiren bir sonraki tur birinden düşer.
+     - **Regresyon: 1 yeni test + 1 sıkılaştırma.** Hiza testi üç satırı
+       (2 kişilik · 4 kişilik · tek basamaklı) ölçüp sağ kenarların 0,5 px
+       içinde eşit olmasını istiyor (skor 375,0 · k-lig 401,0).
+       ⚠ Testin kendi hatası da bir ders: `find.text('+2')` iki satırda
+       eşleşip belirsiz kaldı — aynı metin birden fazla satırdaysa
+       `evaluate()` ile HEPSİNİ topla.
+     - Kullanıcı ayrıca *"en büyük fontla denedim sorun yok"* dedi — Parça
+       186'nın `Wrap` düzeltmesi sahada doğrulandı.
+
+   - ✅ **Parça 186 — "Oyun Bitti (Yeni)": biten oyunun haberi (3 Eylül
+     2026, kullanıcı isteği; yeni tablo `game_finish_seen` + 2 RPC, değişen
+     `data/online_games_api.dart`, `ui/live/live_games_tab.dart`,
+     `ui/setup/setup_screen.dart`, `ui/setup/recent_games_section.dart`,
+     `ui/live/online_game_screen.dart` + web ikizleri):**
+     - **Kullanıcı:** *"Kişi başkasıyla oynadığı oyunun bittiğinden haberi
+       olmuyor… ancak son oynadıklarıma girersen görüyorsun."* Push BİLEREK
+       elendi (*"oyun bitti mesajı atmak işin dozunu kaçırabilir"*) — sistemde
+       zaten sıra ve son-tarih bildirimleri var, üçüncü tür yorgunluk üretirdi.
+     - ⚠ **`games`'e kolon EKLENMEDİ.** O tablonun SELECT politikası
+       `auth.uid() is not null` — girişli HERKES herkesin satırını okuyor;
+       "gördü" kolonu kimin ne zaman listesine baktığını herkese açardı. Aynı
+       sınıf bu repoda bir kez yaşandı (`games.messages`, 10 Ağustos 2026).
+     - **İşaretlemenin İKİ yolu şart:** toplu (sekme ziyareti) ve tek oyunluk
+       (bitiş modalı). Yalnız toplu olsaydı oyunu bitiren — modalı GÖREN —
+       kişi kendi oyunu için de rozet alırdı; yalnız tek olsaydı sekme
+       ziyareti sayacı sıfırlamazdı. Bitiş modalında toplu işaretlemek de
+       yanlış olurdu: görülmemiş BAŞKA oyunlar sessizce yutulurdu.
+     - ⚠ **ROZET ZİNCİRİ bir karar, tesadüf değil:** alt sekme → üst sekme
+       EVET; giriş varsayılanı (`decideInitialMainView`) HAYIR (kullanıcı
+       kararı — o "yapacak işin var" demek, biten oyun ise HABER). Kazara
+       bozulmamasını sağlayan şey, o kararın alanları TEK TEK toplaması
+       (`inviteCount + myTurnCount`), nesneyi kör toplamaması.
+       `PendingLiveGameCounts`'a alan eklerken bu deseni koru.
+     - ⚠ **Kullanıcının tarifinde İKİ AN var ve aynı anda olmuyorlar:**
+       *"girip gördüğünde tab numarası sıfırlanır"* (giriş anında) ama
+       *"yeni kalkar, sadece Oyun bitti kalır"* (ÇIKIŞTA). Bu yüzden satır
+       rozetleri anlık listeye değil, sekmeye girerken alınan bir
+       ENSTANTANEye bağlı (`_freshFinished`) — anlık listeyi bağlasaydık
+       rozetler kullanıcı tam bakarken gözünün önünde kaybolurdu.
+     - **Sayaç yalnızca sunucu ONAYLARSA sıfırlanıyor.** Çevrimdışıyken
+       yerelde sıfırlamak rozeti kaybettirir ama sunucuda görülmemiş bırakır;
+       bir sonraki tazelemede geri gelip "kayboldu sonra döndü" diye tuhaf
+       görünürdü. Bu kod tabanında tek seferlik kararların BAŞARISIZ veriyle
+       tüketilmesi üç kez hata olarak kayıtlı.
+     - **Alt sekme değişimi TEK kapıdan** (`_setSubTab`) geçiyor: elle
+       dokunuş da varsayılan-sekme kararı da. Ayrıca `didUpdateWidget` —
+       kullanıcı ZATEN sekmedeyken bir oyun biterse (Realtime tazeledi)
+       rozet yine görünsün diye; yoksa haber sekme açıkken sessizce birikir.
+     - **`_RecentRow` yine parametre aldı** (`yeni`): ayrı bir
+       `StatelessWidget`, `widget.` yok — Parça 184'ün dersi tekrar geçerli.
+     - **Regresyon: 7 test** (`live_games_test.dart`) — rozet çıkar/çıkmaz ·
+       sekme ziyareti TOPLU işaretler ve sayacı sıfırlatır · **işaretleme
+       düşerse sayaç sıfırlanmaz** (negatif eş) · `pendingCounts` listeyi
+       taşır ama "bekleyen iş"e katmaz · haber çekimi düşse de sayılar gelir ·
+       `markFinishesSeen` ağ hatasında `false`.
+     - ⚠ **KAPSAM aynı gün daraltıldı (kullanıcı):** *"YZ'de oyun bitti
+       yazmasına gerek yok. Bu sadece canlı oyunlar için geçerli."* İlk tur
+       `OYUN BİTTİ` etiketini HER İKİ listeye de koymuştu; haklı olarak
+       kaldırıldı — YZ oyunu SENİN cihazında bitiyor, bitişini zaten gözünle
+       görüyorsun, orada etiket bilgi taşımaz. Üçü de (etiket · `YENİ` ·
+       sayı) artık yalnızca Canlı'da. Koşul `_RecentRow`a **parametre**
+       olarak geçiyor (`onlineOnly`) — Parça 184'ün dersi üçüncü kez.
+       Regresyon: 3 test daha (`share_recent_test.dart`) — YZ'de ÇİZİLMEZ ·
+       Canlı'da çizilir · görülmemişte `YENİ` çıkar. İlk test satırın
+       gerçekten çizildiğini ayrıca doğruluyor, yoksa hiçbir şey kanıtlamaz.
+     - **TESLİM OLDUN etiketi (aynı gün, kullanıcı sorusu):** *"teslim
+       rozeti koymak iyi olurdu ama yer sınırlı sanırım. Küçük ekranlarda
+       kayabilir."* Endişe haklıydı ama çözüm ayrı bir sütun DEĞİL: aynı
+       kutunun metni teslimde `TESLİM OLDUN` oluyor.
+     - **Son düzen turu (kullanıcı):** *"Oyun bitti yazısını büyük harf ve
+       ortadaki boşluğa koy, yeni rozeti hemen yanına gelsin ve fontu büyüt
+       biraz. Teslimi de Teslim Oldun yap."* Etiket ortadaki boşluğa geçti
+       (sol sütun `Expanded` → `Flexible`, boşluğu etiket alıyor), `YENİ`
+       alttan YANA taşındı, punto 9 → 10 / rozet 8 → 9.
+       ⚠ `Expanded`↔`Flexible` koşulu ŞART: YZ'de etiket hiç olmadığından
+       boşluğu sol sütun almalı, yoksa skor bloğu sağ kenardan kopup ortaya
+       kayardı. Koşul için `_SolSutun` sarmalayıcısı yazıldı — alternatif
+       aynı `Column`u iki kez kopyalamaktı.
+       ⚠ Metin KAYNAKTA büyük harf, `toUpperCase()` ile DEĞİL: Türkçe'de
+       "Bitti"nin i'si noktasız I'ya dönebilir; repo native dönüşümü zaten
+       yasaklıyor. Dönüşüme gerek yoktu.
+       **Ölçüldü (tarayıcıda, 320/360 px × 4 vaka):** orta bloğun içeriği
+       en kötü durumda 113,9 px, blok 164 px → 50 px pay; 16 bileşimde
+       taşma/sarma/kırpılma sıfır. Portta ayrıca `Flexible` + `maxLines: 1`
+       + `ellipsis` var (yazı ölçeği riski YALNIZCA portta — web'de
+       `text-[10px]` mutlak px, sistem yazı boyutuyla ölçeklenmiyor).
+       ⚠ Bayrak SATIR SAHİBİNE ait (`games.surrendered` kişi başına):
+       rakibin süresi dolduysa benim satırım `OYUN BİTTİ` kalır.
+       `GameHistoryModal`'ın "Teslim Oldu" kuralıyla aynı. Renk nötr —
+       teslimin kırmızısı zaten sağdaki -2'de.
+       Regresyon: 2 test daha — teslimde `TESLİM` + `-2` görünür ·
+       RAKİBİN teslimi benim satırımı değiştirmez.
+     - ⚠ **`YENİ` "YENI" diye okunuyordu — sebep KOD DEĞİL GLİF** (kullanıcı
+       bildirdi). Karakter ölçüldü: `Y E N` + **U+0130**, yani kod her zaman
+       doğruydu. Space Mono'da `İ`nin noktası 8-9 px'te harfin gövdesine
+       YAPIŞIYOR (6× büyütmeyle ölçüldü; 10 px'ten sonra ayrılıyor) ve rozet
+       9 px'ti. Çare punto: etiket ve rozet ikisi de **11 px**. Bu bir
+       tercih değil okunabilirlik zorunluluğu — iki dosyada da yorumla
+       işaretli, düşüren bir sonraki tur hatayı geri getirir.
+       Yan bulgu: aynı probe'da CSS `uppercase` `lang="en"` bağlamında
+       "Yeni"yi U+0049 (noktasız I) yapıyor. Metni kaynağa büyük harf yazmak
+       bu locale bağımlılığını tamamen kaldırdı.
+     - ⚠⚠ **EN BÜYÜK YAZI BOYUTU: kullanıcı sordu, ÖLÇÜLDÜ ve GERÇEK BİR
+       KIRPILMA BULUNDU.** *"Ekran büyütenler için en büyük font nasıl
+       davranıyor?"* Web'de bu sorunun konusu yok (px metin ölçeklenmez,
+       sayfa zoom'lanır). Portta ölçek tavanında (1,3) 320 px'te etiket
+       **111 px istiyor, 74,9 px alıyordu** → `TESLİ…`. **Kırpılma HATA
+       BASMAZ**, yani "taşma yok" iddiası bunu göremezdi.
+       Çare `Row` → **`Wrap`**: sığdığı sürece rozet yanda, sığmadığında
+       alta iner (satır uzar, harf kaybolmaz) — kök CLAUDE.md'nin "sıkışan
+       satırı BÖL" önerisi. `Flexible` kaldırıldı (Wrap çocuğuna esneklik
+       verilemez).
+       **32 bileşim ölçüldü** (320/360/390/430 px × 2-4 kişi × iki etiket ×
+       iki ölçek): oyuncu SAYISI hiç fark etmiyor; ölçek 1,0'da 360 px ve
+       üstünde hepsi yanda (320'de yalnız teslim alta), ölçek 1,3'te 430'da
+       hepsi yanda, 390'da yalnız `OYUN BİTTİ` yanda.
+       ⚠ `Wrap` TAŞMAZ SARAR — repo kuralı gereği aynı turda "tek satırda
+       mı" iddiası da yazıldı: 360 px/normal ölçekte rozet YANDA olmak
+       ZORUNDA. `Row`a dönülürse tavan testi GERÇEKTEN düşüyor.
+     - **Süre aşımı teslimi kendiliğinden kapsandı:** o senaryo normal bir
+       bitiş gibi `games` satırı yazıyor (canlıda doğrulandı, iki tarafa da),
+       yani haber rozeti orada da çalışıyor — ve en çok işe yaradığı yer
+       burası: oyunu bitiren hamleyi yapmadın, bitiş modalını görmen mümkün
+       değildi.
+     - **Doğrulama sınırı:** gerçek akış İKİ hesap ister (rakip senin yokken
+       oynayıp oyunu bitirmeli). Cihaz kontrolü `mobile/TESTING.md`'de.
+
    - ✅ **Parça 185 — kafa kafaya istatistik: skor kartının alt şeridi (3
      Eylül 2026, kullanıcı isteği; yeni `util/head_to_head.dart` +
      `test/head_to_head_test.dart`, değişen `data/stats_api.dart`,

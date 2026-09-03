@@ -81,6 +81,22 @@ interface RecentGamesSectionProps {
    * kullanımında verilmez — orada tek insan koltuk hesabın kendisidir.
    */
   onlineGames?: { id: string; slots: { name: string | null; avatarUrl: string | null }[] }[];
+  /**
+   * Bitişini kullanıcının GÖRMEDİĞİ oyunların `games.id`'leri — o satırlarda
+   * etiketin YANINA kırmızı bir "YENİ" rozeti düşer (3 Eylül 2026,
+   * kullanıcı isteği).
+   *
+   * ⚠ Yalnızca Canlı tarafta verilir. YZ oyunlarında bitişi ZATEN görüyorsun
+   * (oyun senin cihazında bitiyor), yani orada "yeni" diye bir kavram yok —
+   * kullanıcı kapsamı bilerek Canlı ile sınırladı.
+   *
+   * ⚠ Sekme AÇIKKEN sabit kalmalı: sunucudaki işaret sekmeye girer girmez
+   * temizleniyor (rozet sıfırlansın diye), ama satırdaki rozetler ziyaret
+   * boyunca DURMALI — yoksa kullanıcı tam bakarken gözünün önünde kaybolur.
+   * Bu yüzden çağıran anlık listeyi değil, sekmeye girerken aldığı bir
+   * ENSTANTANEyi geçiyor (bkz. `LiveGamesTab`).
+   */
+  newlyFinishedIds?: ReadonlySet<string>;
 }
 
 export function RecentGamesSection({
@@ -88,6 +104,7 @@ export function RecentGamesSection({
   emptyMessage,
   offlineNode,
   onlineGames,
+  newlyFinishedIds,
 }: RecentGamesSectionProps) {
   const online = useOnlineStatus();
   const { user, profile } = useAuth();
@@ -179,7 +196,14 @@ export function RecentGamesSection({
               onClick={() => setFocusedId(g.id)}
               className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
             >
-              <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+              {/* ⚠ `flex-1` KOŞULLU (3 Eylül 2026): Canlı'da boşluğu ORTADAKİ
+                  etiket alıyor (kullanıcı: "ortadaki boşluğa koy"), o yüzden
+                  sol sütun içeriğine küçülüyor. YZ'de etiket HİÇ YOK — orada
+                  boşluğu sol sütun almalı, yoksa skor bloğu sağ kenardan
+                  kopup ortaya kayardı. */}
+              <span
+                className={`min-w-0 flex flex-col gap-0.5 ${onlineOnly ? '' : 'flex-1'}`}
+              >
                 {/* Rakip isimlerinin yerine katılımcı avatarları.
                     ⚠ 2 EYLÜL 2026'DA DEĞİŞTİ. Burada şu yazılıydı:
                     "dondurulmuş `players` snapshot'ı avatar_url TAŞIMIYOR
@@ -232,10 +256,71 @@ export function RecentGamesSection({
                 )}
                 <span className="text-[9px] font-mono text-muted truncate">{formatDate(g.created_at)}</span>
               </span>
+              {/* "Oyun Bitti" — 3 Eylül 2026, kullanıcı isteği.
+                  ⚠ YALNIZCA Canlı tarafta. YZ oyunları senin cihazında
+                  bitiyor, yani bitişi zaten gözünle görüyorsun; orada bu
+                  etiket bilgi taşımaz, yalnızca gürültü olurdu (kullanıcı
+                  aynı gün ikinci turda bunu istedi). Canlı'da ise tam tersi:
+                  hamleni yapıp gittiğinde oyun SEN YOKKEN bitiyor ve bugün
+                  bunu hiçbir yer söylemiyor.
+                  Bitişini görmediğin oyunlarda YANINA kırmızı "YENİ" düşer;
+                  sekmeden çıkınca o rozet kalkar, "OYUN BİTTİ" kalır. */}
+              {onlineOnly && (
+                <span className="flex-1 min-w-0 flex items-center justify-center gap-1">
+                  {/* Teslimle biten oyunda metin "TESLİM" (3 Eylül 2026,
+                      kullanıcı isteği). AYRI bir sütun EKLENMEDİ: satır
+                      zaten avatar+tarih | etiket | skor | k-lig, dördüncü
+                      bir metin sütunu 360 px'lik ekranda sıkışırdı
+                      (kullanıcı da bunu sordu). Aynı kutuyu kullanmak yer
+                      maliyetini SIFIRA indiriyor — üstelik "TESLİM" 6
+                      karakter, "OYUN BİTTİ" 10; sütun DARALIYOR.
+                      ⚠ Bayrak SATIR SAHİBİNE ait: `games.surrendered` kişi
+                      başına, yani rakibin süresi dolduysa BENİM satırım
+                      `OYUN BİTTİ` kalır (ben kazandım). `GameHistoryModal`
+                      da "Teslim Oldu"yu yalnızca teslim olanın kendi
+                      satırında gösteriyor — aynı kural.
+                      Renk BİLEREK nötr: teslimin kırmızısı zaten sağdaki
+                      -2 k-lig puanında; ikinci bir kırmızı, yanındaki
+                      "YENİ" rozetiyle yarışırdı. */}
+                  {/* ⚠ Metin KAYNAKTA büyük harf, CSS `uppercase` ile
+                      DEĞİL: `text-transform` Türkçe'yi belgenin diline
+                      göre çeviriyor ve "Bitti"nin i'si yanlış locale'de
+                      "BITTI" (noktasız I) olur. Bu repo native
+                      büyük/küçük dönüşümünü zaten yasaklıyor
+                      (`trUpper`) — burada dönüşüme hiç gerek yok. */}
+                  {/* ⚠ PUNTO 11 px, ve bu bir OKUNABİLİRLİK ZORUNLULUĞU,
+                      tercih değil: `İ`nin noktası Space Mono'da 8-9 px'te
+                      harfin gövdesine yapışıyor ve rozet ekranda "YENI"
+                      diye okunuyor (kullanıcı bildirdi; 6× büyütmeyle
+                      ölçüldü — nokta ancak 10 px'ten sonra ayrılıyor).
+                      Karakter HER ZAMAN doğruydu: U+0130 olduğu ayrıca
+                      doğrulandı, kaybolan şey GLİF, kod değil.
+                      ⚠ Bu iki puntoyu düşürürsen aynı hata geri gelir. */}
+                  <span className="text-[11px] font-mono tracking-[0.5px] text-muted leading-none whitespace-nowrap">
+                    {g.surrendered ? 'TESLİM OLDUN' : 'OYUN BİTTİ'}
+                  </span>
+                  {newlyFinishedIds?.has(g.id) && (
+                    <span className="shrink-0 text-[11px] font-mono font-bold tracking-[0.5px] text-white bg-red rounded px-1 py-px leading-none">
+                      YENİ
+                    </span>
+                  )}
+                </span>
+              )}
+              {/* ⚠ SABİT GENİŞLİK + SAĞA YASLI. Portta bu iki sütun düz
+                  metindi ve kullanıcı cihazda bozukluğu yakaladı (3 Eylül
+                  2026: "puan ve k-lig bozulmuş, sağda hizalı olmaları
+                  lazım") — genişlik içeriğe göre değişince ("0" bir
+                  karakter, "253" üç; k-lig "-" bir, "+2" iki) satırın sonu
+                  her satırda başka yerde bitiyor. Web'de aynı kırılganlık
+                  DAHA DAR ama var: k-lig `-` (0 puan) olduğunda skorun sağ
+                  kenarı kayar. İki taraf da aynı çözümü kullanıyor —
+                  portta `ScaledCell`, burada `w-*` + `text-right`. */}
               <span className="flex items-center gap-2 shrink-0">
-                <span className="font-mono text-[11px] font-bold text-text">{g.player_score}</span>
+                <span className="w-7 text-right font-mono text-[11px] font-bold text-text">
+                  {g.player_score}
+                </span>
                 <span
-                  className={`font-mono text-[11px] font-bold ${
+                  className={`w-[18px] text-right font-mono text-[11px] font-bold ${
                     points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'
                   }`}
                 >

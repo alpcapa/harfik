@@ -149,7 +149,8 @@ async function main() {
     inviteCount: number,
     myTurnCount: number,
     activeCount: number,
-  ) => ({ inviteCount, myTurnCount, activeCount });
+    // Giriş sekmesi kararına GİRMEZ (biten oyun "haber", "iş" değil).
+  ) => ({ inviteCount, myTurnCount, activeCount, finishedUnseenIds: [] });
 
   check(
     'karar: sıra bendeyse → live',

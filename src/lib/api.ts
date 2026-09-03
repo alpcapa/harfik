@@ -578,6 +578,52 @@ export async function fetchHeadToHead(
 }
 
 /**
+ * Bitişini GÖRMEDİĞİM Canlı oyunlarımın `games.id`'leri (3 Eylül 2026).
+ *
+ * Kullanıcı isteği: hamleni yapıp uygulamayı kapatıyorsun, sen yokken rakip
+ * oynuyor ve oyun bitiyor — bitiş modalını hiç görmüyorsun. Bunun uygulama
+ * içi karşılığı "Son Oynananlar" sekmesindeki kırmızı sayı + satırdaki
+ * "Oyun Bitti (Yeni)" rozeti. Push BİLEREK seçilmedi (*"oyun bitti mesajı
+ * atmak işin dozunu kaçırabilir"*).
+ *
+ * ⚠ `null` = BİLİNMİYOR (istek düştü) — boş dizi DEĞİL. Ayrım bu kod
+ * tabanında üç kez ders olmuş bir şeyin aynısı: boş dönmek rozeti sessizce
+ * kaybettirir ve kullanıcı haberi HİÇ görmez (bkz. `fetchPendingLiveGameCounts`).
+ */
+export async function fetchUnseenFinishedGames(): Promise<string[] | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('unseen_finished_online_games');
+  if (error) {
+    console.error('[Kelimeki] fetchUnseenFinishedGames hatası:', error.message);
+    return null;
+  }
+  // `returns setof uuid` → düz dizi.
+  return (data as string[] | null) ?? [];
+}
+
+/**
+ * Biten Canlı oyun(lar)ı "gördüm" olarak işaretler.
+ *
+ * @param onlineGameId Verilirse YALNIZCA o oyun (bitiş modalı gösterildi);
+ *   verilmezse görülmemiş TÜM oyunlar ("Son Oynananlar" sekmesi ziyaret
+ *   edildi). İki yol da şart — gerekçe migration'ın başlığında.
+ * @returns İşlem sunucuya ULAŞTI mı. `false` iken çağıran rozeti yerelde
+ *   SIFIRLAMAMALI: sunucuda hâlâ görülmemiş duruyor, bir sonraki tazelemede
+ *   geri gelir ve rozet "kayboldu sonra döndü" diye tuhaf görünür.
+ */
+export async function markGameFinishesSeen(onlineGameId?: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.rpc('mark_game_finishes_seen', {
+    p_online_game_id: onlineGameId ?? null,
+  });
+  if (error) {
+    console.error('[Kelimeki] markGameFinishesSeen hatası:', error.message);
+    return false;
+  }
+  return true;
+}
+
+/**
  * Belirli bir oyuncunun (varsayılan: oturum açan kullanıcı) belirli oyuncu
  * sayısındaki istatistik özetini döner. `playerCount='all'` verilirse (Skor
  * Kartı'ndaki "Genel" sekmesi) 2 ve 4 kişilik TÜM oyunların toplamı

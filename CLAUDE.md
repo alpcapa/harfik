@@ -106,6 +106,7 @@ koptu" (bkz. "Belgeleri Güncel Tutma").
 | `src/data/meanings.json` | `npm run generate-meanings-db` |
 | `LogoMark`/`KLigMark` | `npm run generate-logo-paths` / `generate-klig-paths` (ikisi de web+Dart yazar) |
 | Canlı oyun / mesajlaşma / e-posta özelliği | `TESTING.md` (elle koşulan liste) |
+| Bir sayacı/rozeti besleyen alan (`PendingLiveGameCounts` gibi) | Rozet zincirinin HER seviyesi: alt sekme → üst sekme → uygulama ikonu (`useAppIconBadge`) → giriş varsayılanı (`decideInitialMainView`). Yeni alan bunlara GİRMELİ Mİ, ayrıca karar ver — "bekleyen iş" ile "haber" aynı şey değil (3 Eylül 2026) |
 | `mobile/app/` — sunucuya/platforma dokunan bir şey | `mobile/TESTING.md` (cihazda koşulan ÖZELLİK listesi; arkadaşlık/Canlı oyun için `mobile/docs/testing-arkadaslar-canli.md`, tarihli etkileşim/görünüm turları için `mobile/docs/testing-ux-turlari.md`) |
 | Migration | Canlıya uygula + doğrula + `list_migrations` ile dosya adını eşleştir |
 | Migration bir kolonu **nullable** yapıyor (ya da FK'yi `cascade`→`set null` çeviriyor) | `database.types.ts` **ve** portun `fromJson`'ı — bu bir SÖZLEŞME değişikliği (bkz. `docs/decisions/account-deletion.md` → "SET NULL'ın bedeli") |

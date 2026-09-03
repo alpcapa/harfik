@@ -536,10 +536,17 @@ void main() {
       );
 
   Future<void> pumpTab(WidgetTester tester, AppServices s,
-      {GlobalKey? boundaryKey}) async {
+      {GlobalKey? boundaryKey,
+      List<String> newlyFinishedIds = const [],
+      VoidCallback? onFinishesSeen}) async {
     await setPhoneViewSize(tester, const Size(420, 900));
     Widget body = SingleChildScrollView(
-        padding: const EdgeInsets.all(12), child: LiveGamesTab(services: s));
+        padding: const EdgeInsets.all(12),
+        child: LiveGamesTab(
+          services: s,
+          newlyFinishedIds: newlyFinishedIds,
+          onFinishesSeen: onFinishesSeen ?? () {},
+        ));
     if (boundaryKey != null) {
       body = RepaintBoundary(
           key: boundaryKey, child: ColoredBox(color: Colors.white, child: body));
@@ -848,8 +855,8 @@ void main() {
                 body: SingleChildScrollView(
                   padding: const EdgeInsets.all(12),
                   child: LiveGamesTab(
-                      services:
-                          liveServices(userId: 'u-duzen', gateway: gw)),
+                      services: liveServices(userId: 'u-duzen', gateway: gw),
+                      onFinishesSeen: () {}),
                 ),
               ),
             ),
@@ -1094,5 +1101,110 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Bildirimleri açalım mı?'), findsNothing);
+  });
+
+  // ────────────────────────────────────────────────────────────────────────
+  // "Oyun Bitti (Yeni)" — 3 Eylül 2026, kullanıcı isteği.
+  //
+  // Sorun: hamleni yapıp uygulamayı kapatıyorsun, sen yokken oyun bitiyor ve
+  // bitiş modalını HİÇ görmüyorsun. Push bilerek elenmişti; çözüm uygulama
+  // içi: "Son Oynananlar"da kırmızı sayı + satırda "YENİ".
+  // ────────────────────────────────────────────────────────────────────────
+  group('biten oyun haberi', () {
+    testWidgets('görülmemiş oyun varsa "Son Oynananlar" rozeti çıkar',
+        (tester) async {
+      final gw = FakeOnlineGamesGateway()..rows = [];
+      await pumpTab(
+        tester,
+        liveServices(userId: 'me', gateway: gw),
+        newlyFinishedIds: const ['g1', 'g2'],
+      );
+      await tester.pumpAndSettle();
+      // Rozet SEKMENİN kutusunda; sayıyı metinden okuyoruz.
+      expect(find.text('2'), findsOneWidget);
+    });
+
+    testWidgets('görülmemiş oyun YOKSA rozet çıkmaz', (tester) async {
+      final gw = FakeOnlineGamesGateway()..rows = [];
+      await pumpTab(tester, liveServices(userId: 'me', gateway: gw));
+      await tester.pumpAndSettle();
+      expect(find.text('0'), findsNothing);
+    });
+
+    testWidgets(
+        'sekmeye girmek TOPLU işaretler ve sayacı sıfırlatır '
+        '(kullanıcı: "girip gördüğünde tab numarası sıfırlanır")',
+        (tester) async {
+      final gw = FakeOnlineGamesGateway()..rows = [];
+      var sifirlandi = false;
+      await pumpTab(
+        tester,
+        liveServices(userId: 'me', gateway: gw),
+        newlyFinishedIds: const ['g1'],
+        onFinishesSeen: () => sifirlandi = true,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(trUpper('Son Oynananlar')));
+      await tester.pumpAndSettle();
+
+      // ⚠ `null` = TOPLU. Tek oyunluk yol yalnızca bitiş modalına ait;
+      // burada toplu olmalı, yoksa sekme ziyareti sayacı sıfırlamaz.
+      expect(gw.finishesSeenCalls, [null]);
+      expect(sifirlandi, isTrue);
+    });
+
+    testWidgets(
+        'işaretleme DÜŞERSE sayaç sıfırlanmaz (negatif eş — yalnızca sunucu '
+        'onaylarsa sıfırla)', (tester) async {
+      final gw = FakeOnlineGamesGateway()
+        ..rows = []
+        ..failMarkFinishesSeen = true;
+      var sifirlandi = false;
+      await pumpTab(
+        tester,
+        liveServices(userId: 'me', gateway: gw),
+        newlyFinishedIds: const ['g1'],
+        onFinishesSeen: () => sifirlandi = true,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(trUpper('Son Oynananlar')));
+      await tester.pumpAndSettle();
+
+      expect(gw.finishesSeenCalls, isEmpty);
+      // Çevrimdışıyken yerelde sıfırlamak rozeti kaybettirir ama sunucuda
+      // görülmemiş bırakır — bir sonraki tazelemede geri gelip "kayboldu
+      // sonra döndü" diye tuhaf görünürdü.
+      expect(sifirlandi, isFalse);
+    });
+  });
+
+  group('biten oyun haberi — repo', () {
+    test('pendingCounts görülmemiş listeyi TAŞIR', () async {
+      final gw = FakeOnlineGamesGateway()
+        ..rows = []
+        ..unseenFinished = ['g1', 'g2'];
+      final counts = await OnlineGamesRepo(gw).pendingCounts();
+      expect(counts?.finishedUnseenIds, ['g1', 'g2']);
+      // ⚠ "Bekleyen iş" toplamına KATILMAZ: o toplam girişte hangi sekmenin
+      // açılacağını besliyor ve "yapacak işin var" demek; biten oyun haber.
+      expect(counts?.inviteCount, 0);
+      expect(counts?.myTurnCount, 0);
+    });
+
+    test('görülmemiş çekimi düşerse sayılar YİNE gelir (liste null OLMAZ)',
+        () async {
+      final gw = FakeOnlineGamesGateway()
+        ..rows = []
+        ..unseenFinishedThrows = true;
+      final counts = await OnlineGamesRepo(gw).pendingCounts();
+      // Sayılar sağlam; yalnızca haber "bilinmiyor".
+      expect(counts, isNotNull);
+      expect(counts?.finishedUnseenIds, isNull);
+    });
+
+    test('markFinishesSeen ağ hatasında false döner', () async {
+      final gw = FakeOnlineGamesGateway()..failMarkFinishesSeen = true;
+      expect(await OnlineGamesRepo(gw).markFinishesSeen(), isFalse);
+    });
   });
 }

@@ -12,6 +12,7 @@ import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../../util/recent_game_avatars.dart';
 import '../game/player_avatar_row.dart';
+import '../text_scale.dart';
 import '../score/game_history_modal.dart';
 import '../tap_target.dart';
 import '../tokens.dart';
@@ -110,6 +111,19 @@ class RecentGamesSection extends StatefulWidget {
   /// Hesap sahibinin avatarı — yerel oyunlarda tek insan koltuk odur.
   final String? ownAvatarUrl;
 
+  /// Bitişini kullanıcının GÖRMEDİĞİ oyunların `games.id`'leri — o
+  /// satırlarda etiketin YANINA kırmızı "YENİ" düşer (3 Eylül 2026).
+  ///
+  /// ⚠ Yalnızca Canlı tarafta dolu geçilir: YZ oyunlarında bitişi zaten
+  /// görüyorsun (oyun senin cihazında bitiyor), orada "yeni" diye bir kavram
+  /// yok — kullanıcı kapsamı bilerek Canlı ile sınırladı.
+  ///
+  /// ⚠ Sekme AÇIKKEN sabit kalmalı: sunucudaki işaret sekmeye girer girmez
+  /// temizleniyor (sayı sıfırlansın diye), ama satır rozetleri ziyaret
+  /// boyunca DURMALI — yoksa kullanıcı tam bakarken gözünün önünde kaybolur.
+  /// Bu yüzden çağıran anlık listeyi değil bir ENSTANTANEyi geçiyor.
+  final Set<String> newlyFinishedIds;
+
   const RecentGamesSection({
     super.key,
     required this.games,
@@ -122,6 +136,7 @@ class RecentGamesSection extends StatefulWidget {
     this.isOffline = false,
     this.onlineGames = const [],
     this.ownAvatarUrl,
+    this.newlyFinishedIds = const {},
   });
 
   @override
@@ -259,6 +274,8 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
               onTap: () => _openHistory(focusId: g.id),
               avatarIndex: _avatarIndex,
               ownAvatarUrl: widget.ownAvatarUrl,
+              yeni: widget.newlyFinishedIds.contains(g.id),
+              onlineOnly: widget.onlineOnly,
             ),
           ),
       ],
@@ -280,11 +297,21 @@ class _RecentRow extends StatelessWidget {
   final Map<String, Map<String, String>> avatarIndex;
   final String? ownAvatarUrl;
 
+  /// Bitişini kullanıcı GÖRMEDİ → "OYUN BİTTİ"nin altına kırmızı "YENİ"
+  /// (3 Eylül 2026). Aynı sebeple parametre: bu satır ayrı bir widget.
+  final bool yeni;
+
+  /// "OYUN BİTTİ" etiketi YALNIZCA Canlı tarafta çizilir — YZ oyunları senin
+  /// cihazında bittiği için orada bilgi taşımaz. Aynı sebeple parametre.
+  final bool onlineOnly;
+
   const _RecentRow({
     required this.entry,
     required this.onTap,
     required this.avatarIndex,
     required this.ownAvatarUrl,
+    required this.yeni,
+    required this.onlineOnly,
   });
 
   @override
@@ -302,7 +329,34 @@ class _RecentRow extends StatelessWidget {
         ),
         child: Row(
           children: [
+            // ⚠ HER İKİ DURUMDA `Expanded` — `Flexible` DEĞİL, ve bu bir
+            // GERİLEME DÜZELTMESİ (3 Eylül 2026, kullanıcı cihazda
+            // bildirdi: "puan ve k-lig bozulmuş, sağda hizalı olmaları
+            // lazım").
+            //
+            // Önce Canlı'da `Flexible` (loose fit) kullanılmıştı ki ortadaki
+            // etiket boşluğu alsın. Bedeli ölçülünce çıktı: loose fit sol
+            // sütunu İÇERİĞİNE küçültüyor, avatar sayısı satırdan satıra
+            // değişiyor (2 kişilik 46 px, 4 kişilik 86 px) ve artan boşluk
+            // `MainAxisAlignment.start` gereği EN SAĞDA kalıyor — yani skor
+            // bloğu her satırda başka bir yerde bitiyor. ÖLÇÜLDÜ (412 px):
+            // 4 kişilik satır ötekilerden **30,9 px** sağdaydı.
+            //
+            // İki `Expanded` (flex 1) genişliği İÇERİKTEN BAĞIMSIZ kılıyor,
+            // yani sağdaki sütunlar her satırda AYNI x'te. Ortadaki etiket
+            // yine boşluğun yarısını alıyor — 360 px'te 135 px, "TESLİM
+            // OLDUN + YENİ" için gereken ~124 px'ten fazla, yani rozet
+            // yanda kalmaya devam ediyor (test bunu kilitliyor).
+            //
+            // ⚠ FLEX 2:3, 1:1 DEĞİL. Eşit bölüşüm ölçüldü ve ortadaki
+            // etiketi 320 px / ölçek 1,3'te 0,4 px KIRPIYORDU (111,0
+            // isteniyor, 110,6 veriliyordu) — `Flexible`den `Expanded`e
+            // geçmek sol sütuna içeriğinden fazlasını verdiği için. 2:3'te
+            // 320 px'te sol 92 px (4 avatar 86 px sığıyor), orta 138 px
+            // (etiket 111 px sığıyor). İki test birden kilitliyor: hiza VE
+            // kırpılmama.
             Expanded(
+              flex: 2,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -354,23 +408,145 @@ class _RecentRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Text('${entry.playerScore}',
-                style: const TextStyle(
-                    fontFamily: 'SpaceMono',
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: _text)),
+            // "Oyun Bitti" — 3 Eylül 2026, kullanıcı isteği.
+            // ⚠ YALNIZCA Canlı tarafta. YZ oyunları senin cihazında bitiyor,
+            // yani bitişi zaten gözünle görüyorsun; orada bu etiket bilgi
+            // taşımaz, yalnızca gürültü olurdu (kullanıcı aynı gün ikinci
+            // turda bunu istedi). Canlı'da ise tam tersi: hamleni yapıp
+            // gittiğinde oyun SEN YOKKEN bitiyor ve bugün bunu hiçbir yer
+            // söylemiyor. Web ikizi `RecentGamesSection.tsx` ile aynı koşul.
+            if (onlineOnly) ...[
+              Expanded(
+                flex: 3,
+                // ⚠ `Row` DEĞİL `Wrap` — ve bu bir GERİLEME DÜZELTMESİ:
+                // ölçek 1,3'te (kMaxTextScale) 320 px'lik bir ekranda etiket
+                // 111 px istiyor, `Row`da yalnızca 74,9 px alıyordu ve
+                // `TESLİ…` diye KIRPILIYORDU (kullanıcı sordu: "ekran
+                // büyütenler için en büyük font nasıl davranıyor?" — ölçüldü,
+                // kırpılıyordu). `Wrap` sığdığı sürece rozeti YANDA tutuyor
+                // (normal durum), sığmadığında ALTA indiriyor: satır bir
+                // miktar uzuyor ama hiçbir harf kaybolmuyor. Kök CLAUDE.md
+                // "Sistem Yazı Boyutu" bölümünün önerdiği çare de bu
+                // (sıkışan satırı BÖLMEK).
+                //
+                // `Expanded` genişliği TIGHT verdiğinden `alignment: center`
+                // gerçekten ortalıyor — gevşek kısıtta `Wrap` içeriğine
+                // küçülür ve hizalama sessizce no-op olurdu (repo dersi).
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 4,
+                  runSpacing: 2,
+                  children: [
+                    // Teslimle biten oyunda metin "TESLİM OLDUN" (3 Eylül
+                    // 2026, kullanıcı isteği). AYRI bir sütun EKLENMEDİ:
+                    // satır zaten avatar+tarih | etiket | skor | k-lig,
+                    // dördüncü bir metin sütunu küçük ekranda sıkışırdı.
+                    // ⚠ Bayrak SATIR SAHİBİNE ait: `games.surrendered` kişi
+                    // başına, yani rakibin süresi dolduysa BENİM satırım
+                    // "OYUN BİTTİ" kalır (ben kazandım). `GameHistoryModal`
+                    // da "Teslim Oldu"yu yalnızca teslim olanın kendi
+                    // satırında gösteriyor — aynı kural.
+                    // Renk BİLEREK nötr: teslimin kırmızısı zaten sağdaki
+                    // -2 k-lig puanında; ikinci bir kırmızı yanındaki
+                    // "YENİ" rozetiyle yarışırdı.
+                    //
+                    // ⚠ Metin KAYNAKTA büyük harf. Native
+                    // `toUpperCase()`/`text-transform` Türkçe'de "Bitti"nin
+                    // i'sini noktasız I'ya çevirebiliyor; bu repo native
+                    // dönüşümü zaten yasaklıyor (`trUpper`) — burada
+                    // dönüşüme hiç gerek yok.
+                    //
+                    // ⚠ PUNTO 11 px, ve bu bir OKUNABİLİRLİK ZORUNLULUĞU,
+                    // tercih değil: `İ`nin noktası Space Mono'da 8-9 px'te
+                    // harfin gövdesine yapışıyor ve "YENI" diye okunuyor
+                    // (kullanıcı bildirdi; web'de 6× büyütmeyle ölçüldü —
+                    // nokta ancak 10 px'ten sonra ayrılıyor). Karakter HER
+                    // ZAMAN doğruydu: U+0130 olduğu doğrulandı, kaybolan
+                    // şey GLİF. ⚠ Bu iki puntoyu düşürürsen hata geri gelir.
+                    // ⚠ `Flexible` YOK: `Wrap` çocuklarına esneklik
+                    // verilemez (assertion atar). Kırpma koruması yine
+                    // duruyor — ama artık son çare: `Wrap` önce rozeti alta
+                    // indirip etikete TÜM genişliği veriyor.
+                    Text(entry.surrendered ? 'TESLİM OLDUN' : 'OYUN BİTTİ',
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 11,
+                            letterSpacing: 0.5,
+                            color: _muted)),
+                    // Rozet YANDA (kullanıcı: "yeni rozeti hemen yanına
+                    // gelsin") — yalnızca sığmadığında alta iner.
+                    if (yeni) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: kRed,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: const Text('YENİ',
+                            style: TextStyle(
+                                fontFamily: 'SpaceMono',
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                                color: Colors.white)),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            // ⚠ SABİT GENİŞLİK + SAĞA YASLI, ve bu bir GERİLEME DÜZELTMESİ
+            // (3 Eylül 2026, kullanıcı cihazda bildirdi: "puan ve k-lig
+            // bozulmuş, sağda hizalı olmaları lazım").
+            //
+            // Öncesinde ikisi de düz `Text`ti, yani genişlikleri İÇERİĞE
+            // göre değişiyordu ("0" bir karakter, "253" üç) ve satırın
+            // sonundaki grup her satırda başka bir yerde bitiyordu.
+            // ÖLÇÜLDÜ (412 px, kullanıcının beş satırı): k-lig sağ kenarı
+            // 289,9 / 289,9 / **320,8** / **283,2** / 289,9 — dört farklı
+            // yerde. 4 kişilik satır 31 px sağa kaçıyordu.
+            //
+            // `SizedBox` DEĞİL `ScaledCell`: repo kuralı (kök CLAUDE.md →
+            // "Sistem Yazı Boyutu", sınıf 3) sabit genişlikli sütunlarda
+            // bunu zorunlu kılıyor — kutu yazı ölçeğiyle büyür, metin
+            // sarmaz, sığmazsa `FittedBox` küçültür.
+            ScaledCell(
+              width: 28, // "369" 20,1 px; dört haneye de yer var
+              child: Text('${entry.playerScore}',
+                  maxLines: 1,
+                  softWrap: false,
+                  style: const TextStyle(
+                      fontFamily: 'SpaceMono',
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: _text)),
+            ),
             const SizedBox(width: 8),
-            Text(formatLeaguePoints(points),
-                style: TextStyle(
-                    fontFamily: 'SpaceMono',
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color:
-                        points > 0 ? _green : (points < 0 ? _red : _muted))),
+            ScaledCell(
+              width: 18, // "+2" / "-2" / "-"
+              child: Text(formatLeaguePoints(points),
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(
+                      fontFamily: 'SpaceMono',
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: points > 0 ? _green : (points < 0 ? _red : _muted))),
+            ),
           ],
         ),
       ),
     );
   }
 }
+
+/// Sol sütunun esneklik sarmalayıcısı: [genisle] ise `Expanded` (boşluğu
+/// alır), değilse `Flexible` (içeriğine küçülür, boşluğu ortadaki etikete
+/// bırakır). Ayrı bir widget, çünkü koşulu satırın içine yazmak aynı
+/// `Column`u iki kez kopyalamak demek olurdu.

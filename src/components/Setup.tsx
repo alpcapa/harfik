@@ -1,5 +1,5 @@
 // Kelimeki — oyun kurulum ekranı: oyuncu sayısı (2/4) seçimi
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { GUEST_PLAYER_NAME, PLAYER_COLORS } from "../game/constants";
 import type { PlayerSetup } from "../game/gameReducer";
 import { useAuth } from "../hooks/useAuth";
@@ -343,6 +343,19 @@ export function Setup({
   // dikkatini beklediğini görsün diye.
   const [liveActionCount, setLiveActionCount] = useState(0);
 
+  // Bitişini GÖRMEDİĞİ Canlı oyunlar (3 Eylül 2026, kullanıcı isteği).
+  // Sahibi burası, çünkü aynı liste İKİ yeri birden besliyor: "Arkadaşınla"
+  // ÜST sekmesinin rozeti (aşağıda) ve `LiveGamesTab`'ın "Son Oynananlar"
+  // ALT sekmesinin rozeti + satırlardaki "YENİ" işaretleri.
+  //
+  // ⚠ Rozet yalnızca UYGULAMA İÇİNDE: uygulama ikonu rozetine
+  // (`useAppIconBadge`) ve girişte hangi sekmenin açılacağına
+  // (`decideInitialMainView`) BİLEREK karışmıyor — o ikisi "yapacak işin
+  // var" demek, biten bir oyun ise haber. Kullanıcı kararı.
+  const [finishedUnseen, setFinishedUnseen] = useState<readonly string[]>([]);
+  // Referans KARARLI olmalı (LiveGamesTab'ın effect'i buna bağlı).
+  const handleFinishesSeen = useCallback(() => setFinishedUnseen([]), []);
+
   // Giriş varsayılanı kararının HAM girdisi. Rozetten (`liveActionCount`)
   // ayrı tutuluyor çünkü karar bir de YZ tarafının BİLİNMESİNİ bekliyor
   // (aşağı bkz.) — rozet ise ilk sayı gelir gelmez güncellenmeli.
@@ -437,6 +450,7 @@ export function Setup({
   useEffect(() => {
     if (!user) {
       setLiveActionCount(0);
+      setFinishedUnseen([]);
       return;
     }
     let cancelled = false;
@@ -447,6 +461,11 @@ export function Setup({
         // tazeleme (retry merdiveni/öne dönüş/Realtime) hâlâ uygulayabilsin.
         if (cancelled || counts === null) return;
         setLiveActionCount(counts.inviteCount + counts.myTurnCount);
+        // ⚠ `null` = bilinmiyor → son bilineni KORU (yukarıdaki iki sayının
+        // aynı doktrini). Boş dizi yazmak rozeti sessizce kaybettirirdi.
+        if (counts.finishedUnseenIds !== null) {
+          setFinishedUnseen(counts.finishedUnseenIds);
+        }
         setLiveCounts(counts);
       });
     };
@@ -738,7 +757,12 @@ export function Setup({
               {
                 key: "live" as const,
                 label: "Arkadaşınla",
-                badge: liveActionCount,
+                // 3 Eylül 2026: bekleyen iş (davet + sırası sende) YANINDA
+                // bitişini görmediğin oyunlar da sayılıyor — "Son
+                // Oynananlar" bir ALT sekme olduğundan, üst sekmede
+                // görünmezse kullanıcı "Yapay Zeka ile" tarafında açılıp
+                // haberi hiç görmeyebilirdi (kullanıcı kararı).
+                badge: liveActionCount + finishedUnseen.length,
               },
             ].map((tab) => (
               <button
@@ -764,7 +788,11 @@ export function Setup({
         </div>
 
         {mainView === "live" ? (
-          <LiveGamesTab onOpenGame={onOpenLiveGame} />
+          <LiveGamesTab
+            onOpenGame={onOpenLiveGame}
+            newlyFinishedIds={finishedUnseen}
+            onFinishesSeen={handleFinishesSeen}
+          />
         ) : !user && savedGame ? (
           // Misafir, tekil localStorage kaydı — yeni oyun bu bitene/teslim
           // olunana kadar engellenir (cihaza özel, cihazlar arası senkron yok).

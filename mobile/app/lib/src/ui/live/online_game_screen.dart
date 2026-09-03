@@ -1633,6 +1633,19 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
 
         if (state.isGameOver && !_gameOverShown) {
           _gameOverShown = true;
+          // Bitiş modalını GÖRDÜ → bu oyun için "Son Oynananlar"da "YENİ"
+          // rozeti çıkmasın (3 Eylül 2026). Bunu yapmazsak oyunu bitiren
+          // hamleyi yapan kişi — yani modalı gözüyle gören kişi — kendi
+          // oyunu için de haber rozeti alırdı.
+          //
+          // ⚠ TEK oyun işaretleniyor, toplu DEĞİL: o sırada görülmemiş
+          // BAŞKA oyunları da temizlemek, kullanıcının hiç görmediği
+          // haberleri sessizce yutardı.
+          //
+          // Sonucuna bakılmıyor: düşerse işaret sunucuda durur ve kullanıcı
+          // bu oyun için bir kez fazladan "YENİ" görür — zararsız yön.
+          // Tersi (görmediğini görülmüş saymak) bilgi kaybı olurdu.
+          widget.onlineGames.markFinishesSeen(onlineGameId: widget.game.id);
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (!mounted) return;
             final auth = widget.auth;
