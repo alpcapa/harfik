@@ -356,13 +356,21 @@ class _FriendsModalState extends State<FriendsModal> {
     }
   }
 
+  /// "+ ARKADAŞINI DAVET ET" butonunun kendi kutusu — iPad popover ankrajı
+  /// BURADAN alınmalı. `State.context` modalın TAMAMINI ankraj yapıyordu ve
+  /// iPad'de çağrı hiç dönmüyordu: buton `…` (meşgul) durumunda KİLİTLENİYOR,
+  /// çünkü `finally` ancak future dönünce koşuyor (2 Eylül 2026, ölçüldü —
+  /// bkz. `shareOriginFrom`).
+  final GlobalKey _inviteButtonKey = GlobalKey();
+
   Future<void> _handleInvite() async {
     setState(() => _inviteBusy = true);
     try {
       final url = await widget.friends.inviteUrl();
       if (url == null) return;
       if (!mounted) return;
-      final anchor = shareOriginFrom(context);
+      final anchor =
+          shareOriginFrom(_inviteButtonKey.currentContext ?? context);
       final share = widget.sharer ??
           (String text) async {
             await SharePlus.instance
@@ -391,6 +399,7 @@ class _FriendsModalState extends State<FriendsModal> {
         mainAxisSize: MainAxisSize.min,
         children: [
           NeoButton(
+            key: _inviteButtonKey,
             // TURUNCU ve `+` önekli (29 Ağustos 2026, kullanıcı isteği) —
             // Canlı sekmesindeki "+ YENİ CANLI OYUN AÇ" ile AYNI dil: ikisi
             // de "yeni bir şey başlat" eylemi. Mavi (accent) bu projede

@@ -137,6 +137,18 @@ void main() {
     expect(screen.contains(origin.topLeft), isTrue);
     expect(screen.contains(origin.bottomRight - const Offset(0.01, 0.01)), isTrue,
         reason: 'ankraj kök view koordinat uzayının İÇİNDE kalmalı');
+    // ⚠ ÜÇÜNCÜ İDDİA — 2 Eylül 2026'da EKLENDİ, çünkü yukarıdaki ikisi
+    // GERÇEK BİR HATAYI KAÇIRDI. Ekranın tamamını kaplayan bir ankraj hem
+    // "boş değil" hem "içeride"dir, yani ikisinden de geçer; ama iPad'de
+    // popover görünmüyor ve `SharePlus.share` HİÇ DÖNMÜYOR (Appetize,
+    // iPad Air / iOS 16.2). İki çağrı yeri tam bu yüzden kırıktı ve testler
+    // yeşildi. İddia "küçük olsun" DEĞİL — tahtanın ankrajı meşru biçimde
+    // büyük; ankraj kök view'ın KENDİSİ olmasın.
+    expect(origin.width < screen.width * 0.95 ||
+        origin.height < screen.height * 0.95,
+        isTrue,
+        reason: 'ankraj ekranın tamamı OLMAMALI — öyleyse `State.context` '
+            'geçilmiş demektir ve iPad\'de popover görünmez');
 
     // Paylaşılacak GÖRSELİN kendisi: aynı düğümü gerçek yakalayıcıyla
     // çekip diske yazıyoruz — ekran görüntüsü, paylaşılan PNG'nin birebir
@@ -538,6 +550,57 @@ void main() {
 
     expect(find.textContaining('yüklenemedi'), findsOneWidget);
     expect(find.text('Henüz bitmiş bir Yapay Zeka oyunun yok.'), findsNothing);
+  });
+
+  // ── shareOriginFrom sözleşmesi (Parça 86 + 2 Eylül 2026 düzeltmesi) ─────
+  //
+  // NEDEN AYRI BİR TEST: yukarıdaki akış testi ankrajın ekrana ULAŞTIĞINI
+  // kanıtlıyor ama ankrajın KENDİSİNİN geçerli olduğunu kanıtlamıyordu.
+  // Gerçek hata tam o boşluktan geçti: iki çağrı yeri `State.context`
+  // veriyordu, yani ankraj EKRANIN TAMAMIYDI — "boş değil" ve "içeride"
+  // olduğundan iddialardan geçiyor, ama iPad'de popover görünmüyor ve
+  // `SharePlus.share` hiç dönmüyordu (Appetize, iPad Air / iOS 16.2;
+  // belirtiler: Setup'ta "tepki yok", Arkadaşlar'da buton `…`ta kilitli).
+  group('shareOriginFrom', () {
+    // ⚠ Ankraj ancak DÜZEN KURULDUKTAN sonra okunabilir: `build` sırasında
+    // `findRenderObject()` henüz null döner ve fonksiyon yedeğe düşerdi —
+    // yani test iki dalı da 1x1 görüp SESSİZCE geçerdi. Bu yüzden ölçüm
+    // `pump`tan SONRA, `GlobalKey.currentContext` üzerinden yapılıyor.
+    Future<Rect> olc(WidgetTester tester,
+        {required bool ekranBoyutunda}) async {
+      await setPhoneViewSize(tester, const Size(400, 800));
+      final anahtar = GlobalKey();
+      await tester.pumpWidget(MaterialApp(
+        home: ekranBoyutunda
+            // `State.context`in yaptığının aynısı: kutu = tüm ekran.
+            ? SizedBox.expand(key: anahtar)
+            : Center(
+                child: SizedBox(key: anahtar, width: 40, height: 20),
+              ),
+      ));
+      await tester.pump();
+      return shareOriginFrom(anahtar.currentContext!);
+    }
+
+    testWidgets('gerçek bir düğmenin kutusu OLDUĞU GİBİ ankraj olur',
+        (tester) async {
+      final r = await olc(tester, ekranBoyutunda: false);
+      expect(r.isEmpty, isFalse);
+      expect(r.width, 40);
+      expect(r.height, 20);
+    });
+
+    testWidgets('EKRAN BOYUTUNDA kutu ankraj SAYILMAZ — 1x1 yedeğe düşer',
+        (tester) async {
+      final r = await olc(tester, ekranBoyutunda: true);
+      // Negatif eş: `_kFullScreenOriginRatio` kontrolü kaldırılırsa bu iddia
+      // düşer (o zaman 400x800 dönerdi) — düzeltmenin gerçekten bu satıra
+      // bağlı olduğu böyle kanıtlanıyor.
+      expect(r.width, 1);
+      expect(r.height, 1);
+      expect(r.center, const Offset(200, 400));
+      expect(r.isEmpty, isFalse, reason: 'CGRectIsEmpty olmamalı');
+    });
   });
 }
 

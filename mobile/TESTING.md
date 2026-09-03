@@ -726,6 +726,20 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       artık `XFile.fromData` + `fileNameOverrides` ile share_plus'ın
       kendisi yazıyor.) Web ile yan yana koy — ikisi AYNI görseli
       göndermeli.
+- [ ] ⚠ **iPad'DE ÜÇ YOLU DA DENE — 2 Eylül 2026'da İKİSİ KIRIKTI
+      (Parça 181).** Ankraj geçersizken `SharePlus.share` FIRLATMIYOR,
+      ASILI KALIYOR; belirti çağrı yerine göre değişiyor:
+      (a) oyun geçmişinde tahta paylaşımı — o gün çalışan tek yol,
+      (b) Setup footer "Paylaş" — bozukken *"hiç tepki vermiyor"*,
+      (c) Arkadaşlar "+ ARKADAŞINI DAVET ET" — bozukken buton **`…`
+      durumunda KİLİTLİ kalıyor** (meşgul göstergesi hiç sıfırlanmıyor).
+      Üçünde de paylaş kutusu AÇILMALI ve buton `…`ta kalmamalı.
+      ⚠ **Simülatörde hedef uygulama (WhatsApp vb.) OLMAMASI normaldir** —
+      ölçülen şey kutunun AÇILIP açılmadığı, içinin dolu olması değil.
+      ⚠ **Web derlemesi bu maddeyi KANITLAMAZ** (`kelimeki.com`/Pages):
+      orada `navigator.share` çalışıyor, iOS kanalına hiç uğranmıyor.
+      Cihazın iPad olması yetmez, DERLEMENİN native olması gerekir —
+      Appetize → iOS simülatörü → iPad cihaz tipi.
 - [ ] **İptal ikinci sayfa açmamalı.** Paylaş sayfasını kapat/iptal et →
       arkasından ikinci bir paylaş sayfası AÇILMAMALI (`share_plus`
       iptalde fırlatmaz, yedek zincire düşmemeli).
@@ -1680,11 +1694,26 @@ kırpar), sonra:
 - [ ] **Tahtada onaylı bir taşa dokun (kelime anlamı)** → madde numaraları
       (`1.`, `2.` …) tek satır.
 - [ ] **Yardım → k-lig kademe tablosu** → kademe harfleri tek satır.
+- [ ] **Son Oynananlar / Son Oynadıklarım → AVATARLAR** (2 Eylül 2026):
+      bitmiş bir Canlı oyunda rakiplerin fotoğrafı, Yapay Zeka sekmesinde
+      kendi fotoğrafın görünmeli. ⚠ Fotoğrafı olmayan üye baş harfte,
+      YZ robotta, misafir "?"te KALIR — eksik değil, kural. ⚠ Oyundan SONRA
+      takma adını değiştiren biri baş harfe düşer (yanlış yüz göstermemek
+      için bilinçli).
 - [ ] **Setup → DEVAM EDEN OYUN kartı** (yarım bir yerel oyun bırakıp
       Setup'a dön) → `SIRA SENDE` oyuncu satırının SAĞINDA, kalan süre
       ALTTA tam genişlik satırda (Canlı oyundaki `SIRA RAKİPTE` kartıyla
       aynı şekil). Etiket kartın ORTASINDA durmamalı. Oyuncu adları
-      kırpılmamalı.
+      kırpılmamalı. **Avatarların ALTINDA `Sıra: X` YAZMAMALI** (2 Eylül
+      2026'da kaldırıldı — yanındaki `SIRA SENDE` ile aynı şeyi söylüyordu).
+- [ ] **İKİ SEKMEYİ YAN YANA KARŞILAŞTIR** (2 Eylül 2026 — bildirilen hata
+      buydu): "Yapay Zeka" ve "Arkadaşınla" sekmelerindeki devam eden oyun
+      kartları AYNI düzende olmalı. Canlı karttaki **kalan süre, "X açtı"
+      yazısının ALTINDAKİ kendi satırında** olmalı — o yazıya BİNMEMELİ.
+      ⚠ "X açtı" satırının KENDİSİ kalır (YZ'deki `Sıra: X`'e benzemez).
+      `SIRA SENDE`/`SIRA RAKİPTE` puntosu 15 px'e çıktı — iki kartta da
+      aynı büyüklükte görünmeli, yanındaki üçgen/nokta harflerle aynı
+      bantta durmalı (küçük kalmamalı).
 - [ ] **Rafın üstündeki mesaj satırı** → uzun bir mesaj (ör. "+9 puan
       (5 puanı X kaptı)") KESİLMEMELİ; kutu metinle birlikte büyümeli.
       (2 Eylül 2026: port sabit 30 px kullanıyordu, web ikizi `min-h`.)

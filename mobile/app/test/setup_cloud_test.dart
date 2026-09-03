@@ -218,7 +218,10 @@ void main() {
     expect(find.text('+ YENİ YAPAY ZEKA OYUNU AÇ'), findsOneWidget);
     expect(find.text('DEVAM EDEN OYUNLAR'), findsOneWidget);
     expect(find.textContaining('SIRA SENDE'), findsOneWidget);
-    expect(find.text('Sıra: Ironman'), findsOneWidget);
+    // "Sıra: X" alt satırı 2 Eylül 2026'da KALDIRILDI (kullanıcı isteği):
+    // yanındaki `SIRA SENDE` ile aynı şeyi söylüyordu. İddia silinmedi,
+    // TERSİNE çevrildi — geri gelirse bu test söyler.
+    expect(find.textContaining('Sıra:'), findsNothing);
     // 30 Ağustos 2026: geri sayarken fiil ("teslim sayılacak"/"silinecek")
     // artık YOK, yalnızca "… KALDI" — üç sayaç da aynı kalıpta. Fiil yalnız
     // süre DOLDUĞUNDA ("Bugün …") geri geliyor.

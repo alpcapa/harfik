@@ -166,13 +166,11 @@ function savedGameAvatars(
  */
 function SavedGameRow({
   players,
-  subtitle,
   savedAtMs,
   willSurrender,
   onClick,
 }: {
   players: AvatarRowPlayer[];
-  subtitle: string;
   savedAtMs: number;
   willSurrender: boolean;
   onClick: () => void;
@@ -199,17 +197,24 @@ function SavedGameRow({
             (kullanıcı isteği: YZ oyunlarında da Canlı'daki gibi avatar).
             Avatar sayısı zaten oyuncu sayısını gösterdiğinden metin bilgi
             kaybettirmiyor. */}
+          {/* 2 Eylül 2026 — altındaki "Sıra: X" satırı KALDIRILDI (kullanıcı
+            isteği): yanındaki `SIRA SENDE` ile aynı şeyi söylüyordu. ⚠ Canlı
+            oyun kartının (`LiveGamesTab`) aynı yerdeki "X açtı" satırı buna
+            BENZEMEZ ve KALIR — o kimin açtığını söylüyor, sıra bilgisi
+            değil. Sol sütun burada tek çocukla kalıyor; `flex flex-col` ve
+            `gap-0.5` bilerek duruyor, çünkü iki kartın sol tarafı aynı
+            kaptan çıkıyor. */}
           <PlayerAvatarRow players={players} />
-          <span className="text-[9px] font-mono text-muted truncate">
-            {subtitle}
-          </span>
         </span>
         {/* Metin ve punto `LiveGamesTab`'ın aktif oyun kartıyla BİREBİR
           (30 Ağustos 2026, kullanıcı isteği) — bu kart YZ oyunu, orası
           Canlı oyun, ama ikisi de "devam eden oyun" satırı ve kullanıcı
           ikisini yan yana görüyor. Burada koşul yok: yerel kayıt her zaman
           hesap sahibinin sırasında duruyor. */}
-        <span className="shrink-0 text-[13px] font-mono uppercase tracking-[1px] text-green font-bold">
+        {/* Punto ve üçgen `LiveGamesTab`'ın aktif oyun kartıyla BİREBİR
+          (13 → 15 px, 2 Eylül 2026 kullanıcı isteği) — port tarafında ikisi
+          de `devamEdenDurumStil`den besleniyor. */}
+        <span className="shrink-0 text-[15px] font-mono uppercase tracking-[1px] text-green font-bold">
           SIRA SENDE
           <TurnTriangle />
         </span>
@@ -768,7 +773,6 @@ export function Setup({
             </div>
             <SavedGameRow
               players={savedGameAvatars(savedGame.state.players, null, true)}
-              subtitle={`Sıra: ${savedGame.state.players[savedGame.state.current]?.name ?? "—"}`}
               savedAtMs={savedGame.savedAt}
               willSurrender={false}
               onClick={onResumeGame}
@@ -861,7 +865,6 @@ export function Setup({
                         profile?.avatar_url,
                         false,
                       )}
-                      subtitle={`Sıra: ${save.state.players[save.state.current]?.name ?? "—"}`}
                       savedAtMs={Date.parse(save.updated_at)}
                       willSurrender={save.state.turnCount >= 2}
                       onClick={() => onResumeCloudSave(save)}

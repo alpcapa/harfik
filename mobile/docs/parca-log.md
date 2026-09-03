@@ -20,6 +20,131 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 182 — "Son Oynananlar"da avatarlar (2 Eylül 2026, kullanıcı
+     isteği; yeni `util/recent_game_avatars.dart`, değişen
+     `ui/setup/recent_games_section.dart`, `ui/live/live_games_tab.dart`,
+     `ui/setup/setup_screen.dart`, `ui/game/player_avatar_row.dart` +
+     web ikizleri + `test/recent_game_avatars_test.dart`):**
+     - **Kullanıcı:** *"Son oynananlara da avatar koyalım. Bu saçma kararı
+       geri al. Leaderboard'da zaten avatarlar herkese görünüyor, ayrıca bu
+       gizlilik ihlali değil, isteyen fotoğrafını kaldırabilir."* HAKLI ve
+       koddan doğrulandı: `leaderboard` view'ı `security_invoker = false`
+       ile RLS'i bypass edip herkesin takma adını VE avatarını açıyor
+       (`20260722114853_lock_down_profiles_games_select.sql`). Fotoğrafı
+       burada gizlemek kendi içinde tutarsızdı.
+     - ⚠ **İLK ANALİZİM YANLIŞTI ve kullanıcının ikinci sorusu düzeltti.**
+       "Snapshot'ta `user_id` de `avatar_url` de yok → migration + RLS
+       kararı şart" demiştim. Kullanıcı sordu: *"bekleyen oyunlardan farkı
+       ne, niye bu kadar zor?"* — ve fark VERİDEYDİ, bileşende değil:
+       canlı kartlar `list_my_online_games`in koltuklarını okuyor (orada
+       `avatar_url` profillerden join'leniyor), "Son Oynananlar" ise
+       donmuş jsonb'yi. Kapalı kapıda durup YANINDAKİ açık kapıyı
+       aramamışım: `games.online_game_id` DURUYOR ve bitmiş çevrimiçi
+       oyunların `online_games` satırı SİLİNMİYOR. **Migration da RLS
+       kararı da gerekmedi.** Deponun kendi dersi (Parça 54): bir kapı
+       kapalıysa aynı mekanizmanın öteki örneklerini ara.
+     - **Çözüm:** çevrimiçi kayıtta `online_game_id` → oyunun canlı
+       koltukları → isim eşlemesi; yerel kayıtta ada BAKMADAN hesabın kendi
+       avatarı (tek insan koltuk her zaman satırın sahibi).
+     - ⚠ **Eşleme OYUNLA SINIRLI, global DEĞİL** — takma adlar
+       değiştirilebiliyor (`AccountSettingsModal`), global arama adı
+       sonradan devralan BAŞKASININ yüzünü gösterirdi. En kötü ihtimal
+       artık "eşleşme yok → baş harf", yanlış yüz değil. Bu sınırın negatif
+       eşi iki tarafta da testli ("başka oyundaki aynı isim sızmaz").
+     - Kural saf bir dosyada ve İKİ tarafta aynı vakalarla koşuyor:
+       `npm run verify-recent-game-avatars` + `recent_game_avatars_test.dart`.
+
+   - ✅ **Parça 181 — iPad'de paylaşım İKİ yolda ASILI KALIYORDU: ankrajın
+     kendisi geçersizdi (2 Eylül 2026; değişen: `util/share_board.dart`,
+     `ui/setup/setup_screen.dart`, `ui/friends/friends_modal.dart`,
+     `test/share_recent_test.dart`):**
+     - **Kullanıcı Appetize'da ölçtü — iPad Air / iOS 16.2, ekran
+       görüntüleriyle.** Üç paylaşım yolundan İKİSİ kırık: Setup footer
+       "Paylaş" *"hiç tepki vermiyor"*, Arkadaşlar "Davet et" butonu `…`
+       (meşgul) durumunda KİLİTLİ. Oyun geçmişindeki tahta paylaşımı
+       ÇALIŞTI.
+     - **Aradaki tek fark ankrajın NEREDEN geldiğiydi:**
+
+       | Yol | Ankraj kaynağı | Sonuç |
+       |---|---|---|
+       | Oyun geçmişi | `_captureKey.currentContext` — tahtanın `RepaintBoundary`si, küçük gerçek kutu | ✅ |
+       | Setup | `_SetupScreenState.context` — ekranın TAMAMI | ❌ |
+       | Arkadaşlar | `_FriendsModalState.context` — ekranın TAMAMI | ❌ |
+
+     - **Parça 86 işin YARISINI çözmüştü:** ankraj VERMEMEYİ düzeltti,
+       ankrajın KENDİSİNİN geçerli olması gerektiğini kontrol etmedi.
+       Ekranı kaplayan bir dikdörtgen hem "boş değil" hem "kök view'ın
+       içinde"dir — eski iki kontrolden de geçer.
+     - **FIRLATMA DEĞİL, ASILMA — ve kanıt ekran görüntüsünde:**
+       `_handleInvite`in `finally`si `_inviteBusy`i sıfırlıyor; buton yine
+       de `…`ta kaldı, yani future DÖNMEDİ. Setup'ta meşgul göstergesi
+       olmadığından aynı asılma "hiçbir şey olmuyor" diye görünüyor —
+       tek hata, iki ayrı belirti.
+     - **TESTLER NEDEN YEŞİLDİ:** ankraj iddiası yalnızca "boş değil" +
+       "ekranın içinde" diyordu. Üstelik test yalnızca ÇALIŞAN yolu
+       kapsıyordu. Sözleşmeyi ölçen test, sözleşmenin YETERSİZ tarifini
+       ölçüyorsa yeşil olması hiçbir şey garanti etmiyor.
+     - **Düzeltme:** `shareOriginFrom` ekranı İKİ EKSENDE birden (≥%95)
+       kaplayan kutuyu ankraj saymıyor, 1×1 merkez yedeğine düşüyor; iki
+       kırık çağrı yeri kendi düğmesinin kutusuna bağlandı
+       (`_shareLinkKey`, `_inviteButtonKey`) — oyun geçmişindeki desenin
+       aynısı.
+     - ⚠ **İLK YAZDIĞIM EŞİK ÇALIŞAN YOLU KIRARDI:** %50 ALAN oranıydı ve
+       tahtanın ankrajı telefonda alanın ~%46'sı — teğet. Ölçüt "büyük"
+       değil **"ekranın tamamı"** olmalı: popover büyük bir kutuya sorunsuz
+       bağlanıyor, kıran şey ankrajın kök view'la ÖRTÜŞMESİ. Geniş ama kısa
+       bir kutu geçerli ankraj olarak kaldı.
+     - **Doğrulama sınırı:** Flutter SDK bu ortamda yok; Dart testlerini CI
+       ölçüyor, cihaz karşılığı Appetize/iPad'de yeniden denenecek.
+
+   - ✅ **Parça 180 — "devam eden oyun" kartları İKİ SEKMEDE AYRIŞMIŞTI
+     (2 Eylül 2026; değişen: yeni `ui/devam_eden_govde.dart`,
+     `ui/setup/setup_screen.dart`, `ui/live/live_games_tab.dart`,
+     `test/live_games_test.dart`, `test/setup_screen_test.dart`,
+     `test/setup_cloud_test.dart` + web ikizleri):**
+     - **Kullanıcı 1.0.5'te (`Derleme 4a0a29b`) iki ekran görüntüsüyle
+       bildirdi:** YZ sekmesinde kalan süre kendi alt satırındayken,
+       Arkadaşınla sekmesinde durum etiketiyle aynı sağ sütunda ve
+       "X açtı" yazısına biniyor.
+     - **Kök sebep düzenin yanlış olması DEĞİL, doğrusunun ULAŞILAMAZ
+       olması:** doğru şekil aynı günün erken turunda (#408) YZ kartında
+       kurulmuştu ama `_DevamEdenGovde` olarak `setup_screen.dart`ın
+       İÇİNDE, yani PRIVATE doğdu; Canlı kartı dokunulmadan kaldı. Web'de
+       de aynı ayrışma vardı (`flex-col` ↔ `flex items-center`) — tek bir
+       yapı hatasının iki platformdaki tekrarı.
+     - **Ölçüm (320 px):** durum ve süre tek sağ sütunda toplanınca sütunun
+       enini SÜRE belirliyor — "SIRA SENDE" 89,6 px, süre satırı **194,3
+       px**. Daraltan etiket değil süre, ölçek 1,0'da bile.
+     - **Çözüm:** gövde + tipografi ortak kaynağa (`devam_eden_govde.dart`).
+       Aynı turda YZ kartındaki "Sıra: X" alt satırı kaldırıldı (kullanıcı
+       isteği — yanındaki `SIRA SENDE` ile aynı şeyi söylüyordu; Canlı
+       karttaki "X açtı" BENZEMEZ ve kalır) ve durum puntosu 13 → **15**
+       (üçgen/nokta ölçüsü ona çapalı: 8×9/9×9 → 9×10/10×10, web SVG'si ve
+       Dart path'i birlikte).
+     - **CI DÜŞTÜ ve düzeltildi (aynı gün):** `setup_screen_test` →
+       *"isim alanı sıkışmaz"* iddiası **0,710 < 0,75** verdi (ölçülen:
+       130,2 → 92,5 px; öncesi 143,4 → 109,7 = 0,765). Eşik **0,70**'e
+       çekildi. Bu bir susturma DEĞİL — üç ölçüm gerekçesi:
+       (1) 0,75 tasarlanmış sınır değil CIRCIR'dı, o günkü değerin hemen
+       altına konmuştu ve **herhangi bir** punto artışını bloke ediyordu
+       (15 px → 0,710 gerçek, 14 px → 0,739 türetildi);
+       (2) sol sütunda artık METİN YOK — daralmanın kurbanı "Sıra: X"
+       satırıydı, bu turda kaldırıldı; geriye kalan `PlayerAvatarRow`
+       SABİT genişlikte ve ölçekle büyümüyor;
+       (3) daralmanın kaynağı meşru (durum etiketi ölçekle büyüyor,
+       durdurmanın tek yolu ekran başına ölçek kısıtı olurdu — kural 1
+       yasaklıyor).
+       **Oranın kaybettiği koruma somut bir iddiayla YERİNE KONDU:** avatar
+       şeridi iki ölçekte de sol alana SIĞMALI. Vekil bir sayı gevşerken
+       koruduğu şeyin kendisi kilitlendi.
+     - ⚠ **SESSİZ TEST ARIZASI YAKALANDI:** sıkışmayı ölçen iddia sol
+       sütunu `find.ancestor(of: PlayerAvatarRow, matching: Column)` ile
+       buluyordu. "Sıra: X" kalkınca sol taraf tek bir `PlayerAvatarRow`a
+       indi — eni SABİT 36 px — ve bulucu DIŞ sütuna sıçrayıp kartın
+       tamamını ölçerdi: test düşmez, **anlamsızlaşırdı**. Sol alan artık
+       ortak gövdede anahtarlı (`kDevamEdenSolKey`). **Bir düzeni ölçen
+       test, o düzenin İÇERİĞİ değişince yeniden okunmalı.**
+
    - ✅ **Parça 179 — zoom'da kalıcı 10 px çerçeve + filigranların yazı
      ölçeğiyle bölgeyi taşırması (2 Eylül 2026; değişen:
      `ui/game/board_widget.dart`, `ui/game/game_screen.dart`,

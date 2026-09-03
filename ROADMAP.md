@@ -13,7 +13,7 @@ Kalıcı bir ders üretmişse dersin kendisi ayrıca ilgili bölümün tarihli
 notuna geçer (projenin genel "değişiklik = tarihli not" disiplini).
 
 ⚠ **Aşağıda bir bölüme atıf görüp bulamıyorsan arşive bak** — "Faz 1-7",
-"1.0.3/1.0.4 sürüm turu", "madde 1/6/10/11/12" ve "Sürüm A" 2 Eylül
+"1.0.3/1.0.4 sürüm turu", "madde 1/6/10/11/12/13/16" ve "Sürüm A" 2 Eylül
 2026'da oraya taşındı. O gün ölçüldü: dosyanın **%45'i** kapanmış işti ve
 118 KB'a bu yüzden çıkmıştı — eşik düşük olduğu için değil, bu kural
 uygulanmadığı için.
@@ -83,16 +83,16 @@ her şey o pencerenin içinde ya da yanında duruyor.
 
 | Kova | Ne | Durum |
 |---|---|---|
-| **Sayaç** | 12 tester × 14 gün | ⏳ işliyor, aksiyon yok · *Android developer verification* ✅ **BİTTİ** (Console'dan doğrulandı 31 Ağustos: `com.kelimeki.kelimeki` Registered, 3 anahtar, Identity dolu) |
+| **Sayaç** | 12 tester × 14 gün | ⏳ işliyor, aksiyon yok · ⚠ karttaki **12**'nin gerçek adet mi şartın tavanı mı olduğu ÖLÇÜLMEDİ (2 Eylül, kullanıcı itirazı — aşağıda) · *Android developer verification* ✅ **BİTTİ** (Console'dan doğrulandı 31 Ağustos: `com.kelimeki.kelimeki` Registered, 3 anahtar, Identity dolu) |
 | **Console (elle)** | — | ✅ **KAPANDI** (bu satır 31 Ağustos'a kadar bayat kaldı; ayrıntı aşağıda) |
 | **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) · **+ #10 hata hız sınırı** (1 Eylül'de eklendi) | ✅ **1.0.4 (467) Play'e YÜKLENDİ, incelemede** (1 Eylül 2026) |
 | **1.0.5'e binen kod** | Tahta zoom'u (+2 APK turu) · zoom tanıtım balonu · yazı ölçeği (sınıf 3+2) · mesaj kutusu etiketi · **cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar)** | ✅ **TUR KAPANDI** — `1.0.5 (501) — 4a0a29b` kapalı testte yayında (~15:03) ve üç işin cihaz doğrulaması da alındı (2 Eylül, kullanıcı). Ayrıntı: arşiv → "1.0.5 SÜRÜM TURU" |
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); **1.0.5'in tamamı 2 Eylül'de onaylandı** (zoom turu, çevrimdışı şerit, filigranlar, balon, yazı ölçeği, mesaj etiketi) — kalan iki kalem bu ikisi |
-| **Karar verilmiş, yapılmamış** | #3 davetlilere hatırlatma (gönderilebilir) · #8 Paylaşma (iPad popover) · **#16 devam eden oyun kartlarının düzen ayrışması** (2 Eyl, aşağıda) | ⬜ |
-| **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
+| **Karar verilmiş, yapılmamış** | #8 Paylaşma (iPad popover) — cihaz istiyor | ⬜ · **#3 hatırlatma** ✅ KAPANDI (2 Eylül, zaten yürüyen alışkanlık) ve **#16 kart düzeni** ✅ YAPILDI — ikisi de arşivde |
+| **Ertelendi** | #2 zorunlu güncelleme | ✅ **KAPANDI/ARŞİVDE** (2 Eylül 2026, kullanıcı: *"Artık app'de güncelleme çıkıyor, bunu görünce zaten yapar"*). ⚠ Sürüm kapısı DURUYOR ve artık KULLANILABİLİR — acil fren olarak `app_config.mobile_min_supported_version` |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
-| **Sayaç bitince (~10 Eylül)** | **#17 Google ile giriş** — sunucu → web → mobil; migration BLOKER (OAuth bugün `handle_new_user`'da patlar) | ⏳ bilerek bekletiliyor, gerekçe #17'de |
+| **Play Store'a girdikten sonra** | **#17 Google ile giriş** — sunucu → web → mobil; migration BLOKER (OAuth bugün `handle_new_user`'da patlar) | ⏳ ERTELENDİ — acelesi yok, çalışan kimlik akışına şimdi dokunulmuyor (2 Eylül, kullanıcı). ⚠ Sayaçla İLİŞKİSİ YOK; o bağ aynı gün koptu, gerekçe #17'de |
 | **iOS/APNs** | Apple Developer üyeliğine bloke; iş "APNs anahtarını yükle + Push capability" kadar | 🔒 |
 
 ⚠ **"Console (elle)" satırı 31 Ağustos'a kadar BAYAT kaldı** — dört maddesi
@@ -113,145 +113,76 @@ kapandığında kaynağı `console-formlari.md`'dir, karar oradan okunur.
 
 ### Sonra / bloke
 
-**#8** (FAZ A1 Bölüm 6 — Paylaşma, iPad popover), **#11** (hata panelinde
-platform filtresi). **#12** (sürüm dağılımı kapsamı) ✅ **KAPANDI**
-31 Ağustos 2026 — bkz. arşivde "Faz 6".
+Açık olan TEK madde: **#8** (FAZ A1 Bölüm 6 — Paylaşma, iPad popover).
+**#11** (hata panelinde platform filtresi) ✅ **KAPANDI** 31 Ağustos 2026
+— bu satır 2 Eylül'e kadar onu hâlâ bekleyen iş gibi gösteriyordu, oysa
+aynı gün yukarıdaki özet tablo ✅ diyordu (kaydın iki yerde durması).
+**#12** (sürüm dağılımı kapsamı) ✅ **KAPANDI** 31 Ağustos 2026 — bkz.
+arşivde "Faz 6".
 **#15 — uygulama öne gelince bildirim panelini temizle** → ✅ **KOD TAMAM**
 (31 Ağustos 2026), sıradaki mobil sürümle çıkar. Ayrıntı arşivde: "Faz 6".
 **iOS/APNs** Apple Developer üyeliğine takılı; tasarım bilerek FCM üzerinden
 yazıldığı için iOS günü gelince kalan iş "APNs anahtarını Firebase'e yükle +
 Push capability ekle" — ikinci bir gönderici YAZILMAYACAK.
 
-### #13'ün ölçülen durumu (29 Ağustos 2026) — yarısı BİTTİ
-
-Aşağıdaki #13 sıfırdan bir iş gibi okunuyor; artık değil. Canlıdan ve
-koddan ölçülen hâl:
-
-| Parça | Durum |
-|---|---|
-| Altyapı (`push_tokens`, `register_push_token`, hesap silmede temizlik) | ✅ |
-| `POST_NOTIFICATIONS` izni · `kelimeki_oyun` kanalı (IMPORTANCE_HIGH) | ✅ |
-| `push_notifications_enabled` tercihi (e-postadan bağımsız) | ✅ |
-| **Teslim uyarısı push'u** | ✅ canlıda (`notify-deadline-warnings` v12) |
-| Oyun daveti · arkadaş daveti push kanalı | ✅ canlıda (30 Ağustos) |
-| Bildirime dokununca yönlendirme | ✅ **1.0.3'le SAHADA** (31 Ağustos) — cihaz testi §3c bekliyor |
-| Firebase Analytics olayları | ✅ **1.0.3'le SAHADA** (31 Ağustos) — GA4 DebugView bekliyor |
-| "Sıra sende" olayı | ✅ canlıda (30 Ağustos) |
-| Play Data safety formu | ✅ (29 Ağustos) |
-
----
-
 ## Sürüm sıralaması, force update ve davetliler (27 Ağustos 2026)
 
-Bu üçü bir "madde" değil — biri bir SIRALAMA kuralı, biri ERTELENMİŞ bir
-karar, biri bir HATIRLATMA. Hiçbiri koda yazılamadığı için buraya yazıldı;
-oturum kapanınca kaybolmasınlar.
+Bu bölümde artık TEK konu var: açık test penceresinin İŞLETİM bilgisi.
+Koda yazılamadığı için buraya yazıldı; oturum kapanınca kaybolmasın.
 
-### 2. Zorunlu güncelleme (force update) — ERTELENDİ
+⚠ Başlıktaki öteki iki konu 2 Eylül 2026'da KAPANDI ve arşive taşındı:
+"force update" (#2 — kullanıcı kararı, Play'in kendi güncelleme bildirimi
+yeterli) ve "davetliler" (#3 — zaten yürüyen bir alışkanlık). Başlık,
+atıflar kırılmasın diye değiştirilmedi.
 
-Kullanıcı isteği (26 Ağustos 2026): *"Ben normal yayına alıyorum. Riske
-girmeyelim. Sorun çoğu insan güncellemez diye yorum geldi. Google tarafında
-böyle opsiyon olsaydı onu açıp mecburi update yaptırırdım. Ama yoksa
-etrafından dönmeye gerek yok."*
+⚠ **Sürüm kapısı silinmedi ve artık KULLANILABİLİR durumda** (#2 kapansa
+bile): `config/version_gate.dart` her açılışta `app_config`teki
+`mobile_min_supported_version`ı okuyor, düşükse `UpdateRequiredScreen`e
+düşürüyor, ulaşılamazsa FAIL-OPEN. #2'nin engel saydığı iki eksik de
+bugün YOK (kod okundu): `appVersion` artık sürümü takip ediyor (`1.0.5`,
+parite testiyle zorlanıyor) ve ekranda `market://` + web yedeği var. Yani
+acil bir fren gerekirse eşiği yükseltmek YETER.
 
-Ölçülen gerçek: **Play Console'da "zorunlu güncelleme" diye bir ayar YOK.**
-Google'ın sunduğu tek yol In-App Updates API (`immediate` akış) ve
-önceliği (`inAppUpdatePriority`) yalnızca **Publishing API** üzerinden
-verilebiliyor — Console arayüzünde alanı bile yok. Yani "etrafından dönmek"
-gerçekten ek bir altyapı işi.
+### Sayaç — nerede okunur, 14. gün ne zaman
 
-İleride yapılacaksa **iki ön koşul ÖLÇÜLDÜ ve ikisi de bugün eksik:**
+⚠ Bu bir MADDE değil, açık pencerenin işletim bilgisi. *"Davetlilere
+hatırlatma"* maddesi 2 Eylül 2026'da KAPANDI (kullanıcı: *"Hep ben
+hatırlatıyorum zaten, burada madde olarak durmasına gerek yok"*) — arşivde:
+`docs/decisions/roadmap-arsiv.md` → *"3. Davetlilere hatırlatma"*. Aşağısı
+o maddeyle birlikte kaybolmasın diye burada kaldı.
 
-1. **Her derleme `1.0.0`.** `mobile/app/pubspec.yaml` sürümü sabit; CI
-   yalnızca `versionCode`'u artırıyor. Bir istemci "daha yeni sürüm var mı"
-   sorusunu kendi başına soramaz — önce sürüm adı derlemeye bağlanmalı.
-2. **`UpdateRequiredScreen`'in mağaza butonu YOK.** Ekran var ama kullanıcıyı
-   Play'e götüren bir eylem taşımıyor; zorunlu güncelleme onu kilitlenme
-   ekranına çevirir.
+**Sayacın yeri:** Dashboard → (aşağı kaydır) Production → `Apply for access
+to production` kartı. Test menüsünde DEĞİL; track sayfasında da yok
+(ölçüldü). **14. gün ~10 Eylül 2026** (sayaç 27/28 Ağustos'ta başladı;
+Console'un günü nasıl saydığı ölçülmedi, ±1 gün kabul et ve tarihi kartın
+kendi metninden takip et).
 
-**28 AĞUSTOS 2026 — KULLANICI YENİDEN İSTEDİ** (*"Firebase firestore'e
-versiyon ekleyelim, cihaz her açıldığında kontrol etsin, eğer değilse markete
-göndersin"*). İstenen davranış aynen bu maddedir; iki düzeltme gerekiyor:
+**Katılan/indiren sayısı:** Test → Closed testing → (track) → **Testers**
+sekmesi — ⚠ oradaki sayı opt-in DEĞİL, **izin listesi**; indirme adedi için
+**Statistics**.
 
-⚠ **FIRESTORE'A GEREK YOK — kapı ZATEN VAR ve Supabase'de.** Ölçüldü:
-`config/version_gate.dart` her açılışta (`bootstrap`) `app_config`
-tablosundaki `mobile_min_supported_version`ı okuyor, `compareSemver` ile
-karşılaştırıyor ve düşükse `UpdateRequiredScreen`e düşürüyor; ulaşılamazsa
-FAIL-OPEN (offline YZ oyunu rehin alınmıyor). Yani "cihaz her açıldığında
-kontrol etsin" kısmı ÇALIŞIYOR.
+**14 gün dolmadan yapılabilecek iki iş** (ikisi de hâlâ açık): karttaki
+**`Preview questions`**'dan başvuru sorularını okuyup cevapları hazırlamak,
+ve tester'lardan **yazılı geri bildirim** toplamak (başvuru "testi nasıl
+yürüttün" diye soruyor).
 
-Firestore eklemek aynı gerçeğin İKİNCİ bir doğruluk kaynağını yaratırdı — bu
-kod tabanının en sık tekrarlayan hata sınıfı tam olarak bu (bkz. `_red`in 13
-dosyada ikiye bölünmesi, k-lig kademe tablosunun ÜÇ kopyası). Üstelik ikinci
-kaynak, sürüm eşiğini değiştirmek için iki ayrı panele girmek demek olurdu.
-**Eşik Supabase'de kalmalı.**
+#### ⚠ "12" gerçek sayı mı, tavan mı — AÇIK SORU (2 Eylül 2026)
 
-**GERÇEK EKSİK İKİ ŞEY (yukarıdaki ön koşulların aynısı):**
-1. **`appVersion` sabit `1.0.0`.** Eşiği `1.0.1` yapmak BÜTÜN derlemeleri —
-   en yenisi dahil — kilitler. Kapı bugün kullanılamaz durumda; önce sürüm
-   adı derlemeye bağlanmalı (CI yalnızca `versionCode`u artırıyor).
-2. **`UpdateRequiredScreen`de mağaza butonu YOK** (ölçüldü: dosyada tek bir
-   `launchUrl`/`market://` yok). Bugünkü hâliyle ekran bir ÇIKMAZ — "güncelle"
-   diyor ama güncellemenin yolunu göstermiyor. `url_launcher` zaten bağımlılık
-   olarak var; `market://details?id=com.kelimeki.kelimeki` (Play yoksa
-   `https://play.google.com/store/apps/details?id=…` yedeği) yeterli.
+Burada *"Sayı tam 12 — pay yok"* yazıyordu ve bu bir ÖLÇÜM gibi
+okunuyordu. Kullanıcı 2 Eylül'de itiraz etti: *"12'den fazla katılım
+olduğunu düşünüyorum, çünkü dashboard'da sadece limit olan 12 kişi opt-in
+oldu diyormuş."* Kayıt bugün şunu söylüyor ve fazlasını söylemiyor:
 
-Sıra: bu ikisi → sonra eşiği kullanmaya başla. Sürüm B'nin kapsamında DEĞİL
-(kapsam: deep link + push + sözlük); B çıktıktan sonraki ilk iş adayı.
+| Kanıt | Hangi tezi destekliyor |
+|---|---|
+| Kart 26 Ağustos'ta **10** yazdı (eşiğin ALTINDA gerçek sayıyı gösterdi) | sayı GERÇEK |
+| Kart 28 Ağustos'tan beri **12** yazıyor ve şart tam 12 | `min(gerçek, 12)` bir tavan da aynı görünürdü |
 
-⚠ **Risk (kullanıcı sordu: "Bu oyunun hiç açılmamasına sebep olabilir mi?"):**
-EVET — yanlış kurulmuş bir zorunlu güncelleme, güncellemeyi alamayan
-(cihazı eski, Play'i olmayan, ağı kısıtlı) kullanıcı için uygulamayı
-tamamen açılmaz hâle getirir ve düzeltmesi ancak YENİ bir sürüm yayınlamakla
-mümkündür. Bu yüzden erteleme doğru karar; yapılacaksa önce yukarıdaki iki
-ön koşul, sonra kademeli (`flexible`) akış.
-
-### 3. Davetlilere hatırlatma — ARTIK GÖNDERİLEBİLİR (Sürüm A çıktıktan sonra)
-
-Kapalı test listesi 54 kişiye çıktı ama büyük bölümü uygulamayı hâlâ
-**yüklememiş**. Bu bir hata değil bir pazarlama işi, ama sıralaması vardı:
-Sürüm A'nın dört düzeltmesi (taş yakalama, ✕ ıskalama, arkadaş listesinin
-sonuna inememe, bayat rozet) tam da **ilk deneyimi** vuruyordu — hatırlatma
-o yüzden A'dan SONRAYA bırakılmıştı.
-
-**ENGEL KALKTI — `1.0.0 (407)` KAPALI TESTTE YAYINDA (28 Ağustos 2026,
-kullanıcı Play Console'dan doğruladı: yayın durumu "Update live").** A
-(`403`) ve A2 (`405` → `407`) çıktı, cihaz testi onaylandı, paket kanalda.
-**Hatırlatma artık gönderilebilir — bekleyen tek adım bu.**
-
-⚠ **Play Console'da sürümün ADI ile version code AYNI şey değil** (28
-Ağustos 2026, kullanıcı haklı olarak sordu: *"Son release 1.0.0 (405)
-gözüküyor"*). "Latest releases and bundles" satırı `1.0.0 (405)` yazıyordu
-ama yanındaki version code sütunu `407`di. Sürüm adı taslak açılırken bir
-kez doldurulan **serbest metin bir etikettir ve paket değişince kendini
-güncellemez**; kimliği belirleyen tek şey `.aab`'nin içinden gelen version
-code. Aynı ekranın "Latest app bundles" tablosu kanıt: **407 → Active**,
-401/378/372/349 → Inactive ve **405 listede hiç yok** (o paket Play'e hiç
-yüklenmedi, yalnızca cihazda `.apk` olarak denendi). Zincir: koşu **#407**
-→ sha **`0651e5e`** → `mobile-latest` `.aab` (27 Ağu 21:07) → Play paketi
-(21:42). **Şüphe halinde ada değil, cihazdaki teşhis satırına bak:
-`Derleme 0651e5e`.**
-
-**14 GÜNLÜK SAYAÇ BAŞLADI — 28 Ağustos 2026, 1. gün.** Yeri:
-**Dashboard → (aşağı kaydır) Production → `Apply for access to production`
-kartı** (Test menüsünde DEĞİL; track sayfasında da yok — ölçüldü). Kartın
-yazdığı: *"12 testers have currently been opted in for 1 day"*, ilk iki
-şart ✅. **14. gün ~10 Eylül 2026.**
-
-⚠ **Sayı tam 12 — pay yok.** İzin listesi 56 kişi ama opt-in olan 12; biri
-çıkarsa sayaç SIFIRLANIR ve 13 gün kaybedilir. Hatırlatmanın hedefi artık
-"12'ye ulaşmak" değil **12'nin üstünde tampon** (15-20). Ayrıntı ve tuzaklar:
-`marketing/play-store/console-formlari.md` §7.
-
-14 gün beklerken yapılacak iki iş: karttaki **`Preview questions`**'dan
-başvuru sorularını okuyup cevapları hazırlamak, ve tester'lardan **yazılı
-geri bildirim** toplamak (başvuru "testi nasıl yürüttün" diye soruyor).
-
-Katılan/indiren sayısı Play Console'da: **Test → Closed testing → (track) →
-Testers sekmesi** (⚠ oradaki sayı opt-in DEĞİL, izin listesi), ve indirme
-adedi için **Statistics**. (Kullanıcı bunu iki kez sordu — yeri burada
-yazılı.)
----
+İkisi de aynı verilere uyuyor; **bu oturumdan ölçülemez** (Play Console
+erişimi yok). Ayırt eden tek gözlem: sayının 12'nin ÜSTÜNE çıktığının bir
+kez görülmesi — o an tez biter. Görülene kadar planlama **12'yi taban**
+kabul etsin, ama *"biri düşerse sayaç sıfırlanır"* iddiası KESİN
+yazılmasın. Kaynak kayıt: `marketing/play-store/console-formlari.md` §7.
 
 ## Modeller — hangi iş için hangisi
 
@@ -489,17 +420,26 @@ Sırası önemli olan tek bağ: **#4, #2'den SONRA** (hesap silme kaskadı
    `dryRun` bayrağıyla hiçbir şey silmeden sayan bir kuru çalıştırma modu
    var ve onay penceresi bunu gösteriyor. Karar/ölçüm/tuzaklar:
    `docs/decisions/account-deletion.md`.
-   ⚠ **Console'da yapılacak tek iş kaldı:** App content › **Data deletion**
-   formunda artık "uygulama içi silme yolu VAR" seçilmeli (form bugüne kadar
-   yalnızca web URL'ini taşıyordu).
-3. **Madde 1 — deep link.** Play blokeri değil ama
-   kayıt onayı maili uygulamayı değil web'i açıyor; inceleme "kırık akış"
-   diye dönebilir. iOS yarısı Apple hesabı istediğinden bekler.
-   **`assetlinks.json` bu maddeden AYRILDI ve bitti** (25 Ağustos 2026,
-   §6.6) — parmak izi Console'dan ancak `.aab` yüklendikten sonra
-   okunabildiğinden dosya o anda yazıldı; maddenin geri kalanı (intent
-   filter, Supabase redirect allow-list, e-posta şablonları, Flutter
-   yönlendirme) duruyor.
+   ✅ **Console'da yapılacak iş de YOK** (2 Eylül 2026'da düzeltildi).
+   Burada *"App content › Data deletion formunda artık 'uygulama içi silme
+   yolu VAR' seçilmeli"* yazıyordu; **böyle bir form alanı YOK.** Silme
+   sorusunun cevabı `Evet → kelimeki.com/hesap-silme/` ve öyle kalıyor —
+   Play'in uygulama içi şartı bir form alanı değil, **uygulamanın
+   kendisinde** aranan bir politika şartı ve 372'de karşılandı.
+   `console-formlari.md` §3.8 bunu 26 Ağustos'ta *"ENGEL KALKTI, beyanda
+   değişen bir şey YOK"* diye kapatmıştı; bu satır o güne kadar geriye
+   dönük olarak bayat kaldı.
+3. ✅ **Madde 1 — deep link: KAPANDI** (30 Ağustos 2026, Faz 3'te ölçüldü;
+   SAHADA 1.0.3 ile). Madde arşivde: `docs/decisions/roadmap-arsiv.md` →
+   *"1. `kelimeki://` deep link kanalı"*. **Numara bilerek duruyor** —
+   arşivdeki madde buraya (`0.B/3`) atıf yapıyor.
+   ⚠ Bu satır 2 Eylül 2026'ya kadar bayat kaldı: hâlâ *"kayıt onayı maili
+   uygulamayı değil web'i açıyor"* ve *"intent filter, Supabase redirect
+   allow-list, e-posta şablonları, Flutter yönlendirme duruyor"* diyordu.
+   Dördü de bitmişti — kayıt onayı 28 Ağustos'ta https'e geçti, intent
+   filtreleri Parça 87/158'de zaten yazılmıştı, yönlendirmeyi Faz 3 ekledi.
+   Açık kalan TEK parça **iOS Associated Domains**, o da bu maddenin değil
+   aşağıdaki **iOS/APNs** bloğunun (Apple Developer üyeliği).
 4. **0.C — App content formları** (aşağı).
 5. ~~Test hesaplarının silinmesi~~ — **madde KALDIRILDI** (26 Ağustos 2026,
    kullanıcı kararı: *"gerekirse daha sonra hesabımı silden ben yaparım,
@@ -587,10 +527,80 @@ AYNI PR'da.
 
 ---
 
-## 8. FAZ A1 Bölüm 6 (Paylaşma) — cihazda kapatılacak
+## 8. FAZ A1 Bölüm 6 (Paylaşma) — iPad popover ankrajı · **HATA BULUNDU, düzeltme yazıldı, yeniden test bekliyor**
 
-Kod işi yok; iPad popover ankrajı (Parça 86) gerçek cihaz istiyor. FAZ B
-turunda kapanır.
+**Kod işi YOK, bekleyen tek şey bir DOĞRULAMA.** Parça 86 (13 Ağustos
+2026): `share_plus`ın iOS eklentisi iPad'de paylaş sayfasını popover
+açıyor ve ankraj (`sharePositionOrigin`) istiyor; verilmezse paylaşmak
+yerine `FlutterError` döndürüyor, iki `catch` onu yutuyor ve kullanıcıya
+**hiçbir şey olmuyor**. Düzeltme yazıldı (ortak `shareOriginFrom`, `origin`
+typedef'te zorunlu, iki katmanlı test) — kalan tek soru gerçek iPad'de
+popover'ın çıkıp çıkmadığı. Üç yol da denenmeli: (a) oyun geçmişinde tahta
+paylaşımı, (b) Setup'ta "Arkadaşınla paylaş", (c) Arkadaşlar'da davet linki.
+
+### ✅ 2 Eylül 2026 — DOĞRU ORTAMDA KOŞULDU ve İKİ YOL KIRIK ÇIKTI
+
+Appetize → **iPad Air / iOS 16.2** (yani native iOS kanalı, doğru cihaz
+tipi). Sonuç:
+
+| Yol | Ankraj nereden geliyordu | Sonuç |
+|---|---|---|
+| Oyun geçmişi → tahta paylaşımı | `_captureKey.currentContext` — tahtanın `RepaintBoundary`si, **küçük ve gerçek** kutu | ✅ popover açıldı |
+| Setup → "Arkadaşınla paylaş" | `_SetupScreenState.context` — **ekranın TAMAMI** | ❌ "hiç tepki vermiyor" |
+| Arkadaşlar → davet linki | `_FriendsModalState.context` — **ekranın TAMAMI** | ❌ buton `…` (meşgul) durumunda kilitli |
+
+**KÖK SEBEP:** Parça 86 ankraj vermemeyi düzeltmişti; ankrajın KENDİSİNİN
+geçerli olması gerektiğini kimse kontrol etmemişti. Ekranı kaplayan bir
+dikdörtgen "boş değil" ve "kök view'ın içinde"dir — yani her iki eski
+kontrolden de geçer — ama iPad'de popover görünmüyor ve
+`SharePlus.share` **hiç dönmüyor**.
+
+**Fırlatma DEĞİL, ASILMA — kanıt ekran görüntüsünde:** `_handleInvite`in
+`finally`si `_inviteBusy`i sıfırlıyor; buton yine de `…`ta kaldı. Yani
+future dönmedi. Setup'ta meşgul durumu olmadığı için aynı asılma "hiçbir
+şey olmuyor" gibi görünüyor.
+
+**TESTLER NEDEN YEŞİLDİ:** `share_recent_test`in ankraj iddiası yalnızca
+"boş değil" + "ekranın içinde" diyordu; ekran boyutunda bir kutu ikisini de
+sağlıyor. Üstelik test yalnızca ÇALIŞAN yolu (oyun geçmişi) kapsıyordu.
+
+**DÜZELTME (aynı gün, dalda):**
+- `shareOriginFrom` artık ekranı iki eksende birden (≥%95) kaplayan bir
+  kutuyu ankraj SAYMIYOR, 1×1 merkez yedeğine düşüyor — popover ekranın
+  ortasında görünür oluyor. ⚠ Eşik bilerek "büyük" değil "ekranın tamamı":
+  ilk yazılan %50 ALAN eşiği ÇALIŞAN yolu kırardı (tahtanın ankrajı
+  telefonda alanın ~%46'sı).
+- İki kırık çağrı yeri artık kendi düğmesinin kutusuna bağlanıyor
+  (`_shareLinkKey`, `_inviteButtonKey`) — oyun geçmişindeki
+  `_captureKey.currentContext ?? context` deseninin aynısı.
+- `shareOriginFrom` için doğrudan sözleşme testi + akış testine üçüncü
+  iddia. Negatif eş: eşik kaldırılırsa test düşüyor.
+
+⏳ **KALAN: aynı üç yolun Appetize/iPad'de YENİDEN denenmesi.** Üçünde de
+paylaş kutusu açılmalı ve buton `…`ta kalmamalı.
+
+⚠ **BU MADDEYİ NE KAPATMAZ — ölçüldü, 2 Eylül 2026.** Kullanıcı üç yolu da
+GERÇEK bir iPad'de denedi ve *"sorun yok"* dedi, ama derleme
+`kelimeki.com`/Pages idi, yani **web** derlemesi. Orada `share_plus`ın WEB
+eklentisi (`navigator.share`) çalışıyor ve iOS platform kanalına HİÇ
+uğranmıyor — ankrajı kontrol eden kod (`FPPSharePlusPlugin.m`) native iOS
+eklentisinin içinde. **Cihazın iPad olması yetmiyor, DERLEMENİN native
+olması gerekiyor.** Parça 86'nın 3 ay görünmeden kalmasının sebebi de tam
+olarak buydu; aynı deneme tekrarlanmasın diye buraya yazıldı.
+(Denemenin kanıtladığı ayrı bir şey var ve o gerçek: iPad Safari'de web
+paylaşımı çalışıyor — `kelimeki.com`'a iPad'den girenlerin yüzeyi.)
+
+**Kanıtlayan tek ortam:** Appetize → iOS simülatörü → **iPad cihaz tipi**.
+CI zaten imzasız bir simülatör derlemesi üretip Appetize'a yüklüyor, yani
+**Apple üyeliği GEREKMİYOR**. iPad tipinin panelde seçilebilir olup
+olmadığı doğrulanmadı — `mobile/docs/test-ortamlari.md` bunu "panelden
+bakılmalı" diye bırakmış; seçilemiyorsa madde gerçek bir native iPad
+derlemesine (Apple üyeliği) kalır.
+
+⚠ Bu bölüm önceden *"FAZ B turunda kapanır"* diyordu; yanlıştı. FAZ B
+Android/Play turu ve 24-25 Ağustos Android turu temiz geldi — ROADMAP'in
+kendisi *"Madde 8 bundan ETKİLENMEDİ"* diyor. Maddenin gerçek ön koşulu
+Android turu değil, yukarıdaki iki ortamdan biri.
 
 ---
 
@@ -676,231 +686,53 @@ gerekçeyle 27 Ağustos'ta Sürüm A'ya alınmadı.
 
 ---
 
-## 13. Push bildirimleri + Firebase Analytics — **YENİ, 26 Ağustos 2026**
-
-Dört olay: **teslim uyarısı** · oyun daveti · arkadaş daveti · hamle sırası.
-
-Kullanıcı isteği: *"App'de notification özelliği açanlara hamle sırası, oyun
-daveti, arkadaş daveti geldiğinde uyarıları çıkmalı."*
-
-**Ölçülen başlangıç noktası — hiç push altyapısı YOK:** `pubspec.yaml`'da
-Firebase/messaging paketi yok, `AndroidManifest`'te `POST_NOTIFICATIONS`
-izni yok, token tutan bir tablo yok. Yani bu sıfırdan bir altyapı işi.
-
-**Ama olayların İKİSİ zaten sunucuda var** (e-posta kanalı olarak):
-
-| Olay | Sunucu tarafı | Push için ek iş |
-|---|---|---|
-| **Teslim uyarısı** ("24 saat içinde hamle yapmazsan…") | `notify-deadline-warnings` — tetikleyici, metin ve `deadline_warning_sent_at` tekrar koruması **HAZIR** | **en ucuz**: aynı noktada ikinci kanal |
-| Oyun daveti | `notify-game-invite` | ucuz — kanal eklemek |
-| Arkadaş daveti | `notify-friend-request` | ucuz — kanal eklemek |
-| **Hamle sırası** ("sıra sende") | **YOK** | **en pahalı** — anlık olay sıfırdan |
-
-**SIRALAMA (26 Ağustos 2026'da DÜZELTİLDİ):** teslim uyarısı → davetler →
-sıra sende. İlk taslakta "önce sıra sende" yazıyordu; yanlıştı. Ölçünce
-çıktı ki teslim uyarısı hem **en ucuz** (üç parçası da hazır) hem **en
-değerli**: ötekiler bir fırsatı kaçırtır, bu bir KAYBI önler — oyun teslim
-sayılıyor ve k-lig puanından 2 düşüyor. E-postayı görmeyen için push tam
-da bunun içindir.
-
-Mevcut e-posta metni kullanıcının istediği cümlenin ta kendisi ve İKİ
-durumu birden kapsıyor: Canlı oyunlarda 48 saatlik `turn_deadline`, YZ
-oyunlarında 7 günlük terk penceresi — ikisinde de son 24 saate girince.
-
-✅ **Bu satır KAPANDI (29 Ağustos 2026, canlıdan okundu):**
-`notify-deadline-warnings` **v11** yayında — *"takdirde"* yazımı doğru,
-push kanalı (`sendDeadlinePush`) İÇİNDE ve `verify_jwt: false`. Yani teslim
-uyarısı bugün hem e-posta hem push gönderiyor; bu satırda yapılacak iş yok.
-Buraya 26 Ağustos'tan kalma bir *"bekleyen deploy"* uyarısı yazılıydı ve
-**bayattı** — kaldırıldı. Faz 2'de öteki üç fonksiyona dokunulurken
-`verify_jwt` tuzağı yine geçerli: `deploy_edge_function`'a parametre
-geçilmezse araç `true` varsayar ve kapıyı sessizce kapatır, o yüzden önce
-`list_edge_functions` ile mevcut değeri oku, AYNI değeri açıkça geçir
-(kök `CLAUDE.md` → "Edge Function deploy").
-
-Yani "sıra sende" bildiriminin bir sunucu olayı hiç yok; hamle
-gönderiminde tetiklenen yeni bir kanca gerekiyor.
-
-### iOS: bugün çıkamaz, ama tasarım onu BEKLİYOR olacak
-
-APNs anahtarı **Apple Developer üyeliği** istiyor; üyelik süreci Apple'dan
-dönüş beklediği için ilerlemiyor (TestFlight'ı bloklayan aynı şey — madde 8
-ön koşulu). Kullanıcı kararı (26 Ağustos 2026): *"orada da bu fonksiyon
-ileride olacakmış gibi plan yapmak lazım."*
-
-**Bunun somut karşılığı — iOS sonradan EKLENMELİ, YENİDEN YAZILMAMALI:**
-
-- **Tek gönderici: FCM.** FCM iOS'a da teslim ediyor (arka planda APNs'i
-  kendisi kullanıyor). Sunucu tarafı FCM üzerinden yazılırsa iOS günü
-  gelince yapılacak iş "ikinci bir gönderici yazmak" DEĞİL, yalnızca
-  **APNs anahtarını Firebase'e yüklemek + uygulamaya Push capability
-  eklemek**. APNs'e doğrudan konuşan bir yol seçilirse bu kazanç kaybolur.
-- **İstemci: `firebase_messaging`** iki platformu birden karşılıyor; ayrı
-  bir iOS yolu yazma.
-- **`push_tokens.platform` baştan var** (`android`/`ios`) — sonradan kolon
-  eklemek, var olan satırların platformunu tahmin etmek demek olurdu.
-  `util/platform.dart` zaten bu değer kümesini üretiyor, onu kullan.
-- **İzin akışı ortak yazılsın:** iOS da açık izin istiyor (üstelik
-  "provisional" seçeneği var). İzni isteyen kod platforma DALLANMAMALI,
-  eklentinin ortak API'sini kullanmalı.
-- **Bildirime dokununca gitme** (deep link, madde 1) zaten platform
-  bağımsız — orada iOS'a özgü tek iş Associated Domains.
-
-Yani madde iOS'u BEKLEMEZ: Android'le çıkar, iOS bir anahtar yüklemesiyle
-açılır.
-
-### Yapılacaklar
-
-1. **Altyapı:** FCM (Android), cihaz token tablosu (`push_tokens`:
-   `user_id`, `token`, `platform`, `updated_at`; aynı kullanıcı birden
-   çok cihaz), token yenilenmesi ve **çıkışta/hesap silmede temizlenmesi**
-   (`delete_account_cascade`'e satır!).
-2. **İzin:** Android 13+ `POST_NOTIFICATIONS` runtime izni. İzin İSTEME
-   ANI önemli — açılışta sormak reddi artırır; ilk Canlı oyun ya da ilk
-   davet anında sor.
-3. **Tercih — KARAR VERİLDİ (26 Ağustos 2026): e-posta KALIR, iki BAĞIMSIZ
-   anahtar, otomatik bastırma YOK.** Kullanıcı önce *"app kullananlara
-   email gitmesine gerek yok"* dedi, ama kontrolün zorluğu sorulunca
-   *"zor ise kalabilir, isteyen ayarlardan kapatabilir"* diye bıraktı.
-   Ölçülen durum: kontrol teknik olarak KOLAY (push tablosu zaten
-   gerekiyor, e-posta fonksiyonlarına tek bir `exists` kontrolü yeterdi) —
-   ama **yanlış olurdu**:
-   - Token bayatlarsa (uygulama silinmiş, bildirim sistem ayarından
-     kapatılmış, token yenilenmemiş) push GİTMEZ; e-postayı da bastırmışsak
-     kullanıcı **hiçbir şey** almaz. Bu, iki bildirim almaktan çok daha kötü
-     ve **SESSİZ** bir arıza: kimse şikayet etmez, yalnızca oyunlar ölür.
-   - Uygulama telefonda olsa bile bazı kullanıcılar bildirimi mailde görmeyi
-     tercih ediyor (masaüstünde çalışırken).
-
-   Bu yüzden: `profiles.email_notifications_enabled` (VAR) + yeni
-   `push_notifications_enabled`, ikisi de AÇIK gelir, Hesap Ayarları'nda
-   ayrı ayrı görünür. İleride "çok mail geliyor" diye GERÇEK bir şikayet
-   gelirse tek güvenli bastırma biçimi şudur: e-postayı yalnızca push'un
-   GERÇEKTEN teslim edildiği olayda bastırmak (FCM `UNREGISTERED` dönerse
-   token'ı silip e-postaya düşmek). Bu ek iştir ve şikayet gelmeden
-   yapılmaz.
-4. **"Sıra sende" olayı:** hamle gönderiminde tetiklenen kanca.
-   ⚠ İki tuzak: (a) hamleyi YAPANA gönderme; (b) hızlı gidip gelen bir
-   oyunda her hamlede bildirim spam olur — e-posta tarafındaki
-   `deadline_warning_sent_at` deseninin karşılığı bir bastırma gerekir.
-5. **Tıklayınca doğru yere git:** bildirime dokunmak ilgili oyunu/daveti
-   AÇMALI. Deep link altyapısı madde 1'le kesişiyor — ikisi birlikte
-   planlanmalı.
-6. **Play Data safety formu:** FCM token bir cihaz tanımlayıcısıdır;
-   `marketing/play-store/console-formlari.md`'deki eşleme güncellenmeli.
-   Bu form yanlışsa mağaza reddi gelir.
-
-### Firebase Analytics — aynı pakette (26 Ağustos 2026, kullanıcı kararı)
-
-Kullanıcı: *"Bence hepsini bir kerede halletmek iyi olur."* FCM için
-Firebase zaten kurulacağından Analytics'i o anda açmak neredeyse bedava.
-
-**Neden gerekli — ÖLÇÜLDÜ:** bugünkü şema sonuçları görüyor, davranışı
-görmüyor. `guest_visits`/`device_visits` → `profiles` → `game_starts` →
-`game_finishes` zinciri "ne oldu"yu veriyor; ekran görüntülenmesi, sekme
-geçişi, akış içi terk noktası, oturum uzunluğu YOK. **Bedeli bu proje
-zaten ödedi:** insanlar tanıtım ekranında takılıyordu (3 günde 2 kayıt) ve
-sebebi veriden GÖRÜLMEDİ — kullanıcı insanlarla konuşunca öğrenildi.
-`game_starts` bunu gösteremezdi, çünkü o insanlar oyuna hiç ulaşamamıştı.
-
-İlk olay kümesi (değeri en yüksek altı): `intro_slide_viewed`,
-`signup_started`, `signup_completed`, `live_game_form_opened`,
-`live_game_created`, `invite_link_shared`.
-
-⚠ **Admin panelinden metrik KALDIRMA — kanıta bağlı.** Kullanıcı
-*"admin'de olup FB tarafında daha iyisi olan dataları admin'den
-kaldırabiliriz bile"* dedi. Doğru, ama **kaldırmalar paralel koşu
-sonrasına**: GA4 şunların yerini ALAMAZ — (a) kaynak hunisi web'de
-başlıyor (`utm_source` karşılama katmanında; uygulamadaki GA4 o yarıyı
-görmez), (b) retention/aktivasyon hesap+oyun kayıtlarından hesaplanıyor,
-GA4'ünki cihaz kapsamlı ve web+app'i aynı kişide birleştirmez, (c) join
-edilebilirlik ("k-lig'de yükselenler daha çok davet mi gönderiyor?" senin
-şemanda tek sorgu), (d) GA4 örnekleme yapar ve olayı 2-14 ay tutar,
-`games` sonsuza kadar sende. Kaldırılmaya net aday: cihaz/OS kırılımı
-(`device_visits`). Gerisi ancak GA4'ün daha iyi verdiği ÖLÇÜLDÜKTEN sonra.
-Gerekçe bu projeye özgü: ölçümü, yerine geçecek şeye güvenmeden kaldırmak
-"sessiz kayıp" sınıfından bir hatadır ve fark edilmesi en zor olanıdır.
-
-### Sıra
-
-1. **Teslim uyarısı push'u** (en ucuz + en değerli, yukarıdaki tabloya bak)
-2. Oyun daveti · arkadaş daveti kanalları
-3. **"Sıra sende"** — sunucu olayı sıfırdan
-4. Analytics olayları
-
-Not: oyun daveti ve arkadaş daveti için e-posta ZATEN gidiyor, yani o
-ikisinin push katkısı en düşük olan.
-
-
----
-
-## 16. Devam eden oyun kartlarının düzen AYRIŞMASI — ⬜ **YENİ** (2 Eylül 2026)
-
-Kullanıcı iki ekran görüntüsüyle bildirdi (1.0.5 kapalı test paketi,
-`Derleme 4a0a29b`): Setup'ın "DEVAM EDEN OYUNLAR" listesi **Arkadaşınla**
-ve **Yapay Zeka** sekmelerinde farklı diziliyor.
-
-| | Yapay Zeka | Arkadaşınla |
-|---|---|---|
-| Satır 1 | `Sıra: Ironman` + **SIRA SENDE ▶** | `Ironman açtı` + **SIRA SENDE ▶** |
-| Kalan süre | ALT satırda, kendi başına | **AYNI satırda — "Ironman açtı" yazısına biniyor** |
-
-**Kullanıcının istediği düzen (ikisi de aynı olacak):**
-
-1. **YZ'deki `Sıra: X` KALDIRILSIN** — gereksiz: yanında zaten kocaman
-   `SIRA SENDE` yazıyor, ikisi aynı şeyi söylüyor.
-   ⚠ `Ironman açtı` (Arkadaşınla) buna benzemez ve KALIR — o kimin
-   açtığını söylüyor, sıra bilgisi değil.
-2. **Kalan süre ile durum arasında bir satır boşluk** olsun (YZ'de zaten
-   alt satırda, oraya nefes payı gelecek).
-3. **Arkadaşınla'da kalan süre bir satır aşağı insin** — böylece iki
-   sekme aynı düzene gelir.
-
-**Yarısı ZATEN YAPILMIŞ ve desen orada:** #408'de (2 Eylül) Setup'ın YZ
-kartı tam bu şekle sokulmuştu — `_DevamEdenGovde` (`setup_screen.dart`),
-regresyonu `setup_screen_test.dart` → *"DEVAM EDEN OYUN: durum satırda
-kalır, süre alta iner, isim alanı sıkışmaz"*. Canlı oyun listesi
-(`live/live_games_tab.dart`, "X açtı" satırı) o turda dokunulmadan
-kalmış — ayrışma buradan doğuyor. Yani iş **yeni bir düzen icat etmek
-değil, var olanı ikinci yere taşımak**.
-
-⚠ **Web ikizleri aynı PR'da:** kartların web karşılıkları da var
-(`Setup.tsx` ve Canlı oyun listesi). Kural: ikizler birlikte değişir;
-web'de sorun yoksa bile "aynı sonuç" korunmalı — önce web'e bakılır
-(`mobile/CLAUDE.md` → "Sorun Bildirildiğinde İLK ADIM").
-
-**Kapsam dışı:** bu bir düzen işi, veri/mantık değişmiyor.
-
----
-
-## 17. Google ile giriş/kayıt — **YENİ, 2 Eylül 2026** · ⏳ sayaç bitene kadar BEKLİYOR
+## 17. Google ile giriş/kayıt — **ERTELENDİ** (2 Eylül 2026) · Play Store'a girdikten SONRA
 
 Kullanıcı sordu: *"Google ve Apple signup/signin özelliği eklemek zor mu?
 Belki şimdilik sadece Google ile başlanabilir"* ve *"test sürecinde yapmak
-mantıklı mı?"*. Cevap: Google tek başına makul; **ama kapalı test sayacı
-bitmeden BAŞLAMA.**
+mantıklı mı?"*. Cevap: Google tek başına makul, **ama sıraya girdi.**
 
-### Neden şimdi değil (~10 Eylül'den sonra)
+### Neden ertelendi — kullanıcı kararı, 2 Eylül 2026
 
-**Sürüm çıkarmak sorun DEĞİL, bu ölçüldü:** sayaç 27/28 Ağustos'ta başladı
-ve o gün bugündür `1.0.4 (467)` (1 Eylül) ile `1.0.5 (501)` (2 Eylül)
-yüklendi; 14. gün hâlâ ~10 Eylül. Yani kapalı teste paket göndermek sayacı
-kırmıyor. Risk **hangi kodun** değiştiğinde:
+> *"Google signin olayını erteledik çünkü bu dönemde bu işi yapmanın
+> acelesi yok. Çalışan düzene çomak sokmak olur boşuna. O nedenle önce
+> Play Store'a girelim, sonra yaparız dedik. O kadar."*
 
-1. **Sayaçta pay YOK** — `console-formlari.md` §7: izin listesinde 56 adres,
-   opt-in olan **tam 12**. Biri düşerse sayı 11'e iner ve **sayaç sıfırlanır**.
-2. **Giriş, bir tester'ı kaybettiren tek hata sınıfı.** Tahtadaki bir aksaklığı
-   tolere eden kullanıcı, "giriş yapamıyorum"da uygulamayı siler. Kazanç birkaç
-   gün erken çıkmak, kayıp 8 günün tamamı — asimetrik.
-3. **"Yalnızca web'de yaparım" kaçışı tam çalışmıyor:** `handle_new_user` web
-   ile portun ORTAK trigger'ı; hatalı bir migration mobil tarafta yeni kayıt
-   açılmasını da bozar.
-4. Production başvurusu penceresi açılırken stabil bir derleme isteniyor
-   (başvuru "nasıl test ettirdin, ne geri bildirim aldın" diye soruyor).
+Gerekçe bu: **öncelik sıralaması.** Yeni bir giriş yolu bugün hiçbir şeyi
+açmıyor — kimse "Google ile giremiyorum" diye şikayet etmedi — ve çalışan
+bir kimlik akışına dokunmanın karşılığı yok. Play Store'a girildikten
+sonra yapılır.
 
-Acele bir sebep çıkarsa tek makul ara yol: **yalnızca adım 0**'ı (katı biçimde
-EKLEMELİ migration, hiçbir mevcut alanın davranışını değiştirmeyen) yapıp
-`execute_sql` ile doğrulamak, kullanıcıya görünen hiçbir şeyi açmamak.
+⚠ **BU MADDE SAYAÇLA İLİŞKİLİ DEĞİL — 2 Eylül 2026'da AYRILDI.** Burada
+*"kapalı test sayacı bitmeden BAŞLAMA"* diye dört maddelik bir risk
+analizi vardı: özü, bozuk bir girişin tester'ı kaybettirip 12/14 sayacını
+sıfırlayabileceğiydi. Kullanıcı sordu (*"17 Google sign-in işi değil mi?
+Test süreciyle ne alakası var?"*) ve zincir açılınca ÜÇ yerden koptu:
+
+- **Uygulamayı silmek testerlıktan çıkmak değil** — deponun kendi tester
+  mesajı bunu söylüyor (*"uygulamayı silsen bile testerlıktan çıkma"*) ve
+  kaldırmanın opt-in'i düşürüp düşürmediği zaten ÖLÇÜLMEMİŞ.
+- **Mevcut tester'lar çoktan kayıtlı.** Google girişi EK bir yol; e-posta/
+  şifreyle girenler yeni bir butondan etkilenmez. "Giriş yapamıyorum"
+  asıl olarak YENİ kayıt olanı vurur.
+- **Sayacın "tam 12" olduğu da artık kesin değil** (yukarıdaki açık soru).
+
+**Ders:** bir erteleme kararının gerekçesi, kararın KENDİSİNDEN daha
+karmaşık yazılmışsa muhtemelen sonradan uydurulmuştur. Gerçek sebep bir
+öncelik tercihiydi; yerine bir risk zinciri yazılınca hem yanlış hem de
+sahte bir takvim bağı ("~10 Eylül") doğdu.
+
+### İşin KENDİ riski — takvimden bağımsız, ne zaman yapılırsa yapılsın
+
+Yukarıdaki zincir düştü ama şu ikisi düşmedi; ikisi de "ne zaman"la değil
+"nasıl"la ilgili:
+
+1. **`handle_new_user` web ile portun ORTAK trigger'ı.** "Yalnızca web'de
+   yaparım" diye bir kaçış YOK — hatalı bir migration mobil tarafta da yeni
+   kayıt açılmasını bozar. Migration adımı (aşağıda "0.") bu yüzden BLOKER.
+2. **Hesap birleştirme ölçülmedi** — aynı e-postayla önce şifreyle kayıt
+   olup sonra Google ile girmek. Bu, MEVCUT bir kullanıcıyı da vurabilir
+   (bkz. aşağıda "Ölçülmesi gereken, varsayılmayacak iki şey").
 
 ### Sıra: sunucu → web → mobil
 

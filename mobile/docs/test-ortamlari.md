@@ -161,7 +161,7 @@ dakikada hiçbir şey bitirmiyor.
 | Oturum kalıcılığı | 🟡 | Uygulamayı öldürüp açmak emülatörde olur, ama Appetize OTURUMU bitince her şey sıfırlanır — ikisini karıştırma |
 | Klavye / Türkçe karakterler | 🟡 | Emülatör klavyesi gerçek IME değil |
 | Soğuk başlangıç `kelimeki://davet/<token>` | ❓ | Appetize'ın "launch URL" parametresi varsa koşulabilir — **doğrulanmadı**, panelden bakılmalı |
-| **iPad paylaş popover ankrajı (Parça 86)** | ❌ | Maddenin kendisi "iPhone'da test edilse bile KANITLANMAZ" diyor; iPad cihaz tipi şart |
+| **iPad paylaş popover ankrajı (Parça 86)** | ❌ | Maddenin kendisi "iPhone'da test edilse bile KANITLANMAZ" diyor; iPad cihaz tipi şart. ⚠ **WEB derlemesi de KANITLAMAZ** — 2 Eylül 2026'da gerçek bir iPad'de üç yol da denendi ve çalıştı, ama `kelimeki.com`/Pages derlemesiyle: orada `navigator.share` çalışıyor, iOS kanalına hiç uğranmıyor. Cihazın iPad olması yetmiyor, DERLEMENİN native olması gerekiyor |
 | **Sürükle-bırak hissi / performans** | ❌ | Emülatör GPU + iOS DEBUG derlemesi; ölçüm anlamsız, yanlış güven verir |
 | **HEIC avatarı** | ❌ | Emülatör galerisinde HEIC dosyası yok; gerçek fotoğraf gerekiyor |
 | **Sözlük yükleme SÜRESİ** | ❌ | "Yükleniyor mu" sorusu ✅, "ne kadar sürüyor" ❌ |

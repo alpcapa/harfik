@@ -694,11 +694,25 @@ Kart üç maddelik bir kontrol listesi ve ilerlemeyi kendisi yazıyor
 ayrıca **`Preview questions`** bağlantısı var — başvuru soruları 14 gün
 dolmadan okunabiliyor, cevaplar bu pencerede hazırlanmalı.
 
-**Ölçülen kritik gerçek: sayı TAM 12, yani pay YOK.** İzin listesinde
-**56 adres** var ama opt-in olan 12 kişi. Biri testerlıktan çıkarsa ya da
-telefonundaki Google hesabını değiştirirse sayı 11'e düşer ve **sayaç
-sıfırlanır**. §7'nin "15-20 kişi topla, 12 tabandır" tuzağı teorik değil,
-bugünkü durumun ta kendisi — hatırlatmaların asıl şimdi sürmesi gerekiyor.
+**Kartın yazdığı sayı: 12.** İzin listesinde **56 adres** var.
+
+⚠ **DÜZELTME (2 Eylül 2026) — burada *"Ölçülen kritik gerçek: sayı TAM 12,
+yani pay YOK"* yazıyordu; bu bir ÖLÇÜM DEĞİL, bir OKUMAYDI.** Kullanıcı
+itiraz etti: *"12'den fazla katılım olduğunu düşünüyorum, çünkü dashboard'da
+sadece limit olan 12 kişi opt-in oldu diyormuş."* Kartın gösterdiği sayının
+gerçek opt-in adedi mi yoksa şartın tavanı mı (`min(gerçek, 12)`) olduğu
+**ölçülmedi** ve bu oturumdan ölçülemez.
+
+| Kanıt | Hangi tezi destekliyor |
+|---|---|
+| Aynı kart 26 Ağustos'ta **10** yazdı — eşiğin ALTINDA gerçek sayıyı gösteriyor | sayı GERÇEK |
+| 28 Ağustos'tan beri **12** ve şart tam 12 | tavan da aynı görünürdü |
+
+**Ayırt eden tek gözlem:** sayının 12'nin ÜSTÜNE çıktığının bir kez
+görülmesi. Görülene kadar planlama 12'yi **taban** kabul etsin, ama
+*"biri düşerse sayaç sıfırlanır"* **KESİN yazılmasın** — o iddia yalnızca
+gerçek sayı tam 12 ise doğru. §7'nin "15-20 kişi topla, 12 tabandır"
+tavsiyesi her iki tezde de geçerli kalıyor (ucuz sigorta).
 
 **Sayaç 27/28 Ağustos'ta başladı, 14. gün ~10 Eylül 2026.** (Console'un günü
 tam olarak nasıl saydığı — opt-in anı mı, gün sonu mu — ölçülmedi; ±1 gün

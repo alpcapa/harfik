@@ -1563,9 +1563,21 @@ Bitirme modalı **otomatik ölçülüyor** (`npm run test` →
 - [ ] **Nasıl Oynanır → Rütbeler ve Ödüller** → rütbe harfi tek satır.
 - [ ] Ayarı normale al → üç yüzeyde de görünüm ESKİSİYLE AYNI olmalı
       (sütun genişlikleri ve aralıklar değişmemeli).
+- [ ] **Son Oynananlar / Son Oynadıklarım → AVATARLAR** (2 Eylül 2026'da
+      eklendi; öncesinde bu listede hiç fotoğraf çıkmıyordu): bitmiş bir
+      Canlı oyunda rakiplerin fotoğrafı görünmeli; Yapay Zeka sekmesinde
+      kendi fotoğrafın görünmeli. ⚠ Fotoğrafı olmayan üye ve YZ/misafir
+      koltukları baş harf/robot/"?" olarak KALIR — eksik değil, kural.
+      ⚠ Oyundan SONRA takma adını değiştiren biri baş harfe düşer (bilinçli:
+      yanlış yüz göstermektense baş harf).
 - [ ] **Setup → devam eden oyun kartı** → `SIRA SENDE` oyuncu satırının
       sağında, kalan süre altta tam genişlik satırda (2 Eylül 2026'da
-      portla birlikte değişti).
+      portla birlikte değişti). Avatarların altında `Sıra: X` YAZMAMALI.
+- [ ] **İki sekmeyi yan yana karşılaştır** ("Yapay Zeka" ↔ "Arkadaşınla"):
+      Canlı oyun kartında da kalan süre **"X açtı" yazısının ALTINDAKİ**
+      kendi satırında olmalı, o yazıya binmemeli (2 Eylül 2026'da bu iki
+      kart AYRIŞMIŞTI). ⚠ "X açtı" satırı KALIR. `SIRA SENDE`/
+      `SIRA RAKİPTE` puntosu 15 px — iki kartta da aynı.
 - [ ] **Board altındaki şerit** (Hamleler · Mesajlaşma · **Yardım**) →
       punto 11 ve TEK SATIR; portla AYNI olmak zorunda. Etiket 2 Eylül
       2026'da `Nasıl Oynanır?`dan kısaltıldı (şerit tavanda iki satıra

@@ -4,10 +4,11 @@
 // (`GameHistoryModal`) doğrudan o oyunun tahta önizlemesi açık hâlde açar —
 // ayrı bir mini tahta/sohbet gösterimi yazmak yerine mevcut modalın tüm
 // davranışını (paylaş/beğen/sohbet geçmişi) olduğu gibi devralır.
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { GUEST_PLAYER_NAME } from '../game/constants';
 import { useAuth } from '../hooks/useAuth';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { buildOnlineAvatarIndex, avatarForRecentPlayer } from '../utils/recentGameAvatars';
 import { fetchMyGames } from '../lib/api';
 import type { GameHistoryEntry } from '../lib/database.types';
 import { leaguePoints, formatLeaguePoints } from '../utils/leaguePoints';
@@ -72,11 +73,30 @@ interface RecentGamesSectionProps {
    * çevrimdışı diye zaten çizilmiş bir listeyi silmek bilgi kaybı olurdu.
    */
   offlineNode?: ReactNode;
+  /**
+   * Çevrimiçi oyunların CANLI koltukları — avatar çözümü için (2 Eylül
+   * 2026). `LiveGamesTab` bu listeyi zaten `list_my_online_games` ile
+   * çekiyor ve o RPC durum filtresi TAŞIMIYOR, yani bitmiş oyunlar da
+   * içinde; ikinci bir istek atmak yerine prop olarak iniyor. Yerel (YZ)
+   * kullanımında verilmez — orada tek insan koltuk hesabın kendisidir.
+   */
+  onlineGames?: { id: string; slots: { name: string | null; avatarUrl: string | null }[] }[];
 }
 
-export function RecentGamesSection({ onlineOnly, emptyMessage, offlineNode }: RecentGamesSectionProps) {
+export function RecentGamesSection({
+  onlineOnly,
+  emptyMessage,
+  offlineNode,
+  onlineGames,
+}: RecentGamesSectionProps) {
   const online = useOnlineStatus();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  // `online_game_id → (isim → avatar)`. Kural saf bir yardımcıda, çünkü
+  // portun ikizi AYNI kuralı okumak zorunda (bkz. recentGameAvatars.ts).
+  const onlineAvatarIndex = useMemo(
+    () => buildOnlineAvatarIndex(onlineGames ?? []),
+    [onlineGames],
+  );
   // 3 Ağustos 2026 — bu bileşen `Setup`/`LiveGamesTab`'ın kendi sekmeleri
   // arasında geçişte UNMOUNT/MOUNT olur (bkz. CLAUDE.md, "yükleniyor uzun
   // sürüyor" regresyonu); önceden her dönüşte state sıfırlanıp yeniden
@@ -160,12 +180,21 @@ export function RecentGamesSection({ onlineOnly, emptyMessage, offlineNode }: Re
               className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
             >
               <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-                {/* Rakip isimlerinin yerine katılımcı avatarları. Dondurulmuş
-                    `players` anlık görüntüsü avatar_url TAŞIMIYOR (bilerek —
-                    o snapshot girişli herkese açık, bkz. GamePlayerSnapshot),
-                    bu yüzden burada her zaman baş harfler görünür; fotoğraflar
-                    yalnızca Canlı kartlarında çıkar. Snapshot'ı hiç olmayan
-                    eski kayıtlarda ise eski metin başlığına düşülüyor. */}
+                {/* Rakip isimlerinin yerine katılımcı avatarları.
+                    ⚠ 2 EYLÜL 2026'DA DEĞİŞTİ. Burada şu yazılıydı:
+                    "dondurulmuş `players` snapshot'ı avatar_url TAŞIMIYOR
+                    (bilerek — o snapshot girişli herkese açık), bu yüzden
+                    burada her zaman baş harfler görünür". Snapshot hâlâ
+                    avatar taşımıyor (doğru), ama ONDAN ÇIKARILAN SONUÇ
+                    yanlıştı: `leaderboard` view'ı zaten `security_invoker =
+                    false` ile herkesin takma adını VE avatarını açıyor, yani
+                    fotoğrafı burada gizlemek tutarsızlıktı — kullanıcı
+                    haklı olarak itiraz etti.
+                    Avatar artık çözülüyor ve SNAPSHOT'A DOKUNULMADI:
+                    `games.online_game_id` → bitmiş oyunun (silinmeyen)
+                    canlı koltukları. Kural: `utils/recentGameAvatars.ts`.
+                    Snapshot'ı hiç olmayan eski kayıtlarda hâlâ eski metin
+                    başlığına düşülüyor. */}
                 {g.players && g.players.length > 0 ? (
                   <PlayerAvatarRow
                     players={g.players.map((p) => ({
@@ -184,6 +213,18 @@ export function RecentGamesSection({ onlineOnly, emptyMessage, offlineNode }: Re
                       // benzersiz olduğundan en fazla bir kişi) Canlı
                       // kartlarında baş harflerini korur.
                       isGuest: !p.is_ai && !g.online_game_id && p.name === GUEST_PLAYER_NAME,
+                      // 2 Eylül 2026: bu liste avatarları HİÇ göstermiyordu.
+                      // Kural ve gerekçesi `recentGameAvatars.ts`'te —
+                      // snapshot'a da migration'a da dokunulmadı.
+                      avatarUrl: avatarForRecentPlayer({
+                        isAi: p.is_ai,
+                        isGuest:
+                          !p.is_ai && !g.online_game_id && p.name === GUEST_PLAYER_NAME,
+                        name: p.name,
+                        onlineGameId: g.online_game_id ?? null,
+                        onlineIndex: onlineAvatarIndex,
+                        ownAvatarUrl: profile?.avatar_url ?? null,
+                      }),
                     }))}
                   />
                 ) : (

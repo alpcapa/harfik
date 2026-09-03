@@ -107,14 +107,14 @@ function mySlotIndex(game: OnlineGame): number {
 export function TurnTriangle() {
   return (
     <svg
-      width="8"
-      height="9"
-      viewBox="0 0 8 9"
+      width="9"
+      height="10"
+      viewBox="0 0 9 10"
       fill="currentColor"
       aria-hidden
       className="ml-[25px] inline-block align-baseline text-green"
     >
-      <path d="M0 0L8 4.5L0 9Z" />
+      <path d="M0 0L9 5L0 10Z" />
     </svg>
   );
 }
@@ -147,7 +147,7 @@ export function TurnDot() {
   return (
     <span
       aria-hidden
-      className="ml-[25px] inline-block h-[9px] w-[9px] rounded-full bg-red align-baseline"
+      className="ml-[25px] inline-block h-[10px] w-[10px] rounded-full bg-red align-baseline"
     />
   );
 }
@@ -266,7 +266,7 @@ function ParticipantRow({ slot, game }: { slot: HumanSlot; game: OnlineGame }) {
   const tier = useRankTier(slot.user_id);
   return (
     <div className="flex items-center gap-2">
-      <Avatar url={slot.avatar_url} name={slot.name} size={22} />
+      <Avatar url={slot.avatar_url} name={slot.name} size={26} />
       <span className="flex-1 min-w-0 flex items-center gap-1">
         <span className="min-w-0 text-xs text-text truncate">{slot.name ?? 'Oyuncu'}</span>
         {tier && <RankSeal tier={tier} size={16} className="shrink-0" />}
@@ -320,7 +320,7 @@ function PendingGameCard({
         {hasAi && (
           <div className="flex items-center gap-2">
             <span
-              className="w-[22px] h-[22px] rounded-full bg-void border border-border flex items-center justify-center text-xs shrink-0"
+              className="w-[26px] h-[26px] rounded-full bg-void border border-border flex items-center justify-center text-sm shrink-0"
               aria-hidden
             >
               🤖
@@ -398,34 +398,42 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
     <Wrapper
       type={onOpen ? 'button' : undefined}
       onClick={onOpen}
-      className={`shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left ${
+      className={`shadow-raised flex flex-col rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left ${
         onOpen ? 'active:scale-[0.99] transition-transform' : ''
       }`}
     >
-      <span className="flex-1 min-w-0 flex flex-col gap-0.5">
-        {/* "N Kişilik Oyun" başlığının yerine katılımcı avatarları — avatar
-            sayısı zaten oyuncu sayısını gösterdiğinden metin bilgi
-            kaybettirmiyor (bkz. PlayerAvatarRow). YZ koltukları bu kartın
-            davet hâlindeki karşılığıyla (PendingGameCard) aynı robot
-            avatarını alıyor. */}
-        <PlayerAvatarRow
-          players={game.slots.map((s) =>
-            s.type === 'human'
-              ? { name: s.name ?? 'Oyuncu', avatarUrl: s.avatar_url }
-              : { name: 'Yapay Zeka', isAi: true },
-          )}
-        />
-        <span className="text-[9px] font-mono text-muted truncate">
-          {creatorName ?? 'Bir arkadaşın'} açtı
+      {/* 2 Eylül 2026 — SÜRE SATIRI KARTIN ALTINA ALINDI. Setup'ın YZ kartı
+          aynı gün bu şekle sokulmuştu, burası dokunulmadan kalmıştı ve iki
+          sekme AYRIŞMIŞTI (kullanıcı cihazda bildirdi, 1.0.5). Önceki
+          yapıda durum ve süre TEK bir sağ sütundaydı ve o sütunun enini
+          SÜRE belirliyordu — portun ikizinde ölçüldü (320 px): "SIRA SENDE"
+          89,6 px, süre satırı **194,3 px**. Yani sol sütunu ("X açtı")
+          daraltan etiket değil süreydi. Şimdi üst satır sol=oyuncular /
+          sağ=durum, süre altta tam genişlik (sağa yaslı — görsel çapa
+          değişmedi). Port ikizi: `devam_eden_govde.dart`. */}
+      <span className="flex items-center gap-2.5">
+        <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+          {/* "N Kişilik Oyun" başlığının yerine katılımcı avatarları — avatar
+              sayısı zaten oyuncu sayısını gösterdiğinden metin bilgi
+              kaybettirmiyor (bkz. PlayerAvatarRow). YZ koltukları bu kartın
+              davet hâlindeki karşılığıyla (PendingGameCard) aynı robot
+              avatarını alıyor. */}
+          <PlayerAvatarRow
+            players={game.slots.map((s) =>
+              s.type === 'human'
+                ? { name: s.name ?? 'Oyuncu', avatarUrl: s.avatar_url }
+                : { name: 'Yapay Zeka', isAi: true },
+            )}
+          />
+          <span className="text-[9px] font-mono text-muted truncate">
+            {creatorName ?? 'Bir arkadaşın'} açtı
+          </span>
         </span>
-      </span>
-      <span className="flex flex-col items-end gap-0.5 shrink-0">
-        {/* 11 → 13 px (30 Ağustos 2026, kullanıcı isteği: "fontu biraz
-            büyütelim, kutu biraz büyüyebilir"). Kutu aslında BÜYÜMÜYOR:
-            yeni etiketler kısa ("SIRA RAKİPTE" 12 karakter) — eskisi
-            ("Rakibin hamlesi bekleniyor") 11 px'te bile daha genişti. */}
+        {/* 11 → 13 px (30 Ağustos 2026) → 15 px (2 Eylül 2026, kullanıcı
+            isteği: "Sıra Sende ve Sıra Rakipte fontu biraz daha büyüt").
+            Üçgen/noktanın ölçüsü bu puntoya çapalı (bkz. TurnTriangle). */}
         <span
-          className={`text-[13px] font-mono uppercase tracking-[1px] ${
+          className={`shrink-0 text-[15px] font-mono uppercase tracking-[1px] ${
             game.status === 'active'
               ? isMyTurn
                 ? 'text-green font-bold'
@@ -436,18 +444,18 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
           {statusLabel(game, isMyTurn)}
           {game.status === 'active' && (isMyTurn ? <TurnTriangle /> : <TurnDot />)}
         </span>
-        {remaining && (
-          <span
-            /* mt-1.5: süre satırı durum etiketine YAPIŞMASIN (kullanıcı
-               isteği) — sarmalayıcının gap-0.5'iyle birlikte 8 px. */
-            className={`mt-1.5 text-[8px] font-mono uppercase tracking-[0.5px] ${
-              remaining.urgent ? 'text-red' : 'text-muted'
-            }`}
-          >
-            {remaining.text}
-          </span>
-        )}
       </span>
+      {remaining && (
+        <span
+          /* mt-1.5 — SavedGameRow'la aynı: süre satırı durum etiketine
+             YAPIŞMASIN (kullanıcı isteği). */
+          className={`mt-1.5 self-end text-[8px] font-mono uppercase tracking-[0.5px] ${
+            remaining.urgent ? 'text-red' : 'text-muted'
+          }`}
+        >
+          {remaining.text}
+        </span>
+      )}
     </Wrapper>
   );
 }
@@ -1049,7 +1057,20 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
           </>
         )
           ) : (
-            <RecentGamesSection onlineOnly emptyMessage="Henüz bitmiş bir Canlı oyunun yok." />
+            <RecentGamesSection
+              onlineOnly
+              emptyMessage="Henüz bitmiş bir Canlı oyunun yok."
+              /* Avatar çözümü için canlı koltuklar (2 Eylül 2026). Bu liste
+                 ZATEN elde: `list_my_online_games` durum filtresi taşımıyor,
+                 yani bitmiş oyunlar da içinde — ikinci bir istek yok. */
+              onlineGames={(games ?? []).map((g) => ({
+                id: g.id,
+                slots: g.slots.map((s) => ({
+                  name: s.type === 'human' ? (s.name ?? null) : null,
+                  avatarUrl: s.type === 'human' ? (s.avatar_url ?? null) : null,
+                })),
+              }))}
+            />
           )}
         </>
       )}

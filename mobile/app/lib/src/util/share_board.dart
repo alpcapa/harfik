@@ -51,6 +51,34 @@ typedef ShareBoardFn = Future<void> Function({
 /// Bu, web derlemesinde ASLA görünmez (orada share_plus'ın web eklentisi
 /// `navigator.share`e gidiyor, iOS kanalına hiç uğramıyor) — yani cihaz
 /// testine kadar gizli kalan, platforma özgü bir sınıf.
+/// ⚠ **EKRAN BOYUTUNDA BİR ANKRAJ DA GEÇERSİZDİR — 2 Eylül 2026'da
+/// ÖLÇÜLDÜ (Appetize, iPad Air / iOS 16.2).** İlk sürüm yalnızca BOŞ
+/// dikdörtgene karşı korunuyordu; ekranın tamamını kaplayan bir ankraj
+/// "boş değil" ve "kök view'ın içinde" olduğundan kontrolden geçiyordu, ama
+/// iPad'de popover görünmüyor ve `SharePlus.share` çağrısı **hiç
+/// tamamlanmıyordu** (fırlatmıyor — ASILI KALIYOR). Belirti çağrı yerine
+/// göre değişiyordu ve ikisi de kullanıcı tarafından bildirildi:
+///   • Setup footer "Paylaş"      → "hiç tepki vermiyor"
+///   • Arkadaşlar "Davet et"      → buton `…` (meşgul) durumunda KİLİTLİ
+/// Kanıt fırlatma olmadığıdır: `_handleInvite`in `finally`si `_inviteBusy`i
+/// sıfırlıyor, buton yine de `…`ta kaldı → future dönmedi.
+///
+/// Üçüncü çağrı yeri (oyun geçmişi) AYNI GÜN ÇALIŞTI, çünkü ankrajını
+/// tahtanın `RepaintBoundary`sinden alıyor — küçük ve gerçek bir kutu.
+/// Aradaki tek fark buydu.
+///
+/// Bu yüzden artık iki eşik var: dikdörtgen boşsa YA DA ekranı İKİ EKSENDE
+/// birden neredeyse tamamen kaplıyorsa yedeğe düşülür.
+///
+/// ⚠ **Ölçüt bilerek "büyük" değil "ekranın TAMAMI".** İlk yazdığım sürüm
+/// alan oranına (>= %50) bakıyordu ve ÇALIŞAN yolu kırardı: oyun
+/// geçmişindeki ankraj tahtanın `RepaintBoundary`si, telefon ekranında
+/// alanın ~%46'sı — eşiğe teğet. Popover büyük bir kutuya de sorunsuz
+/// bağlanıyor; kıran şey ankrajın kök view'ın kendisiyle ÖRTÜŞMESİ. Bu
+/// yüzden koşul iki eksende birden aranıyor: geniş ama kısa (ya da dar ama
+/// uzun) bir kutu geçerli ankraj olmaya devam ediyor.
+const double _kFullScreenOriginRatio = 0.95;
+
 Rect shareOriginFrom(BuildContext context) {
   final screen = Offset.zero & MediaQuery.sizeOf(context);
   final box = context.findRenderObject();
@@ -59,10 +87,15 @@ Rect shareOriginFrom(BuildContext context) {
     // şart koşuyor, kaydırma yüzünden kısmen dışarı taşan bir kutu yine
     // hataya düşerdi.
     final rect = (box.localToGlobal(Offset.zero) & box.size).intersect(screen);
-    if (rect.width > 0 && rect.height > 0) return rect;
+    final ekraniKapliyor = screen.width > 0 &&
+        screen.height > 0 &&
+        rect.width >= screen.width * _kFullScreenOriginRatio &&
+        rect.height >= screen.height * _kFullScreenOriginRatio;
+    if (rect.width > 0 && rect.height > 0 && !ekraniKapliyor) return rect;
   }
   // Yedek: ekranın ortasında minik bir kare — `CGRectIsEmpty` false olsun
-  // ve kök view'ın içinde kalsın diye.
+  // ve kök view'ın içinde kalsın diye. Ekran boyutunda bir kutu yerine BUNU
+  // vermek, popover'ı ekranın ortasında GÖRÜNÜR kılıyor (yukarıdaki ölçüm).
   return Rect.fromCenter(center: screen.center, width: 1, height: 1);
 }
 

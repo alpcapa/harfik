@@ -10,6 +10,7 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
+import '../../util/recent_game_avatars.dart';
 import '../game/player_avatar_row.dart';
 import '../score/game_history_modal.dart';
 import '../tap_target.dart';
@@ -99,6 +100,16 @@ class RecentGamesSection extends StatefulWidget {
   /// sinyal HIZLI; `_loadFailed` YAVAŞ ama kesin — ikisinden biri yeterli.
   final bool isOffline;
 
+  /// Çevrimiçi oyunların CANLI koltukları — avatar çözümü için (2 Eylül
+  /// 2026). `LiveGamesTab` bu listeyi zaten `list_my_online_games` ile
+  /// çekiyor ve o RPC durum filtresi TAŞIMIYOR (bitmiş oyunlar da içinde),
+  /// yani ikinci bir istek yok. Yerel (YZ) kullanımında boş geçilir —
+  /// orada tek insan koltuk hesabın kendisidir ve [ownAvatarUrl] yeter.
+  final List<({String id, List<AvatarSlot> slots})> onlineGames;
+
+  /// Hesap sahibinin avatarı — yerel oyunlarda tek insan koltuk odur.
+  final String? ownAvatarUrl;
+
   const RecentGamesSection({
     super.key,
     required this.games,
@@ -109,6 +120,8 @@ class RecentGamesSection extends StatefulWidget {
     this.emptyMessage,
     this.offlineNode,
     this.isOffline = false,
+    this.onlineGames = const [],
+    this.ownAvatarUrl,
   });
 
   @override
@@ -119,6 +132,11 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
   static const _limit = 5;
 
   late final String _cacheKey = '${widget.userId}:${widget.onlineOnly}';
+
+  /// `online_game_id → (isim → avatar)`. Sözlük BİR KEZ kuruluyor: satır
+  /// eşlemesinin içinde kurmak her oyuncu için yeniden inşa ederdi.
+  late Map<String, Map<String, String>> _avatarIndex =
+      buildOnlineAvatarIndex(widget.onlineGames);
   late List<GameHistoryEntry>? _games = _recentCache[_cacheKey];
 
   /// Ağ hatası mı, yoksa gerçekten hiç oyun mu yok? İkisi de boş liste
@@ -130,6 +148,15 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant RecentGamesSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Canlı liste tazelendiğinde (yeni avatar, yeni oyun) sözlük de tazelensin.
+    if (!identical(oldWidget.onlineGames, widget.onlineGames)) {
+      _avatarIndex = buildOnlineAvatarIndex(widget.onlineGames);
+    }
   }
 
   Future<void> _load() async {
@@ -230,6 +257,8 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
             child: _RecentRow(
               entry: g,
               onTap: () => _openHistory(focusId: g.id),
+              avatarIndex: _avatarIndex,
+              ownAvatarUrl: widget.ownAvatarUrl,
             ),
           ),
       ],
@@ -241,7 +270,22 @@ class _RecentRow extends StatelessWidget {
   final GameHistoryEntry entry;
   final VoidCallback onTap;
 
-  const _RecentRow({required this.entry, required this.onTap});
+  /// Avatar çözümü için — kural `util/recent_game_avatars.dart`'ta.
+  ///
+  /// ⚠ İkisi de PARAMETRE, çünkü bu satır ayrı bir `StatelessWidget`:
+  /// `_RecentGamesSectionState`in alanlarına (`widget`, `_avatarIndex`)
+  /// buradan ERİŞİLEMEZ. İlk yazımda doğrudan onlara başvurdum ve
+  /// `dart analyze` iki hatayla düşürdü — web ikizinde satır inline
+  /// olduğundan orada aynı hata doğmuyor.
+  final Map<String, Map<String, String>> avatarIndex;
+  final String? ownAvatarUrl;
+
+  const _RecentRow({
+    required this.entry,
+    required this.onTap,
+    required this.avatarIndex,
+    required this.ownAvatarUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -277,6 +321,20 @@ class _RecentRow extends StatelessWidget {
                           isGuest: !p.isAi &&
                               entry.onlineGameId == null &&
                               p.name == guestPlayerName,
+                          // 2 Eylül 2026: bu liste avatarları HİÇ
+                          // göstermiyordu. Kural ve gerekçesi
+                          // `util/recent_game_avatars.dart`'ta — snapshot'a
+                          // da migration'a da dokunulmadı.
+                          avatarUrl: avatarForRecentPlayer(
+                            isAi: p.isAi,
+                            isGuest: !p.isAi &&
+                                entry.onlineGameId == null &&
+                                p.name == guestPlayerName,
+                            name: p.name,
+                            onlineGameId: entry.onlineGameId,
+                            onlineIndex: avatarIndex,
+                            ownAvatarUrl: ownAvatarUrl,
+                          ),
                         ),
                     ])
                   else

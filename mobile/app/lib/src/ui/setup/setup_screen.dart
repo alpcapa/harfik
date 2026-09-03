@@ -62,6 +62,7 @@ import '../game/neo_button.dart';
 import '../game/player_badge.dart';
 import '../game/player_avatar_row.dart';
 import '../game/player_colors.dart';
+import '../devam_eden_govde.dart';
 import '../live/live_games_tab.dart';
 import '../rank/league_rewards_host.dart';
 import '../auth/account_button.dart';
@@ -422,6 +423,13 @@ class _SetupScreenState extends State<SetupScreen>
         source: FeedbackSource.general);
   }
 
+  /// Footer'daki "Paylaş" linkinin kendi kutusu — iPad popover ankrajı
+  /// BURADAN alınmalı. `State.context` kullanmak ekranın TAMAMINI ankraj
+  /// yapıyordu ve iPad'de paylaşım sessizce asılı kalıyordu (2 Eylül 2026,
+  /// ölçüldü — bkz. `shareOriginFrom`). Desen oyun geçmişindeki
+  /// `_captureKey.currentContext ?? context` ile aynı.
+  final GlobalKey _shareLinkKey = GlobalKey();
+
   Future<void> _handleShare() {
     // GA4 `invite_link_shared` {source: setup_footer} — gerekçe ve ölçüm
     // sınırı friends_modal'daki eş çağrının yorumunda.
@@ -430,7 +438,7 @@ class _SetupScreenState extends State<SetupScreen>
       png: null,
       text: 'Hemen ücretsiz dene!',
       url: '$webOrigin/?ref=arkadas',
-      origin: shareOriginFrom(context),
+      origin: shareOriginFrom(_shareLinkKey.currentContext ?? context),
     );
   }
 
@@ -1298,6 +1306,7 @@ class _SetupScreenState extends State<SetupScreen>
                             // taraması çocuğun TÜRÜNE değil, kutuya bir
                             // ölçü veren bir şey olup olmadığına bakmalı.
                             TapTarget(
+                              key: _shareLinkKey,
                               onTap: _handleShare,
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -1394,8 +1403,6 @@ class _SetupScreenState extends State<SetupScreen>
   /// oyun formu HİÇ yok, kayıt bitene/silinene kadar tek yol devam etmek.
   Widget _buildSavedGameView(SetWordSource? words) {
     final state = _savedState!;
-    final current =
-        state.players.isNotEmpty ? state.players[state.current].name : '—';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1403,7 +1410,6 @@ class _SetupScreenState extends State<SetupScreen>
         const SizedBox(height: 8),
         _SavedGameRow(
           state: state,
-          subtitle: 'Sıra: $current',
           savedAtMs: _savedAtMs ?? 0,
           isGuest: true,
           onTap: words == null ? null : () => _resumeSavedGame(words),
@@ -1549,8 +1555,6 @@ class _SetupScreenState extends State<SetupScreen>
                         for (final save in saves) ...[
                           _SavedGameRow(
                             state: save.state,
-                            subtitle:
-                                'Sıra: ${save.state.players.isNotEmpty ? save.state.players[save.state.current].name : '—'}',
                             savedAtMs: save.updatedAtMs,
                             // Web: girişli kullanıcıda gerçekten başlamış
                             // oyun için süre dolunca -2'li teslim gerçek/
@@ -1573,6 +1577,10 @@ class _SetupScreenState extends State<SetupScreen>
                   currentName: auth.accountName,
                   stats: widget.services.stats,
                   emptyMessage: 'Henüz bitmiş bir Yapay Zeka oyunun yok.',
+                  // Yerel oyunda tek insan koltuk HER ZAMAN hesap sahibi —
+                  // ada bakmadan kendi avatarı verilebiliyor (bkz.
+                  // `util/recent_game_avatars.dart`).
+                  ownAvatarUrl: auth.profile?.avatarUrl,
                   offlineNode: _offlineAiNotice(),
                   isOffline: !widget.services.onlineStatus.online,
                 )
@@ -1919,11 +1927,15 @@ class _PlayerRow extends StatelessWidget {
   }
 }
 
-/// Web SavedGameRow portu: solda katılımcı avatarları (misafir "?" + robot)
-/// ve "Sıra: X", sağda yeşil "SENİN HAMLEN BEKLENİYOR" + kalan süre.
+/// Web SavedGameRow portu: solda katılımcı avatarları (misafir "?" + robot),
+/// sağda yeşil "SIRA SENDE", altta kalan süre.
+///
+/// **"Sıra: X" alt satırı KALDIRILDI (2 Eylül 2026, kullanıcı isteği):**
+/// yanındaki `SIRA SENDE` ile aynı şeyi söylüyordu. ⚠ Canlı oyun kartının
+/// aynı yerdeki "X açtı" satırı buna BENZEMEZ ve kalır — o kimin açtığını
+/// söylüyor, sıra bilgisi değil.
 class _SavedGameRow extends StatelessWidget {
   final GameState state;
-  final String subtitle;
   final int savedAtMs;
 
   /// Web remainingTime'ın aynı ayrımı: misafirde kesin sonuç silinme
@@ -1939,7 +1951,6 @@ class _SavedGameRow extends StatelessWidget {
   final VoidCallback? onTap;
   const _SavedGameRow({
     required this.state,
-    required this.subtitle,
     required this.savedAtMs,
     this.willSurrender = false,
     this.accountAvatarUrl,
@@ -1981,66 +1992,27 @@ class _SavedGameRow extends StatelessWidget {
           color: _panel, borderColor: _border, radius: 6,
           shadows: kRaisedShadows, // web shadow-raised
         ),
-        child: _DevamEdenGovde(
-          // SINIF 2 (sessiz sıkışma). ÖLÇÜLDÜ (320 px): sol sütun ölçek
-          // 1,0 → 1,3'te 114,9 → 73,9 px, yani %36 kayıp.
-          //
-          // ⚠ İLK DÜZELTME YANLIŞ ŞEYİ SUÇLADI (2 Eylül 2026 sabahı): sağ
-          // sütunun TAMAMI eşikte alt satıra alınmıştı, gerekçe "`SIRA
-          // SENDE` etiketi yer yiyor" diye yazılmıştı. Kullanıcı cihazda
-          // gördü — etiket kartın ORTASINDA duruyordu — ve doğrusunu
-          // söyledi: *"Sıra Sende'yi de Sıra Rakipte gibi yapalım, sadece
-          // kalan süre en altta çıksın"*. Sonra ÖLÇÜLDÜ ve haklı çıktı:
-          //   "SIRA SENDE"  89,6 → 113,4 px
-          //   süre satırı  194,3 → 246,9 px   ← sağ sütunun eni BU
-          // Yani daraltan etiket değil SÜRE SATIRIYDI, ölçek 1,0'da bile.
-          // Şimdiki yapı: durum etiketi satırda KALIR (89,6 px kimseyi
-          // ezmiyor), yalnızca süre alta tam genişlik satıra iner. Ölçekten
-          // bağımsız TEK düzen — `buyukOlcek` dalı kalktı, `live_games_tab`
-          // kartıyla da aynı şekil.
-          sol: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Ortak bileşen (parça 5c'de çıkarıldı) — "Son
-                  // Oynadıklarım" satırı da aynısını kullanıyor; ikisi
-                  // sessizce ayrışmasın diye tek kaynak.
-                  PlayerAvatarRow(players: [
-                    for (final p in state.players)
-                      AvatarRowPlayer(
-                        name: p.name,
-                        isAi: p.isAI,
-                        // Yerel oyunda insan koltuk HER ZAMAN bu cihazdaki
-                        // kişi; misafirse profil/ad yok → "?" yedeği.
-                        isGuest: !p.isAI && isGuest,
-                        avatarUrl: p.isAI ? null : accountAvatarUrl,
-                      ),
-                  ]),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'SpaceMono',
-                      fontSize: 9,
-                      color: _muted,
-                    ),
-                  ),
-                ],
+        // Düzenin GEREKÇESİ ve ölçümleri ortak gövdenin kendisinde
+        // (`devam_eden_govde.dart`) — Canlı oyun kartı da aynı dosyadan
+        // besleniyor, açıklamanın tek kopyası orada.
+        child: DevamEdenGovde(
+          sol: PlayerAvatarRow(players: [
+            for (final p in state.players)
+              AvatarRowPlayer(
+                name: p.name,
+                isAi: p.isAI,
+                // Yerel oyunda insan koltuk HER ZAMAN bu cihazdaki kişi;
+                // misafirse profil/ad yok → "?" yedeği.
+                isGuest: !p.isAI && isGuest,
+                avatarUrl: p.isAI ? null : accountAvatarUrl,
               ),
-          // Metin ve punto `live_games_tab`ın aktif oyun kartıyla BİREBİR
-          // (30 Ağustos 2026, kullanıcı isteği): biri YZ biri Canlı oyun
-          // ama ikisi de "devam eden oyun" satırı.
+          ]),
+          // Koşul YOK: yerel kayıt her zaman hesap sahibinin sırasında
+          // duruyor (Canlı kartının aksine, orası "SIRA RAKİPTE" de olabilir).
           durum: Text.rich(
             TextSpan(
                 text: 'SIRA SENDE', children: [turnTriangleSpan(kGreen)]),
-            style: const TextStyle(
-              fontFamily: 'SpaceMono',
-              fontSize: 13,
-              height: 1, // ok satırı büyütmesin (bkz. kTurnArrowSpan)
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1,
-              color: kGreen,
-            ),
+            style: devamEdenDurumStil(kGreen),
           ),
           sure: Text(
             // trUpper ŞART — native toUpperCase 'dakika'yı noktasız I ile
@@ -2049,44 +2021,10 @@ class _SavedGameRow extends StatelessWidget {
             // aynı tuzağı taşıyor.
             trUpper(remaining.text),
             textAlign: TextAlign.right,
-            style: TextStyle(
-              fontFamily: 'SpaceMono',
-              fontSize: 8,
-              letterSpacing: 0.5,
-              color: remaining.urgent ? kRed : _muted,
-            ),
+            style: devamEdenSureStil(remaining.urgent ? kRed : _muted),
           ),
         ),
       ),
-    );
-  }
-}
-
-/// "Devam eden oyun" kartının gövdesi: üstte tek satır (sol oyuncular, sağ
-/// durum etiketi), altta tam genişlik kalan-süre satırı.
-///
-/// Ayrı bir widget: aynı gövde iki çağrı yerinde kullanılıyor ve düzeni
-/// çağrı yerinde kurmak kartı iki kez yazdırırdı (bu projenin kayıtlı hata
-/// sınıfı: kopyalanan dal sessizce ayrışıyor).
-class _DevamEdenGovde extends StatelessWidget {
-  final Widget sol;
-  final Widget durum;
-  final Widget sure;
-  const _DevamEdenGovde(
-      {required this.sol, required this.durum, required this.sure});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(children: [Expanded(child: sol), durum]),
-        // 8 px — web `gap-0.5` + `mt-1.5` (kullanıcı isteği). Süre artık
-        // durumun ALTINDA değil KARTIN altında, ama aynı sağ kenara yaslı,
-        // yani görsel çapa değişmedi.
-        const SizedBox(height: 8),
-        Align(alignment: Alignment.centerRight, child: sure),
-      ],
     );
   }
 }
