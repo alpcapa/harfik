@@ -257,6 +257,8 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
             child: _RecentRow(
               entry: g,
               onTap: () => _openHistory(focusId: g.id),
+              avatarIndex: _avatarIndex,
+              ownAvatarUrl: widget.ownAvatarUrl,
             ),
           ),
       ],
@@ -268,7 +270,22 @@ class _RecentRow extends StatelessWidget {
   final GameHistoryEntry entry;
   final VoidCallback onTap;
 
-  const _RecentRow({required this.entry, required this.onTap});
+  /// Avatar çözümü için — kural `util/recent_game_avatars.dart`'ta.
+  ///
+  /// ⚠ İkisi de PARAMETRE, çünkü bu satır ayrı bir `StatelessWidget`:
+  /// `_RecentGamesSectionState`in alanlarına (`widget`, `_avatarIndex`)
+  /// buradan ERİŞİLEMEZ. İlk yazımda doğrudan onlara başvurdum ve
+  /// `dart analyze` iki hatayla düşürdü — web ikizinde satır inline
+  /// olduğundan orada aynı hata doğmuyor.
+  final Map<String, Map<String, String>> avatarIndex;
+  final String? ownAvatarUrl;
+
+  const _RecentRow({
+    required this.entry,
+    required this.onTap,
+    required this.avatarIndex,
+    required this.ownAvatarUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -315,8 +332,8 @@ class _RecentRow extends StatelessWidget {
                                 p.name == guestPlayerName,
                             name: p.name,
                             onlineGameId: entry.onlineGameId,
-                            onlineIndex: _avatarIndex,
-                            ownAvatarUrl: widget.ownAvatarUrl,
+                            onlineIndex: avatarIndex,
+                            ownAvatarUrl: ownAvatarUrl,
                           ),
                         ),
                     ])
