@@ -291,12 +291,15 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       - **Süre aşımı teslimi:** bir oyunun 48 saatlik süresi dolup teslim
         sayıldığında da rozet ÇIKMALI (o senaryoda bitiş modalını görmen
         mümkün değil — asıl işe yaradığı yer burası). O satırın etiketi
-        `OYUN BİTTİ` değil **`TESLİM`** olmalı ve sağda kırmızı `-2`
+        `OYUN BİTTİ` değil **`TESLİM OLDUN`** olmalı ve sağda kırmızı `-2`
         durmalı. **Rakip tarafında** ise aynı oyun `OYUN BİTTİ` görünmeli
-        (o kazandı) — `TESLİM` yalnızca teslim EDENİN satırında.
+        (o kazandı) — `TESLİM OLDUN` yalnızca teslim EDENİN satırında.
+      - **Etiket ORTADA, rozet YANINDA:** etiket sol sütun ile skorun
+        arasındaki boşlukta ortalanmış olmalı (sağa yaslı DEĞİL), `YENİ`
+        rozeti etiketin hemen SAĞINDA (altında değil).
       - **Küçük ekran:** 320 px genişlikte, sistem yazı boyutu en büyükte, 4
-        kişilik + `YENİ` rozetli bir teslim satırında hiçbir şey taşmamalı
-        ve etiket iki satıra BÖLÜNMEMELİ.
+        kişilik + `YENİ` rozetli bir `TESLİM OLDUN` satırında hiçbir şey
+        taşmamalı, etiket iki satıra BÖLÜNMEMELİ ve `…` ile kırpılmamalı.
       - ⚠ **Uygulama ikonundaki rozete KARIŞMAMALI** (kullanıcı kararı):
         biten oyun ikon rozetini artırMAMALI ve girişte hangi sekmenin
         açıldığını DEĞİŞTİRMEMELİ.
