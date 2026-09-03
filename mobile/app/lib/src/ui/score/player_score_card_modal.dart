@@ -508,9 +508,14 @@ class _KafaKafaya extends StatelessWidget {
   Widget build(BuildContext context) {
     final bar = headToHeadBar(data);
     // Üç satır ORTAK bir eksende: yüzdeler ve oyun sayısı BARIN genişliğinde
-    // (96) şeritler. Avatar satırı 18+6+96+6+18 = 144 olduğundan bar zaten
+    // (96) şeritler. Avatar satırı 26+6+96+6+26 = 160 olduğundan bar zaten
     // satırın tam ortasında — `center` üç şeridi barla hizalar, ayrı bir
-    // dolgu hesabı gerekmiyor.
+    // dolgu hesabı gerekmiyor. Simetri avatar boyutundan BAĞIMSIZ: iki yan
+    // eşit olduğu sürece hiza kendiliğinden korunur.
+    //
+    // ⚠ Avatar 18 → 26 (3 Eylül 2026, kullanıcı: "avatarlar çok küçük
+    // duruyor"). 26 bu projede avatarın STANDART boyutu (kullanıcı kararı:
+    // "hepsi 26 olsun"), keyfi bir sayı değil.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
@@ -534,13 +539,14 @@ class _KafaKafaya extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Row(mainAxisSize: MainAxisSize.min, children: [
-          KAvatar(url: theirAvatarUrl, name: theirName, size: 18),
+          KAvatar(url: theirAvatarUrl, name: theirName, size: 26),
           const SizedBox(width: 6),
           Semantics(
             label: '$theirName ${data.losses} - ${data.wins} sen',
             child: Container(
               width: 96,
-              height: 8,
+              // 10 px — 26'lık avatarın yanında 8 px cılız kalıyordu.
+              height: 10,
               decoration: BoxDecoration(
                 color: kVoid,
                 border: Border.all(color: kBorder),
@@ -578,7 +584,7 @@ class _KafaKafaya extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-          KAvatar(url: myAvatarUrl, name: 'Sen', size: 18),
+          KAvatar(url: myAvatarUrl, name: 'Sen', size: 26),
         ]),
         const SizedBox(height: 2),
         SizedBox(

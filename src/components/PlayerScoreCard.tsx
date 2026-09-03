@@ -182,9 +182,17 @@ function HeadToHeadBarView({
   const bar = headToHeadBar(data);
   return (
     // Üç satır ORTAK bir eksende: yüzdeler ve oyun sayısı BARIN genişliğinde
-    // (`w-24`) şeritler, ortalanmış. Avatar satırı 18+6+96+6+18 olduğundan
+    // (`w-24`) şeritler, ortalanmış. Avatar satırı 26+6+96+6+26 olduğundan
     // bar zaten satırın tam ortasında — yani `items-center` üç şeridi barla
-    // hizalar, ayrı bir dolgu hesabı gerekmiyor.
+    // hizalar, ayrı bir dolgu hesabı gerekmiyor. Simetri avatar boyutundan
+    // BAĞIMSIZ: iki yan eşit olduğu sürece hiza kendiliğinden korunur.
+    //
+    // ⚠ Avatar 18 → 26 (3 Eylül 2026, kullanıcı: "avatarlar çok küçük
+    // duruyor"). 26, bu projede avatarın STANDART boyutu (kullanıcı kararı:
+    // "hepsi 26 olsun") — keyfi bir sayı değil. Çubuk da 8 → 10 px: 26'lık
+    // avatarın yanında 8 px cılız kalıyordu. Ölçüldü: blok 144 → 160 px,
+    // kartın 336 px'lik iç genişliğinde "Tüm Oyunlar" butonuyla çakışma yok
+    // (buton sağ kenarı 126,9 ↔ blok sol kenarı 197).
     <div className="flex flex-col items-center gap-0.5 min-w-0">
       {/* Yüzdeler barın ÜSTÜNDE, kendi alanlarının üzerinde: kırmızı hep
           sol uçtan başlar, yeşil hep sağ uçta biter, o yüzden uçlara
@@ -199,9 +207,9 @@ function HeadToHeadBarView({
         <span className={bar.right > 0 ? 'text-green' : 'invisible'}>%{bar.right}</span>
       </span>
       <span className="flex items-center gap-1.5">
-        <Avatar url={theirAvatar} name={theirName} size={18} />
+        <Avatar url={theirAvatar} name={theirName} size={26} />
         <span
-          className="flex h-2 w-24 overflow-hidden rounded-full bg-void border border-border"
+          className="flex h-2.5 w-24 overflow-hidden rounded-full bg-void border border-border"
           role="img"
           aria-label={`${theirName} ${data.losses} - ${data.wins} ${myName}`}
           title={`${theirName} ${data.losses} · Beraberlik ${data.draws} · ${myName} ${data.wins}`}
@@ -211,7 +219,7 @@ function HeadToHeadBarView({
           <span className="bg-muted h-full" style={{ width: `${bar.middle}%` }} />
           <span className="bg-green h-full" style={{ width: `${bar.right}%` }} />
         </span>
-        <Avatar url={myAvatar} name={myName} size={18} />
+        <Avatar url={myAvatar} name={myName} size={26} />
       </span>
       <span className="w-24 text-center text-[9px] font-mono text-muted leading-none">
         {data.games} oyun
