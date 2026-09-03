@@ -12,6 +12,7 @@ import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../../util/recent_game_avatars.dart';
 import '../game/player_avatar_row.dart';
+import '../text_scale.dart';
 import '../score/game_history_modal.dart';
 import '../tap_target.dart';
 import '../tokens.dart';
@@ -328,14 +329,34 @@ class _RecentRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // ⚠ `Expanded` ↔ `Flexible` KOŞULLU (3 Eylül 2026): Canlı'da
-            // boşluğu ORTADAKİ etiket alıyor (kullanıcı: "ortadaki boşluğa
-            // koy"), o yüzden sol sütun içeriğine küçülüyor (`Flexible`,
-            // loose fit). YZ'de etiket HİÇ YOK — orada boşluğu sol sütun
-            // almalı (`Expanded`), yoksa skor bloğu sağ kenardan kopup
-            // ortaya kayardı. Web ikizinde aynı koşul (`flex-1`).
-            _SolSutun(
-              genisle: !onlineOnly,
+            // ⚠ HER İKİ DURUMDA `Expanded` — `Flexible` DEĞİL, ve bu bir
+            // GERİLEME DÜZELTMESİ (3 Eylül 2026, kullanıcı cihazda
+            // bildirdi: "puan ve k-lig bozulmuş, sağda hizalı olmaları
+            // lazım").
+            //
+            // Önce Canlı'da `Flexible` (loose fit) kullanılmıştı ki ortadaki
+            // etiket boşluğu alsın. Bedeli ölçülünce çıktı: loose fit sol
+            // sütunu İÇERİĞİNE küçültüyor, avatar sayısı satırdan satıra
+            // değişiyor (2 kişilik 46 px, 4 kişilik 86 px) ve artan boşluk
+            // `MainAxisAlignment.start` gereği EN SAĞDA kalıyor — yani skor
+            // bloğu her satırda başka bir yerde bitiyor. ÖLÇÜLDÜ (412 px):
+            // 4 kişilik satır ötekilerden **30,9 px** sağdaydı.
+            //
+            // İki `Expanded` (flex 1) genişliği İÇERİKTEN BAĞIMSIZ kılıyor,
+            // yani sağdaki sütunlar her satırda AYNI x'te. Ortadaki etiket
+            // yine boşluğun yarısını alıyor — 360 px'te 135 px, "TESLİM
+            // OLDUN + YENİ" için gereken ~124 px'ten fazla, yani rozet
+            // yanda kalmaya devam ediyor (test bunu kilitliyor).
+            //
+            // ⚠ FLEX 2:3, 1:1 DEĞİL. Eşit bölüşüm ölçüldü ve ortadaki
+            // etiketi 320 px / ölçek 1,3'te 0,4 px KIRPIYORDU (111,0
+            // isteniyor, 110,6 veriliyordu) — `Flexible`den `Expanded`e
+            // geçmek sol sütuna içeriğinden fazlasını verdiği için. 2:3'te
+            // 320 px'te sol 92 px (4 avatar 86 px sığıyor), orta 138 px
+            // (etiket 111 px sığıyor). İki test birden kilitliyor: hiza VE
+            // kırpılmama.
+            Expanded(
+              flex: 2,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -396,6 +417,7 @@ class _RecentRow extends StatelessWidget {
             // söylemiyor. Web ikizi `RecentGamesSection.tsx` ile aynı koşul.
             if (onlineOnly) ...[
               Expanded(
+                flex: 3,
                 // ⚠ `Row` DEĞİL `Wrap` — ve bu bir GERİLEME DÜZELTMESİ:
                 // ölçek 1,3'te (kMaxTextScale) 320 px'lik bir ekranda etiket
                 // 111 px istiyor, `Row`da yalnızca 74,9 px alıyordu ve
@@ -479,19 +501,44 @@ class _RecentRow extends StatelessWidget {
               ),
               const SizedBox(width: 8),
             ],
-            Text('${entry.playerScore}',
-                style: const TextStyle(
-                    fontFamily: 'SpaceMono',
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: _text)),
+            // ⚠ SABİT GENİŞLİK + SAĞA YASLI, ve bu bir GERİLEME DÜZELTMESİ
+            // (3 Eylül 2026, kullanıcı cihazda bildirdi: "puan ve k-lig
+            // bozulmuş, sağda hizalı olmaları lazım").
+            //
+            // Öncesinde ikisi de düz `Text`ti, yani genişlikleri İÇERİĞE
+            // göre değişiyordu ("0" bir karakter, "253" üç) ve satırın
+            // sonundaki grup her satırda başka bir yerde bitiyordu.
+            // ÖLÇÜLDÜ (412 px, kullanıcının beş satırı): k-lig sağ kenarı
+            // 289,9 / 289,9 / **320,8** / **283,2** / 289,9 — dört farklı
+            // yerde. 4 kişilik satır 31 px sağa kaçıyordu.
+            //
+            // `SizedBox` DEĞİL `ScaledCell`: repo kuralı (kök CLAUDE.md →
+            // "Sistem Yazı Boyutu", sınıf 3) sabit genişlikli sütunlarda
+            // bunu zorunlu kılıyor — kutu yazı ölçeğiyle büyür, metin
+            // sarmaz, sığmazsa `FittedBox` küçültür.
+            ScaledCell(
+              width: 28, // "369" 20,1 px; dört haneye de yer var
+              child: Text('${entry.playerScore}',
+                  maxLines: 1,
+                  softWrap: false,
+                  style: const TextStyle(
+                      fontFamily: 'SpaceMono',
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: _text)),
+            ),
             const SizedBox(width: 8),
-            Text(formatLeaguePoints(points),
-                style: TextStyle(
-                    fontFamily: 'SpaceMono',
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: points > 0 ? _green : (points < 0 ? _red : _muted))),
+            ScaledCell(
+              width: 18, // "+2" / "-2" / "-"
+              child: Text(formatLeaguePoints(points),
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(
+                      fontFamily: 'SpaceMono',
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: points > 0 ? _green : (points < 0 ? _red : _muted))),
+            ),
           ],
         ),
       ),
@@ -503,12 +550,3 @@ class _RecentRow extends StatelessWidget {
 /// alır), değilse `Flexible` (içeriğine küçülür, boşluğu ortadaki etikete
 /// bırakır). Ayrı bir widget, çünkü koşulu satırın içine yazmak aynı
 /// `Column`u iki kez kopyalamak demek olurdu.
-class _SolSutun extends StatelessWidget {
-  final bool genisle;
-  final Widget child;
-  const _SolSutun({required this.genisle, required this.child});
-
-  @override
-  Widget build(BuildContext context) =>
-      genisle ? Expanded(child: child) : Flexible(child: child);
-}

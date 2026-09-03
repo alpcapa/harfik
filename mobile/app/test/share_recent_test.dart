@@ -528,6 +528,84 @@ void main() {
   // sadece canlı oyunlar için geçerli."* Gerekçe: YZ oyunu SENİN cihazında
   // bitiyor, bitişini zaten gözünle görüyorsun — orada etiket bilgi taşımaz.
   // Canlı'da ise oyun sen yokken bitiyor, asıl mesele o.
+  // ⚠⚠ 3 Eylül 2026, kullanıcı CİHAZDA bildirdi: *"Son oynananlar … puan ve
+  // k-lig bozulmuş, sağda hizalı olmaları lazım."* İKİ ayrı sebep vardı ve
+  // ikisi de bu testin YOKLUĞUNDA gizlenmişti:
+  //   (1) skor/k-lig düz `Text`ti → genişlikleri İÇERİĞE göre değişiyordu
+  //       ("0" bir karakter, "253" üç) → satırın sonu kayıyordu.
+  //   (2) sol sütun Canlı'da `Flexible`di (loose fit) → avatar SAYISI
+  //       genişliği değiştiriyordu (2 kişilik 46 px, 4 kişilik 86 px) ve
+  //       artan boşluk `MainAxisAlignment.start` gereği en sağda kalıyordu.
+  // ÖLÇÜLDÜ (düzeltme öncesi, 412 px): k-lig sağ kenarı 289,9 / 289,9 /
+  // **320,8** / **283,2** / 289,9 — dört farklı yerde.
+  //
+  // Bu test SAĞ KENARLARIN eşitliğini ölçüyor; ikisinden biri geri alınırsa
+  // GERÇEKTEN düşer.
+  testWidgets(
+      'Son Oynadıklarım: puan ve k-lig sütunları SAĞDA hizalı — satır '
+      'içeriği (avatar sayısı, skor basamağı) değişse bile', (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        // 2 kişilik, üç basamaklı skor
+        gameRow(id: 'g1', onlineGameId: 'o1', playerScore: 253, aiScore: 100,
+            rank: 1, createdAt: '2026-09-03T10:00:00.000Z',
+            players: [snap('Ben', 253, colorIndex: 0), snap('Be', 100, colorIndex: 1)]),
+        // 4 KİŞİLİK (sol sütun daha geniş) + tek basamaklı k-lig farkı
+        gameRow(id: 'g2', onlineGameId: 'o2', playerScore: 123, aiScore: 200,
+            rank: 2, playerCount: 4, createdAt: '2026-09-02T10:00:00.000Z',
+            players: [snap('Ben', 123, colorIndex: 0), snap('Fb', 200, colorIndex: 1),
+                      snap('X', 90, colorIndex: 2), snap('Y', 80, colorIndex: 3)]),
+        // TEK BASAMAKLI skor
+        gameRow(id: 'g3', onlineGameId: 'o3', playerScore: 0, aiScore: 100,
+            rank: 1, createdAt: '2026-09-02T09:00:00.000Z',
+            players: [snap('Ben', 0, colorIndex: 0), snap('Vi', 100, colorIndex: 1)]),
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, const Size(412, 900));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: RecentGamesSection(
+            games: repo,
+            userId: 'u-me',
+            onlineOnly: true,
+            // Bir satırda "YENİ" rozeti VAR — ortadaki blok genişliği
+            // değişse de sağ sütunlar kıpırdamamalı.
+            newlyFinishedIds: const {'g1'}),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // ⚠ Aynı metin BİRDEN FAZLA satırda olabilir ("+2" iki kez) — finder
+    // tekil değil, hepsini topla.
+    List<double> sagKenarlar(String metin) => [
+          for (final e in find.text(metin).evaluate())
+            tester.getRect(find.byWidget(e.widget)).right
+        ];
+
+    // Skorlar: 253 (2 kişi) · 123 (4 KİŞİ) · 0 (tek basamak)
+    final skorlar = [
+      ...sagKenarlar('253'),
+      ...sagKenarlar('123'),
+      ...sagKenarlar('0'),
+    ];
+    expect(skorlar, hasLength(3));
+    for (final x in skorlar) {
+      expect(x, closeTo(skorlar.first, 0.5),
+          reason: 'skor sütunu sağda hizalı DEĞİL: $skorlar');
+    }
+    // k-lig: +2 (iki satır) · +1
+    final kligler = [...sagKenarlar('+2'), ...sagKenarlar('+1')];
+    expect(kligler, hasLength(3));
+    for (final x in kligler) {
+      expect(x, closeTo(kligler.first, 0.5),
+          reason: 'k-lig sütunu sağda hizalı DEĞİL: $kligler');
+    }
+    // ignore: avoid_print
+    print('[ÖLÇÜM] skor sağ=${skorlar.first.toStringAsFixed(1)} '
+        'k-lig sağ=${kligler.first.toStringAsFixed(1)} (üç satır AYNI)');
+  });
+
   testWidgets('Son Oynadıklarım: "OYUN BİTTİ" YZ tarafında ÇİZİLMEZ',
       (tester) async {
     final gw = FakeGamesGateway(userId: 'u-me')

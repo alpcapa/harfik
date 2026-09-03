@@ -660,3 +660,53 @@ Portta 7 test (`live_games_test.dart`): rozet çıkar/çıkmaz · sekme ziyareti
 TOPLU işaretler ve sayacı sıfırlatır · **işaretleme düşerse sayaç sıfırlanmaz**
 (negatif eş) · `pendingCounts` listeyi taşır ama "bekleyen iş"e katmaz ·
 haber çekimi düşse de sayılar gelir · `markFinishesSeen` ağ hatasında `false`.
+
+### Cihazda çıkan İKİ hata — ikisi de testlerin KAÇIRDIĞI sınıftan (3 Eylül 2026)
+
+Kullanıcı APK'yı test etti ve iki bulgu bildirdi. İkisi de "testler yeşildi
+ama cihazda bozuk" sınıfından, ve ikisinin de sebebi testin YANLIŞ ŞEYİ
+ölçmesiydi.
+
+**1. Kafa kafaya çubuğu İÇİ BOŞ geliyordu.** Yüzdeler (%29/%71) yazıyordu,
+çubuk boştu. Sebep `Expanded`/`ColoredBox` değil, saran `Row`un
+`crossAxisAlignment` VARSAYILANI: `center`. Gevşek dikey kısıt altında
+çocuğu ve kendi ölçüsü olmayan bir `ColoredBox` **en küçük boyutu (0)**
+alıyor — dilimler widget ağacında duruyor ama sıfır yükseklikte, hiçbir
+piksel boyanmıyor. Çare `crossAxisAlignment: CrossAxisAlignment.stretch`
+(dikey kısıtı tight yapar).
+
+⚠ **Testin hatası:** `ColoredBox`ların VARLIĞINI ölçüyordu
+(`widgetList<ColoredBox>`), boyanan ALANINI değil. Artık `RenderBox.size`
+ölçülüyor ve `stretch` kaldırılırsa `Actual: <0.0>` ile GERÇEKTEN düşüyor
+(düzeltme öncesi bu değer ölçüldü). **Genel kural: "widget ağaçta var"
+iddiası bir GÖRÜNÜRLÜK iddiası değildir.**
+
+**2. Puan ve k-lig sütunları sağda hizalı değildi.** İKİ ayrı sebep vardı:
+
+- Sütunlar düz `Text`ti → genişlik İÇERİĞE göre değişiyordu ("0" bir
+  karakter, "253" üç; k-lig `-` bir, `+2` iki).
+- Sol sütun Canlı'da `Flexible`di (loose fit) → avatar SAYISI genişliği
+  değiştiriyordu (2 kişilik 46 px, 4 kişilik 86 px) ve artan boşluk
+  `MainAxisAlignment.start` gereği en sağda kalıyordu.
+
+ÖLÇÜLDÜ (412 px, kullanıcının beş satırı): k-lig sağ kenarı 289,9 / 289,9 /
+**320,8** / **283,2** / 289,9 — dört farklı yerde; 4 kişilik satır 30,9 px
+sağa kaçıyordu.
+
+Çözüm iki parçalı: sayısal sütunlar `ScaledCell` (sabit genişlik, sağa
+yaslı, yazı ölçeğiyle büyür — repo kuralı sabit genişlikli sütunlarda
+`SizedBox` yerine bunu zorunlu kılıyor), ve sol sütun `Flexible` → `Expanded`.
+
+⚠ **Ve bu ikinci parça ortadaki etiketten genişlik ALDI:** eşit bölüşüm
+(1:1) 320 px / ölçek 1,3'te etiketi 0,4 px kırpıyordu (111,0 isteniyor,
+110,6 veriliyordu). Flex **2:3** ikisini birden karşılıyor — 320 px'te sol
+92 px (4 avatar 86 px sığıyor), orta 138 px (etiket 111 px sığıyor). İki
+test birden kilitliyor: hiza VE kırpılmama. Bir sonraki tur flex'i
+değiştirirse ikisinden biri düşer.
+
+Web ikizinde de sayısal sütunlar sabit genişliğe çekildi (`w-7`/`w-[18px]`
++ `text-right`): oradaki kırılganlık daha dardı (k-lig `-` olduğunda skorun
+sağ kenarı kayıyordu) ama aynı sınıftı.
+
+**Doğrulama:** hiza artık testli — skor sağ kenarı 375,0, k-lig 401,0, üç
+satırda (2 kişilik · 4 kişilik · tek basamaklı skor) BİREBİR aynı.

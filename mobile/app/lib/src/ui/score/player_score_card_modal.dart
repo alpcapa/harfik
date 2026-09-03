@@ -555,7 +555,17 @@ class _KafaKafaya extends StatelessWidget {
               // toplamı 100 olduğundan en az biri > 0 ve oranlar bozulmaz.
               // Web'de karşılığı zararsız (`width: 0%`), yani bu koruma
               // PORTA ÖZGÜ — ikizde aramaya gerek yok.
-              child: Row(children: [
+              // ⚠⚠ `crossAxisAlignment: stretch` ŞART, VARSAYILAN DEĞİL.
+              // 3 Eylül 2026'da cihazda çubuk BOŞ göründü (kullanıcı
+              // bildirdi) ve testler yeşildi. Sebep: `ColoredBox`ın çocuğu
+              // ve kendi ölçüsü yok; `Row`un varsayılanı `center` olduğu
+              // için dikey kısıt GEVŞEK geliyor ve gevşek kısıtta ölçüsüz
+              // bir kutu EN KÜÇÜK boyutu (0) alıyor. Yani dilimler widget
+              // ağacında duruyor ama sıfır yükseklikte — hiçbir piksel
+              // boyanmıyor. `stretch` dikey kısıtı TIGHT yapıyor.
+              // Test artık boyanan ALANI ölçüyor (varlık yetmez); bu satır
+              // kaldırılırsa GERÇEKTEN düşer.
+              child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 if (bar.left > 0)
                   Expanded(flex: bar.left, child: const ColoredBox(color: kRed)),
                 if (bar.middle > 0)

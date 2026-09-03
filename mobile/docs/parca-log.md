@@ -20,6 +20,39 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 187 — cihazda çıkan İKİ hata: boş çubuk ve bozuk hiza
+     (3 Eylül 2026, kullanıcı APK testi; değişen
+     `ui/score/player_score_card_modal.dart`,
+     `ui/setup/recent_games_section.dart` + web ikizi):**
+     - ⚠⚠ **Kafa kafaya çubuğu İÇİ BOŞ geliyordu** ve testler yeşildi.
+       Sebep saran `Row`un `crossAxisAlignment` VARSAYILANI (`center`):
+       gevşek dikey kısıtta çocuğu ve ölçüsü olmayan `ColoredBox` **en küçük
+       boyutu (0)** alıyor. Dilimler ağaçta duruyor, sıfır yükseklikte.
+       Çare `CrossAxisAlignment.stretch`.
+       **Testin hatası:** `ColoredBox`ların VARLIĞINI ölçüyordu, boyanan
+       ALANINI değil. Artık `RenderBox.size` ölçülüyor; düzeltme öncesi
+       `Actual: <0.0>` ölçüldü. **Genel kural: "widget ağaçta var" bir
+       GÖRÜNÜRLÜK iddiası DEĞİLDİR.**
+     - ⚠ **Puan/k-lig sağda hizalı değildi — İKİ sebep:** (a) sütunlar düz
+       `Text`ti, genişlik içeriğe göre değişiyordu; (b) sol sütun Canlı'da
+       `Flexible`di (loose fit), avatar SAYISI genişliği değiştiriyordu ve
+       artan boşluk `MainAxisAlignment.start` gereği en sağda kalıyordu.
+       ÖLÇÜLDÜ (412 px): k-lig sağ kenarı dört farklı yerde, 4 kişilik satır
+       **30,9 px** sağda. Çözüm: sayısal sütunlar `ScaledCell` + sol sütun
+       `Expanded`.
+     - ⚠ **İkinci parça ortadaki etiketten genişlik ALDI:** 1:1 bölüşüm
+       320 px/ölçek 1,3'te etiketi 0,4 px kırpıyordu (111,0 ↔ 110,6). Flex
+       **2:3** ikisini birden karşılıyor. İki test birden kilitliyor —
+       flex'i değiştiren bir sonraki tur birinden düşer.
+     - **Regresyon: 1 yeni test + 1 sıkılaştırma.** Hiza testi üç satırı
+       (2 kişilik · 4 kişilik · tek basamaklı) ölçüp sağ kenarların 0,5 px
+       içinde eşit olmasını istiyor (skor 375,0 · k-lig 401,0).
+       ⚠ Testin kendi hatası da bir ders: `find.text('+2')` iki satırda
+       eşleşip belirsiz kaldı — aynı metin birden fazla satırdaysa
+       `evaluate()` ile HEPSİNİ topla.
+     - Kullanıcı ayrıca *"en büyük fontla denedim sorun yok"* dedi — Parça
+       186'nın `Wrap` düzeltmesi sahada doğrulandı.
+
    - ✅ **Parça 186 — "Oyun Bitti (Yeni)": biten oyunun haberi (3 Eylül
      2026, kullanıcı isteği; yeni tablo `game_finish_seen` + 2 RPC, değişen
      `data/online_games_api.dart`, `ui/live/live_games_tab.dart`,

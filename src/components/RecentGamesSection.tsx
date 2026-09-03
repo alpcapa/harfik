@@ -306,10 +306,21 @@ export function RecentGamesSection({
                   )}
                 </span>
               )}
+              {/* ⚠ SABİT GENİŞLİK + SAĞA YASLI. Portta bu iki sütun düz
+                  metindi ve kullanıcı cihazda bozukluğu yakaladı (3 Eylül
+                  2026: "puan ve k-lig bozulmuş, sağda hizalı olmaları
+                  lazım") — genişlik içeriğe göre değişince ("0" bir
+                  karakter, "253" üç; k-lig "-" bir, "+2" iki) satırın sonu
+                  her satırda başka yerde bitiyor. Web'de aynı kırılganlık
+                  DAHA DAR ama var: k-lig `-` (0 puan) olduğunda skorun sağ
+                  kenarı kayar. İki taraf da aynı çözümü kullanıyor —
+                  portta `ScaledCell`, burada `w-*` + `text-right`. */}
               <span className="flex items-center gap-2 shrink-0">
-                <span className="font-mono text-[11px] font-bold text-text">{g.player_score}</span>
+                <span className="w-7 text-right font-mono text-[11px] font-bold text-text">
+                  {g.player_score}
+                </span>
                 <span
-                  className={`font-mono text-[11px] font-bold ${
+                  className={`w-[18px] text-right font-mono text-[11px] font-bold ${
                     points > 0 ? 'text-green' : points < 0 ? 'text-red' : 'text-muted'
                   }`}
                 >
