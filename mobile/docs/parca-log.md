@@ -87,6 +87,22 @@
        karttaki "X açtı" BENZEMEZ ve kalır) ve durum puntosu 13 → **15**
        (üçgen/nokta ölçüsü ona çapalı: 8×9/9×9 → 9×10/10×10, web SVG'si ve
        Dart path'i birlikte).
+     - **CI DÜŞTÜ ve düzeltildi (aynı gün):** `setup_screen_test` →
+       *"isim alanı sıkışmaz"* iddiası **0,710 < 0,75** verdi (ölçülen:
+       130,2 → 92,5 px; öncesi 143,4 → 109,7 = 0,765). Eşik **0,70**'e
+       çekildi. Bu bir susturma DEĞİL — üç ölçüm gerekçesi:
+       (1) 0,75 tasarlanmış sınır değil CIRCIR'dı, o günkü değerin hemen
+       altına konmuştu ve **herhangi bir** punto artışını bloke ediyordu
+       (15 px → 0,710 gerçek, 14 px → 0,739 türetildi);
+       (2) sol sütunda artık METİN YOK — daralmanın kurbanı "Sıra: X"
+       satırıydı, bu turda kaldırıldı; geriye kalan `PlayerAvatarRow`
+       SABİT genişlikte ve ölçekle büyümüyor;
+       (3) daralmanın kaynağı meşru (durum etiketi ölçekle büyüyor,
+       durdurmanın tek yolu ekran başına ölçek kısıtı olurdu — kural 1
+       yasaklıyor).
+       **Oranın kaybettiği koruma somut bir iddiayla YERİNE KONDU:** avatar
+       şeridi iki ölçekte de sol alana SIĞMALI. Vekil bir sayı gevşerken
+       koruduğu şeyin kendisi kilitlendi.
      - ⚠ **SESSİZ TEST ARIZASI YAKALANDI:** sıkışmayı ölçen iddia sol
        sütunu `find.ancestor(of: PlayerAvatarRow, matching: Column)` ile
        buluyordu. "Sıra: X" kalkınca sol taraf tek bir `PlayerAvatarRow`a

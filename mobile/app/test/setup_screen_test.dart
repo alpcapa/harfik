@@ -35,6 +35,7 @@ import 'package:kelimeki/src/ui/intro/intro_screen.dart';
 import 'package:kelimeki/src/ui/live/live_games_tab.dart';
 import 'package:kelimeki/src/ui/setup/setup_screen.dart';
 import 'package:kelimeki/src/ui/devam_eden_govde.dart';
+import 'package:kelimeki/src/ui/game/player_avatar_row.dart';
 import 'package:kelimeki/src/ui/text_scale.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -943,7 +944,7 @@ void main() {
       await session.end();
     });
 
-    Future<(double, bool, bool)> olc(double olcek) async {
+    Future<(double, double, bool, bool)> olc(double olcek) async {
       // En dar desteklenen telefon: sıkışma burada en sert.
       await setPhoneViewSize(tester, const Size(320, 900));
       await tester.pumpWidget(MaterialApp(
@@ -977,18 +978,30 @@ void main() {
       // (kendi eni sabit 36 px) ve bulucu DIŞ sütuna sıçrayıp kartın
       // tamamını ölçmeye başlardı — test düşmez, SESSİZCE anlamsızlaşırdı.
       final isim = tester.getRect(find.byKey(kDevamEdenSolKey));
+      // Sıkışmanın GERÇEK kurbanı: avatar şeridi sol alana SIĞIYOR mu.
+      // Oran iddiası (aşağıda) soyut; bu somut — daralma bir şeyi
+      // taşırıyorsa hata BURADA görünür.
+      // ⚠ Bulucu `byType` DEĞİL, anahtarlı sol alanın ALTINDA aranıyor:
+      // aynı ekranda ("Son Oynadıklarım" vb.) ikinci bir `PlayerAvatarRow`
+      // belirirse `byType` "Found N widgets" ile patlar ya da yanlış olanı
+      // ölçer. Bu daldaki sessiz-bulucu dersinin aynısı.
+      final avatar = tester.getRect(find.descendant(
+          of: find.byKey(kDevamEdenSolKey),
+          matching: find.byType(PlayerAvatarRow)));
       final durum = tester.getRect(find.textContaining('SIRA SENDE'));
       final sure = tester.getRect(find.textContaining('SONRA'));
       return (
         isim.width,
+        avatar.width,
         // durum oyuncu satırıyla DİKEYDE örtüşüyor mu (aynı satır mı)
         durum.top < isim.bottom && durum.bottom > isim.top,
         sure.top >= durum.bottom, // süre durumun ALTINDA mı
       );
     }
 
-    final (enNormal, satirdaNormal, altaNormal) = await olc(1.0);
-    final (enTavan, satirdaTavan, altaTavan) = await olc(kMaxTextScale);
+    final (enNormal, avatarNormal, satirdaNormal, altaNormal) = await olc(1.0);
+    final (enTavan, avatarTavan, satirdaTavan, altaTavan) =
+        await olc(kMaxTextScale);
 
     // Düzen ölçekten BAĞIMSIZ — iki ölçekte de aynı şekil (bu, kalkan
     // `buyukOlcek` dalının negatif eşi: dal geri gelirse biri düşer).
@@ -998,16 +1011,43 @@ void main() {
     expect(altaNormal, isTrue, reason: 'süre satırı altta olmalı');
     expect(altaTavan, isTrue, reason: 'süre satırı tavanda da altta olmalı');
 
-    // Sıkışmanın kendisi. ÖLÇÜLDÜ (320 px): 143,4 → 109,7 px, yani −%24.
-    // SIFIR DEĞİL ve bu bilinçli: süre satırı alta indi ama durum etiketinin
-    // KENDİSİ hâlâ ölçekle büyüyor (89,6 → 113,4 px) ve `Expanded` olan sol
-    // taraftan o kadarını alıyor. Onu da durdurmanın tek yolu ekran başına
-    // ölçek kısıtı olurdu — `mobile/CLAUDE.md` kural 1 bunu YASAKLIYOR
-    // (tavan TEK yerde). Önceki düzen −%36'ydı ve 1,0'da bile 114,9'la
-    // başlıyordu; şimdi hem başlangıç daha geniş hem kayıp daha az.
-    // İddia orana bağlı, mutlak px'e değil: px font metriklerinden türüyor
-    // ve ortama göre oynuyor (bu depoda bir kez CI'ı düşürdü).
-    expect(enTavan / enNormal, greaterThanOrEqualTo(0.75),
+    // ── Sıkışma ────────────────────────────────────────────────────────
+    // ÖNCE SOMUT OLAN: avatar şeridi sol alana sığmalı. Daralmanın
+    // ölçülebilir bir ZARARI varsa burada görünür — oran iddiası (aşağıda)
+    // bunun yalnızca VEKİLİ.
+    expect(avatarNormal, lessThanOrEqualTo(enNormal),
+        reason: 'avatar şeridi (${avatarNormal.toStringAsFixed(1)} px) sol '
+            'alana (${enNormal.toStringAsFixed(1)} px) sığmalı');
+    expect(avatarTavan, lessThanOrEqualTo(enTavan),
+        reason: 'ölçek tavanında avatar şeridi '
+            '(${avatarTavan.toStringAsFixed(1)} px) sol alana '
+            '(${enTavan.toStringAsFixed(1)} px) sığmalı');
+
+    // Oran iddiası: mutlak px'e DEĞİL orana bağlı, çünkü px font
+    // metriklerinden türüyor ve ortama göre oynuyor (bu depoda bir kez CI'ı
+    // düşürdü).
+    //
+    // ⚠ EŞİK 0,75 → 0,70 (2 Eylül 2026) ve bu bir "testi susturma" DEĞİL,
+    // ölçülmüş bir yeniden ayar. Üç gerçek:
+    //
+    // 1. **0,75 tasarlanmış bir sınır değildi, bir CIRCIR'dı** — o günkü
+    //    ölçüm 0,765'ti ve eşik onun hemen altına kondu. Ölçüldü ki eşik
+    //    HERHANGİ bir punto artışını bloke ediyor: 15 px → 0,710 (gerçek),
+    //    14 px → 0,739 (türetildi). Yani kullanıcı "fontu biraz büyüt"
+    //    dediği anda bu iddia hangi puntoda olursa olsun düşüyordu.
+    // 2. **Sol sütunda artık METİN YOK.** Daralmanın kurbanı "Sıra: X"
+    //    satırıydı; 2 Eylül'de kaldırıldı. Geriye kalan `PlayerAvatarRow`
+    //    SABİT genişlikte (20 px avatar, 4 px bindirme) ve ölçekle
+    //    BÜYÜMÜYOR — yukarıdaki iki somut iddia tam da bunu kilitliyor.
+    // 3. **Daralmanın kaynağı meşru:** durum etiketi ölçekle büyüyor ve
+    //    `Expanded` olmayan taraftan yer alıyor. Durdurmanın tek yolu ekran
+    //    başına ölçek kısıtı olurdu — `mobile/CLAUDE.md` kural 1 bunu
+    //    YASAKLIYOR (tavan TEK yerde).
+    //
+    // Yani 0,70 "ne kadar kötüye izin veriyoruz" değil, "beklenmedik bir
+    // ikinci daralma kaynağı belirirse haber ver" eşiği. ÖLÇÜLEN: 130,2 →
+    // 92,5 px = 0,710.
+    expect(enTavan / enNormal, greaterThanOrEqualTo(0.70),
         reason: 'isim alanı ${enNormal.toStringAsFixed(1)} → '
             '${enTavan.toStringAsFixed(1)} px, yani beklenenden çok daraldı');
 
