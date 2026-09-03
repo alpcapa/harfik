@@ -43,10 +43,20 @@ export interface AvatarRowPlayer {
 }
 
 /**
- * `size` bilinçli olarak 20px: başlık satırının yerine geçtiğinden kartı
- * neredeyse hiç büyütmüyor, ama 16px'te baş harfler 6-7px'e düşüp
- * okunamaz hale geliyordu (üyelerin çoğunun profil fotoğrafı yok, yani
- * pratikte görünen şey baş harfler).
+ * `size` **26px** (2 Eylül 2026, kullanıcı isteği: "avatarları biraz daha
+ * büyütelim"). Öncesi 20'ydi ve bu yorum 3 Eylül'e kadar hâlâ 20 diyordu —
+ * o turda değer değişti, gerekçe güncellenmedi.
+ *
+ * Alt taban hâlâ geçerli: 16px'te baş harfler 6-7px'e düşüp okunamaz hâle
+ * geliyor (üyelerin çoğunun profil fotoğrafı yok, yani pratikte görünen şey
+ * baş harfler).
+ *
+ * ⚠ **Üst sınırı belirleyen taraf PORT** (`ui/game/player_avatar_row.dart`):
+ * orada şerit `Expanded` bir alanda ve yazı ölçeği tavanında 320px ekranda
+ * 92,5px'e iniyor — 4 oyunculu şerit 26/6 bindirmeyle 86px, yani 6,5px marj.
+ * Web'de böyle bir kısıt yok (tarayıcı kutuları da birlikte zoom'lar), ama
+ * ikisi aynı değeri paylaşıyor: **burada büyütmeden önce portun ölçümünü
+ * oku**, yoksa parite cihazda taşarak kırılır.
  */
 export function PlayerAvatarRow({
   players,
