@@ -1577,6 +1577,10 @@ class _SetupScreenState extends State<SetupScreen>
                   currentName: auth.accountName,
                   stats: widget.services.stats,
                   emptyMessage: 'Henüz bitmiş bir Yapay Zeka oyunun yok.',
+                  // Yerel oyunda tek insan koltuk HER ZAMAN hesap sahibi —
+                  // ada bakmadan kendi avatarı verilebiliyor (bkz.
+                  // `util/recent_game_avatars.dart`).
+                  ownAvatarUrl: auth.profile?.avatarUrl,
                   offlineNode: _offlineAiNotice(),
                   isOffline: !widget.services.onlineStatus.online,
                 )

@@ -25,6 +25,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show trUpper;
 
 import '../../bootstrap.dart';
+import '../../util/recent_game_avatars.dart';
 import '../devam_eden_govde.dart';
 import '../../data/online_games_api.dart';
 import '../push/push_permission_flow.dart';
@@ -536,6 +537,25 @@ class _LiveGamesTabState extends State<LiveGamesTab>
                         onlineOnly: true,
                         stats: services.stats,
                         emptyMessage: 'Henüz bitmiş bir Canlı oyunun yok.',
+                        // Avatar çözümü için canlı koltuklar (2 Eylül 2026).
+                        // Liste ZATEN elde: `list_my_online_games` durum
+                        // filtresi taşımıyor, bitmiş oyunlar da içinde.
+                        onlineGames: [
+                          // `games` = `snap?.games ?? []` (build'in başında).
+                          // ⚠ `snap`in KENDİSİ bir liste DEĞİL,
+                          // `OnlineGamesSnapshot` — ilk yazımda karıştırdım.
+                          for (final g in games)
+                            (
+                              id: g.id,
+                              slots: [
+                                for (final sl in g.slots)
+                                  AvatarSlot(
+                                      name: sl.isAi ? null : sl.name,
+                                      avatarUrl:
+                                          sl.isAi ? null : sl.avatarUrl),
+                              ],
+                            ),
+                        ],
                       );
                     },
                   )

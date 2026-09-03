@@ -28,8 +28,14 @@ const _void = kVoid;
 class AvatarRowPlayer {
   final String name;
 
-  /// Yalnızca gerçek üyelerde dolu olabilir; dondurulmuş snapshot BİLEREK
-  /// avatar taşımadığından (girişli herkese açık) orada hep null → baş harf.
+  /// Yalnızca gerçek üyelerde dolu olabilir.
+  ///
+  /// ⚠ Burada "dondurulmuş snapshot BİLEREK avatar taşımadığından orada hep
+  /// null → baş harf" yazılıydı; 2 Eylül 2026'da DEĞİŞTİ. Snapshot hâlâ
+  /// avatar taşımıyor ama "Son Oynananlar" artık avatarı BAŞKA yoldan
+  /// çözüyor (`games.online_game_id` → bitmiş oyunun canlı koltukları;
+  /// yerel oyunlarda hesabın kendi avatarı). Kural:
+  /// `util/recent_game_avatars.dart`.
   final String? avatarUrl;
 
   /// YZ koltuğu — baş harf yerine robot. "YZ" baş harfi üretmek onu gerçek

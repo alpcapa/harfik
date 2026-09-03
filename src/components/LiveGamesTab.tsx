@@ -1057,7 +1057,20 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
           </>
         )
           ) : (
-            <RecentGamesSection onlineOnly emptyMessage="Henüz bitmiş bir Canlı oyunun yok." />
+            <RecentGamesSection
+              onlineOnly
+              emptyMessage="Henüz bitmiş bir Canlı oyunun yok."
+              /* Avatar çözümü için canlı koltuklar (2 Eylül 2026). Bu liste
+                 ZATEN elde: `list_my_online_games` durum filtresi taşımıyor,
+                 yani bitmiş oyunlar da içinde — ikinci bir istek yok. */
+              onlineGames={(games ?? []).map((g) => ({
+                id: g.id,
+                slots: g.slots.map((s) => ({
+                  name: s.type === 'human' ? (s.name ?? null) : null,
+                  avatarUrl: s.type === 'human' ? (s.avatar_url ?? null) : null,
+                })),
+              }))}
+            />
           )}
         </>
       )}

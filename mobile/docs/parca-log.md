@@ -20,6 +20,40 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 182 — "Son Oynananlar"da avatarlar (2 Eylül 2026, kullanıcı
+     isteği; yeni `util/recent_game_avatars.dart`, değişen
+     `ui/setup/recent_games_section.dart`, `ui/live/live_games_tab.dart`,
+     `ui/setup/setup_screen.dart`, `ui/game/player_avatar_row.dart` +
+     web ikizleri + `test/recent_game_avatars_test.dart`):**
+     - **Kullanıcı:** *"Son oynananlara da avatar koyalım. Bu saçma kararı
+       geri al. Leaderboard'da zaten avatarlar herkese görünüyor, ayrıca bu
+       gizlilik ihlali değil, isteyen fotoğrafını kaldırabilir."* HAKLI ve
+       koddan doğrulandı: `leaderboard` view'ı `security_invoker = false`
+       ile RLS'i bypass edip herkesin takma adını VE avatarını açıyor
+       (`20260722114853_lock_down_profiles_games_select.sql`). Fotoğrafı
+       burada gizlemek kendi içinde tutarsızdı.
+     - ⚠ **İLK ANALİZİM YANLIŞTI ve kullanıcının ikinci sorusu düzeltti.**
+       "Snapshot'ta `user_id` de `avatar_url` de yok → migration + RLS
+       kararı şart" demiştim. Kullanıcı sordu: *"bekleyen oyunlardan farkı
+       ne, niye bu kadar zor?"* — ve fark VERİDEYDİ, bileşende değil:
+       canlı kartlar `list_my_online_games`in koltuklarını okuyor (orada
+       `avatar_url` profillerden join'leniyor), "Son Oynananlar" ise
+       donmuş jsonb'yi. Kapalı kapıda durup YANINDAKİ açık kapıyı
+       aramamışım: `games.online_game_id` DURUYOR ve bitmiş çevrimiçi
+       oyunların `online_games` satırı SİLİNMİYOR. **Migration da RLS
+       kararı da gerekmedi.** Deponun kendi dersi (Parça 54): bir kapı
+       kapalıysa aynı mekanizmanın öteki örneklerini ara.
+     - **Çözüm:** çevrimiçi kayıtta `online_game_id` → oyunun canlı
+       koltukları → isim eşlemesi; yerel kayıtta ada BAKMADAN hesabın kendi
+       avatarı (tek insan koltuk her zaman satırın sahibi).
+     - ⚠ **Eşleme OYUNLA SINIRLI, global DEĞİL** — takma adlar
+       değiştirilebiliyor (`AccountSettingsModal`), global arama adı
+       sonradan devralan BAŞKASININ yüzünü gösterirdi. En kötü ihtimal
+       artık "eşleşme yok → baş harf", yanlış yüz değil. Bu sınırın negatif
+       eşi iki tarafta da testli ("başka oyundaki aynı isim sızmaz").
+     - Kural saf bir dosyada ve İKİ tarafta aynı vakalarla koşuyor:
+       `npm run verify-recent-game-avatars` + `recent_game_avatars_test.dart`.
+
    - ✅ **Parça 181 — iPad'de paylaşım İKİ yolda ASILI KALIYORDU: ankrajın
      kendisi geçersizdi (2 Eylül 2026; değişen: `util/share_board.dart`,
      `ui/setup/setup_screen.dart`, `ui/friends/friends_modal.dart`,
