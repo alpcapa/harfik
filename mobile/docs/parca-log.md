@@ -20,6 +20,28 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 188 — kafa kafaya çubuğunun avatarları 18 → 26 px
+     (3 Eylül 2026, kullanıcı cihazda gördü; değişen
+     `ui/score/player_score_card_modal.dart` + web ikizi
+     `PlayerScoreCard.tsx`):**
+     - **Kullanıcı:** *"Web yayında ve düzelmiş gözüküyor. Ama skor kart %
+       çubuğu avatarlar çok küçük duruyor, biraz büyütmek lazım."* Yani
+       Parça 187'nin iki düzeltmesi sahada doğrulandı, kalan tek şey
+       ölçüydü.
+     - **26 keyfi bir sayı DEĞİL** — bu projede avatarın standart boyutu
+       (kullanıcının kendi kararı: *"hepsi 26 olsun"*). Yeni bir ölçü
+       uydurmak yerine var olana çekildi. Çubuk 8 → 10 px, çünkü 26'lık
+       avatarın yanında 8 px cılız kalıyordu.
+     - **Çakışma ÖLÇÜLDÜ, tahmin edilmedi:** blok 144 → 160 px; kartın
+       336 px'lik iç genişliğinde `justify-between` şeridin öteki ucundaki
+       `Tüm Oyunlar` butonuyla arası hâlâ 70 px (buton sağ kenarı 126,9 ↔
+       blok sol kenarı 197).
+     - **Kod değişikliği tek satırlık ama testler kendiliğinden korudu:**
+       Parça 187'de eklenen `RenderBox.size` ölçümü hâlâ dilimlerin
+       boyandığını zorluyor; üç şeritli yapının simetrisi avatar boyutundan
+       BAĞIMSIZ olduğundan hiçbir hiza testi dokunulmadan geçti (757 test +
+       `dart analyze` temiz, web tarafında 65 Playwright testi).
+
    - ✅ **Parça 187 — cihazda çıkan İKİ hata: boş çubuk ve bozuk hiza
      (3 Eylül 2026, kullanıcı APK testi; değişen
      `ui/score/player_score_card_modal.dart`,
