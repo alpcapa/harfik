@@ -62,6 +62,7 @@ import '../game/neo_button.dart';
 import '../game/player_badge.dart';
 import '../game/player_avatar_row.dart';
 import '../game/player_colors.dart';
+import '../../util/game_list_order.dart';
 import '../devam_eden_govde.dart';
 import '../live/live_games_tab.dart';
 import '../rank/league_rewards_host.dart';
@@ -1486,7 +1487,13 @@ class _SetupScreenState extends State<SetupScreen>
   /// deseni). 9 Ağustos 2026'da kullanıcı cihaz testinde eski (sekmesiz,
   /// listenin altına eklenmiş) sürümü bildirdi — Parça 28.
   Widget _buildCloudListView(SetWordSource? words) {
-    final saves = _cloudSaves;
+    // Silinmeye en yakın kayıt ÜSTTE (3 Eylül 2026, kullanıcı isteği).
+    // Yerel kaydın 7 günü `updated_at`ten işliyor, yani EN ESKİ güncellenen
+    // en yakın olandır — depo sorgusu `updated_at desc` döndüğü için burada
+    // TERS çevriliyor. Kural web/port ortak: `util/game_list_order.dart`.
+    final saves = _cloudSaves == null
+        ? null
+        : orderByExpiry(_cloudSaves!, (s) => s.updatedAtMs);
     final auth = widget.services.auth;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

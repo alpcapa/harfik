@@ -18,6 +18,7 @@ import { AuthModal } from "./AuthModal";
 import { CountBadge } from "./CountBadge";
 import { HelpModal } from "./HelpModal";
 import { LiveGamesTab, TurnTriangle } from "./LiveGamesTab";
+import { orderByExpiry } from "../utils/gameListOrder";
 import { LogoMark } from "./LogoMark";
 import { PlayerAvatarRow, type AvatarRowPlayer } from "./PlayerAvatarRow";
 import { PlayerBadge } from "./PlayerBadge";
@@ -857,7 +858,13 @@ export function Setup({
                   <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
                     Devam Eden Oyunlar
                   </div>
-                  {cloudSaves.map((save) => (
+                  {/* Silinmeye en yakın kayıt ÜSTTE (3 Eylül 2026, kullanıcı
+                    isteği). Yerel kaydın 7 günü `updated_at`ten işliyor
+                    (bkz. `remainingTime`), yani EN ESKİ güncellenen en
+                    yakın olandır — sorgu `updated_at desc` döndüğü için
+                    burada TERS çevriliyor. Kural web/port ortak:
+                    `utils/gameListOrder.ts`. */}
+                  {orderByExpiry(cloudSaves, (s) => Date.parse(s.updated_at) || null).map((save) => (
                     <SavedGameRow
                       key={save.id}
                       players={savedGameAvatars(

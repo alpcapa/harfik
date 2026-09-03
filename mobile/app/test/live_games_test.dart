@@ -100,9 +100,19 @@ void main() {
       expect(myTurnCount(games, turns), 2);
     });
 
-    test('activeBucket: aynı grupta SON OYNANAN üstte (turn_deadline)', () {
+    test('activeBucket: gruplar TERS yönde sıralanır (turn_deadline)', () {
+      // ⚠ ASİMETRİ BİLİNÇLİ ve bu test onun tek bekçisi. İki ayrı kullanıcı
+      // isteğinin kesişimi:
+      //   31 Ağustos: "son oynanan her zaman en üstte olacak"
+      //    3 Eylül  : "sıra sende bekleyenlerde bitmeye en yakın üstte"
+      // Çözüm: sıra BENDE artan (en yakın teslim üstte — yapacak iş var),
+      // sıra RAKİPTE azalan (son oynanan üstte — yapabileceğim yok).
+      // Kural `util/game_list_order.dart`ta, web ikizi `gameListOrder.ts`;
+      // vakaların tamamı `game_list_order_test.dart` + o dosyanın web
+      // doğrulama betiğinde.
+      //
       // `turn_deadline` her hamlede `now() + 48 saat` olur → geç deadline =
-      // son oynanan. Web'deki `LiveGamesTab` ile aynı ölçüt.
+      // son oynanan, erken deadline = teslime en yakın.
       final games = [
         for (final id in ['a', 'b', 'c', 'd'])
           game(gameRow(id: id, myId: 'me', status: 'active')),
@@ -110,17 +120,38 @@ void main() {
       final turns = {'a': 0, 'b': 1, 'c': 1, 'd': 0};
       final deadlines = <String, String?>{
         'a': '2026-09-01T10:00:00Z', // sıra rakipte, EN YENİ
-        'b': '2026-09-01T08:00:00Z', // sıra bende, eski
-        'c': '2026-09-01T09:00:00Z', // sıra bende, YENİ
+        'b': '2026-09-01T08:00:00Z', // sıra bende, EN YAKIN teslim
+        'c': '2026-09-01T09:00:00Z', // sıra bende, daha uzak
         'd': '2026-09-01T07:00:00Z', // sıra rakipte, en eski
       };
-      // Önce "sıra bende" grubu (c, b — c daha yeni), sonra ötekiler (a, d).
       expect(
           [for (final g in activeBucket(games, turns, deadlines: deadlines)) g.id],
-          ['c', 'b', 'a', 'd']);
-      // Deadline verilmezse ESKİ davranış (geliş sırası) korunur.
+          ['b', 'c', 'a', 'd'],
+          reason: 'sıra bende: b(08:00) → c(09:00) ARTAN · '
+              'sıra rakipte: a(10:00) → d(07:00) AZALAN. '
+              'İki grubu aynı yöne çevirmek isteklerden BİRİNİ bozar.');
+      // Deadline verilmezse geliş sırası korunur (hepsi null → tie-break).
       expect([for (final g in activeBucket(games, turns)) g.id],
           ['b', 'c', 'a', 'd']);
+    });
+
+    test('activeBucket: deadline BİLİNMEYEN oyun grubunun EN SONUNA düşer',
+        () {
+      // ⚠ Sessiz tuzağın negatif eşi: null eskiden 0 sayılıyordu ve bu
+      // yalnızca AZALAN sıralamada zararsızdı. "Sıra bende" grubu 3 Eylül'de
+      // ARTANA çevrilince 0, "en yakın teslim" sanılıp EN ÜSTE çıkardı.
+      final games = [
+        for (final id in ['bilinmiyor', 'yakin'])
+          game(gameRow(id: id, myId: 'me', status: 'active')),
+      ];
+      final turns = {'bilinmiyor': 1, 'yakin': 1}; // ikisi de sıra bende
+      final deadlines = <String, String?>{
+        'bilinmiyor': null,
+        'yakin': '2026-09-01T08:00:00Z',
+      };
+      expect(
+          [for (final g in activeBucket(games, turns, deadlines: deadlines)) g.id],
+          ['yakin', 'bilinmiyor']);
     });
 
     test('acceptedWaitingBucket: kabul ettim ama oyun hâlâ pending', () {
