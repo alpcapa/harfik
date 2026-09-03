@@ -240,7 +240,8 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       herkese görünür olsa da yazışma değil.)
 - [ ] **Kafa kafaya oran çubuğu (3 Eylül 2026) — İKİ HESAP GEREKİR.**
       A hesabıyla gir, k-lig listesinden B'nin kartını aç. Alt satırda solda
-      `Tüm Oyunlar` butonu, sağda: üstte oyun sayısı, altta **B'nin avatarı ·
+      `Tüm Oyunlar` butonu (SOLA yaslı; kendi Skor Kartı'ndaki buton da artık
+      aynı adı taşıyor ve sola yaslı — ikisini yan yana karşılaştır), sağda: üstte oyun sayısı, altta **B'nin avatarı ·
       üç renkli çubuk · A'nın (senin) avatarı**. İsim YAZMAMALI.
       - Renkler soldan sağa: **B'nin kazandıkları (kırmızı) · beraberlik
         (gri) · senin kazandıkların (yeşil)** — yani her avatar kendi

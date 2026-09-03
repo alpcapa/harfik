@@ -1,4 +1,4 @@
-// Tüm Geçmiş Oyunlar — web `GameHistoryModal.tsx` portu.
+// Tüm Oyunlar — web `GameHistoryModal.tsx` portu.
 //
 // Her kart: tarih + Canlı/Yapay Zeka rozeti + (varsa) sohbet rozeti, kalp
 // (beğeni) ve beğeni sayısı, final sıralamasıyla oyuncu satırları (sıra no,
@@ -450,7 +450,7 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
   Widget build(BuildContext context) {
     final entries = _entries;
     return KModal(
-      title: 'Tüm Geçmiş Oyunlar',
+      title: 'Tüm Oyunlar',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

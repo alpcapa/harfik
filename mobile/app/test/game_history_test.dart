@@ -162,7 +162,7 @@ void main() {
     final key = GlobalKey();
     await pumpHistory(tester, repo, key: key);
 
-    expect(find.text('TÜM GEÇMİŞ OYUNLAR'), findsOneWidget); // KModal başlığı
+    expect(find.text('TÜM OYUNLAR'), findsOneWidget); // KModal başlığı
     expect(find.text('03.08.2026'), findsOneWidget);
     expect(find.text('01.08.2026'), findsOneWidget);
     expect(find.text('Canlı'), findsOneWidget);

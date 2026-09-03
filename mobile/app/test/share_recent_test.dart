@@ -519,7 +519,7 @@ void main() {
     await tester.tap(find.text('238'));
     await tester.pumpAndSettle();
 
-    expect(find.text('TÜM GEÇMİŞ OYUNLAR'), findsOneWidget);
+    expect(find.text('TÜM OYUNLAR'), findsOneWidget);
     // Hedef oyunun tahtası ayrıca dokunmaya gerek kalmadan AÇIK geldi.
     expect(find.byType(ScoreBoxRow), findsOneWidget);
   });

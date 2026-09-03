@@ -49,7 +49,7 @@ class AccountButton extends StatefulWidget {
   /// yapılandırılmamış ya da testte verilmemiş).
   final StatsRepo? stats;
 
-  /// Skor kartından açılan "Tüm Geçmiş Oyunlar" için — null ise o link
+  /// Skor kartından açılan "Tüm Oyunlar" için — null ise o link
   /// çizilmez (kartın kendisi yine açılır).
   final Future<GamesRepo>? games;
 

@@ -31,6 +31,15 @@
        kişi avatar. İsim yazmayacak."* Alt satır tek ortalanmış butondan
        `spaceBetween` bir şeride döndü; etiket `TÜM OYUNLARI GÖR` → **`TÜM
        OYUNLAR`** (web'de de `Tüm Oyunlar`).
+     - **Aynı gün ikinci istek:** *"Hepsinde Tüm oyunlar olsun / Ve sola
+       yapışsın."* İlk tur yalnızca BAŞKASININ kartını değiştirmişti; kendi
+       kartı (`score_card_modal.dart`) hâlâ ortalanmış `TÜM GEÇMİŞ OYUNLAR`
+       diyordu — aynı işin iki adı, iki hizası. Artık dört yüzeyde de tek
+       ad + sola yaslı. Geçmiş modalının BAŞLIĞI da (`Tüm Geçmiş Oyunlar`)
+       `Tüm Oyunlar` oldu ve bu ESKİ bir parite açığını kapattı: web o
+       başlığı zaten öyle yazıyordu. ⚠ Kalan fark — web başlığa oyuncu
+       sayısını ekliyor (`Tüm Oyunlar · 2 Oyunculu`), port eklemiyor;
+       bilinçli borç.
      - **Sayım SUNUCUDA, çünkü istemcide DOĞRU yapılamıyordu:** `games`in
        donmuş `players` anlık görüntüsü `user_id` TAŞIMIYOR — istemcide
        eşleme ancak İSİMLE olurdu ve takma ad değiştirilebildiği için

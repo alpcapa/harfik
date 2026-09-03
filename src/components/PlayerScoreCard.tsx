@@ -421,9 +421,10 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
           "Tüm Geçmiş Oyunlar" → "Tüm Oyunlar" oldu; sağ tarafa aramızdaki
           kafa kafaya oran çubuğu geldi. Port ikizinde etiket "Tüm Oyunları
           Gör"dü, o da "TÜM OYUNLAR" oldu.
-          ⚠ KENDİ skor kartının butonu (`ScoreCard.tsx`, "Tüm Geçmiş
-          Oyunlar") BİLEREK dokunulmadan bırakıldı — istek başkasının
-          kartını tarif ediyordu, orada çubuk da yok. */}
+          Kullanıcı aynı gün "Hepsinde Tüm oyunlar olsun / Ve sola
+          yapışsın" dedi: kendi skor kartının butonu (`ScoreCard.tsx`) ve
+          portun geçmiş modalı başlığı da aynı ada çekildi ve o buton da
+          sola yaslandı — projede artık TEK ad var. */}
       <div className="mt-1.5 flex items-end justify-between gap-3">
         <button
           onClick={() => setShowAllGames(true)}

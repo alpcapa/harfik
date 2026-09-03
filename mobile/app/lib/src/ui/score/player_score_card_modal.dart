@@ -428,9 +428,11 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
             // "TÜM OYUNLARI GÖR" → "TÜM OYUNLAR" oldu (web'de de aynı ad;
             // öncesinde web "Tüm Geçmiş Oyunlar" diyordu) ve sağ tarafa
             // aramızdaki kafa kafaya oran çubuğu geldi.
-            // ⚠ KENDİ skor kartının butonu ("TÜM GEÇMİŞ OYUNLAR",
-            // `score_card_modal.dart`) BİLEREK dokunulmadan bırakıldı —
-            // kullanıcının isteği başkasının kartını tarif ediyordu.
+            // Kullanıcı aynı gün "Hepsinde Tüm oyunlar olsun / Ve sola
+            // yapışsın" dedi: KENDİ skor kartının butonu
+            // (`score_card_modal.dart`) ve geçmiş modalının BAŞLIĞI da
+            // aynı ada çekildi, o buton da sola yaslandı. Yani bugün
+            // projede tek ad var: "Tüm Oyunlar".
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,

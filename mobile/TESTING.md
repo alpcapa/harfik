@@ -573,7 +573,9 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       sıralaması açılmalı.
 - [ ] **Kafa kafaya oran çubuğu (3 Eylül 2026, Parça 185) — İKİ HESAP
       GEREKİR.** A hesabıyla gir, k-lig'den B'nin kartını aç. Alt satırda
-      solda `TÜM OYUNLAR` butonu, sağda: üstte oyun sayısı, altta **B'nin
+      solda `TÜM OYUNLAR` butonu (SOLA yaslı; kendi Skor Kartı'ndaki buton
+      da aynı adı taşımalı ve sola yaslı olmalı — geçmiş penceresinin başlığı
+      da `Tüm Oyunlar`), sağda: üstte oyun sayısı, altta **B'nin
       avatarı · üç renkli çubuk · A'nın (senin) avatarı**. İsim YAZMAMALI.
       - Renkler soldan sağa: **B'nin kazandıkları (kırmızı) · beraberlik
         (gri) · senin kazandıkların (yeşil)** — her avatar kendi
