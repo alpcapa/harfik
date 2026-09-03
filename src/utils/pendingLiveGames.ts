@@ -3,7 +3,11 @@
 // rozeti ile useAppIconBadge.ts'teki uygulama ikonu rozetinde ayrı ayrı
 // kopyalanmıştı (kod incelemesi, dead-code/tekrar bulgusu) — tek yerde
 // toplandı.
-import { fetchOnlineGameTurns, listMyOnlineGames } from '../lib/api';
+import {
+  fetchOnlineGameTurns,
+  fetchUnseenFinishedGames,
+  listMyOnlineGames,
+} from '../lib/api';
 
 export interface PendingLiveGameCounts {
   /** Henüz yanıtlanmamış, çağırana gönderilmiş davet sayısı. */
@@ -18,6 +22,25 @@ export interface PendingLiveGameCounts {
    * kullanıcıyı boş bir sekmeyle karşılamamak için.
    */
   activeCount: number;
+  /**
+   * Bitişini GÖRMEDİĞİ Canlı oyunların `games.id`'leri (3 Eylül 2026).
+   * `null` = bilinmiyor (istek düştü) — boş dizi DEĞİL.
+   *
+   * ⚠ Bu "bekleyen iş" DEĞİL, **HABER**. Yukarıdaki `inviteCount +
+   * myTurnCount` toplamına KATILMAZ ve katılmamalı: o toplam iki şeyi
+   * besliyor — uygulama ikonundaki rozet (`useAppIconBadge`) ve girişte
+   * hangi sekmenin açılacağı (`decideInitialMainView`). İkisi de
+   * "yapacak işin var" demek; biten bir oyun yapılacak iş değil.
+   * Kullanıcı kararı (3 Eylül 2026): rozet yalnızca uygulama İÇİNDE,
+   * "Arkadaşınla" sekmesine kadar çıksın, ikon rozetine ve giriş
+   * kuralına dokunmasın.
+   *
+   * Bu yüzden ikisi de alanları TEK TEK topluyor (`counts.inviteCount +
+   * counts.myTurnCount`), nesneyi kör toplamıyor — yeni bir alan eklemek
+   * onları sessizce bozmuyor. Buraya bir alan daha eklersen aynı deseni
+   * koru.
+   */
+  finishedUnseenIds: string[] | null;
 }
 
 /**
@@ -44,7 +67,12 @@ export async function fetchPendingLiveGameCounts(): Promise<PendingLiveGameCount
   ).length;
   const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
   if (activeIds.length === 0) {
-    return { inviteCount, myTurnCount: 0, activeCount: 0 };
+    return {
+      inviteCount,
+      myTurnCount: 0,
+      activeCount: 0,
+      finishedUnseenIds: await fetchUnseenFinishedGames(),
+    };
   }
   const turns = await fetchOnlineGameTurns(activeIds);
   // Sıra bilinmiyorsa sayı da bilinmiyor. `inviteCount`'u tek başına dönmek
@@ -56,7 +84,25 @@ export async function fetchPendingLiveGameCounts(): Promise<PendingLiveGameCount
     const idx = g.slots.findIndex((s) => s.type === 'human' && s.relation === 'self');
     return turns[g.id] === idx;
   }).length;
-  return { inviteCount, myTurnCount, activeCount: activeIds.length };
+  return {
+    inviteCount,
+    myTurnCount,
+    activeCount: activeIds.length,
+    // ⚠ EN SONDA, ve bilerek `Promise.all` DEĞİL. İki gerekçe:
+    //
+    // (1) Yukarıdaki iki erken `return null` yolu ("liste bilinmiyor",
+    //     "sıra bilinmiyor") bu isteği HİÇ atmıyor — sayılar zaten
+    //     kullanılmayacakken bir istek daha atmanın anlamı yok.
+    // (2) Çağrı SIRASI bir testin dayanağı: `verify-live-games-load`
+    //     "liste gelir ama sıra sorgusu düşer" vakasını `failCalls: [2,3,4]`
+    //     ile kuruyor. Paralel çekim bu indeksleri kaydırıp o guard'ı
+    //     sessizce başka bir şeyi ölçer hâle getirirdi — testi koda
+    //     uydurmak yerine sıra korundu.
+    //
+    // Bu istek düşerse `null` döner ve çağıran son bilinen rozeti korur;
+    // liste/sıra sayıları bundan ETKİLENMEZ (bkz. alanın notu).
+    finishedUnseenIds: await fetchUnseenFinishedGames(),
+  };
 }
 
 /**

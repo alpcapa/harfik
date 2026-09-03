@@ -49,7 +49,15 @@ for (const counts of countsList) {
     const sonuc = decideInitialMainView(
       counts === null
         ? null
-        : { inviteCount: counts[0], myTurnCount: counts[1], activeCount: counts[2] },
+        : {
+            inviteCount: counts[0],
+            myTurnCount: counts[1],
+            activeCount: counts[2],
+            // Giriş sekmesi kararına GİRMEZ (biten oyun "haber", "iş"
+            // değil — bkz. alanın notu). Sabit boş: bu golden'ın kapsamı
+            // değişmedi, yalnızca tip zorunluluğu.
+            finishedUnseenIds: [],
+          },
       saves === null ? null : { length: saves },
     );
     cases.push({ counts, saves, expected: sonuc });
