@@ -81,6 +81,22 @@ interface RecentGamesSectionProps {
    * kullanımında verilmez — orada tek insan koltuk hesabın kendisidir.
    */
   onlineGames?: { id: string; slots: { name: string | null; avatarUrl: string | null }[] }[];
+  /**
+   * Bitişini kullanıcının GÖRMEDİĞİ oyunların `games.id`'leri — o satırlarda
+   * "OYUN BİTTİ"nin altına kırmızı bir "YENİ" rozeti düşer (3 Eylül 2026,
+   * kullanıcı isteği).
+   *
+   * ⚠ Yalnızca Canlı tarafta verilir. YZ oyunlarında bitişi ZATEN görüyorsun
+   * (oyun senin cihazında bitiyor), yani orada "yeni" diye bir kavram yok —
+   * kullanıcı kapsamı bilerek Canlı ile sınırladı.
+   *
+   * ⚠ Sekme AÇIKKEN sabit kalmalı: sunucudaki işaret sekmeye girer girmez
+   * temizleniyor (rozet sıfırlansın diye), ama satırdaki rozetler ziyaret
+   * boyunca DURMALI — yoksa kullanıcı tam bakarken gözünün önünde kaybolur.
+   * Bu yüzden çağıran anlık listeyi değil, sekmeye girerken aldığı bir
+   * ENSTANTANEyi geçiyor (bkz. `LiveGamesTab`).
+   */
+  newlyFinishedIds?: ReadonlySet<string>;
 }
 
 export function RecentGamesSection({
@@ -88,6 +104,7 @@ export function RecentGamesSection({
   emptyMessage,
   offlineNode,
   onlineGames,
+  newlyFinishedIds,
 }: RecentGamesSectionProps) {
   const online = useOnlineStatus();
   const { user, profile } = useAuth();
@@ -231,6 +248,23 @@ export function RecentGamesSection({
                   <span className="font-sans text-[12px] font-bold text-text truncate">{titleFor(g)}</span>
                 )}
                 <span className="text-[9px] font-mono text-muted truncate">{formatDate(g.created_at)}</span>
+              </span>
+              {/* "Oyun Bitti" — 3 Eylül 2026, kullanıcı isteği. Bu liste zaten
+                  YALNIZCA bitmiş oyunları gösteriyor, yani etiket her satırda
+                  aynı; amacı bilgi vermek değil, oyunun bittiğini FARK
+                  ETTİRMEK: hamleni yapıp gittiğinde oyun sen yokken bitiyor ve
+                  bugün bunu hiçbir yer söylemiyor.
+                  Bitişini görmediğin oyunlarda altına kırmızı "YENİ" düşer;
+                  sekmeden çıkınca o rozet kalkar, "OYUN BİTTİ" kalır. */}
+              <span className="shrink-0 flex flex-col items-center gap-0.5 px-1">
+                <span className="text-[9px] font-mono uppercase tracking-[0.5px] text-muted leading-none">
+                  Oyun Bitti
+                </span>
+                {newlyFinishedIds?.has(g.id) && (
+                  <span className="text-[8px] font-mono font-bold uppercase tracking-[0.5px] text-white bg-red rounded px-1 py-px leading-none">
+                    Yeni
+                  </span>
+                )}
               </span>
               <span className="flex items-center gap-2 shrink-0">
                 <span className="font-mono text-[11px] font-bold text-text">{g.player_score}</span>

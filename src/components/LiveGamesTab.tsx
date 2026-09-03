@@ -34,6 +34,7 @@ import {
   fetchOnlineGameDeadlines,
   fetchOnlineGameTurns,
   listMyOnlineGames,
+  markGameFinishesSeen,
   respondToGameInvite,
   subscribeMyOnlineGames,
 } from '../lib/api';
@@ -515,9 +516,26 @@ function PendingSection({ title, games }: { title: string; games: OnlineGame[] }
 interface LiveGamesTabProps {
   /** `status==='active'` bir oyuna tıklanınca gerçek oyun ekranını açmak için (Faz 3, 4. adım). */
   onOpenGame: (game: OnlineGame) => void;
+  /**
+   * Bitişini kullanıcının GÖRMEDİĞİ oyunların `games.id`'leri (3 Eylül 2026).
+   * "Son Oynananlar" alt sekmesinin kırmızı sayısı ve satırlardaki "YENİ"
+   * rozetleri bundan geliyor.
+   *
+   * ⚠ Sahibi `Setup` — çünkü aynı sayı ÜST sekmenin ("Arkadaşınla") rozetine
+   * de giriyor. Burada ayrıca çekilseydi iki kopya birbirinden sapardı.
+   * ⚠ Referansı KARARLI olmalı (Setup'ta state), yoksa aşağıdaki effect her
+   * render'da yeniden koşup sunucuya işaretleme isteği yağdırır.
+   */
+  newlyFinishedIds: readonly string[];
+  /** Sekme ziyaret edilip sunucu işaretlemeyi ONAYLADIĞINDA çağrılır. */
+  onFinishesSeen: () => void;
 }
 
-export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
+export function LiveGamesTab({
+  onOpenGame,
+  newlyFinishedIds,
+  onFinishesSeen,
+}: LiveGamesTabProps) {
   const { user, loading: authLoading } = useAuth();
   const online = useOnlineStatus();
   // null = henüz çekilmedi (yükleniyor), [] = çekildi ama hiç oyun yok.
@@ -948,10 +966,51 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   const myTurnCount = active.filter((g) => turns[g.id] === mySlotIndex(g)).length;
   const inviteCount = invites.length;
 
+  // "YENİ" rozetlerinin ZİYARET BOYUNCA sabit kalan enstantanesi (3 Eylül
+  // 2026, kullanıcı isteği).
+  //
+  // Kullanıcının tarifi iki ayrı an içeriyor ve ikisi aynı anda olmuyor:
+  //   "Bir kere girip gördüğünde tab numarası SIFIRLANIR"  → giriş anında
+  //   "…ve yeni kalkar, sadece Oyun bitti kalır"           → ÇIKIŞTA
+  // Yani sunucudaki işaret sekmeye girer girmez temizleniyor (sayı hemen
+  // sıfırlanıyor), ama satırdaki rozetler ziyaret bitene kadar duruyor.
+  // Anlık listeyi doğrudan bağlasaydık rozetler kullanıcı tam bakarken
+  // gözünün önünde kaybolurdu.
+  const [freshFinished, setFreshFinished] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  useEffect(() => {
+    if (subTab !== 'recent') {
+      // Çıkış: "bir daha girdiğinde yeni rozetleri gösterilmez".
+      setFreshFinished((prev) => (prev.size === 0 ? prev : new Set()));
+      return;
+    }
+    // Boşken erken çıkmak ŞART: işaretleme başarılı olunca liste [] olarak
+    // geri gelip bu effect'i tekrar koşturuyor — enstantaneyi burada
+    // temizleseydik rozetler girişten saniyeler sonra silinirdi.
+    if (newlyFinishedIds.length === 0) return;
+    setFreshFinished(new Set(newlyFinishedIds));
+    let cancelled = false;
+    void markGameFinishesSeen().then((ok) => {
+      // ⚠ Yalnızca sunucu ONAYLARSA sıfırla. Çevrimdışıyken yerelde
+      // sıfırlamak rozeti kaybettirir, sunucuda ise hâlâ görülmemiş durur —
+      // bir sonraki tazelemede geri gelir ve "kayboldu sonra döndü" diye
+      // tuhaf görünürdü. Bu kod tabanında tek seferlik kararların BAŞARISIZ
+      // veriyle tüketilmesi üç kez hata olarak kayıtlı.
+      if (!cancelled && ok) onFinishesSeen();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [subTab, newlyFinishedIds, onFinishesSeen]);
+
   const SUB_TABS: { key: SubTab; label: string; badge: number }[] = [
     { key: 'active', label: 'Devam Edenler', badge: myTurnCount },
     { key: 'invites', label: 'Oyun Davetleri', badge: inviteCount },
-    { key: 'recent', label: 'Son Oynananlar', badge: 0 },
+    // 3 Eylül 2026: bu rozet "yapacak iş" DEĞİL, HABER — bitişini görmediğin
+    // oyunlar. İlk ikisinden farkı bu; yine de aynı görsel dille gösteriliyor
+    // çünkü kullanıcının fark etmesini istediğimiz şey aynı.
+    { key: 'recent', label: 'Son Oynananlar', badge: newlyFinishedIds.length },
   ];
 
   // Davet/bekleme kartlarındaki TÜM insan koltuklarının puanları tek çekimde
@@ -1075,6 +1134,7 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
             <RecentGamesSection
               onlineOnly
               emptyMessage="Henüz bitmiş bir Canlı oyunun yok."
+              newlyFinishedIds={freshFinished}
               /* Avatar çözümü için canlı koltuklar (2 Eylül 2026). Bu liste
                  ZATEN elde: `list_my_online_games` durum filtresi taşımıyor,
                  yani bitmiş oyunlar da içinde — ikinci bir istek yok. */
