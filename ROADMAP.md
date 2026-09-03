@@ -89,7 +89,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **1.0.5'e binen kod** | Tahta zoom'u (+2 APK turu) · zoom tanıtım balonu · yazı ölçeği (sınıf 3+2) · mesaj kutusu etiketi · **cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar)** | ✅ **TUR KAPANDI** — `1.0.5 (501) — 4a0a29b` kapalı testte yayında (~15:03) ve üç işin cihaz doğrulaması da alındı (2 Eylül, kullanıcı). Ayrıntı: arşiv → "1.0.5 SÜRÜM TURU" |
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); **1.0.5'in tamamı 2 Eylül'de onaylandı** (zoom turu, çevrimdışı şerit, filigranlar, balon, yazı ölçeği, mesaj etiketi) — kalan iki kalem bu ikisi |
 | **Karar verilmiş, yapılmamış** | #8 Paylaşma (iPad popover) — cihaz istiyor | ⬜ · **#3 hatırlatma** ✅ KAPANDI (2 Eylül, zaten yürüyen alışkanlık) ve **#16 kart düzeni** ✅ YAPILDI — ikisi de arşivde |
-| **Ertelendi** | #2 zorunlu güncelleme — In-App Update yerini aldı, eşik yalnızca acil fren | — |
+| **Ertelendi** | #2 zorunlu güncelleme | ✅ **KAPANDI/ARŞİVDE** (2 Eylül 2026, kullanıcı: *"Artık app'de güncelleme çıkıyor, bunu görünce zaten yapar"*). ⚠ Sürüm kapısı DURUYOR ve artık KULLANILABİLİR — acil fren olarak `app_config.mobile_min_supported_version` |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
 | **Play Store'a girdikten sonra** | **#17 Google ile giriş** — sunucu → web → mobil; migration BLOKER (OAuth bugün `handle_new_user`'da patlar) | ⏳ ERTELENDİ — acelesi yok, çalışan kimlik akışına şimdi dokunulmuyor (2 Eylül, kullanıcı). ⚠ Sayaçla İLİŞKİSİ YOK; o bağ aynı gün koptu, gerekçe #17'de |
@@ -127,72 +127,21 @@ Push capability ekle" — ikinci bir gönderici YAZILMAYACAK.
 
 ## Sürüm sıralaması, force update ve davetliler (27 Ağustos 2026)
 
-Bunlar bir "madde" değil — biri bir SIRALAMA kuralı, biri ERTELENMİŞ bir
-karar, biri de açık pencerenin İŞLETİM bilgisi. Hiçbiri koda yazılamadığı
-için buraya yazıldı; oturum kapanınca kaybolmasınlar.
+Bu bölümde artık TEK konu var: açık test penceresinin İŞLETİM bilgisi.
+Koda yazılamadığı için buraya yazıldı; oturum kapanınca kaybolmasın.
 
-⚠ Başlıktaki üçüncü konu ("davetliler") 2 Eylül 2026'da bir HATIRLATMA
-maddesiydi ve kapandı; yerinde yalnızca sayacın işletim bilgisi kaldı.
-Başlık, atıflar kırılmasın diye değiştirilmedi.
+⚠ Başlıktaki öteki iki konu 2 Eylül 2026'da KAPANDI ve arşive taşındı:
+"force update" (#2 — kullanıcı kararı, Play'in kendi güncelleme bildirimi
+yeterli) ve "davetliler" (#3 — zaten yürüyen bir alışkanlık). Başlık,
+atıflar kırılmasın diye değiştirilmedi.
 
-### 2. Zorunlu güncelleme (force update) — ERTELENDİ
-
-Kullanıcı isteği (26 Ağustos 2026): *"Ben normal yayına alıyorum. Riske
-girmeyelim. Sorun çoğu insan güncellemez diye yorum geldi. Google tarafında
-böyle opsiyon olsaydı onu açıp mecburi update yaptırırdım. Ama yoksa
-etrafından dönmeye gerek yok."*
-
-Ölçülen gerçek: **Play Console'da "zorunlu güncelleme" diye bir ayar YOK.**
-Google'ın sunduğu tek yol In-App Updates API (`immediate` akış) ve
-önceliği (`inAppUpdatePriority`) yalnızca **Publishing API** üzerinden
-verilebiliyor — Console arayüzünde alanı bile yok. Yani "etrafından dönmek"
-gerçekten ek bir altyapı işi.
-
-İleride yapılacaksa **iki ön koşul ÖLÇÜLDÜ ve ikisi de bugün eksik:**
-
-1. **Her derleme `1.0.0`.** `mobile/app/pubspec.yaml` sürümü sabit; CI
-   yalnızca `versionCode`'u artırıyor. Bir istemci "daha yeni sürüm var mı"
-   sorusunu kendi başına soramaz — önce sürüm adı derlemeye bağlanmalı.
-2. **`UpdateRequiredScreen`'in mağaza butonu YOK.** Ekran var ama kullanıcıyı
-   Play'e götüren bir eylem taşımıyor; zorunlu güncelleme onu kilitlenme
-   ekranına çevirir.
-
-**28 AĞUSTOS 2026 — KULLANICI YENİDEN İSTEDİ** (*"Firebase firestore'e
-versiyon ekleyelim, cihaz her açıldığında kontrol etsin, eğer değilse markete
-göndersin"*). İstenen davranış aynen bu maddedir; iki düzeltme gerekiyor:
-
-⚠ **FIRESTORE'A GEREK YOK — kapı ZATEN VAR ve Supabase'de.** Ölçüldü:
-`config/version_gate.dart` her açılışta (`bootstrap`) `app_config`
-tablosundaki `mobile_min_supported_version`ı okuyor, `compareSemver` ile
-karşılaştırıyor ve düşükse `UpdateRequiredScreen`e düşürüyor; ulaşılamazsa
-FAIL-OPEN (offline YZ oyunu rehin alınmıyor). Yani "cihaz her açıldığında
-kontrol etsin" kısmı ÇALIŞIYOR.
-
-Firestore eklemek aynı gerçeğin İKİNCİ bir doğruluk kaynağını yaratırdı — bu
-kod tabanının en sık tekrarlayan hata sınıfı tam olarak bu (bkz. `_red`in 13
-dosyada ikiye bölünmesi, k-lig kademe tablosunun ÜÇ kopyası). Üstelik ikinci
-kaynak, sürüm eşiğini değiştirmek için iki ayrı panele girmek demek olurdu.
-**Eşik Supabase'de kalmalı.**
-
-**GERÇEK EKSİK İKİ ŞEY (yukarıdaki ön koşulların aynısı):**
-1. **`appVersion` sabit `1.0.0`.** Eşiği `1.0.1` yapmak BÜTÜN derlemeleri —
-   en yenisi dahil — kilitler. Kapı bugün kullanılamaz durumda; önce sürüm
-   adı derlemeye bağlanmalı (CI yalnızca `versionCode`u artırıyor).
-2. **`UpdateRequiredScreen`de mağaza butonu YOK** (ölçüldü: dosyada tek bir
-   `launchUrl`/`market://` yok). Bugünkü hâliyle ekran bir ÇIKMAZ — "güncelle"
-   diyor ama güncellemenin yolunu göstermiyor. `url_launcher` zaten bağımlılık
-   olarak var; `market://details?id=com.kelimeki.kelimeki` (Play yoksa
-   `https://play.google.com/store/apps/details?id=…` yedeği) yeterli.
-
-Sıra: bu ikisi → sonra eşiği kullanmaya başla. Sürüm B'nin kapsamında DEĞİL
-(kapsam: deep link + push + sözlük); B çıktıktan sonraki ilk iş adayı.
-
-⚠ **Risk (kullanıcı sordu: "Bu oyunun hiç açılmamasına sebep olabilir mi?"):**
-EVET — yanlış kurulmuş bir zorunlu güncelleme, güncellemeyi alamayan
-(cihazı eski, Play'i olmayan, ağı kısıtlı) kullanıcı için uygulamayı
-tamamen açılmaz hâle getirir ve düzeltmesi ancak YENİ bir sürüm yayınlamakla
-mümkündür. Bu yüzden erteleme doğru karar; yapılacaksa önce yukarıdaki iki
-ön koşul, sonra kademeli (`flexible`) akış.
+⚠ **Sürüm kapısı silinmedi ve artık KULLANILABİLİR durumda** (#2 kapansa
+bile): `config/version_gate.dart` her açılışta `app_config`teki
+`mobile_min_supported_version`ı okuyor, düşükse `UpdateRequiredScreen`e
+düşürüyor, ulaşılamazsa FAIL-OPEN. #2'nin engel saydığı iki eksik de
+bugün YOK (kod okundu): `appVersion` artık sürümü takip ediyor (`1.0.5`,
+parite testiyle zorlanıyor) ve ekranda `market://` + web yedeği var. Yani
+acil bir fren gerekirse eşiği yükseltmek YETER.
 
 ### Sayaç — nerede okunur, 14. gün ne zaman
 
