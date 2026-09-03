@@ -274,6 +274,7 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
               avatarIndex: _avatarIndex,
               ownAvatarUrl: widget.ownAvatarUrl,
               yeni: widget.newlyFinishedIds.contains(g.id),
+              onlineOnly: widget.onlineOnly,
             ),
           ),
       ],
@@ -299,12 +300,17 @@ class _RecentRow extends StatelessWidget {
   /// (3 Eylül 2026). Aynı sebeple parametre: bu satır ayrı bir widget.
   final bool yeni;
 
+  /// "OYUN BİTTİ" etiketi YALNIZCA Canlı tarafta çizilir — YZ oyunları senin
+  /// cihazında bittiği için orada bilgi taşımaz. Aynı sebeple parametre.
+  final bool onlineOnly;
+
   const _RecentRow({
     required this.entry,
     required this.onTap,
     required this.avatarIndex,
     required this.ownAvatarUrl,
     required this.yeni,
+    required this.onlineOnly,
   });
 
   @override
@@ -374,42 +380,45 @@ class _RecentRow extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            // "Oyun Bitti" — 3 Eylül 2026, kullanıcı isteği. Bu liste zaten
-            // YALNIZCA bitmiş oyunları gösteriyor, yani etiket her satırda
-            // aynı; amacı bilgi vermek değil, oyunun bittiğini FARK
-            // ETTİRMEK: hamleni yapıp gittiğinde oyun sen yokken bitiyor ve
-            // bugün bunu hiçbir yer söylemiyor. Web ikizi
-            // `RecentGamesSection.tsx` ile aynı yer/aynı metin.
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('OYUN BİTTİ',
-                    style: TextStyle(
-                        fontFamily: 'SpaceMono',
-                        fontSize: 9,
-                        letterSpacing: 0.5,
-                        color: _muted)),
-                if (yeni) ...[
-                  const SizedBox(height: 2),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: kRed,
-                      borderRadius: BorderRadius.circular(3),
+            // "Oyun Bitti" — 3 Eylül 2026, kullanıcı isteği.
+            // ⚠ YALNIZCA Canlı tarafta. YZ oyunları senin cihazında bitiyor,
+            // yani bitişi zaten gözünle görüyorsun; orada bu etiket bilgi
+            // taşımaz, yalnızca gürültü olurdu (kullanıcı aynı gün ikinci
+            // turda bunu istedi). Canlı'da ise tam tersi: hamleni yapıp
+            // gittiğinde oyun SEN YOKKEN bitiyor ve bugün bunu hiçbir yer
+            // söylemiyor. Web ikizi `RecentGamesSection.tsx` ile aynı koşul.
+            if (onlineOnly) ...[
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('OYUN BİTTİ',
+                      style: TextStyle(
+                          fontFamily: 'SpaceMono',
+                          fontSize: 9,
+                          letterSpacing: 0.5,
+                          color: _muted)),
+                  if (yeni) ...[
+                    const SizedBox(height: 2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: kRed,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: const Text('YENİ',
+                          style: TextStyle(
+                              fontFamily: 'SpaceMono',
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: Colors.white)),
                     ),
-                    child: const Text('YENİ',
-                        style: TextStyle(
-                            fontFamily: 'SpaceMono',
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                            color: Colors.white)),
-                  ),
+                  ],
                 ],
-              ],
-            ),
-            const SizedBox(width: 8),
+              ),
+              const SizedBox(width: 8),
+            ],
             Text('${entry.playerScore}',
                 style: const TextStyle(
                     fontFamily: 'SpaceMono',

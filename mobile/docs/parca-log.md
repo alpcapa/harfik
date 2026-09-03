@@ -66,6 +66,16 @@
        düşerse sayaç sıfırlanmaz** (negatif eş) · `pendingCounts` listeyi
        taşır ama "bekleyen iş"e katmaz · haber çekimi düşse de sayılar gelir ·
        `markFinishesSeen` ağ hatasında `false`.
+     - ⚠ **KAPSAM aynı gün daraltıldı (kullanıcı):** *"YZ'de oyun bitti
+       yazmasına gerek yok. Bu sadece canlı oyunlar için geçerli."* İlk tur
+       `OYUN BİTTİ` etiketini HER İKİ listeye de koymuştu; haklı olarak
+       kaldırıldı — YZ oyunu SENİN cihazında bitiyor, bitişini zaten gözünle
+       görüyorsun, orada etiket bilgi taşımaz. Üçü de (etiket · `YENİ` ·
+       sayı) artık yalnızca Canlı'da. Koşul `_RecentRow`a **parametre**
+       olarak geçiyor (`onlineOnly`) — Parça 184'ün dersi üçüncü kez.
+       Regresyon: 3 test daha (`share_recent_test.dart`) — YZ'de ÇİZİLMEZ ·
+       Canlı'da çizilir · görülmemişte `YENİ` çıkar. İlk test satırın
+       gerçekten çizildiğini ayrıca doğruluyor, yoksa hiçbir şey kanıtlamaz.
      - **Doğrulama sınırı:** gerçek akış İKİ hesap ister (rakip senin yokken
        oynayıp oyunu bitirmeli). Cihaz kontrolü `mobile/TESTING.md`'de.
 

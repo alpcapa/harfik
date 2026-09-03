@@ -524,6 +524,87 @@ void main() {
     expect(find.byType(ScoreBoxRow), findsOneWidget);
   });
 
+  // 3 Eylül 2026, kullanıcı: *"YZ'de oyun bitti yazmasına gerek yok. Bu
+  // sadece canlı oyunlar için geçerli."* Gerekçe: YZ oyunu SENİN cihazında
+  // bitiyor, bitişini zaten gözünle görüyorsun — orada etiket bilgi taşımaz.
+  // Canlı'da ise oyun sen yokken bitiyor, asıl mesele o.
+  testWidgets('Son Oynadıklarım: "OYUN BİTTİ" YZ tarafında ÇİZİLMEZ',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(id: 'g-ai', players: [
+          snap('Ironman', 238, colorIndex: 0),
+          snap('Yapay Zeka 2', 179, ai: true, colorIndex: 1),
+        ])
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, const Size(420, 780));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: RecentGamesSection(
+            games: repo, userId: 'u-me', onlineOnly: false),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Satır GERÇEKTEN çizilmiş olmalı — yoksa test hiçbir şey kanıtlamaz.
+    expect(find.text('238'), findsOneWidget);
+    expect(find.text('OYUN BİTTİ'), findsNothing);
+  });
+
+  testWidgets('Son Oynadıklarım: "OYUN BİTTİ" CANLI tarafta çizilir',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(id: 'g-live', onlineGameId: 'og-1', players: [
+          snap('Ironman', 238, colorIndex: 0),
+          snap('Esiner', 179, colorIndex: 1),
+        ])
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, const Size(420, 780));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: RecentGamesSection(
+            games: repo, userId: 'u-me', onlineOnly: true),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('OYUN BİTTİ'), findsOneWidget);
+    // "YENİ" yalnızca bitişini görmediklerinde — burada verilmedi.
+    expect(find.text('YENİ'), findsNothing);
+  });
+
+  testWidgets('Son Oynadıklarım: görülmemiş oyunda "YENİ" rozeti çıkar',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(id: 'g-live', onlineGameId: 'og-1', players: [
+          snap('Ironman', 238, colorIndex: 0),
+          snap('Esiner', 179, colorIndex: 1),
+        ])
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, const Size(420, 780));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: RecentGamesSection(
+            games: repo,
+            userId: 'u-me',
+            onlineOnly: true,
+            newlyFinishedIds: const {'g-live'}),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('OYUN BİTTİ'), findsOneWidget);
+    expect(find.text('YENİ'), findsOneWidget);
+  });
+
   testWidgets('Son Oynadıklarım: ağ hatası "oyunun yok" DEĞİL "yüklenemedi"',
       (tester) async {
     // Çevrimdışıyken "Henüz bitmiş bir Yapay Zeka oyunun yok." demek

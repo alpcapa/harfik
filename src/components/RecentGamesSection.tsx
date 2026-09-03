@@ -249,23 +249,27 @@ export function RecentGamesSection({
                 )}
                 <span className="text-[9px] font-mono text-muted truncate">{formatDate(g.created_at)}</span>
               </span>
-              {/* "Oyun Bitti" — 3 Eylül 2026, kullanıcı isteği. Bu liste zaten
-                  YALNIZCA bitmiş oyunları gösteriyor, yani etiket her satırda
-                  aynı; amacı bilgi vermek değil, oyunun bittiğini FARK
-                  ETTİRMEK: hamleni yapıp gittiğinde oyun sen yokken bitiyor ve
-                  bugün bunu hiçbir yer söylemiyor.
+              {/* "Oyun Bitti" — 3 Eylül 2026, kullanıcı isteği.
+                  ⚠ YALNIZCA Canlı tarafta. YZ oyunları senin cihazında
+                  bitiyor, yani bitişi zaten gözünle görüyorsun; orada bu
+                  etiket bilgi taşımaz, yalnızca gürültü olurdu (kullanıcı
+                  aynı gün ikinci turda bunu istedi). Canlı'da ise tam tersi:
+                  hamleni yapıp gittiğinde oyun SEN YOKKEN bitiyor ve bugün
+                  bunu hiçbir yer söylemiyor.
                   Bitişini görmediğin oyunlarda altına kırmızı "YENİ" düşer;
                   sekmeden çıkınca o rozet kalkar, "OYUN BİTTİ" kalır. */}
-              <span className="shrink-0 flex flex-col items-center gap-0.5 px-1">
-                <span className="text-[9px] font-mono uppercase tracking-[0.5px] text-muted leading-none">
-                  Oyun Bitti
-                </span>
-                {newlyFinishedIds?.has(g.id) && (
-                  <span className="text-[8px] font-mono font-bold uppercase tracking-[0.5px] text-white bg-red rounded px-1 py-px leading-none">
-                    Yeni
+              {onlineOnly && (
+                <span className="shrink-0 flex flex-col items-center gap-0.5 px-1">
+                  <span className="text-[9px] font-mono uppercase tracking-[0.5px] text-muted leading-none">
+                    Oyun Bitti
                   </span>
-                )}
-              </span>
+                  {newlyFinishedIds?.has(g.id) && (
+                    <span className="text-[8px] font-mono font-bold uppercase tracking-[0.5px] text-white bg-red rounded px-1 py-px leading-none">
+                      Yeni
+                    </span>
+                  )}
+                </span>
+              )}
               <span className="flex items-center gap-2 shrink-0">
                 <span className="font-mono text-[11px] font-bold text-text">{g.player_score}</span>
                 <span

@@ -284,8 +284,10 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
         dokunma, başka sekmeye geç → sayı sıfır, dönünce `YENİ` yok.
       - **Oyunu BİTİREN kişide rozet ÇIKMAMALI:** B tarafında (bitiş modalını
         gören) o oyun için `YENİ` görünmemeli — sayı da artmamalı.
-      - **`OYUN BİTTİ` etiketi HER satırda** olmalı (eski oyunlarda da), YZ
-        tarafındaki "Son Oynananlar"da da. `YENİ` ise yalnızca Canlı'da.
+      - **`OYUN BİTTİ` etiketi YALNIZCA Canlı tarafta** — Canlı'da her
+        satırda (eski oyunlarda da), **YZ tarafındaki "Son Oynananlar"da HİÇ
+        çıkmamalı** (kullanıcı kararı: YZ oyunu senin cihazında bitiyor,
+        orada etiket bilgi taşımaz). YZ sekmesinde kırmızı sayı da olmamalı.
       - ⚠ **Uygulama ikonundaki rozete KARIŞMAMALI** (kullanıcı kararı):
         biten oyun ikon rozetini artırMAMALI ve girişte hangi sekmenin
         açıldığını DEĞİŞTİRMEMELİ.

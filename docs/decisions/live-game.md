@@ -524,12 +524,22 @@ indeksleri kaydırıp o guard'ı sessizce başka bir şeyi ölçer hâle getirir
 Testi koda uydurmak yerine sıra korundu — betik değişmeden geçiyor. Yan
 fayda: iki erken `return null` yolu bu isteği hiç atmıyor.
 
-### Kapsam: yalnızca Canlı
+### Kapsam: yalnızca Canlı — etiket dahil
 
-`OYUN BİTTİ` etiketi HER İKİ listede de (YZ + Canlı) her satırda; `YENİ`
-rozeti ve sayı yalnızca Canlı tarafta. YZ oyunlarında bitişi zaten
-görüyorsun — oyun senin cihazında bitiyor. (Tek istisna 7 günlük terk-edilme
-cezası; kullanıcı kapsamı bilerek dar tuttu.)
+İlk turda `OYUN BİTTİ` etiketi HER İKİ listeye de (YZ + Canlı) konmuştu;
+kullanıcı aynı gün düzeltti: *"YZ'de oyun bitti yazmasına gerek yok. Bu
+sadece canlı oyunlar için geçerli. Aynı şekilde YZ'de kırmızı uyarıya da
+gerek yok."* Haklı — YZ oyunu SENİN cihazında bitiyor, bitişini zaten
+gözünle görüyorsun; orada etiket bilgi taşımaz, yalnızca gürültü olur.
+Canlı'da ise mesele tam olarak "oyun sen yokken bitti".
+
+Yani üçü de (`OYUN BİTTİ` · `YENİ` · sayı) **yalnızca Canlı tarafta**. YZ'de
+bitişi görmediğin tek durum 7 günlük terk-edilme cezası; kullanıcı kapsamı
+bilerek dar tuttu.
+
+⚠ Etiketin koşulu portta `_RecentRow`a **parametre** olarak geçiyor
+(`onlineOnly`) — o satır ayrı bir `StatelessWidget` ve `widget.` erişimi yok;
+aynı sınıf hata Parça 184'te bir kez yapılmıştı.
 
 ### Doğrulama
 
