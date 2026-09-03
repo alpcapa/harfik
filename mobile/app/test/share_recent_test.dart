@@ -647,6 +647,118 @@ void main() {
     expect(find.text('TESLİM OLDUN'), findsNothing);
   });
 
+  // ⚠ 3 Eylül 2026, kullanıcı sordu: *"Bir de ekran büyütenler için en büyük
+  // font nasıl davranıyor?"* Web'de bu soru YOK (px metin sistem yazı
+  // boyutuyla ölçeklenmiyor, sayfanın tamamı zoom'lanıyor) ama PORTTA var:
+  // ölçek tavana (kMaxTextScale = 1,3) kadar metni büyütür, kutular sabit
+  // kalır. Bu satır tam o riskin sınıfı: dar bir şeritte yan yana iki metin.
+  //
+  // İlk yazımda burası `Row`du ve ÖLÇÜM KIRPILMA BULDU: 320 px / ölçek 1,3'te
+  // etiket 111 px istiyor, 74,9 px alıyordu → `TESLİ…`. Çözüm `Wrap`:
+  // sığdığı sürece rozet YANDA, sığmadığında ALTA iner (satır uzar, harf
+  // kaybolmaz).
+  //
+  // 32 bileşim ölçüldü (320/360/390/430 px × 2-4 kişi × iki etiket × iki
+  // ölçek). Oyuncu SAYISI hiç fark etmiyor (avatar şeridi zaten sabit-ish);
+  // belirleyen genişlik + etiket uzunluğu + ölçek:
+  //   ölçek 1,0 → 360 px ve üstünde HEPSİ yanda; 320 px'te yalnızca
+  //               "TESLİM OLDUN" alta iniyor
+  //   ölçek 1,3 → 430 px'te hepsi yanda, 390 px'te "OYUN BİTTİ" yanda,
+  //               daha darda alta iniyor
+  // Yani "yanda" iddiası gerçekçi tabanda (360 px, yaygın Android alt
+  // sınırı) tutuluyor; alta inme yalnızca gerçekten sığmadığında oluyor.
+
+  /// Etiket kırpıldı mı (`ellipsis` sessizce kısaltır, HATA BASMAZ — yani
+  /// "taşma yok" tek başına hiçbir şey kanıtlamaz).
+  ({bool kirpildi, bool yanda, double isteyen, double alan}) olcRozet(
+      WidgetTester tester, String etiket) {
+    final rp = tester.renderObject<RenderParagraph>(find.descendant(
+        of: find.text(etiket), matching: find.byType(RichText)));
+    final isteyen = rp.getMaxIntrinsicWidth(double.infinity);
+    return (
+      kirpildi: rp.size.width + 0.5 < isteyen || rp.didExceedMaxLines,
+      yanda: (tester.getCenter(find.text(etiket)).dy -
+                  tester.getCenter(find.text('YENİ')).dy)
+              .abs() <=
+          1.0,
+      isteyen: isteyen,
+      alan: rp.size.width,
+    );
+  }
+
+  Future<void> pumpTeslimSatiri(WidgetTester tester,
+      {required double genislik, required double olcek}) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(
+            id: 'g-live',
+            onlineGameId: 'og-1',
+            surrendered: true,
+            rank: 2,
+            playerScore: 0,
+            aiScore: 147,
+            playerCount: 4,
+            players: [
+              snap('Ironman', 0, colorIndex: 0),
+              snap('Esiner', 147, colorIndex: 1),
+              snap('Ayla', 90, colorIndex: 2),
+              snap('Murat', 70, colorIndex: 3),
+            ])
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, Size(genislik, 700));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      // ⚠ `Builder` ŞART: `MediaQuery.of` context istiyor ve
+      // `tester.element(...)` burada henüz YOK (pumpWidget'in argümanı
+      // eagerly değerlendiriliyor). Repo'nun kendi deseni bu.
+      home: Builder(
+        builder: (context) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(olcek)),
+          child: Scaffold(
+            body: RecentGamesSection(
+                games: repo,
+                userId: 'u-me',
+                onlineOnly: true,
+                newlyFinishedIds: const {'g-live'}),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+  }
+
+  // SÖZLEŞME: yaygın taban (360 px) + normal ölçekte rozet etiketin
+  // YANINDA (kullanıcı isteği) ve etiket kırpılmamış.
+  testWidgets('Son Oynadıklarım: 360 px normal ölçek — rozet YANDA, kırpma yok',
+      (tester) async {
+    await pumpTeslimSatiri(tester, genislik: 360, olcek: 1.0);
+    final m = olcRozet(tester, 'TESLİM OLDUN');
+    expect(m.kirpildi, isFalse,
+        reason: 'etiket kırpıldı (isteyen ${m.isteyen.toStringAsFixed(1)}, '
+            'alan ${m.alan.toStringAsFixed(1)})');
+    expect(m.yanda, isTrue, reason: 'rozet alta inmiş — yanda kalmalı');
+  });
+
+  // EN KÖTÜ DURUM: en dar ekran + tavandaki yazı boyutu. Burada rozetin
+  // alta inmesi KABUL EDİLEN davranış; kabul edilmeyen şey KIRPILMA.
+  testWidgets(
+      'Son Oynadıklarım: 320 px + ölçek 1.3 (tavan) — etiket KIRPILMAZ '
+      '(rozet alta inebilir)', (tester) async {
+    await pumpTeslimSatiri(tester, genislik: 320, olcek: 1.3);
+    final m = olcRozet(tester, 'TESLİM OLDUN');
+    // ignore: avoid_print
+    print('[ÖLÇÜM] 320px ölçek 1.3: etiket isteyen '
+        '${m.isteyen.toStringAsFixed(1)} px, alan '
+        '${m.alan.toStringAsFixed(1)} px · '
+        '${m.yanda ? "rozet YANDA" : "rozet ALTA indi"}');
+    expect(m.kirpildi, isFalse,
+        reason: 'tavandaki ölçekte etiket kırpıldı — `Wrap` yerine `Row` '
+            'kullanılırsa bu GERÇEKTEN düşer (ilk yazımda düşmüştü)');
+    expect(find.text('YENİ'), findsOneWidget);
+  });
+
   testWidgets('Son Oynadıklarım: görülmemiş oyunda "YENİ" rozeti çıkar',
       (tester) async {
     final gw = FakeGamesGateway(userId: 'u-me')

@@ -585,11 +585,59 @@ orta bloğun İÇERİĞİ en kötü durumda **113,9 px** ve bloğun kendisi **16
 sol sütun kırpılmıyor. Yani kullanıcının "küçük ekranlarda kayabilir"
 endişesi ölçümle karşılandı.
 
-⚠ **Web'de yazı ölçeği ölçümü ANLAMSIZ ve bu bir eksik değil:** Tailwind'in
-`text-[10px]` mutlak px, tarayıcı sistem yazı boyutuyla ölçeklemez (sayfanın
-tamamı zoom'lanır, kutular da büyür). Ölçek riski YALNIZCA portta var; onun
-kapısı `text_scale_test.dart` + cihaz kontrol listesindeki 320 px maddesi.
-Portta etiket ayrıca `Flexible` + `maxLines: 1` + `ellipsis` taşıyor.
+### `YENİ` "YENI" diye okunuyordu — sebep KOD DEĞİL GLİF
+
+Kullanıcı bildirdi: *"Yeni büyük harf YENI gibi yazılmış YENİ olmalı."*
+Önce karakterin kendisi ölçüldü: `Y E N` + **U+0130** — yani kod HER ZAMAN
+doğruydu. Kaybolan şey glif: Space Mono'da `İ`nin noktası **8-9 px'te harfin
+gövdesine yapışıyor** (6× büyütmeyle ölçüldü; nokta ancak 10 px'ten sonra
+ayrılıyor). Rozet 9 px olduğu için ekranda "YENI" diye okunuyordu.
+
+**Çare punto:** etiket ve rozet ikisi de **11 px**. ⚠ Bu bir tercih değil
+okunabilirlik zorunluluğu — puntoyu düşüren bir sonraki tur aynı hatayı geri
+getirir, iki dosyada da yorumla işaretli.
+
+**Yol üstünde doğrulanan bir tuzak:** aynı probe'da `lang="en"` bağlamında
+CSS `text-transform: uppercase` "Yeni"yi **U+0049** (noktasız I) yapıyor,
+`lang="tr"`de U+0130. Yani ESKİ kod (CSS `uppercase` + "Yeni") belgenin
+diline bağımlıydı. Metnin kaynağa büyük harf yazılması bu bağımlılığı
+tamamen kaldırdı.
+
+### En büyük yazı boyutu — ölçüldü, KIRPILMA BULUNDU ve düzeltildi
+
+Kullanıcı sordu: *"Bir de ekran büyütenler için en büyük font nasıl
+davranıyor?"* Web'de bu sorunun konusu yok (Tailwind'in `text-[11px]`i
+mutlak px; tarayıcı sistem yazı boyutuyla ölçeklemez, sayfanın tamamını
+zoom'lar ve kutular da büyür). **Portta ise gerçek bir hata çıktı:** ölçek
+tavanında (`kMaxTextScale` = 1,3) 320 px'lik ekranda etiket **111 px
+istiyor, 74,9 px alıyordu** → `TESLİ…` diye kırpılıyordu. Kırpılma HATA
+BASMAZ, yani "taşma yok" iddiası bunu göremezdi.
+
+**Çare `Row` → `Wrap`:** sığdığı sürece rozet YANDA (kullanıcının istediği
+düzen), sığmadığında ALTA iner — satır bir miktar uzar ama hiçbir harf
+kaybolmaz. Kök `CLAUDE.md`'nin "Sistem Yazı Boyutu" bölümünün önerdiği çare
+de bu (sıkışan satırı BÖLMEK). `Expanded` genişliği tight verdiğinden
+`alignment: center` gerçekten ortalıyor; gevşek kısıtta `Wrap` içeriğine
+küçülür ve hizalama sessizce no-op olurdu (repo dersi).
+
+**32 bileşim ölçüldü** (320/360/390/430 px × 2-4 kişi × iki etiket × iki
+ölçek). Oyuncu SAYISI hiç fark etmiyor:
+
+| | ölçek 1,0 | ölçek 1,3 (tavan) |
+|---|---|---|
+| 320 px | `OYUN BİTTİ` yanda, `TESLİM OLDUN` alta | alta |
+| 360 px | hepsi **yanda** | alta |
+| 390 px | hepsi yanda | `OYUN BİTTİ` yanda, teslim alta |
+| 430 px | hepsi yanda | hepsi yanda |
+
+Yani "rozet yanda" sözleşmesi yaygın tabanda (360 px, Android alt sınırı)
+tutuluyor; alta inme yalnızca gerçekten sığmadığında.
+
+⚠ **`Wrap` TAŞMAZ, SARAR** — yani "taşma yok" iddiası rozet alta inmiş hâlde
+DE geçer. Repo kuralı gereği aynı turda "tek satırda mı" iddiası da yazıldı
+(iki öğenin dikey merkezini karşılaştırıyor): 360 px/normal ölçekte rozet
+YANDA olmak ZORUNDA, 320 px/tavanda ise yalnızca kırpılmama aranıyor.
+`Row`a geri dönülürse tavan testi GERÇEKTEN düşüyor (ilk yazımda düştü).
 
 ⚠ **Bayrak SATIR SAHİBİNE ait.** `games.surrendered` kişi başına: rakibin
 süresi dolduysa BENİM satırım `OYUN BİTTİ` kalır (ben kazandım).

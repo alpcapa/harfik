@@ -297,9 +297,14 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       - **Etiket ORTADA, rozet YANINDA:** etiket sol sütun ile skorun
         arasındaki boşlukta ortalanmış olmalı (sağa yaslı DEĞİL), `YENİ`
         rozeti etiketin hemen SAĞINDA (altında değil).
-      - **Küçük ekran:** 320 px genişlikte, sistem yazı boyutu en büyükte, 4
-        kişilik + `YENİ` rozetli bir `TESLİM OLDUN` satırında hiçbir şey
-        taşmamalı, etiket iki satıra BÖLÜNMEMELİ ve `…` ile kırpılmamalı.
+      - **`YENİ` rozetinde İ'nin NOKTASI görünmeli** — "YENI" gibi
+        okunuyorsa punto küçülmüş demektir (Space Mono'da nokta 9 px'te
+        gövdeye yapışıyor; etiket ve rozet 11 px olmalı).
+      - **Küçük ekran + en büyük yazı boyutu:** 320 px genişlikte, sistem
+        yazı boyutu en büyükte, 4 kişilik + `YENİ` rozetli bir `TESLİM
+        OLDUN` satırında etiket `…` ile KIRPILMAMALI. Rozetin bu durumda
+        etiketin ALTINA inmesi NORMAL (kabul edilen davranış) — 360 px ve
+        normal yazı boyutunda ise YANINDA olmak zorunda.
       - ⚠ **Uygulama ikonundaki rozete KARIŞMAMALI** (kullanıcı kararı):
         biten oyun ikon rozetini artırMAMALI ve girişte hangi sekmenin
         açıldığını DEĞİŞTİRMEMELİ.

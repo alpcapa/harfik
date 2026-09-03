@@ -396,8 +396,25 @@ class _RecentRow extends StatelessWidget {
             // söylemiyor. Web ikizi `RecentGamesSection.tsx` ile aynı koşul.
             if (onlineOnly) ...[
               Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                // ⚠ `Row` DEĞİL `Wrap` — ve bu bir GERİLEME DÜZELTMESİ:
+                // ölçek 1,3'te (kMaxTextScale) 320 px'lik bir ekranda etiket
+                // 111 px istiyor, `Row`da yalnızca 74,9 px alıyordu ve
+                // `TESLİ…` diye KIRPILIYORDU (kullanıcı sordu: "ekran
+                // büyütenler için en büyük font nasıl davranıyor?" — ölçüldü,
+                // kırpılıyordu). `Wrap` sığdığı sürece rozeti YANDA tutuyor
+                // (normal durum), sığmadığında ALTA indiriyor: satır bir
+                // miktar uzuyor ama hiçbir harf kaybolmuyor. Kök CLAUDE.md
+                // "Sistem Yazı Boyutu" bölümünün önerdiği çare de bu
+                // (sıkışan satırı BÖLMEK).
+                //
+                // `Expanded` genişliği TIGHT verdiğinden `alignment: center`
+                // gerçekten ortalıyor — gevşek kısıtta `Wrap` içeriğine
+                // küçülür ve hizalama sessizce no-op olurdu (repo dersi).
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 4,
+                  runSpacing: 2,
                   children: [
                     // Teslimle biten oyunda metin "TESLİM OLDUN" (3 Eylül
                     // 2026, kullanıcı isteği). AYRI bir sütun EKLENMEDİ:
@@ -417,22 +434,30 @@ class _RecentRow extends StatelessWidget {
                     // i'sini noktasız I'ya çevirebiliyor; bu repo native
                     // dönüşümü zaten yasaklıyor (`trUpper`) — burada
                     // dönüşüme hiç gerek yok.
-                    Flexible(
-                      child: Text(
-                          entry.surrendered ? 'TESLİM OLDUN' : 'OYUN BİTTİ',
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                              fontFamily: 'SpaceMono',
-                              fontSize: 10,
-                              letterSpacing: 0.5,
-                              color: _muted)),
-                    ),
-                    // Rozet artık ALTTA değil YANDA (kullanıcı: "yeni
-                    // rozeti hemen yanına gelsin").
+                    //
+                    // ⚠ PUNTO 11 px, ve bu bir OKUNABİLİRLİK ZORUNLULUĞU,
+                    // tercih değil: `İ`nin noktası Space Mono'da 8-9 px'te
+                    // harfin gövdesine yapışıyor ve "YENI" diye okunuyor
+                    // (kullanıcı bildirdi; web'de 6× büyütmeyle ölçüldü —
+                    // nokta ancak 10 px'ten sonra ayrılıyor). Karakter HER
+                    // ZAMAN doğruydu: U+0130 olduğu doğrulandı, kaybolan
+                    // şey GLİF. ⚠ Bu iki puntoyu düşürürsen hata geri gelir.
+                    // ⚠ `Flexible` YOK: `Wrap` çocuklarına esneklik
+                    // verilemez (assertion atar). Kırpma koruması yine
+                    // duruyor — ama artık son çare: `Wrap` önce rozeti alta
+                    // indirip etikete TÜM genişliği veriyor.
+                    Text(entry.surrendered ? 'TESLİM OLDUN' : 'OYUN BİTTİ',
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 11,
+                            letterSpacing: 0.5,
+                            color: _muted)),
+                    // Rozet YANDA (kullanıcı: "yeni rozeti hemen yanına
+                    // gelsin") — yalnızca sığmadığında alta iner.
                     if (yeni) ...[
-                      const SizedBox(width: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 4, vertical: 1),
@@ -443,7 +468,7 @@ class _RecentRow extends StatelessWidget {
                         child: const Text('YENİ',
                             style: TextStyle(
                                 fontFamily: 'SpaceMono',
-                                fontSize: 9,
+                                fontSize: 11,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.5,
                                 color: Colors.white)),

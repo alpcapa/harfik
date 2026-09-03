@@ -103,6 +103,33 @@
        teslimin kırmızısı zaten sağdaki -2'de.
        Regresyon: 2 test daha — teslimde `TESLİM` + `-2` görünür ·
        RAKİBİN teslimi benim satırımı değiştirmez.
+     - ⚠ **`YENİ` "YENI" diye okunuyordu — sebep KOD DEĞİL GLİF** (kullanıcı
+       bildirdi). Karakter ölçüldü: `Y E N` + **U+0130**, yani kod her zaman
+       doğruydu. Space Mono'da `İ`nin noktası 8-9 px'te harfin gövdesine
+       YAPIŞIYOR (6× büyütmeyle ölçüldü; 10 px'ten sonra ayrılıyor) ve rozet
+       9 px'ti. Çare punto: etiket ve rozet ikisi de **11 px**. Bu bir
+       tercih değil okunabilirlik zorunluluğu — iki dosyada da yorumla
+       işaretli, düşüren bir sonraki tur hatayı geri getirir.
+       Yan bulgu: aynı probe'da CSS `uppercase` `lang="en"` bağlamında
+       "Yeni"yi U+0049 (noktasız I) yapıyor. Metni kaynağa büyük harf yazmak
+       bu locale bağımlılığını tamamen kaldırdı.
+     - ⚠⚠ **EN BÜYÜK YAZI BOYUTU: kullanıcı sordu, ÖLÇÜLDÜ ve GERÇEK BİR
+       KIRPILMA BULUNDU.** *"Ekran büyütenler için en büyük font nasıl
+       davranıyor?"* Web'de bu sorunun konusu yok (px metin ölçeklenmez,
+       sayfa zoom'lanır). Portta ölçek tavanında (1,3) 320 px'te etiket
+       **111 px istiyor, 74,9 px alıyordu** → `TESLİ…`. **Kırpılma HATA
+       BASMAZ**, yani "taşma yok" iddiası bunu göremezdi.
+       Çare `Row` → **`Wrap`**: sığdığı sürece rozet yanda, sığmadığında
+       alta iner (satır uzar, harf kaybolmaz) — kök CLAUDE.md'nin "sıkışan
+       satırı BÖL" önerisi. `Flexible` kaldırıldı (Wrap çocuğuna esneklik
+       verilemez).
+       **32 bileşim ölçüldü** (320/360/390/430 px × 2-4 kişi × iki etiket ×
+       iki ölçek): oyuncu SAYISI hiç fark etmiyor; ölçek 1,0'da 360 px ve
+       üstünde hepsi yanda (320'de yalnız teslim alta), ölçek 1,3'te 430'da
+       hepsi yanda, 390'da yalnız `OYUN BİTTİ` yanda.
+       ⚠ `Wrap` TAŞMAZ SARAR — repo kuralı gereği aynı turda "tek satırda
+       mı" iddiası da yazıldı: 360 px/normal ölçekte rozet YANDA olmak
+       ZORUNDA. `Row`a dönülürse tavan testi GERÇEKTEN düşüyor.
      - **Süre aşımı teslimi kendiliğinden kapsandı:** o senaryo normal bir
        bitiş gibi `games` satırı yazıyor (canlıda doğrulandı, iki tarafa da),
        yani haber rozeti orada da çalışıyor — ve en çok işe yaradığı yer

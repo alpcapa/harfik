@@ -288,11 +288,19 @@ export function RecentGamesSection({
                       "BITTI" (noktasız I) olur. Bu repo native
                       büyük/küçük dönüşümünü zaten yasaklıyor
                       (`trUpper`) — burada dönüşüme hiç gerek yok. */}
-                  <span className="text-[10px] font-mono tracking-[0.5px] text-muted leading-none whitespace-nowrap">
+                  {/* ⚠ PUNTO 11 px, ve bu bir OKUNABİLİRLİK ZORUNLULUĞU,
+                      tercih değil: `İ`nin noktası Space Mono'da 8-9 px'te
+                      harfin gövdesine yapışıyor ve rozet ekranda "YENI"
+                      diye okunuyor (kullanıcı bildirdi; 6× büyütmeyle
+                      ölçüldü — nokta ancak 10 px'ten sonra ayrılıyor).
+                      Karakter HER ZAMAN doğruydu: U+0130 olduğu ayrıca
+                      doğrulandı, kaybolan şey GLİF, kod değil.
+                      ⚠ Bu iki puntoyu düşürürsen aynı hata geri gelir. */}
+                  <span className="text-[11px] font-mono tracking-[0.5px] text-muted leading-none whitespace-nowrap">
                     {g.surrendered ? 'TESLİM OLDUN' : 'OYUN BİTTİ'}
                   </span>
                   {newlyFinishedIds?.has(g.id) && (
-                    <span className="shrink-0 text-[9px] font-mono font-bold tracking-[0.5px] text-white bg-red rounded px-1 py-px leading-none">
+                    <span className="shrink-0 text-[11px] font-mono font-bold tracking-[0.5px] text-white bg-red rounded px-1 py-px leading-none">
                       YENİ
                     </span>
                   )}
