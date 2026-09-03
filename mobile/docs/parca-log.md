@@ -94,8 +94,10 @@
        değil **"ekranın tamamı"** olmalı: popover büyük bir kutuya sorunsuz
        bağlanıyor, kıran şey ankrajın kök view'la ÖRTÜŞMESİ. Geniş ama kısa
        bir kutu geçerli ankraj olarak kaldı.
-     - **Doğrulama sınırı:** Flutter SDK bu ortamda yok; Dart testlerini CI
-       ölçüyor, cihaz karşılığı Appetize/iPad'de yeniden denenecek.
+     - ✅ **CİHAZDA DOĞRULANDI (3 Eylül 2026):** kullanıcı Appetize'da iPad'de
+       üç yolu da denedi — *"üçü de açtı"*. Kanıtı güçlü kılan tek yeşil
+       değil DAVRANIŞIN DEĞİŞMESİ: aynı ortamda düzeltmeden önce ikisi
+       kırıktı. ROADMAP madde 8 bu doğrulamayla kapandı.
 
    - ✅ **Parça 180 — "devam eden oyun" kartları İKİ SEKMEDE AYRIŞMIŞTI
      (2 Eylül 2026; değişen: yeni `ui/devam_eden_govde.dart`,

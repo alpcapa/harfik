@@ -88,7 +88,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) · **+ #10 hata hız sınırı** (1 Eylül'de eklendi) | ✅ **1.0.4 (467) Play'e YÜKLENDİ, incelemede** (1 Eylül 2026) |
 | **1.0.5'e binen kod** | Tahta zoom'u (+2 APK turu) · zoom tanıtım balonu · yazı ölçeği (sınıf 3+2) · mesaj kutusu etiketi · **cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar)** | ✅ **TUR KAPANDI** — `1.0.5 (501) — 4a0a29b` kapalı testte yayında (~15:03) ve üç işin cihaz doğrulaması da alındı (2 Eylül, kullanıcı). Ayrıntı: arşiv → "1.0.5 SÜRÜM TURU" |
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); **1.0.5'in tamamı 2 Eylül'de onaylandı** (zoom turu, çevrimdışı şerit, filigranlar, balon, yazı ölçeği, mesaj etiketi) — kalan iki kalem bu ikisi |
-| **Karar verilmiş, yapılmamış** | #8 Paylaşma (iPad popover) — cihaz istiyor | ⬜ · **#3 hatırlatma** ✅ KAPANDI (2 Eylül, zaten yürüyen alışkanlık) ve **#16 kart düzeni** ✅ YAPILDI — ikisi de arşivde |
+| **Karar verilmiş, yapılmamış** | — | ✅ Kova BOŞ: **#3** hatırlatma, **#8** iPad paylaşımı (3 Eylül cihazda doğrulandı) ve **#16** kart düzeni kapandı; üçü de arşivde |
 | **Ertelendi** | #2 zorunlu güncelleme | ✅ **KAPANDI/ARŞİVDE** (2 Eylül 2026, kullanıcı: *"Artık app'de güncelleme çıkıyor, bunu görünce zaten yapar"*). ⚠ Sürüm kapısı DURUYOR ve artık KULLANILABİLİR — acil fren olarak `app_config.mobile_min_supported_version` |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
@@ -113,7 +113,9 @@ kapandığında kaynağı `console-formlari.md`'dir, karar oradan okunur.
 
 ### Sonra / bloke
 
-Açık olan TEK madde: **#8** (FAZ A1 Bölüm 6 — Paylaşma, iPad popover).
+Açık madde KALMADI. **#8** (FAZ A1 Bölüm 6 — Paylaşma, iPad popover)
+✅ **KAPANDI** 3 Eylül 2026 — hata bulunup düzeltildi ve Appetize/iPad'de
+doğrulandı; arşivde.
 **#11** (hata panelinde platform filtresi) ✅ **KAPANDI** 31 Ağustos 2026
 — bu satır 2 Eylül'e kadar onu hâlâ bekleyen iş gibi gösteriyordu, oysa
 aynı gün yukarıdaki özet tablo ✅ diyordu (kaydın iki yerde durması).
@@ -524,83 +526,6 @@ neredeyse boş. Ironman 100 puanı geçtiğinde anlam kazanmaya başlar.
 **Değişmez:** son nokta `player_stats_overall.total_score` ile BİREBİR
 eşleşmeli (14 Ağustos'ta canlıda 15/15 kullanıcıda doğrulandı). Web + port
 AYNI PR'da.
-
----
-
-## 8. FAZ A1 Bölüm 6 (Paylaşma) — iPad popover ankrajı · **HATA BULUNDU, düzeltme yazıldı, yeniden test bekliyor**
-
-**Kod işi YOK, bekleyen tek şey bir DOĞRULAMA.** Parça 86 (13 Ağustos
-2026): `share_plus`ın iOS eklentisi iPad'de paylaş sayfasını popover
-açıyor ve ankraj (`sharePositionOrigin`) istiyor; verilmezse paylaşmak
-yerine `FlutterError` döndürüyor, iki `catch` onu yutuyor ve kullanıcıya
-**hiçbir şey olmuyor**. Düzeltme yazıldı (ortak `shareOriginFrom`, `origin`
-typedef'te zorunlu, iki katmanlı test) — kalan tek soru gerçek iPad'de
-popover'ın çıkıp çıkmadığı. Üç yol da denenmeli: (a) oyun geçmişinde tahta
-paylaşımı, (b) Setup'ta "Arkadaşınla paylaş", (c) Arkadaşlar'da davet linki.
-
-### ✅ 2 Eylül 2026 — DOĞRU ORTAMDA KOŞULDU ve İKİ YOL KIRIK ÇIKTI
-
-Appetize → **iPad Air / iOS 16.2** (yani native iOS kanalı, doğru cihaz
-tipi). Sonuç:
-
-| Yol | Ankraj nereden geliyordu | Sonuç |
-|---|---|---|
-| Oyun geçmişi → tahta paylaşımı | `_captureKey.currentContext` — tahtanın `RepaintBoundary`si, **küçük ve gerçek** kutu | ✅ popover açıldı |
-| Setup → "Arkadaşınla paylaş" | `_SetupScreenState.context` — **ekranın TAMAMI** | ❌ "hiç tepki vermiyor" |
-| Arkadaşlar → davet linki | `_FriendsModalState.context` — **ekranın TAMAMI** | ❌ buton `…` (meşgul) durumunda kilitli |
-
-**KÖK SEBEP:** Parça 86 ankraj vermemeyi düzeltmişti; ankrajın KENDİSİNİN
-geçerli olması gerektiğini kimse kontrol etmemişti. Ekranı kaplayan bir
-dikdörtgen "boş değil" ve "kök view'ın içinde"dir — yani her iki eski
-kontrolden de geçer — ama iPad'de popover görünmüyor ve
-`SharePlus.share` **hiç dönmüyor**.
-
-**Fırlatma DEĞİL, ASILMA — kanıt ekran görüntüsünde:** `_handleInvite`in
-`finally`si `_inviteBusy`i sıfırlıyor; buton yine de `…`ta kaldı. Yani
-future dönmedi. Setup'ta meşgul durumu olmadığı için aynı asılma "hiçbir
-şey olmuyor" gibi görünüyor.
-
-**TESTLER NEDEN YEŞİLDİ:** `share_recent_test`in ankraj iddiası yalnızca
-"boş değil" + "ekranın içinde" diyordu; ekran boyutunda bir kutu ikisini de
-sağlıyor. Üstelik test yalnızca ÇALIŞAN yolu (oyun geçmişi) kapsıyordu.
-
-**DÜZELTME (aynı gün, dalda):**
-- `shareOriginFrom` artık ekranı iki eksende birden (≥%95) kaplayan bir
-  kutuyu ankraj SAYMIYOR, 1×1 merkez yedeğine düşüyor — popover ekranın
-  ortasında görünür oluyor. ⚠ Eşik bilerek "büyük" değil "ekranın tamamı":
-  ilk yazılan %50 ALAN eşiği ÇALIŞAN yolu kırardı (tahtanın ankrajı
-  telefonda alanın ~%46'sı).
-- İki kırık çağrı yeri artık kendi düğmesinin kutusuna bağlanıyor
-  (`_shareLinkKey`, `_inviteButtonKey`) — oyun geçmişindeki
-  `_captureKey.currentContext ?? context` deseninin aynısı.
-- `shareOriginFrom` için doğrudan sözleşme testi + akış testine üçüncü
-  iddia. Negatif eş: eşik kaldırılırsa test düşüyor.
-
-⏳ **KALAN: aynı üç yolun Appetize/iPad'de YENİDEN denenmesi.** Üçünde de
-paylaş kutusu açılmalı ve buton `…`ta kalmamalı.
-
-⚠ **BU MADDEYİ NE KAPATMAZ — ölçüldü, 2 Eylül 2026.** Kullanıcı üç yolu da
-GERÇEK bir iPad'de denedi ve *"sorun yok"* dedi, ama derleme
-`kelimeki.com`/Pages idi, yani **web** derlemesi. Orada `share_plus`ın WEB
-eklentisi (`navigator.share`) çalışıyor ve iOS platform kanalına HİÇ
-uğranmıyor — ankrajı kontrol eden kod (`FPPSharePlusPlugin.m`) native iOS
-eklentisinin içinde. **Cihazın iPad olması yetmiyor, DERLEMENİN native
-olması gerekiyor.** Parça 86'nın 3 ay görünmeden kalmasının sebebi de tam
-olarak buydu; aynı deneme tekrarlanmasın diye buraya yazıldı.
-(Denemenin kanıtladığı ayrı bir şey var ve o gerçek: iPad Safari'de web
-paylaşımı çalışıyor — `kelimeki.com`'a iPad'den girenlerin yüzeyi.)
-
-**Kanıtlayan tek ortam:** Appetize → iOS simülatörü → **iPad cihaz tipi**.
-CI zaten imzasız bir simülatör derlemesi üretip Appetize'a yüklüyor, yani
-**Apple üyeliği GEREKMİYOR**. iPad tipinin panelde seçilebilir olup
-olmadığı doğrulanmadı — `mobile/docs/test-ortamlari.md` bunu "panelden
-bakılmalı" diye bırakmış; seçilemiyorsa madde gerçek bir native iPad
-derlemesine (Apple üyeliği) kalır.
-
-⚠ Bu bölüm önceden *"FAZ B turunda kapanır"* diyordu; yanlıştı. FAZ B
-Android/Play turu ve 24-25 Ağustos Android turu temiz geldi — ROADMAP'in
-kendisi *"Madde 8 bundan ETKİLENMEDİ"* diyor. Maddenin gerçek ön koşulu
-Android turu değil, yukarıdaki iki ortamdan biri.
 
 ---
 
