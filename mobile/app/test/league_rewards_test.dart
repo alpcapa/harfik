@@ -86,6 +86,9 @@ class FakeStatsGatewayForRank implements StatsGateway {
 
   @override
   Future<Map<String, Object?>?> profileAgeGender(String userId) async => null;
+
+  @override
+  Future<Map<String, Object?>?> headToHead(String otherUserId) async => null;
 }
 
 User fakeUser([String id = 'u-me']) => User(

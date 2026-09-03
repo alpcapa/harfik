@@ -1,4 +1,4 @@
-// Tüm Geçmiş Oyunlar — web `GameHistoryModal.tsx` portu.
+// Tüm Oyunlar — web `GameHistoryModal.tsx` portu.
 //
 // Her kart: tarih + Canlı/Yapay Zeka rozeti + (varsa) sohbet rozeti, kalp
 // (beğeni) ve beğeni sayısı, final sıralamasıyla oyuncu satırları (sıra no,
@@ -20,6 +20,7 @@ import '../../data/game_record.dart';
 import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../../util/share_board.dart';
+import '../../data/auth_service.dart';
 import '../auth/k_avatar.dart';
 import '../chat/game_chat_history_modal.dart';
 import '../game/action_sheet.dart';
@@ -75,6 +76,14 @@ Future<void> showGameHistory(
 
   /// Testler için: görsel yakalama (bkz. `CaptureBoardFn`).
   CaptureBoardFn? capture,
+
+  /// Yalnızca "Beğenenler" listesinden açılan skor kartına GEÇİRİLİR —
+  /// kafa kafaya oran çubuğu "ben kimim"i oradan okuyor. null geçilirse
+  /// çubuk O KARTTA sessizce çizilmez; web'de karşılığı `useAuth()`
+  /// bağlamı olduğu için orada böyle bir tuzak yok (3 Eylül 2026,
+  /// Parça 185: beş çağrı yerinin dördü `auth` geçiyordu, bu biri
+  /// geçmiyordu ve çubuk yalnızca burada kayboluyordu).
+  AuthService? auth,
 }) {
   return showDialog<void>(
     context: context,
@@ -88,6 +97,7 @@ Future<void> showGameHistory(
       initialExpandedId: initialExpandedId,
       share: share,
       capture: capture,
+      auth: auth,
     ),
   );
 }
@@ -102,6 +112,7 @@ class GameHistoryModal extends StatefulWidget {
   final String? initialExpandedId;
   final ShareBoardFn? share;
   final CaptureBoardFn? capture;
+  final AuthService? auth;
 
   const GameHistoryModal({
     super.key,
@@ -114,6 +125,7 @@ class GameHistoryModal extends StatefulWidget {
     this.initialExpandedId,
     this.share,
     this.capture,
+    this.auth,
   });
 
   @override
@@ -339,6 +351,7 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
         likers: _likers[entry.id] ?? const [],
         stats: widget.stats,
         games: widget.games,
+        auth: widget.auth,
       ),
     );
   }
@@ -437,7 +450,7 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
   Widget build(BuildContext context) {
     final entries = _entries;
     return KModal(
-      title: 'Tüm Geçmiş Oyunlar',
+      title: 'Tüm Oyunlar',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -599,8 +612,16 @@ class _LikersModal extends StatelessWidget {
   final StatsRepo? stats;
   final GamesRepo games;
 
+  /// Açılan skor kartındaki kafa kafaya çubuğu için — `State` alanı DEĞİL,
+  /// bu ayrı bir `StatelessWidget` (burada `widget.` yoktur; aynı sınıf
+  /// hata 2 Eylül 2026'da `_RecentRow`da da yapılmıştı).
+  final AuthService? auth;
+
   const _LikersModal(
-      {required this.likers, required this.stats, required this.games});
+      {required this.likers,
+      required this.stats,
+      required this.games,
+      required this.auth});
 
   @override
   Widget build(BuildContext context) {
@@ -635,6 +656,7 @@ class _LikersModal extends StatelessWidget {
                                 name: l.shortName,
                                 avatarUrl: l.avatarUrl,
                                 games: Future.value(games),
+                                auth: auth,
                               ),
                       behavior: HitTestBehavior.opaque,
                       child: Row(

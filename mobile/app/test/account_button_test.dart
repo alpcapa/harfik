@@ -49,6 +49,9 @@ class _FakeStatsGateway implements StatsGateway {
 
   @override
   Future<Map<String, Object?>?> profileAgeGender(String userId) async => null;
+
+  @override
+  Future<Map<String, Object?>?> headToHead(String otherUserId) async => null;
 }
 
 /// `myLeaderboardRank` ELDE TUTULAN bir ucu — menü, puan gelmeden önce

@@ -6,6 +6,8 @@
 // bu yüzden ne yazma kuyruğu ne dayanıklılık katmanı var: ağ hatasında null
 // dönülür, çağıran "yükleniyor/hata" ile "veri yok"u ayırt eder.
 import 'package:flutter/foundation.dart';
+
+import '../util/head_to_head.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../util/offline_notice.dart';
@@ -200,6 +202,11 @@ abstract class StatsGateway {
   /// KENDİ satırını okuttuğundan doğrudan tabloya bakılamıyor; RPC ham
   /// `birth_date`i DEĞİL türetilmiş yaşı döndürür. Satır yoksa null.
   Future<Map<String, Object?>?> profileAgeGender(String userId);
+
+  /// Kafa kafaya: çağıran ile [otherUserId] arasında oynanmış 2 KİŞİLİK
+  /// Canlı oyunların sayısı ve kazanma dağılımı (`head_to_head_stats`).
+  /// Sonuç ÇAĞIRANIN bakış açısından (`wins` = çağıran kazandı).
+  Future<Map<String, Object?>?> headToHead(String otherUserId);
 }
 
 class SupabaseStatsGateway implements StatsGateway {
@@ -262,6 +269,15 @@ class SupabaseStatsGateway implements StatsGateway {
     final row = data is List && data.isNotEmpty ? data.first : data;
     return row is Map ? row.cast<String, Object?>() : null;
   }
+
+  @override
+  Future<Map<String, Object?>?> headToHead(String otherUserId) async {
+    // `returns table(...)` → tek satırlık dizi (myLeaderboardRank deseni).
+    final data =
+        await client.rpc('head_to_head_stats', params: {'p_other': otherUserId});
+    final row = data is List && data.isNotEmpty ? data.first : data;
+    return row is Map ? row.cast<String, Object?>() : null;
+  }
 }
 
 class StatsRepo {
@@ -276,6 +292,24 @@ class StatsRepo {
       return row == null ? null : PlayerStats.fromJson(row);
     } catch (e) {
       debugPrint('[Kelimeki] playerStats hatası: $e');
+      return null;
+    }
+  }
+
+  /// Kafa kafaya istatistik — hata/veri yok durumunda null (UI bloğu hiç
+  /// çizmez). Web ikizi `fetchHeadToHead`.
+  ///
+  /// **Neden RPC, neden istemcide sayılmıyor:** oyun geçmişi sayfalı
+  /// (20'şer) ve donmuş `games.players` anlık görüntüsü `user_id`
+  /// TAŞIMIYOR — istemcide eşleme ancak isimle olurdu, takma adlar ise
+  /// değiştirilebiliyor. Sunucuda `online_games.slots` gerçek `user_id`
+  /// taşıyor.
+  Future<HeadToHead?> headToHead(String otherUserId) async {
+    try {
+      final row = await gateway.headToHead(otherUserId);
+      return row == null ? null : HeadToHead.fromJson(row);
+    } catch (e) {
+      debugPrint('[Kelimeki] headToHead hatası: $e');
       return null;
     }
   }

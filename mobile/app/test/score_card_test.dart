@@ -20,6 +20,8 @@ import 'package:kelimeki/src/ui/rank/rank_seal.dart';
 import 'package:kelimeki/src/ui/score/score_stats_section.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show User;
 
+import 'support/fake_games_gateway.dart';
+import 'support/game_rows.dart';
 import 'support/test_fonts.dart';
 import 'support/test_view.dart';
 
@@ -76,6 +78,12 @@ class FakeStatsGateway implements StatsGateway {
   @override
   Future<Map<String, Object?>?> profileAgeGender(String userId) async =>
       ageGender[userId];
+
+  /// Kafa kafaya satırı — testler tek tek doldurabilsin diye alan.
+  Map<String, Object?>? h2h;
+
+  @override
+  Future<Map<String, Object?>?> headToHead(String otherUserId) async => h2h;
 }
 
 Map<String, Object?> statRow({
@@ -671,6 +679,135 @@ void main() {
     expect(find.textContaining('C:'), findsNothing);
   });
 
+  // ------------------------------------------------------------------
+  // Kafa kafaya oran çubuğu (3 Eylül 2026, kullanıcı isteği, Parça 185).
+  // Saf kural `head_to_head_test.dart`te; buradakiler çubuğun DOĞRU KARTTA
+  // çizildiğini (ve yanlış kartlarda ÇİZİLMEDİĞİNİ) kilitliyor — üçü de
+  // pozitif testin negatif eşi.
+  // ------------------------------------------------------------------
+  testWidgets(
+      'kafa kafaya: BAŞKASININ kartında oyun sayısı + üç dilimli çubuk '
+      'çizilir; isim YAZILMAZ (kullanıcı: "İsim yazmayacak")', (tester) async {
+    final gw = FakeStatsGateway(stats: {
+      'u-9': {null: statRow(total: 33)}
+    })
+      ..h2h = const {'games': 14, 'wins': 9, 'losses': 5, 'draws': 0};
+    final gamesRepo = await newRepoForWidget(tester, FakeGamesGateway());
+    await pumpModal(
+      tester,
+      PlayerScoreCardModal(
+        auth: AuthService.fake(user: fakeUser(), profile: ironman),
+        stats: StatsRepo(gw),
+        games: Future.value(gamesRepo),
+        userId: 'u-9',
+        name: 'Esiner',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('14 oyun'), findsOneWidget);
+    // Yüzdeler barın ÜSTÜNDE, kendi renklerinde (3 Eylül 2026, kullanıcı
+    // isteği): 5/14 → %36, 9/14 → %64.
+    expect(find.text('%36'), findsOneWidget);
+    expect(find.text('%64'), findsOneWidget);
+    expect(tester.widget<Text>(find.text('%36')).style?.color, kRed);
+    expect(tester.widget<Text>(find.text('%64')).style?.color, kGreen);
+    // 5 kayıp / 0 beraberlik / 9 galibiyet → sol 36, orta 0 (ÇİZİLMEZ),
+    // sağ 64. Yani tam İKİ dilim olmalı; üç değil.
+    final dilimler = tester
+        .widgetList<ColoredBox>(find.descendant(
+            of: find.byType(Semantics), matching: find.byType(ColoredBox)))
+        .where((b) => b.color == kRed || b.color == kMuted || b.color == kGreen)
+        .toList();
+    expect(dilimler.length, 2);
+    expect(dilimler.map((b) => b.color), [kRed, kGreen]);
+    // İsim çubuğun yanında YAZILMAZ — yalnızca başlıkta geçer.
+    expect(find.text('Esiner'), findsOneWidget);
+    expect(find.text('Sen'), findsNothing);
+  });
+
+  testWidgets(
+      'kafa kafaya: BERABERLİK dilimi ortada DURUR ama yüzdesi YAZILMAZ '
+      '(kullanıcı: "Beraberlik hep ortada kalsın ama % gösterme")',
+      (tester) async {
+    final gw = FakeStatsGateway(stats: {
+      'u-9': {null: statRow(total: 33)}
+    })
+      // 1/1/1 → sol %33, ORTA %34, sağ %33.
+      ..h2h = const {'games': 3, 'wins': 1, 'losses': 1, 'draws': 1};
+    final gamesRepo = await newRepoForWidget(tester, FakeGamesGateway());
+    await pumpModal(
+      tester,
+      PlayerScoreCardModal(
+        auth: AuthService.fake(user: fakeUser(), profile: ironman),
+        stats: StatsRepo(gw),
+        games: Future.value(gamesRepo),
+        userId: 'u-9',
+        name: 'Esiner',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // İki uç etiketi var…
+    expect(find.text('%33'), findsNWidgets(2));
+    // …ama beraberliğin yüzdesi HİÇBİR yerde yazmıyor.
+    expect(find.text('%34'), findsNothing);
+    // Dilim yine de ÇİZİLİYOR — ortada gri bant duruyor.
+    final dilimler = tester
+        .widgetList<ColoredBox>(find.descendant(
+            of: find.byType(Semantics), matching: find.byType(ColoredBox)))
+        .where((b) => b.color == kRed || b.color == kMuted || b.color == kGreen)
+        .toList();
+    expect(dilimler.map((b) => b.color), [kRed, kMuted, kGreen]);
+  });
+
+  testWidgets(
+      'kafa kafaya: KENDİ kartında çubuk HİÇ çizilmez — istek de atılmaz',
+      (tester) async {
+    final gw = FakeStatsGateway(stats: {
+      'u-me': {null: statRow(total: 33)}
+    })
+      ..h2h = const {'games': 14, 'wins': 9, 'losses': 5, 'draws': 0};
+    final gamesRepo = await newRepoForWidget(tester, FakeGamesGateway());
+    await pumpModal(
+      tester,
+      PlayerScoreCardModal(
+        auth: AuthService.fake(user: fakeUser(), profile: ironman),
+        stats: StatsRepo(gw),
+        games: Future.value(gamesRepo),
+        userId: 'u-me',
+        name: 'Ironman',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('14 oyun'), findsNothing);
+  });
+
+  testWidgets(
+      'kafa kafaya: hiç oynanmamışsa (games=0) çubuk çizilmez — "0 oyun" '
+      'yazan boş bir şerit kalmamalı', (tester) async {
+    final gw = FakeStatsGateway(stats: {
+      'u-9': {null: statRow(total: 33)}
+    })
+      ..h2h = const {'games': 0, 'wins': 0, 'losses': 0, 'draws': 0};
+    final gamesRepo = await newRepoForWidget(tester, FakeGamesGateway());
+    await pumpModal(
+      tester,
+      PlayerScoreCardModal(
+        auth: AuthService.fake(user: fakeUser(), profile: ironman),
+        stats: StatsRepo(gw),
+        games: Future.value(gamesRepo),
+        userId: 'u-9',
+        name: 'Esiner',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('0 oyun'), findsNothing);
+    expect(find.text('TÜM OYUNLAR'), findsOneWidget);
+  });
+
   testWidgets('k-lig: hiç satır yoksa davet metni', (tester) async {
     await pumpModal(
       tester,
@@ -855,5 +992,9 @@ class _ThrowingGateway implements StatsGateway {
       Future.error(Exception('ağ'));
   @override
   Future<Map<String, Object?>?> profileAgeGender(String userId) =>
+      Future.error(Exception('ağ'));
+
+  @override
+  Future<Map<String, Object?>?> headToHead(String otherUserId) =>
       Future.error(Exception('ağ'));
 }

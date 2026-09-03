@@ -18,6 +18,7 @@
 // fix'ler) tek tek düzeltildi; kalan tekrar yalnızca bir okunabilirlik
 // notu, ayrı bir davranış riski taşımıyor.
 import { FunctionsHttpError } from '@supabase/supabase-js';
+import type { HeadToHead } from '../utils/headToHead';
 import { supabase, isSupabaseConfigured } from './supabase';
 import type {
   AdminActivationStats,
@@ -535,6 +536,45 @@ export async function markLeagueRewardsSeen(): Promise<void> {
   if (error) {
     console.error('[Kelimeki] markLeagueRewardsSeen hatası:', error.message);
   }
+}
+
+/**
+ * Kafa kafaya: çağıran ile [otherUserId] arasında oynanmış **2 kişilik**
+ * Canlı oyunların sayısı ve kazanma dağılımı (`head_to_head_stats` RPC'si,
+ * 3 Eylül 2026).
+ *
+ * **Neden RPC:** `fetchMyGames` sayfalı (20'şer), iki kişi arasındaki TÜM
+ * oyunları istemcide saymak geçmişin tamamını sayfalamak olurdu. Ayrıca
+ * donmuş `games.players` anlık görüntüsü `user_id` taşımadığından istemci
+ * ancak İSİMLE eşleyebilirdi ve takma adlar değiştirilebiliyor — sunucuda
+ * `online_games.slots` gerçek `user_id` taşıyor.
+ *
+ * ⚠ Sonuç ÇAĞIRANIN bakış açısından: `wins` = çağıran kazandı,
+ * `losses` = bakılan kişi kazandı. Bar bunu ters okuyor (bkz.
+ * `utils/headToHead.ts`).
+ *
+ * Kendi kartına bakarken RPC 0 döner (sunucuda `p_other <> auth.uid()`).
+ */
+export async function fetchHeadToHead(
+  otherUserId: string,
+): Promise<HeadToHead | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('head_to_head_stats', {
+    p_other: otherUserId,
+  });
+  if (error) {
+    console.error('[Kelimeki] fetchHeadToHead hatası:', error.message);
+    return null;
+  }
+  // `returns table(...)` → tek satırlık dizi.
+  const row = (data as HeadToHead[] | null)?.[0];
+  if (!row) return null;
+  return {
+    games: row.games ?? 0,
+    wins: row.wins ?? 0,
+    losses: row.losses ?? 0,
+    draws: row.draws ?? 0,
+  };
 }
 
 /**

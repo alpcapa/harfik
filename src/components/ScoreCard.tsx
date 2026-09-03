@@ -128,12 +128,17 @@ export function ScoreCard({ onClose }: ScoreCardProps) {
         emptyText={tab === 'all' ? 'Henüz hiç oyun kaydın yok.' : `Henüz ${tab} oyunculu oyun kaydın yok.`}
       />
 
-      <div className="text-center mt-1.5">
+      {/* 3 Eylül 2026 (kullanıcı isteği: "Hepsinde Tüm oyunlar olsun / Ve
+          sola yapışsın"): etiket "Tüm Geçmiş Oyunlar" → "Tüm Oyunlar" ve
+          satır ortadan SOLA alındı — başkasının kartıyla (PlayerScoreCard)
+          artık aynı ad ve aynı hiza. Burada kafa kafaya çubuğu YOK (kendi
+          kartında anlamsız), o yüzden `justify-between` gerekmiyor. */}
+      <div className="text-left mt-1.5">
         <button
           onClick={() => setShowAllGames(true)}
           className="text-[11px] font-mono font-bold uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
         >
-          Tüm Geçmiş Oyunlar
+          Tüm Oyunlar
         </button>
       </div>
 

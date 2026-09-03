@@ -1,6 +1,6 @@
 // Skor Kartı — web `ScoreCard.tsx` portu: üstte avatar/isim/yaş-cinsiyet +
 // k-lig sırası, altında üç sekme (Genel/2/4), iki istatistik ızgarası ve
-// "Tüm Geçmiş Oyunlar" linki (aktif sekmenin oyuncu sayısıyla açılır —
+// "Tüm Oyunlar" linki (aktif sekmenin oyuncu sayısıyla açılır —
 // "Genel"de filtresiz).
 import 'package:flutter/material.dart';
 
@@ -43,7 +43,7 @@ class ScoreCardModal extends StatefulWidget {
   final AuthService auth;
   final StatsRepo stats;
 
-  /// null ise "Tüm Geçmiş Oyunlar" linki çizilmez (offline mod) — çalışmayan
+  /// null ise "Tüm Oyunlar" linki çizilmez (offline mod) — çalışmayan
   /// link koymuyoruz.
   final Future<GamesRepo>? games;
   final FriendsRepo? friends;
@@ -219,7 +219,11 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
           ),
           if (widget.games != null && auth.user != null) ...[
             const SizedBox(height: 8),
-            Center(
+            // 3 Eylül 2026 (kullanıcı isteği): ortadan SOLA alındı ve
+            // etiket "TÜM GEÇMİŞ OYUNLAR" → "TÜM OYUNLAR" oldu — web'in
+            // `ScoreCard.tsx`i ve başkasının kartı ile aynı ad/hiza.
+            Align(
+              alignment: Alignment.centerLeft,
               child: TapTarget(
                 onTap: () async {
                   final games = await widget.games!;
@@ -233,12 +237,13 @@ class _ScoreCardModalState extends State<ScoreCardModal> {
                     // "Beğenenler" listesinden bir isme dokununca o kişinin
                     // skor kartı açılabilsin diye.
                     stats: widget.stats,
+                    auth: widget.auth,
                   );
                 },
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 4),
                   child: Text(
-                    'TÜM GEÇMİŞ OYUNLAR',
+                    'TÜM OYUNLAR',
                     style: TextStyle(
                         fontFamily: 'SpaceMono',
                         fontSize: 11,

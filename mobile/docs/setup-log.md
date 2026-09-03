@@ -295,3 +295,22 @@ birebir aynı iki yerde: `_buildSavedGameView` ve `_buildNewGameForm`.
   glyph'in görsel olarak render olup olmadığını göremez — bu ayrım bir
   ders: metin eşleşmesi doğru ≠ görsel olarak doğru render).
 
+
+
+## Doğrulama Durumu (5 Ağustos 2026)
+
+> 3 Eylül 2026'da `mobile/CLAUDE.md`den buraya taşındı: o dosya her
+> turda bağlama yükleniyor (`auto` sınıfı) ve uyarı bandına girmişti;
+> kural gereği tarihli anlık görüntüler burada durur. Satırlar
+> DEĞİŞTİRİLMEDİ. ⚠ Sayılar o günün ilk üretimine ait — güncel
+> kontrol yolu `mobile/CLAUDE.md` → "Flutter SDK bu ortama
+> İNDİRİLEBİLİR".
+
+- Dart 3.12.2 (Linux x64) ile: `dart analyze` temiz, `dart run
+  test/run_all.dart` → **6.746 kontrol, 0 hata** — İLK üretimden itibaren
+  tam parite (tek düzeltme turu bile gerekmedi; port TS satır satır
+  izlenerek yazıldı).
+- `npm run lint` (tsc) web tarafında temiz — `random.ts` kancası davranış
+  değiştirmez (varsayılan hâlâ `Math.random`).
+- Dart SDK repoya/CI'a bağlanmadı — bu ortamda scratchpad'e indirilip
+  kullanıldı; geliştirici makinesinde standart `dart` kurulumu yeterli.

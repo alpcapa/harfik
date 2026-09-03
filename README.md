@@ -61,7 +61,7 @@ gerektiren akışların elle koşulan kontrol listesi: [`TESTING.md`](TESTING.md
 
 Flutter portunun kendi testleri `mobile/app`'te `flutter test` ile koşar
 (veri katmanı sahte uçlarla sınanır); gerçek Supabase/platform davranışının
-cihazda koşulan listesi: [`mobile/TESTING.md`](mobile/TESTING.md) (arkadaşlık + Canlı oyun turları: [`mobile/docs/testing-arkadaslar-canli.md`](mobile/docs/testing-arkadaslar-canli.md)). Derlemeyi
+cihazda koşulan listesi: [`mobile/TESTING.md`](mobile/TESTING.md) (arkadaşlık + Canlı oyun turları: [`mobile/docs/testing-arkadaslar-canli.md`](mobile/docs/testing-arkadaslar-canli.md); tarihli etkileşim/görünüm turları: [`mobile/docs/testing-ux-turlari.md`](mobile/docs/testing-ux-turlari.md)). Derlemeyi
 (imzasız iOS + Android APK + web) doğrulayan GitHub Actions iş akışı
 `mobile/**` dokunan her PR'da ve `main`e her push'ta otomatik koşar:
 `.github/workflows/mobile-build.yml`.
@@ -179,6 +179,9 @@ src/
 │   ├── leaguePoints.ts # k-lig puanı hesaplama (GameHistoryModal ve SharedGamePage ortak)
 │   ├── leagueRank.ts   # k-lig rütbe kademeleri (Çaylak→Kozmik, 9 kademe: eşik/renk/ödül — sunucudaki _award_league_rewards VE portun league_rank.dart'ı ile ELLE senkron, üç kopya)
 │   ├── pendingLiveGames.ts # Canlı taraftaki "bekleyen iş" sayısı (bekleyen davet + sırası sende olan oyun) — Setup rozeti ve PWA ikon rozeti ortak
+│   ├── gameListOrder.ts # devam eden oyun/davet listelerinin sıralaması: "sıra bende" bitmeye en yakın ÜSTTE, "sıra rakipte" en geç ÜSTTE, son tarihi olmayan en sona (npm run verify-game-list-order; portun game_list_order.dart'ıyla senkron)
+│   ├── recentGameAvatars.ts # "Son Oynananlar" satırındaki rakip avatarının çözümü — eşleme OYUNLA sınırlı (donmuş players anlık görüntüsü user_id taşımadığından isimle eşleme yanlış yüz gösterebilirdi)
+│   ├── headToHead.ts   # skor kartındaki kafa kafaya oran çubuğunun dilimleri — kümülatif yuvarlama, üç dilim TAM 100 eder (npm run verify-head-to-head; portun head_to_head.dart'ıyla senkron)
 │   └── profileFields.ts # cinsiyet seçenekleri, GG/AA/YYYY ↔ ISO tarih dönüşümü (AuthModal ve AccountSettingsModal ortak)
 ├── legal/            # SPA dışındaki statik sayfaların üreticisi — /gizlilik/, /kullanim-kosullari/,
 │                    # /hesap-silme/ (hukuki) + /nasil-oynanir/ (SEO; içeriği HelpModal'dan ithal).

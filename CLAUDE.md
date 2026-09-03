@@ -27,6 +27,7 @@ npm run verify-cloud-save-mirror # Bulut kaydı offline karar mantığı (saf fo
 npm run verify-draft-rescue      # Iskalanan dokunuşun en yakın taslak taşına yönlendirilmesi
 npm run verify-game-list-order   # Liste sıralaması: "sıra bende" artan ↔ "sıra rakipte" azalan, null en sona
 npm run verify-recent-game-avatars # "Son Oynananlar" avatar çözümü: eşleme OYUNLA sınırlı mı (yanlış yüz koruması)
+npm run verify-head-to-head      # Kafa kafaya oran çubuğu: üç dilim TAM 100 eder mi (kümülatif yuvarlama)
 npm run verify-fetch-my-games    # Oyun geçmişi: ağ hatası ↔ boş liste ayrımı (sahte Supabase ucu)
 npm run verify-league-tiers      # k-lig kademe/ödül tablosu: migration SQL'i ↔ leagueRank.ts
 npm run generate-initial-main-view-golden # Giriş sekmesi kuralı: web→port davranış golden'ı (CI tazeliği zorluyor)
@@ -105,7 +106,7 @@ koptu" (bkz. "Belgeleri Güncel Tutma").
 | `src/data/meanings.json` | `npm run generate-meanings-db` |
 | `LogoMark`/`KLigMark` | `npm run generate-logo-paths` / `generate-klig-paths` (ikisi de web+Dart yazar) |
 | Canlı oyun / mesajlaşma / e-posta özelliği | `TESTING.md` (elle koşulan liste) |
-| `mobile/app/` — sunucuya/platforma dokunan bir şey | `mobile/TESTING.md` (cihazda koşulan liste; arkadaşlık/Canlı oyun için `mobile/docs/testing-arkadaslar-canli.md`) |
+| `mobile/app/` — sunucuya/platforma dokunan bir şey | `mobile/TESTING.md` (cihazda koşulan ÖZELLİK listesi; arkadaşlık/Canlı oyun için `mobile/docs/testing-arkadaslar-canli.md`, tarihli etkileşim/görünüm turları için `mobile/docs/testing-ux-turlari.md`) |
 | Migration | Canlıya uygula + doğrula + `list_migrations` ile dosya adını eşleştir |
 | Migration bir kolonu **nullable** yapıyor (ya da FK'yi `cascade`→`set null` çeviriyor) | `database.types.ts` **ve** portun `fromJson`'ı — bu bir SÖZLEŞME değişikliği (bkz. `docs/decisions/account-deletion.md` → "SET NULL'ın bedeli") |
 | Yeni kullanıcı verisi ya da görünürlük değişikliği | `TermsModal`/`PrivacyModal` |
@@ -286,6 +287,15 @@ bölünme işini hallet"*). Beş dosya da kendi kuralına göre bölündü ve
 | `mobile/TESTING.md` | 141 → **109 KB** | Arkadaşlar + Canlı oyun → `mobile/docs/testing-arkadaslar-canli.md` |
 | `TESTING.md` | 124 → **83 KB** | Admin kontrolleri (9.7-9.15) → `docs/testing-admin.md` |
 
+**3 Eylül 2026 — `mobile/TESTING.md` yeniden uyarı bandına girdi** (121 KB)
+ve aynı kuralla ikinci kez bölündü: tarihli etkileşim/görünüm turları (bölüm
+14-25, sürükleme eşiği · dokunma hedefleri · yazı boyutu · akıcılık · zoom)
+→ `mobile/docs/testing-ux-turlari.md`, dosya **93 KB**'a indi. Kesme noktası
+yine içeriğin türü: her sürüm baştan koşulan ÖZELLİK listesi ↔ belirli bir
+Parça'nın gerilemediğini doğrulayan TARİHLİ tur. Dosyanın bölüm
+numaralarının 14'ten yeniden başlaması bu ayrımın zaten var olduğunun
+kanıtıydı.
+
 **Her kesme noktası boyut değil, İÇERİĞİN TÜRÜ:** kural ↔ anlatı, tek
 oturum ↔ iki oturum, normal kullanıcı ↔ admin. Hiçbir satır
 değiştirilmedi, bölüm numaraları korundu — atıflar kırılmasın diye.
@@ -380,7 +390,7 @@ src/
     constants.ts    # Tahta sabitleri, köşe hesapları, bonus konumları
     gameReducer.ts  # useReducer tabanlı oyun state makinesi
     types.ts        # GameState, Player, Tile tipleri
-  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, shareBoardImage, pendingLiveGames, errorReporting, ghostClick, draftRescue, boardZoom...)
+  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, shareBoardImage, pendingLiveGames, errorReporting, ghostClick, draftRescue, boardZoom, gameListOrder, recentGameAvatars, headToHead...)
   data/         # Kelime listesi (~63k), harf dağılımı, kelime anlamları, wordSetLoader (lazy chunk)
   lib/          # Supabase istemcisi ve API sarmalayıcısı
   fonts/        # @font-face tanımları (main.tsx import eder) + files/*.woff2 — bunlardan
