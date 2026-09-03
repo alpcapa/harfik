@@ -90,6 +90,23 @@
      - İsim yazılmadığı için çubuk web'de `role="img"` + açıklayıcı
        `aria-label` taşıyor: ekran okuyucuda iki avatar arasındaki renk
        şeridi hiçbir şey ifade etmezdi.
+     - **Üçüncü tur (aynı gün):** *"Toplam oyun barın hemen altına ortalı
+       gelsin. Barın üstüne de yeşil kırmızı alanlara %'ler gelsin.
+       Beraberlik hep ortada kalsın ama % gösterme."* Blok üç satır oldu:
+       üstte yüzdeler, ortada avatar+çubuk, altta oyun sayısı.
+       ⚠ **Yüzdeler dilimin ORTASINA değil kendi UCUNA yaslı**
+       (`spaceBetween`, çubuk genişliğinde bir `SizedBox`): kırmızı hep sol
+       uçtan başlar, yeşil hep sağ uçta biter, yani dilim daralsa bile
+       etiket kendi alanının üzerinde kalır ve ikisi çakışmaz. Ortalasaydık
+       `%5 – %95` gibi bir dağılımda dar dilimin etiketi taşardı.
+       ⚠ **Sıfır etiketi `SizedBox.shrink` ile GİZLENMEZ, `Opacity(0)` ile
+       gizlenir** — kaldırılsaydı `spaceBetween` altında tek kalan etiket
+       ortaya kayardı.
+       **Üç şeridin hizası hesapla değil YAPIDAN geliyor:** avatar satırı
+       18+6+96+6+18 = 144, yani çubuk satırın tam ortasında; üst/alt
+       şeritler 96 genişlikte ve `center` olduğundan kendiliğinden hizalı.
+       Regresyon: yeni bir test — beraberlik dilimi çiziliyor ama `%34`
+       hiçbir yerde YOK; yüzdelerin renkleri de kilitlendi.
      - **Doğrulama sınırı:** iki GERÇEK hesap gerektiriyor — `flutter test`
        sahte uçla çiziyor. Cihaz kontrolü `mobile/TESTING.md`'de.
 

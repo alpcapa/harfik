@@ -241,8 +241,17 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
 - [ ] **Kafa kafaya oran çubuğu (3 Eylül 2026) — İKİ HESAP GEREKİR.**
       A hesabıyla gir, k-lig listesinden B'nin kartını aç. Alt satırda solda
       `Tüm Oyunlar` butonu (SOLA yaslı; kendi Skor Kartı'ndaki buton da artık
-      aynı adı taşıyor ve sola yaslı — ikisini yan yana karşılaştır), sağda: üstte oyun sayısı, altta **B'nin avatarı ·
-      üç renkli çubuk · A'nın (senin) avatarı**. İsim YAZMAMALI.
+      aynı adı taşıyor ve sola yaslı — ikisini yan yana karşılaştır), sağda
+      ÜÇ satır: en üstte yüzdeler, ortada **B'nin avatarı · üç renkli çubuk ·
+      A'nın (senin) avatarı**, en altta oyun sayısı ORTALI. İsim YAZMAMALI.
+      - **Yüzdeler kendi renklerinde ve kendi alanlarının üzerinde:** sol
+        kırmızı, sağ yeşil. Çok tek taraflı bir skorda (ör. 1–19) dar
+        dilimin etiketi çubuğun dışına TAŞMAMALI ve iki etiket
+        ÇAKIŞMAMALI.
+      - **Beraberliğin yüzdesi HİÇ yazmamalı** — ortadaki gri bant görünür,
+        ama üstünde sayı yok.
+      - Bir uç %0 ise o etiket yazılmamalı, ama kalan etiket ortaya
+        KAYMAMALI (sağdaysa sağda, soldaysa solda kalmalı).
       - Renkler soldan sağa: **B'nin kazandıkları (kırmızı) · beraberlik
         (gri) · senin kazandıkların (yeşil)** — yani her avatar kendi
         tarafındaki dilime bakıyor.

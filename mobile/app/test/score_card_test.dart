@@ -706,6 +706,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('14 oyun'), findsOneWidget);
+    // Yüzdeler barın ÜSTÜNDE, kendi renklerinde (3 Eylül 2026, kullanıcı
+    // isteği): 5/14 → %36, 9/14 → %64.
+    expect(find.text('%36'), findsOneWidget);
+    expect(find.text('%64'), findsOneWidget);
+    expect(tester.widget<Text>(find.text('%36')).style?.color, kRed);
+    expect(tester.widget<Text>(find.text('%64')).style?.color, kGreen);
     // 5 kayıp / 0 beraberlik / 9 galibiyet → sol 36, orta 0 (ÇİZİLMEZ),
     // sağ 64. Yani tam İKİ dilim olmalı; üç değil.
     final dilimler = tester
@@ -718,6 +724,41 @@ void main() {
     // İsim çubuğun yanında YAZILMAZ — yalnızca başlıkta geçer.
     expect(find.text('Esiner'), findsOneWidget);
     expect(find.text('Sen'), findsNothing);
+  });
+
+  testWidgets(
+      'kafa kafaya: BERABERLİK dilimi ortada DURUR ama yüzdesi YAZILMAZ '
+      '(kullanıcı: "Beraberlik hep ortada kalsın ama % gösterme")',
+      (tester) async {
+    final gw = FakeStatsGateway(stats: {
+      'u-9': {null: statRow(total: 33)}
+    })
+      // 1/1/1 → sol %33, ORTA %34, sağ %33.
+      ..h2h = const {'games': 3, 'wins': 1, 'losses': 1, 'draws': 1};
+    final gamesRepo = await newRepoForWidget(tester, FakeGamesGateway());
+    await pumpModal(
+      tester,
+      PlayerScoreCardModal(
+        auth: AuthService.fake(user: fakeUser(), profile: ironman),
+        stats: StatsRepo(gw),
+        games: Future.value(gamesRepo),
+        userId: 'u-9',
+        name: 'Esiner',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // İki uç etiketi var…
+    expect(find.text('%33'), findsNWidgets(2));
+    // …ama beraberliğin yüzdesi HİÇBİR yerde yazmıyor.
+    expect(find.text('%34'), findsNothing);
+    // Dilim yine de ÇİZİLİYOR — ortada gri bant duruyor.
+    final dilimler = tester
+        .widgetList<ColoredBox>(find.descendant(
+            of: find.byType(Semantics), matching: find.byType(ColoredBox)))
+        .where((b) => b.color == kRed || b.color == kMuted || b.color == kGreen)
+        .toList();
+    expect(dilimler.map((b) => b.color), [kRed, kMuted, kGreen]);
   });
 
   testWidgets(

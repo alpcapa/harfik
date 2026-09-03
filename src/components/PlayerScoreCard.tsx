@@ -181,9 +181,22 @@ function HeadToHeadBarView({
 }) {
   const bar = headToHeadBar(data);
   return (
-    <div className="flex flex-col items-end gap-0.5 min-w-0">
-      <span className="text-[9px] font-mono text-muted leading-none">
-        {data.games} oyun
+    // Üç satır ORTAK bir eksende: yüzdeler ve oyun sayısı BARIN genişliğinde
+    // (`w-24`) şeritler, ortalanmış. Avatar satırı 18+6+96+6+18 olduğundan
+    // bar zaten satırın tam ortasında — yani `items-center` üç şeridi barla
+    // hizalar, ayrı bir dolgu hesabı gerekmiyor.
+    <div className="flex flex-col items-center gap-0.5 min-w-0">
+      {/* Yüzdeler barın ÜSTÜNDE, kendi alanlarının üzerinde: kırmızı hep
+          sol uçtan başlar, yeşil hep sağ uçta biter, o yüzden uçlara
+          yaslamak (`justify-between`) etiketi her zaman kendi diliminin
+          üzerinde tutar — dilim daralsa bile çakışmazlar.
+          ⚠ Beraberlik dilimi ortada DURUR ama yüzdesi YAZILMAZ (kullanıcı
+          kararı, 3 Eylül 2026). Sıfır olan uç etiketi de yazılmaz —
+          olmayan bir alanı etiketlemek yanıltıcı olurdu — ama `invisible`
+          ile yerini korur, yoksa tek kalan etiket ortaya kayardı. */}
+      <span className="w-24 flex justify-between text-[9px] font-mono font-bold leading-none">
+        <span className={bar.left > 0 ? 'text-red' : 'invisible'}>%{bar.left}</span>
+        <span className={bar.right > 0 ? 'text-green' : 'invisible'}>%{bar.right}</span>
       </span>
       <span className="flex items-center gap-1.5">
         <Avatar url={theirAvatar} name={theirName} size={18} />
@@ -199,6 +212,9 @@ function HeadToHeadBarView({
           <span className="bg-green h-full" style={{ width: `${bar.right}%` }} />
         </span>
         <Avatar url={myAvatar} name={myName} size={18} />
+      </span>
+      <span className="w-24 text-center text-[9px] font-mono text-muted leading-none">
+        {data.games} oyun
       </span>
     </div>
   );

@@ -575,8 +575,16 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
       GEREKİR.** A hesabıyla gir, k-lig'den B'nin kartını aç. Alt satırda
       solda `TÜM OYUNLAR` butonu (SOLA yaslı; kendi Skor Kartı'ndaki buton
       da aynı adı taşımalı ve sola yaslı olmalı — geçmiş penceresinin başlığı
-      da `Tüm Oyunlar`), sağda: üstte oyun sayısı, altta **B'nin
-      avatarı · üç renkli çubuk · A'nın (senin) avatarı**. İsim YAZMAMALI.
+      da `Tüm Oyunlar`), sağda ÜÇ satır: en üstte yüzdeler, ortada **B'nin
+      avatarı · üç renkli çubuk · A'nın (senin) avatarı**, en altta oyun
+      sayısı ORTALI. İsim YAZMAMALI.
+      - **Yüzdeler kendi renklerinde ve kendi alanlarının üzerinde:** sol
+        kırmızı, sağ yeşil. Çok tek taraflı bir skorda (ör. 1–19) dar
+        dilimin etiketi çubuğun dışına TAŞMAMALI, ikisi ÇAKIŞMAMALI.
+      - **Beraberliğin yüzdesi HİÇ yazmamalı** — gri bant görünür, sayı yok.
+      - Bir uç %0 ise etiket yazılmamalı ama kalan etiket ortaya KAYMAMALI.
+      - **Sistem yazı boyutunu büyüterek de bak** (Ayarlar → Yazı tipi
+        boyutu, en büyük): yüzdeler ve "N oyun" satırı BÖLÜNMEMELİ.
       - Renkler soldan sağa: **B'nin kazandıkları (kırmızı) · beraberlik
         (gri) · senin kazandıkların (yeşil)** — her avatar kendi
         tarafındaki dilime bakıyor.

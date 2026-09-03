@@ -507,13 +507,31 @@ class _KafaKafaya extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bar = headToHeadBar(data);
+    // Üç satır ORTAK bir eksende: yüzdeler ve oyun sayısı BARIN genişliğinde
+    // (96) şeritler. Avatar satırı 18+6+96+6+18 = 144 olduğundan bar zaten
+    // satırın tam ortasında — `center` üç şeridi barla hizalar, ayrı bir
+    // dolgu hesabı gerekmiyor.
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('${data.games} oyun',
-            style: const TextStyle(
-                fontFamily: 'SpaceMono', fontSize: 9, color: kMuted)),
+        // Yüzdeler barın ÜSTÜNDE, kendi alanlarının üzerinde: kırmızı hep
+        // sol uçtan başlar, yeşil hep sağ uçta biter, o yüzden uçlara
+        // yaslamak etiketi her zaman kendi diliminin üzerinde tutar.
+        // ⚠ Beraberlik dilimi ortada DURUR ama yüzdesi YAZILMAZ (kullanıcı
+        // kararı). Sıfır olan uç etiketi de yazılmaz ama `Opacity` ile
+        // yerini korur — `SizedBox.shrink` olsaydı tek kalan etiket
+        // `spaceBetween` altında ortaya kayardı.
+        SizedBox(
+          width: 96,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _Yuzde(deger: bar.left, renk: kRed),
+              _Yuzde(deger: bar.right, renk: kGreen),
+            ],
+          ),
+        ),
         const SizedBox(height: 2),
         Row(mainAxisSize: MainAxisSize.min, children: [
           KAvatar(url: theirAvatarUrl, name: theirName, size: 18),
@@ -552,7 +570,40 @@ class _KafaKafaya extends StatelessWidget {
           const SizedBox(width: 6),
           KAvatar(url: myAvatarUrl, name: 'Sen', size: 18),
         ]),
+        const SizedBox(height: 2),
+        SizedBox(
+          width: 96,
+          child: Text('${data.games} oyun',
+              textAlign: TextAlign.center,
+              // Sistem yazı boyutu tavanda (1,3) bile 96'ya sığıyor, ama
+              // sarma sınıfı hatasına (kök CLAUDE.md → "Sistem Yazı
+              // Boyutu", sınıf 3) hiç kapı bırakmıyoruz.
+              maxLines: 1,
+              softWrap: false,
+              style: const TextStyle(
+                  fontFamily: 'SpaceMono', fontSize: 9, color: kMuted)),
+        ),
       ],
     );
   }
+}
+
+/// Barın ucundaki yüzde etiketi. Sıfırsa GÖRÜNMEZ ama yerini korur.
+class _Yuzde extends StatelessWidget {
+  final int deger;
+  final Color renk;
+  const _Yuzde({required this.deger, required this.renk});
+
+  @override
+  Widget build(BuildContext context) => Opacity(
+        opacity: deger > 0 ? 1 : 0,
+        child: Text('%$deger',
+            maxLines: 1,
+            softWrap: false,
+            style: TextStyle(
+                fontFamily: 'SpaceMono',
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                color: renk)),
+      );
 }
