@@ -43,6 +43,7 @@ import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
 import { CountBadge } from './CountBadge';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { orderActiveGames, orderByExpiry } from '../utils/gameListOrder';
 import {
   LOAD_FAILED_NOTICE,
   OFFLINE_NO_CONNECTION,
@@ -887,8 +888,15 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   // olmadan iptal edilmiş bir davet DAVETLİNİN listesinde sonsuza dek
   // duruyordu — kuranın tarafı (`waiting`, aşağıda) baştan beri `status`'e
   // baktığından orada doğru kayboluyordu, asimetri buradaydı (4 Ağustos 2026).
-  const invites = (games ?? []).filter(
-    (g) => g.my_role === 'invitee' && g.my_invite_status === 'pending' && g.status === 'pending',
+  // Süresi bitmeye en yakın davet ÜSTTE (3 Eylül 2026, kullanıcı isteği).
+  // Davet süresi `created_at + ABANDON_TIMEOUT_MS` (bkz.
+  // `remainingInviteDays`), yani EN ESKİ davet en yakın olandır.
+  const davetBitis = (g: OnlineGame) => Date.parse(g.created_at) || null;
+  const invites = orderByExpiry(
+    (games ?? []).filter(
+      (g) => g.my_role === 'invitee' && g.my_invite_status === 'pending' && g.status === 'pending',
+    ),
+    davetBitis,
   );
   // Sırası kendisinde olan oyunlar ("Senin Hamlen Bekleniyor") listenin en
   // üstünde — dikkat gerektiren oyunlar her zaman ilk bakışta görünsün diye.
@@ -905,24 +913,31 @@ export function LiveGamesTab({ onOpenGame }: LiveGamesTabProps) {
   // `now() + 48 saat` yapıyor, dolayısıyla deadline'ı geç olan = son
   // oynanan. Ek bir sorgu/alan gerekmiyor, `deadlines` zaten yüklü. Null
   // (henüz kurulmamış state) EN SONA düşer.
+  // ⚠ Null → NULL döner, 0 DEĞİL. Eski hâli 0'dı ve yalnızca AZALAN
+  // sıralamada zararsızdı (dibe düşerdi); "sıra bende" grubu 3 Eylül'de
+  // ARTANA çevrilince 0 "en yakın bitiş" sanılıp EN ÜSTE çıkardı.
+  // `orderActiveGames` null'ı her iki grupta da sona koyuyor.
   const sonHamle = (g: OnlineGame) => {
     const d = deadlines[g.id];
-    return d ? new Date(d).getTime() : 0;
+    return d ? new Date(d).getTime() : null;
   };
-  const active = (games ?? [])
-    .filter((g) => g.status === 'active')
-    .sort((a, b) => {
-      const benimSiram = Number(turns[b.id] === mySlotIndex(b)) - Number(turns[a.id] === mySlotIndex(a));
-      if (benimSiram !== 0) return benimSiram;
-      return sonHamle(b) - sonHamle(a);
-    });
-  const waiting = (games ?? []).filter((g) => g.my_role === 'creator' && g.status === 'pending');
+  const active = orderActiveGames(
+    (games ?? []).filter((g) => g.status === 'active'),
+    { myTurn: (g) => turns[g.id] === mySlotIndex(g), deadlineMs: sonHamle },
+  );
+  const waiting = orderByExpiry(
+    (games ?? []).filter((g) => g.my_role === 'creator' && g.status === 'pending'),
+    davetBitis,
+  );
   // Daveti kabul ettin ama oyun (4 kişilikte diğer davetliler henüz
   // kabul etmediğinden) hâlâ 'pending' — `invites`/`active`/`waiting`
   // hiçbirine düşmediğinden bir kategori eksikti, oyun listede hiç
   // görünmüyordu (kabul ettikten sonra "kayboluyor" gibi görünüyordu).
-  const acceptedWaiting = (games ?? []).filter(
-    (g) => g.my_role === 'invitee' && g.my_invite_status === 'accepted' && g.status === 'pending',
+  const acceptedWaiting = orderByExpiry(
+    (games ?? []).filter(
+      (g) => g.my_role === 'invitee' && g.my_invite_status === 'accepted' && g.status === 'pending',
+    ),
+    davetBitis,
   );
   // İlk iki tabın kırmızı rozeti — Setup'taki "Arkadaşınla (N)" rozetiyle
   // aynı iki sayı: gerçekten hamle bekleyen (sırası çağıranda olan) aktif

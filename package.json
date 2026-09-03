@@ -20,6 +20,7 @@
     "generate-klig-paths": "node scripts/generate-klig-paths.mjs",
     "check-doc-size": "node scripts/check-doc-size.mjs",
     "verify-recent-game-avatars": "esbuild scripts/verify-recent-game-avatars.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-recent-game-avatars.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-recent-game-avatars.mjs",
+    "verify-game-list-order": "esbuild scripts/verify-game-list-order.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-game-list-order.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-game-list-order.mjs",
     "verify-draft-rescue": "esbuild scripts/verify-draft-rescue.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-draft-rescue.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-draft-rescue.mjs",
     "verify-cloud-save-mirror": "esbuild scripts/verify-cloud-save-mirror.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-cloud-save-mirror.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-cloud-save-mirror.mjs",
     "verify-fetch-my-games": "node scripts/run-verify-fetch-my-games.mjs",

@@ -1563,6 +1563,13 @@ Bitirme modalı **otomatik ölçülüyor** (`npm run test` →
 - [ ] **Nasıl Oynanır → Rütbeler ve Ödüller** → rütbe harfi tek satır.
 - [ ] Ayarı normale al → üç yüzeyde de görünüm ESKİSİYLE AYNI olmalı
       (sütun genişlikleri ve aralıklar değişmemeli).
+- [ ] **LİSTE SIRALAMASI** (3 Eylül 2026): (a) Yapay Zeka "DEVAM EDEN
+      OYUNLAR" → silinmeye en yakın kayıt EN ÜSTTE; (b) Canlı "Devam
+      Edenler" → sırası SENDE olanlar üstte ve KENDİ İÇİNDE en yakın teslim
+      en üstte; (c) "Oyun Davetleri" → süresi bitmeye en yakın davet en
+      üstte. ⚠ Sırası RAKİPTE olan oyunlarda yön TERSİ ve bu bilinçli:
+      orada "son oynanan üstte" (31 Ağustos kararı) — o grubu en-yakın-bitiş
+      sanıp hata bildirme.
 - [ ] **Son Oynananlar / Son Oynadıklarım → AVATARLAR** (2 Eylül 2026'da
       eklendi; öncesinde bu listede hiç fotoğraf çıkmıyordu): bitmiş bir
       Canlı oyunda rakiplerin fotoğrafı görünmeli; Yapay Zeka sekmesinde

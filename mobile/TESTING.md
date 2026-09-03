@@ -1694,6 +1694,13 @@ kırpar), sonra:
 - [ ] **Tahtada onaylı bir taşa dokun (kelime anlamı)** → madde numaraları
       (`1.`, `2.` …) tek satır.
 - [ ] **Yardım → k-lig kademe tablosu** → kademe harfleri tek satır.
+- [ ] **LİSTE SIRALAMASI** (3 Eylül 2026): (a) Yapay Zeka "DEVAM EDEN
+      OYUNLAR" → silinmeye en yakın kayıt EN ÜSTTE; (b) Canlı "Devam
+      Edenler" → sırası SENDE olanlar üstte ve KENDİ İÇİNDE en yakın teslim
+      en üstte; (c) "Oyun Davetleri" → süresi bitmeye en yakın davet en
+      üstte. ⚠ Sırası RAKİPTE olan oyunlarda yön TERSİ ve bu bilinçli:
+      orada "son oynanan üstte" (31 Ağustos kararı) — o grubu en-yakın-bitiş
+      sanıp hata bildirme.
 - [ ] **Son Oynananlar / Son Oynadıklarım → AVATARLAR** (2 Eylül 2026):
       bitmiş bir Canlı oyunda rakiplerin fotoğrafı, Yapay Zeka sekmesinde
       kendi fotoğrafın görünmeli. ⚠ Fotoğrafı olmayan üye baş harfte,

@@ -25,6 +25,7 @@ npm run generate-meanings-db     # Flutter portu için meanings.json → SQLite 
 npm run generate-demo-board-dart # Karşılama tahtası → portun intro ekranı için demo_board_data.dart
 npm run verify-cloud-save-mirror # Bulut kaydı offline karar mantığı (saf fonksiyon kontrolleri)
 npm run verify-draft-rescue      # Iskalanan dokunuşun en yakın taslak taşına yönlendirilmesi
+npm run verify-game-list-order   # Liste sıralaması: "sıra bende" artan ↔ "sıra rakipte" azalan, null en sona
 npm run verify-recent-game-avatars # "Son Oynananlar" avatar çözümü: eşleme OYUNLA sınırlı mı (yanlış yüz koruması)
 npm run verify-fetch-my-games    # Oyun geçmişi: ağ hatası ↔ boş liste ayrımı (sahte Supabase ucu)
 npm run verify-league-tiers      # k-lig kademe/ödül tablosu: migration SQL'i ↔ leagueRank.ts

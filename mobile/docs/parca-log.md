@@ -20,6 +20,34 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 184 — liste sıralaması: "bitmeye en yakın üstte" (3 Eylül
+     2026, kullanıcı isteği; yeni `util/game_list_order.dart`, değişen
+     `data/online_games_api.dart`, `ui/setup/setup_screen.dart` + web
+     ikizleri; `test/game_list_order_test.dart`):**
+     - **Kullanıcı:** *"YZ ve canlı sıra sende bekleyen oyunlarda sıralama
+       bitmeye en yakın üstte şeklinde olmalı. Oyun davetlerinde de süresi
+       bitmeye en yakın üstte olacak."*
+     - ⚠ **KÖR TERS ÇEVİRME YANLIŞ OLURDU.** Aktif liste zaten "son oynanan
+       üstte" (AZALAN) diye sıralıydı ve bu 31 Ağustos'ta BAŞKA bir
+       kullanıcı şikayetiyle konmuştu. Tamamını artana çevirmek iki gün
+       önceki düzeltmeyi geri getirirdi. Çözüm asimetrik:
+       **sıra BENDE artan** (yapacak iş var, en acil üstte),
+       **sıra RAKİPTE azalan** (yapabileceğim şey yok, anlamlı sıra "son
+       hareket eden"). Kullanıcının isteği zaten yalnızca ilk gruba aitti.
+     - ⚠ **NULL TUZAĞI — sessizdi ve yön değişince patlıyordu.** İki tarafta
+       da deadline yoksa `0` kullanılıyordu; AZALAN sıralamada zararsızdı
+       (dibe düşerdi), ARTANDA ise `0` "en yakın bitiş" sayılıp EN ÜSTE
+       çıkardı. Kural artık null'ı her iki grupta da SONA koyuyor.
+     - **Kural İKİ AYRI YERDE elle yazılıydı** (web'de inline sort, portta
+       `activeBucket`); yorumları "birebir aynı ölçütler" diyordu ama
+       hiçbir şey zorlamıyordu. Ortak dosyaya çıkarıldı, iki taraf aynı
+       vakalarla testli: `npm run verify-game-list-order` +
+       `game_list_order_test.dart` (10 vaka, yön iddiaları negatif eş).
+     - Davetler/bekleyenler `created_at`e (davet süresi ondan işliyor),
+       yerel YZ kayıtları `updated_at`e (7 günlük silinme ondan işliyor)
+       göre ARTAN. İkisinin de depo sorgusu `desc` döndüğü için sıra
+       gösterim katmanında çevriliyor.
+
    - ✅ **Parça 183 — avatarlar 26 px, bindirme 4 → 6 (2 Eylül 2026,
      kullanıcı isteği; değişen `ui/game/player_avatar_row.dart`,
      `ui/live/live_games_tab.dart` + web ikizleri):**
@@ -171,12 +199,9 @@
        tamamını ölçerdi: test düşmez, **anlamsızlaşırdı**. Sol alan artık
        ortak gövdede anahtarlı (`kDevamEdenSolKey`). **Bir düzeni ölçen
        test, o düzenin İÇERİĞİ değişince yeniden okunmalı.**
-     - ⏳ **CİHAZDA HENÜZ DENENMEDİ (3 Eylül 2026 itibarıyla).** Aynı turda
-       çıkan öteki üç iş (iPad paylaşımı, avatar 26, Son Oynananlar
-       avatarları) doğrulandı; BU madde onların içinde DEĞİL. Kontrol:
-       "Yapay Zeka" ↔ "Arkadaşınla" sekmelerini yan yana koy, kalan süre
-       iki kartta da kendi alt satırında olmalı ("X açtı" yazısına
-       binmemeli). ⚠ Onaylananların yanında sessizce onaylanmış SAYMA.
+     - ✅ **CİHAZDA DOĞRULANDI (3 Eylül 2026, kullanıcı — Appetize):**
+       *"Sonuncu madde de ok."* Bu turun dört işi de (iPad paylaşımı,
+       avatar 26, Son Oynananlar avatarları, kart düzeni) onaylandı.
 
    - ✅ **Parça 179 — zoom'da kalıcı 10 px çerçeve + filigranların yazı
      ölçeğiyle bölgeyi taşırması (2 Eylül 2026; değişen:

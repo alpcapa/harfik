@@ -27,6 +27,8 @@ import 'package:kelimeki_core/kelimeki_core.dart'
     show HistoryEntry, LostShare, OnlineGameStatePublic, Tile, WordScore;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../util/game_list_order.dart';
+
 import 'error_reporter.dart';
 import 'online_api.dart';
 import '../util/offline_notice.dart';
@@ -792,13 +794,21 @@ List<NewGameSlot> rematchSlots(OnlineGame game, String myUserId) => [
 /// dersi: `check_invite_expiry` yalnızca online_games.status'u değiştirir,
 /// game_invites satırına dokunmaz; bu şart olmadan iptal edilmiş davet
 /// davetlinin listesinde sonsuza dek kalır.
-List<OnlineGame> inviteBucket(List<OnlineGame> games) => [
+/// Davet süresi `created_at + ABANDON_TIMEOUT_MS`'ten işlediğinden EN ESKİ
+/// davet bitmeye en yakın olandır (bkz. `remainingInviteLabel`).
+int? _davetBitis(OnlineGame g) =>
+    DateTime.tryParse(g.createdAt)?.millisecondsSinceEpoch;
+
+/// Yanıt bekleyen davetler — **süresi bitmeye en yakın ÜSTTE** (3 Eylül
+/// 2026, kullanıcı isteği). Öncesinde sıra `list_my_online_games`in
+/// `created_at desc`iydi, yani TAM TERSİ: en yakın biten en altta.
+List<OnlineGame> inviteBucket(List<OnlineGame> games) => orderByExpiry([
       for (final g in games)
         if (g.myRole == 'invitee' &&
             g.myInviteStatus == 'pending' &&
             g.status == OnlineGameStatus.pending)
           g
-    ];
+    ], _davetBitis);
 
 /// Aktif oyunlar — sırası çağıranda olanlar üstte, sonra SON OYNANAN üstte
 /// (web'in `LiveGamesTab`'ıyla birebir aynı ölçütler).
@@ -815,41 +825,38 @@ List<OnlineGame> activeBucket(
   Map<String, int> turns, {
   Map<String, String?> deadlines = const {},
 }) {
-  final active = [
-    for (final g in games)
-      if (g.status == OnlineGameStatus.active) g
-  ];
-  int myTurn(OnlineGame g) => turns[g.id] == g.mySlotIndex ? 1 : 0;
-  int sonHamle(OnlineGame g) {
-    final d = deadlines[g.id];
-    if (d == null) return 0;
-    return DateTime.tryParse(d)?.millisecondsSinceEpoch ?? 0;
-  }
-
-  // Dart List.sort kararlı DEĞİL (core sözleşmeleri) — indeks tie-break.
-  // Deadline yoksa/eşitse eski davranış (geliş sırası) aynen korunur.
-  final indexed = active.asMap().entries.toList()
-    ..sort((a, b) {
-      final d = myTurn(b.value) - myTurn(a.value);
-      if (d != 0) return d;
-      final t = sonHamle(b.value).compareTo(sonHamle(a.value));
-      return t != 0 ? t : a.key - b.key;
-    });
-  return [for (final e in indexed) e.value];
+  // ⚠ `sonHamle` null döner, 0 DEĞİL: 0 yalnızca AZALAN sıralamada
+  // zararsızdı (dibe düşerdi). "Sıra bende" grubu 3 Eylül 2026'da ARTANA
+  // çevrilince 0 "en yakın bitiş" sanılıp EN ÜSTE çıkardı.
+  return orderActiveGames(
+    [
+      for (final g in games)
+        if (g.status == OnlineGameStatus.active) g
+    ],
+    myTurn: (g) => turns[g.id] == g.mySlotIndex,
+    deadlineMs: (g) {
+      final d = deadlines[g.id];
+      return d == null ? null : DateTime.tryParse(d)?.millisecondsSinceEpoch;
+    },
+  );
 }
 
-List<OnlineGame> waitingBucket(List<OnlineGame> games) => [
+/// Rakip bekleyen kendi oyunlarım — davetlerle AYNI ölçüt (aynı kartı ve
+/// aynı süre etiketini paylaşıyorlar).
+List<OnlineGame> waitingBucket(List<OnlineGame> games) => orderByExpiry([
       for (final g in games)
         if (g.myRole == 'creator' && g.status == OnlineGameStatus.pending) g
-    ];
+    ], _davetBitis);
 
-List<OnlineGame> acceptedWaitingBucket(List<OnlineGame> games) => [
+/// Kabul ettim, öteki davetliler bekleniyor — yine aynı ölçüt.
+List<OnlineGame> acceptedWaitingBucket(List<OnlineGame> games) =>
+    orderByExpiry([
       for (final g in games)
         if (g.myRole == 'invitee' &&
             g.myInviteStatus == 'accepted' &&
             g.status == OnlineGameStatus.pending)
           g
-    ];
+    ], _davetBitis);
 
 int myTurnCount(List<OnlineGame> games, Map<String, int> turns) =>
     activeBucket(games, turns)
