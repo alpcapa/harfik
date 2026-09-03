@@ -50,13 +50,13 @@ export interface AvatarRowPlayer {
  */
 export function PlayerAvatarRow({
   players,
-  size = 20,
+  size = 26,
 }: {
   players: AvatarRowPlayer[];
   size?: number;
 }) {
   return (
-    <span className="flex -space-x-1" style={{ height: size }}>
+    <span className="flex -space-x-1.5" style={{ height: size }}>
       {players.map((p, i) => (
         // Halka (`ring-panel`), üst üste binen avatarların birbirinden
         // ayrışmasını sağlıyor; `ring` layout'a hiç yer kaplamadığından

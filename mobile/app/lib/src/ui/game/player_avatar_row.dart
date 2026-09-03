@@ -6,10 +6,15 @@
 // (kendileri dahil) geçer — yalnızca rakipleri göstermek 4 kişilik bir
 // oyunda kaç kişilik olduğunu kaybettirirdi.
 //
-// İki çağrı yeri var ve girdileri FARKLI: Setup'ın devam eden oyun satırı
-// canlı `Player` listesinden, "Son Oynadıklarım" ise dondurulmuş
-// `games.players` anlık görüntüsünden besleniyor. Web'de de tek bileşen iki
+// ÜÇ çağrı yeri var ve girdileri FARKLI: Setup'ın devam eden oyun satırı
+// canlı `Player` listesinden, Canlı sekmesinin "Devam Edenler" kartı
+// (`live_games_tab`) canlı koltuklardan, "Son Oynananlar" ise dondurulmuş
+// `games.players` anlık görüntüsünden besleniyor. Web'de de tek bileşen üç
 // yeri besliyor; ortak biçim `AvatarRowPlayer`.
+//
+// ⚠ Bu satır 2 Eylül 2026'ya kadar "İki çağrı yeri var" diyordu ve BAYATTI —
+// Canlı kartı sonradan eklenmiş, yorum güncellenmemişti. Boyut değiştirmeye
+// gelen biri kapsamı eksik ölçerdi.
 import 'package:flutter/material.dart';
 
 import '../auth/k_avatar.dart';
@@ -48,16 +53,27 @@ class AvatarRowPlayer {
 class PlayerAvatarRow extends StatelessWidget {
   final List<AvatarRowPlayer> players;
 
-  /// Web'le aynı 20px: başlık satırının yerine geçtiğinden kartı neredeyse
-  /// büyütmüyor, ama 16px'te baş harfler okunamaz hâle geliyor.
+  /// Web'le aynı **26px** (2 Eylül 2026, kullanıcı isteği: "avatarları biraz
+  /// daha büyütelim"). Öncesi 20'ydi; 16px'te baş harfler okunamaz hâle
+  /// geliyor, o taban hâlâ geçerli.
+  ///
+  /// ⚠ **ÜST SINIR ÖLÇÜLDÜ:** şerit `Expanded` bir alanın içinde ve yazı
+  /// ölçeği tavanında o alan 320 px'lik ekranda **92,5 px**'e iniyor
+  /// (`setup_screen_test`, CI ölçümü). 4 oyunculu bir oyunda şeridin eni
+  /// `size + 3*(size - overlap)`; 26/6 ile **86 px** (6,5 px marj). Aynı
+  /// boyut ESKİ 4 px bindirmeyle 92 px ederdi — yani 0,5 px marj, pratikte
+  /// taşma. Bindirme bu yüzden 6'ya çıktı; boyutu büyütürken İKİSİNİ
+  /// birlikte hesapla.
   final double size;
 
-  const PlayerAvatarRow({super.key, required this.players, this.size = 20});
+  const PlayerAvatarRow({super.key, required this.players, this.size = 26});
 
   @override
   Widget build(BuildContext context) {
     if (players.isEmpty) return SizedBox(height: size);
-    const overlap = 4.0;
+    // 4 → 6 (2 Eylül 2026): avatar 20 → 26 olurken şeridin toplam eni
+    // sabit kalsın diye — gerekçe ve ölçüm `size` alanının yorumunda.
+    const overlap = 6.0;
     final step = size - overlap;
     return SizedBox(
       width: size + (players.length - 1) * step,

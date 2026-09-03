@@ -917,7 +917,7 @@ class _PendingGameCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Row(children: [
-                KAvatar(url: s.avatarUrl, name: s.name, size: 22),
+                KAvatar(url: s.avatarUrl, name: s.name, size: 26),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Row(children: [
@@ -946,15 +946,18 @@ class _PendingGameCard extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 4),
               child: Row(children: [
                 Container(
-                  width: 22,
-                  height: 22,
+                  // 22 → 26 (2 Eylül 2026): insan koltuğundaki KAvatar ile
+                  // AYNI boyut olmak zorunda, ikisi alt alta duruyor.
+                  width: 26,
+                  height: 26,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
                     border: Border.all(color: _border),
                   ),
                   child: const Icon(Icons.smart_toy_outlined,
-                      size: 13, color: _muted),
+                      // Kutuyla orantılı: 13/22 ≈ 15/26.
+                      size: 15, color: _muted),
                 ),
                 const SizedBox(width: 8),
                 const Expanded(
