@@ -133,6 +133,34 @@ class FakeOnlineGamesGateway implements OnlineGamesGateway {
     onCheckInviteExpiry?.call(gameId);
   }
 
+  /// Bitişi görülmemiş oyunlar — testler tek tek doldurabilsin diye alan.
+  List<String> unseenFinished = const [];
+
+  /// `markFinishesSeen` çağrıları: `null` = toplu (sekme ziyareti),
+  /// dolu = tek oyun (bitiş modalı). Sıra ve içerik testlerde sınanıyor.
+  final List<String?> finishesSeenCalls = [];
+
+  /// true ise işaretleme AĞ HATASI verir — "yalnızca sunucu onaylarsa
+  /// sıfırla" kuralının negatif eşi için.
+  bool failMarkFinishesSeen = false;
+
+  /// true ise görülmemiş çekimi AĞ HATASI verir — "haber düşse de sayılar
+  /// gelmeli" kuralının negatif eşi.
+  bool unseenFinishedThrows = false;
+
+  @override
+  Future<List<String>> unseenFinishedGames() async {
+    if (unseenFinishedThrows) throw Exception('ağ');
+    return unseenFinished;
+  }
+
+  @override
+  Future<void> markFinishesSeen({String? onlineGameId}) async {
+    if (failMarkFinishesSeen) throw Exception('ağ');
+    finishesSeenCalls.add(onlineGameId);
+    unseenFinished = const [];
+  }
+
   @override
   void Function() subscribe(void Function() onChange,
       {void Function()? onResubscribe}) {

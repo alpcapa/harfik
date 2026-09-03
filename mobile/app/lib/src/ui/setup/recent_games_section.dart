@@ -110,6 +110,19 @@ class RecentGamesSection extends StatefulWidget {
   /// Hesap sahibinin avatarı — yerel oyunlarda tek insan koltuk odur.
   final String? ownAvatarUrl;
 
+  /// Bitişini kullanıcının GÖRMEDİĞİ oyunların `games.id`'leri — o
+  /// satırlarda "OYUN BİTTİ"nin altına kırmızı "YENİ" düşer (3 Eylül 2026).
+  ///
+  /// ⚠ Yalnızca Canlı tarafta dolu geçilir: YZ oyunlarında bitişi zaten
+  /// görüyorsun (oyun senin cihazında bitiyor), orada "yeni" diye bir kavram
+  /// yok — kullanıcı kapsamı bilerek Canlı ile sınırladı.
+  ///
+  /// ⚠ Sekme AÇIKKEN sabit kalmalı: sunucudaki işaret sekmeye girer girmez
+  /// temizleniyor (sayı sıfırlansın diye), ama satır rozetleri ziyaret
+  /// boyunca DURMALI — yoksa kullanıcı tam bakarken gözünün önünde kaybolur.
+  /// Bu yüzden çağıran anlık listeyi değil bir ENSTANTANEyi geçiyor.
+  final Set<String> newlyFinishedIds;
+
   const RecentGamesSection({
     super.key,
     required this.games,
@@ -122,6 +135,7 @@ class RecentGamesSection extends StatefulWidget {
     this.isOffline = false,
     this.onlineGames = const [],
     this.ownAvatarUrl,
+    this.newlyFinishedIds = const {},
   });
 
   @override
@@ -259,6 +273,7 @@ class _RecentGamesSectionState extends State<RecentGamesSection> {
               onTap: () => _openHistory(focusId: g.id),
               avatarIndex: _avatarIndex,
               ownAvatarUrl: widget.ownAvatarUrl,
+              yeni: widget.newlyFinishedIds.contains(g.id),
             ),
           ),
       ],
@@ -280,11 +295,16 @@ class _RecentRow extends StatelessWidget {
   final Map<String, Map<String, String>> avatarIndex;
   final String? ownAvatarUrl;
 
+  /// Bitişini kullanıcı GÖRMEDİ → "OYUN BİTTİ"nin altına kırmızı "YENİ"
+  /// (3 Eylül 2026). Aynı sebeple parametre: bu satır ayrı bir widget.
+  final bool yeni;
+
   const _RecentRow({
     required this.entry,
     required this.onTap,
     required this.avatarIndex,
     required this.ownAvatarUrl,
+    required this.yeni,
   });
 
   @override
@@ -352,6 +372,42 @@ class _RecentRow extends StatelessWidget {
                           fontFamily: 'SpaceMono', fontSize: 9, color: _muted)),
                 ],
               ),
+            ),
+            const SizedBox(width: 8),
+            // "Oyun Bitti" — 3 Eylül 2026, kullanıcı isteği. Bu liste zaten
+            // YALNIZCA bitmiş oyunları gösteriyor, yani etiket her satırda
+            // aynı; amacı bilgi vermek değil, oyunun bittiğini FARK
+            // ETTİRMEK: hamleni yapıp gittiğinde oyun sen yokken bitiyor ve
+            // bugün bunu hiçbir yer söylemiyor. Web ikizi
+            // `RecentGamesSection.tsx` ile aynı yer/aynı metin.
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('OYUN BİTTİ',
+                    style: TextStyle(
+                        fontFamily: 'SpaceMono',
+                        fontSize: 9,
+                        letterSpacing: 0.5,
+                        color: _muted)),
+                if (yeni) ...[
+                  const SizedBox(height: 2),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    decoration: BoxDecoration(
+                      color: kRed,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: const Text('YENİ',
+                        style: TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                            color: Colors.white)),
+                  ),
+                ],
+              ],
             ),
             const SizedBox(width: 8),
             Text('${entry.playerScore}',

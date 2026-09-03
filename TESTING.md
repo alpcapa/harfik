@@ -268,6 +268,29 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       - Teslim olarak biten bir oyununuz varsa teslim olan taraf KAYBETMİŞ
         sayılmalı — iki taraf da 0 puanla bitmiş olsa bile beraberlik
         görünmemeli.
+- [ ] **"Oyun Bitti (Yeni)" — biten oyunun haberi (3 Eylül 2026) — İKİ HESAP
+      GEREKİR.**
+      - **Kurulum:** A ile bir Canlı oyunda hamleni yap ve uygulamayı KAPAT.
+        B ile oyunu bitir (rafını bitir ya da teslim ol). A'ya dön.
+      - **Beklenen:** "Arkadaşınla" ÜST sekmesinde kırmızı sayı ARTMIŞ olmalı
+        (bekleyen davet/sıra sayısının ÜSTÜNE eklenir), "Son Oynananlar" ALT
+        sekmesinde de aynı sayı. İçeri girince o oyunun satırında ortada
+        `OYUN BİTTİ` ve altında kırmızı `YENİ`.
+      - **Sayı GİRİNCE sıfırlanır, rozet ÇIKINCA kalkar:** sekmedeyken
+        `YENİ` durmaya devam etmeli (gözünün önünde kaybolMAMALI); başka bir
+        sekmeye geçip geri geldiğinde `YENİ` gitmiş, `OYUN BİTTİ` kalmış
+        olmalı.
+      - **Oyuna TIKLAMADAN çıkmak da sıfırlar:** sekmeye gir, hiçbir oyuna
+        dokunma, başka sekmeye geç → sayı sıfır, dönünce `YENİ` yok.
+      - **Oyunu BİTİREN kişide rozet ÇIKMAMALI:** B tarafında (bitiş modalını
+        gören) o oyun için `YENİ` görünmemeli — sayı da artmamalı.
+      - **`OYUN BİTTİ` etiketi HER satırda** olmalı (eski oyunlarda da), YZ
+        tarafındaki "Son Oynananlar"da da. `YENİ` ise yalnızca Canlı'da.
+      - ⚠ **Uygulama ikonundaki rozete KARIŞMAMALI** (kullanıcı kararı):
+        biten oyun ikon rozetini artırMAMALI ve girişte hangi sekmenin
+        açıldığını DEĞİŞTİRMEMELİ.
+      - **Çevrimdışı:** uçak modunda sekmeye gir → sayı sıfırlanMAMALI
+        (sunucu onaylamadı). Ağ gelince tazelenince hâlâ orada olmalı.
 - [ ] **Hamle geçmişi ikonu (12 Ağustos 2026).** Tüm Oyunlarım'da, dökümü
       OLAN kartlarda küçük bir döküman ikonu olmalı; dokununca o oyunun TAM
       hamle dökümü açılmalı (kelime + ham puan + ×2/×3 rozetleri,

@@ -20,6 +20,55 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 186 — "Oyun Bitti (Yeni)": biten oyunun haberi (3 Eylül
+     2026, kullanıcı isteği; yeni tablo `game_finish_seen` + 2 RPC, değişen
+     `data/online_games_api.dart`, `ui/live/live_games_tab.dart`,
+     `ui/setup/setup_screen.dart`, `ui/setup/recent_games_section.dart`,
+     `ui/live/online_game_screen.dart` + web ikizleri):**
+     - **Kullanıcı:** *"Kişi başkasıyla oynadığı oyunun bittiğinden haberi
+       olmuyor… ancak son oynadıklarıma girersen görüyorsun."* Push BİLEREK
+       elendi (*"oyun bitti mesajı atmak işin dozunu kaçırabilir"*) — sistemde
+       zaten sıra ve son-tarih bildirimleri var, üçüncü tür yorgunluk üretirdi.
+     - ⚠ **`games`'e kolon EKLENMEDİ.** O tablonun SELECT politikası
+       `auth.uid() is not null` — girişli HERKES herkesin satırını okuyor;
+       "gördü" kolonu kimin ne zaman listesine baktığını herkese açardı. Aynı
+       sınıf bu repoda bir kez yaşandı (`games.messages`, 10 Ağustos 2026).
+     - **İşaretlemenin İKİ yolu şart:** toplu (sekme ziyareti) ve tek oyunluk
+       (bitiş modalı). Yalnız toplu olsaydı oyunu bitiren — modalı GÖREN —
+       kişi kendi oyunu için de rozet alırdı; yalnız tek olsaydı sekme
+       ziyareti sayacı sıfırlamazdı. Bitiş modalında toplu işaretlemek de
+       yanlış olurdu: görülmemiş BAŞKA oyunlar sessizce yutulurdu.
+     - ⚠ **ROZET ZİNCİRİ bir karar, tesadüf değil:** alt sekme → üst sekme
+       EVET; giriş varsayılanı (`decideInitialMainView`) HAYIR (kullanıcı
+       kararı — o "yapacak işin var" demek, biten oyun ise HABER). Kazara
+       bozulmamasını sağlayan şey, o kararın alanları TEK TEK toplaması
+       (`inviteCount + myTurnCount`), nesneyi kör toplamaması.
+       `PendingLiveGameCounts`'a alan eklerken bu deseni koru.
+     - ⚠ **Kullanıcının tarifinde İKİ AN var ve aynı anda olmuyorlar:**
+       *"girip gördüğünde tab numarası sıfırlanır"* (giriş anında) ama
+       *"yeni kalkar, sadece Oyun bitti kalır"* (ÇIKIŞTA). Bu yüzden satır
+       rozetleri anlık listeye değil, sekmeye girerken alınan bir
+       ENSTANTANEye bağlı (`_freshFinished`) — anlık listeyi bağlasaydık
+       rozetler kullanıcı tam bakarken gözünün önünde kaybolurdu.
+     - **Sayaç yalnızca sunucu ONAYLARSA sıfırlanıyor.** Çevrimdışıyken
+       yerelde sıfırlamak rozeti kaybettirir ama sunucuda görülmemiş bırakır;
+       bir sonraki tazelemede geri gelip "kayboldu sonra döndü" diye tuhaf
+       görünürdü. Bu kod tabanında tek seferlik kararların BAŞARISIZ veriyle
+       tüketilmesi üç kez hata olarak kayıtlı.
+     - **Alt sekme değişimi TEK kapıdan** (`_setSubTab`) geçiyor: elle
+       dokunuş da varsayılan-sekme kararı da. Ayrıca `didUpdateWidget` —
+       kullanıcı ZATEN sekmedeyken bir oyun biterse (Realtime tazeledi)
+       rozet yine görünsün diye; yoksa haber sekme açıkken sessizce birikir.
+     - **`_RecentRow` yine parametre aldı** (`yeni`): ayrı bir
+       `StatelessWidget`, `widget.` yok — Parça 184'ün dersi tekrar geçerli.
+     - **Regresyon: 7 test** (`live_games_test.dart`) — rozet çıkar/çıkmaz ·
+       sekme ziyareti TOPLU işaretler ve sayacı sıfırlatır · **işaretleme
+       düşerse sayaç sıfırlanmaz** (negatif eş) · `pendingCounts` listeyi
+       taşır ama "bekleyen iş"e katmaz · haber çekimi düşse de sayılar gelir ·
+       `markFinishesSeen` ağ hatasında `false`.
+     - **Doğrulama sınırı:** gerçek akış İKİ hesap ister (rakip senin yokken
+       oynayıp oyunu bitirmeli). Cihaz kontrolü `mobile/TESTING.md`'de.
+
    - ✅ **Parça 185 — kafa kafaya istatistik: skor kartının alt şeridi (3
      Eylül 2026, kullanıcı isteği; yeni `util/head_to_head.dart` +
      `test/head_to_head_test.dart`, değişen `data/stats_api.dart`,

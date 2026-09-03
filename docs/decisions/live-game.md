@@ -439,3 +439,108 @@ ulaşılamıyor — `verify-*` betiği deseninin (esbuild + node) var olma sebeb
 **Mobil portun karşılığı:** `mobile/CLAUDE.md`, Parça 118 — aynı gecikmeler (**21 Ağu 2026'dan beri `layout_parity_test.dart` ile testli**),
 aynı üç metin (`offline_notice.dart` ↔ `offlineNotice.ts`, parite testi
 karşılaştırıyor), aynı merdiven.
+
+## "Oyun Bitti (Yeni)" — biten oyunun haberi (3 Eylül 2026)
+
+Kullanıcı isteği, sözleri birebir: *"Kişi başkasıyla oynadığı oyunun
+bittiğinden haberi olmuyor. Hamleni yapıp gidiyorsun ve sen yokken kişi/ler
+oynamış ve oyun bitmiş oluyor ama ancak son oynadıklarıma girersen
+görüyorsun."*
+
+**Push BİLEREK elendi** — kullanıcının kendi gerekçesiyle: *"Önce bitince
+bildirim gönderelim diye düşündüm ama oyun bitti mesajı atmak işin dozunu
+kaçırabilir. Onun yerine app'e döndüğünde buna çare bulmak en mantıklısıydı."*
+Sistemde zaten sıra ve son-tarih bildirimleri var; üçüncü bir tür eklemek
+bildirim yorgunluğu üretirdi.
+
+**Çözüm:** "Son Oynananlar" listesinde her satırda ortada `OYUN BİTTİ`;
+bitişini görmediğin satırlarda altında kırmızı `YENİ`; sekmede kırmızı sayı.
+
+### Neden `games`'e kolon DEĞİL, ayrı tablo (`game_finish_seen`)
+
+`games`in SELECT politikası `auth.uid() is not null` — yani **girişli herkes
+herkesin satırını okuyor**. Oraya bir "gördü" kolonu eklemek, kimin ne zaman
+listesine baktığını herkese açardı; düşük dozda ama gerçek bir etkinlik
+sinyali. Bu repo aynı sınıfı bir kez yaşadı (`games.messages` girişli herkese
+açıktı, 10 Ağustos 2026'da kapatıldı: *"skor/tahta herkese görünür olsa da
+yazışma değil"*). Ayrı tabloda RLS satır bazında kilitlenebiliyor.
+
+`games` satırlarının **kişi başına** olması (2 kişilik oyun → 2 satır, 2
+farklı `user_id`; canlıda doğrulandı) `game_id`yi tek başına birincil anahtar
+yapmaya yetiyor.
+
+### İşaretlemenin İKİ yolu var ve ikisi de şart
+
+| Yol | Ne zaman | Neden tek başına yetmez |
+|---|---|---|
+| **Toplu** (`p_online_game_id` null) | "Son Oynananlar" ziyaret edildi | Yalnız bu olsaydı, oyunu bitiren hamleyi yapan kişi — modalı gözüyle GÖREN kişi — kendi oyunu için de rozet alırdı |
+| **Tek oyun** | Bitiş modalı gösterildi | Yalnız bu olsaydı sekme ziyareti sayacı hiç sıfırlamazdı |
+
+Bitiş modalında **toplu** işaretleme yapmak da yanlış olurdu: o sırada
+görülmemiş BAŞKA oyunlar sessizce yutulurdu.
+
+### Rozet zinciri nereye kadar çıkıyor — ve nereye BİLEREK çıkmıyor
+
+Kullanıcı kararı: **alt sekme → üst sekme ("Arkadaşınla") EVET; uygulama
+ikonu rozeti ve girişte hangi sekmenin açılacağı HAYIR.** Gerekçe: o son
+ikisi *"yapacak işin var"* demek (`useAppIconBadge`, `decideInitialMainView`),
+biten bir oyun ise **haber**. Üst sekmeye çıkması ise zorunlu — "Son
+Oynananlar" bir ALT sekme, üstte görünmezse kullanıcı "Yapay Zeka ile"
+tarafında açılıp haberi hiç görmeyebilirdi.
+
+⚠ Bu ayrımın kazara bozulmaması bir tesadüf değil: hem ikon rozeti hem giriş
+kuralı alanları **tek tek** topluyor (`counts.inviteCount + counts.myTurnCount`),
+nesneyi kör toplamıyor. `PendingLiveGameCounts`'a yeni bir alan eklerken bu
+deseni koru.
+
+### İki AN var, aynı anda olmuyorlar
+
+Kullanıcının tarifi dikkatli okununca iki ayrı zamanlama içeriyor:
+
+- *"Bir kere girip gördüğünde tab numarası SIFIRLANIR"* → **giriş anında**
+- *"…ve yeni kalkar, sadece Oyun bitti kalır"* → **çıkışta**
+
+Bu yüzden satır rozetleri anlık listeye değil, sekmeye girerken alınan bir
+**enstantaneye** bağlı (`freshFinished` / `_freshFinished`). Anlık listeyi
+bağlasaydık rozetler kullanıcı tam bakarken gözünün önünde kaybolurdu.
+
+### Sayaç yalnızca sunucu ONAYLARSA sıfırlanır
+
+Çevrimdışıyken yerelde sıfırlamak rozeti kaybettirir ama sunucuda görülmemiş
+bırakır — bir sonraki tazelemede geri gelip *"kayboldu sonra döndü"* diye
+tuhaf görünürdü. Bu kod tabanında tek seferlik kararların BAŞARISIZ/BAYAT
+veriyle tüketilmesi **üç kez** hata olarak kayıtlı (bkz. `hasFreshGames`,
+`counts === null`, `decideInitialMainView`'ın üçüncü dönüşü).
+
+Aynı doktrin okuma tarafında da: `finishedUnseenIds` `null` = **bilinmiyor**,
+boş liste DEĞİL — çağıran son bilinen rozeti korur.
+
+### Çekim sırası bir testin dayanağı
+
+Yeni RPC `fetchPendingLiveGameCounts`'un **en sonunda** ve sıralı çağrılıyor,
+`Promise.all` ile DEĞİL. Sebep: `verify-live-games-load` "liste gelir ama sıra
+sorgusu düşer" vakasını `failCalls: [2,3,4]` ile kuruyor; paralel çekim bu
+indeksleri kaydırıp o guard'ı sessizce başka bir şeyi ölçer hâle getirirdi.
+Testi koda uydurmak yerine sıra korundu — betik değişmeden geçiyor. Yan
+fayda: iki erken `return null` yolu bu isteği hiç atmıyor.
+
+### Kapsam: yalnızca Canlı
+
+`OYUN BİTTİ` etiketi HER İKİ listede de (YZ + Canlı) her satırda; `YENİ`
+rozeti ve sayı yalnızca Canlı tarafta. YZ oyunlarında bitişi zaten
+görüyorsun — oyun senin cihazında bitiyor. (Tek istisna 7 günlük terk-edilme
+cezası; kullanıcı kapsamı bilerek dar tuttu.)
+
+### Doğrulama
+
+Canlıda 7 kontrol koşturuldu, ikisi güvenlik negatifi: yabancı bir kimlik ne
+satır yazabiliyor ne okuyabiliyor; `authenticated` kendi işaretini bile
+silemiyor (silme politikası yok). Geri doldurma 138/138 — özellik açıldığında
+kimseye geçmişi kadar rozet çıkmıyor. `anon` yetkisi AYNI migration'da
+kaldırıldı (kafa kafaya turunda ayrı bir migration gerekmişti; ders
+uygulandı).
+
+Portta 7 test (`live_games_test.dart`): rozet çıkar/çıkmaz · sekme ziyareti
+TOPLU işaretler ve sayacı sıfırlatır · **işaretleme düşerse sayaç sıfırlanmaz**
+(negatif eş) · `pendingCounts` listeyi taşır ama "bekleyen iş"e katmaz ·
+haber çekimi düşse de sayılar gelir · `markFinishesSeen` ağ hatasında `false`.

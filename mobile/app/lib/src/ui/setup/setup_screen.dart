@@ -128,6 +128,17 @@ class _SetupScreenState extends State<SetupScreen>
   /// kabul ettiği bir ödün.
   int _liveActionCount = 0;
 
+  /// Bitişini GÖRMEDİĞİ Canlı oyunlar (3 Eylül 2026, kullanıcı isteği).
+  /// Sahibi burası, çünkü aynı liste İKİ yeri birden besliyor:
+  /// "Arkadaşınla" ÜST sekmesinin rozeti ve `LiveGamesTab`'ın
+  /// "Son Oynananlar" ALT sekmesinin rozeti + satırlardaki "YENİ".
+  ///
+  /// ⚠ Rozet yalnızca UYGULAMA İÇİNDE: girişte hangi sekmenin açılacağına
+  /// ([decideInitialMainView]) BİLEREK karışmıyor — o "yapacak işin var"
+  /// demek, biten bir oyun ise haber. Kullanıcı kararı. Web ikizi:
+  /// `Setup.tsx` → `finishedUnseen`.
+  List<String> _finishedUnseen = const [];
+
   /// Giriş varsayılanı kararının HAM girdisi (rozetten ayrı): karar bir de
   /// `_cloudSaves`in bilinmesini bekliyor, ama rozet ilk sayı gelir gelmez
   /// güncellenmeli. `_lastUserId` değişince sıfırlanır.
@@ -383,6 +394,10 @@ class _SetupScreenState extends State<SetupScreen>
     setState(() {
       _liveCounts = counts;
       _liveActionCount = counts.inviteCount + counts.myTurnCount;
+      // ⚠ `null` = bilinmiyor → son bilineni KORU (yukarıdaki iki sayının
+      // aynı doktrini). Boş liste yazmak rozeti sessizce kaybettirirdi.
+      final unseen = counts.finishedUnseenIds;
+      if (unseen != null) _finishedUnseen = unseen;
     });
     _applyInitialTab();
   }
@@ -643,6 +658,7 @@ class _SetupScreenState extends State<SetupScreen>
           _liveCounts = null;
           _creatingLocal = false;
           _liveActionCount = 0;
+          _finishedUnseen = const [];
         });
       }
     }
@@ -1203,7 +1219,15 @@ class _SetupScreenState extends State<SetupScreen>
                               child: _ChoiceButton(
                                 label: 'ARKADAŞINLA',
                                 selected: _liveView,
-                                badge: _liveActionCount,
+                                // 3 Eylül 2026: bekleyen iş (davet + sırası
+                                // sende) YANINDA bitişini görmediğin oyunlar
+                                // da sayılıyor — "Son Oynananlar" bir ALT
+                                // sekme olduğundan, üst sekmede görünmezse
+                                // kullanıcı "Yapay Zeka ile" tarafında
+                                // açılıp haberi hiç görmeyebilirdi
+                                // (kullanıcı kararı).
+                                badge:
+                                    _liveActionCount + _finishedUnseen.length,
                                 onTap: () => setState(() {
                                   _liveView = true;
                                   _localSubTab = _LocalSubTab.active;
@@ -1218,7 +1242,15 @@ class _SetupScreenState extends State<SetupScreen>
                           // `didPopNext` (kRouteObserver) hangi kapıdan
                           // dönülürse dönülsün yakalıyor — gerekçe
                           // `ui/route_observer.dart`.
-                          LiveGamesTab(services: widget.services)
+                          LiveGamesTab(
+                            services: widget.services,
+                            newlyFinishedIds: _finishedUnseen,
+                            onFinishesSeen: () {
+                              if (mounted) {
+                                setState(() => _finishedUnseen = const []);
+                              }
+                            },
+                          )
                         else
                           FutureBuilder<SetWordSource>(
                             future: widget.services.dictionary,
