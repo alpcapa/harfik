@@ -76,6 +76,38 @@
        Regresyon: 3 test daha (`share_recent_test.dart`) — YZ'de ÇİZİLMEZ ·
        Canlı'da çizilir · görülmemişte `YENİ` çıkar. İlk test satırın
        gerçekten çizildiğini ayrıca doğruluyor, yoksa hiçbir şey kanıtlamaz.
+     - **TESLİM OLDUN etiketi (aynı gün, kullanıcı sorusu):** *"teslim
+       rozeti koymak iyi olurdu ama yer sınırlı sanırım. Küçük ekranlarda
+       kayabilir."* Endişe haklıydı ama çözüm ayrı bir sütun DEĞİL: aynı
+       kutunun metni teslimde `TESLİM OLDUN` oluyor.
+     - **Son düzen turu (kullanıcı):** *"Oyun bitti yazısını büyük harf ve
+       ortadaki boşluğa koy, yeni rozeti hemen yanına gelsin ve fontu büyüt
+       biraz. Teslimi de Teslim Oldun yap."* Etiket ortadaki boşluğa geçti
+       (sol sütun `Expanded` → `Flexible`, boşluğu etiket alıyor), `YENİ`
+       alttan YANA taşındı, punto 9 → 10 / rozet 8 → 9.
+       ⚠ `Expanded`↔`Flexible` koşulu ŞART: YZ'de etiket hiç olmadığından
+       boşluğu sol sütun almalı, yoksa skor bloğu sağ kenardan kopup ortaya
+       kayardı. Koşul için `_SolSutun` sarmalayıcısı yazıldı — alternatif
+       aynı `Column`u iki kez kopyalamaktı.
+       ⚠ Metin KAYNAKTA büyük harf, `toUpperCase()` ile DEĞİL: Türkçe'de
+       "Bitti"nin i'si noktasız I'ya dönebilir; repo native dönüşümü zaten
+       yasaklıyor. Dönüşüme gerek yoktu.
+       **Ölçüldü (tarayıcıda, 320/360 px × 4 vaka):** orta bloğun içeriği
+       en kötü durumda 113,9 px, blok 164 px → 50 px pay; 16 bileşimde
+       taşma/sarma/kırpılma sıfır. Portta ayrıca `Flexible` + `maxLines: 1`
+       + `ellipsis` var (yazı ölçeği riski YALNIZCA portta — web'de
+       `text-[10px]` mutlak px, sistem yazı boyutuyla ölçeklenmiyor).
+       ⚠ Bayrak SATIR SAHİBİNE ait (`games.surrendered` kişi başına):
+       rakibin süresi dolduysa benim satırım `OYUN BİTTİ` kalır.
+       `GameHistoryModal`'ın "Teslim Oldu" kuralıyla aynı. Renk nötr —
+       teslimin kırmızısı zaten sağdaki -2'de.
+       Regresyon: 2 test daha — teslimde `TESLİM` + `-2` görünür ·
+       RAKİBİN teslimi benim satırımı değiştirmez.
+     - **Süre aşımı teslimi kendiliğinden kapsandı:** o senaryo normal bir
+       bitiş gibi `games` satırı yazıyor (canlıda doğrulandı, iki tarafa da),
+       yani haber rozeti orada da çalışıyor — ve en çok işe yaradığı yer
+       burası: oyunu bitiren hamleyi yapmadın, bitiş modalını görmen mümkün
+       değildi.
      - **Doğrulama sınırı:** gerçek akış İKİ hesap ister (rakip senin yokken
        oynayıp oyunu bitirmeli). Cihaz kontrolü `mobile/TESTING.md`'de.
 

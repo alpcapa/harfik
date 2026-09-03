@@ -111,7 +111,7 @@ class RecentGamesSection extends StatefulWidget {
   final String? ownAvatarUrl;
 
   /// Bitişini kullanıcının GÖRMEDİĞİ oyunların `games.id`'leri — o
-  /// satırlarda "OYUN BİTTİ"nin altına kırmızı "YENİ" düşer (3 Eylül 2026).
+  /// satırlarda etiketin YANINA kırmızı "YENİ" düşer (3 Eylül 2026).
   ///
   /// ⚠ Yalnızca Canlı tarafta dolu geçilir: YZ oyunlarında bitişi zaten
   /// görüyorsun (oyun senin cihazında bitiyor), orada "yeni" diye bir kavram
@@ -328,7 +328,14 @@ class _RecentRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Expanded(
+            // ⚠ `Expanded` ↔ `Flexible` KOŞULLU (3 Eylül 2026): Canlı'da
+            // boşluğu ORTADAKİ etiket alıyor (kullanıcı: "ortadaki boşluğa
+            // koy"), o yüzden sol sütun içeriğine küçülüyor (`Flexible`,
+            // loose fit). YZ'de etiket HİÇ YOK — orada boşluğu sol sütun
+            // almalı (`Expanded`), yoksa skor bloğu sağ kenardan kopup
+            // ortaya kayardı. Web ikizinde aynı koşul (`flex-1`).
+            _SolSutun(
+              genisle: !onlineOnly,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -388,34 +395,62 @@ class _RecentRow extends StatelessWidget {
             // gittiğinde oyun SEN YOKKEN bitiyor ve bugün bunu hiçbir yer
             // söylemiyor. Web ikizi `RecentGamesSection.tsx` ile aynı koşul.
             if (onlineOnly) ...[
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('OYUN BİTTİ',
-                      style: TextStyle(
-                          fontFamily: 'SpaceMono',
-                          fontSize: 9,
-                          letterSpacing: 0.5,
-                          color: _muted)),
-                  if (yeni) ...[
-                    const SizedBox(height: 2),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: kRed,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: const Text('YENİ',
-                          style: TextStyle(
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Teslimle biten oyunda metin "TESLİM OLDUN" (3 Eylül
+                    // 2026, kullanıcı isteği). AYRI bir sütun EKLENMEDİ:
+                    // satır zaten avatar+tarih | etiket | skor | k-lig,
+                    // dördüncü bir metin sütunu küçük ekranda sıkışırdı.
+                    // ⚠ Bayrak SATIR SAHİBİNE ait: `games.surrendered` kişi
+                    // başına, yani rakibin süresi dolduysa BENİM satırım
+                    // "OYUN BİTTİ" kalır (ben kazandım). `GameHistoryModal`
+                    // da "Teslim Oldu"yu yalnızca teslim olanın kendi
+                    // satırında gösteriyor — aynı kural.
+                    // Renk BİLEREK nötr: teslimin kırmızısı zaten sağdaki
+                    // -2 k-lig puanında; ikinci bir kırmızı yanındaki
+                    // "YENİ" rozetiyle yarışırdı.
+                    //
+                    // ⚠ Metin KAYNAKTA büyük harf. Native
+                    // `toUpperCase()`/`text-transform` Türkçe'de "Bitti"nin
+                    // i'sini noktasız I'ya çevirebiliyor; bu repo native
+                    // dönüşümü zaten yasaklıyor (`trUpper`) — burada
+                    // dönüşüme hiç gerek yok.
+                    Flexible(
+                      child: Text(
+                          entry.surrendered ? 'TESLİM OLDUN' : 'OYUN BİTTİ',
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
                               fontFamily: 'SpaceMono',
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
                               letterSpacing: 0.5,
-                              color: Colors.white)),
+                              color: _muted)),
                     ),
+                    // Rozet artık ALTTA değil YANDA (kullanıcı: "yeni
+                    // rozeti hemen yanına gelsin").
+                    if (yeni) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: kRed,
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: const Text('YENİ',
+                            style: TextStyle(
+                                fontFamily: 'SpaceMono',
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                                color: Colors.white)),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
               const SizedBox(width: 8),
             ],
@@ -431,11 +466,24 @@ class _RecentRow extends StatelessWidget {
                     fontFamily: 'SpaceMono',
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color:
-                        points > 0 ? _green : (points < 0 ? _red : _muted))),
+                    color: points > 0 ? _green : (points < 0 ? _red : _muted))),
           ],
         ),
       ),
     );
   }
+}
+
+/// Sol sütunun esneklik sarmalayıcısı: [genisle] ise `Expanded` (boşluğu
+/// alır), değilse `Flexible` (içeriğine küçülür, boşluğu ortadaki etikete
+/// bırakır). Ayrı bir widget, çünkü koşulu satırın içine yazmak aynı
+/// `Column`u iki kez kopyalamak demek olurdu.
+class _SolSutun extends StatelessWidget {
+  final bool genisle;
+  final Widget child;
+  const _SolSutun({required this.genisle, required this.child});
+
+  @override
+  Widget build(BuildContext context) =>
+      genisle ? Expanded(child: child) : Flexible(child: child);
 }

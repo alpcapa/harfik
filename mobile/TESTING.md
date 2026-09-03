@@ -618,6 +618,15 @@ Bu bölüm portun en kritik sözleşmesi: **aynı `local_game_saves` tablosu**.
         satırda (eski oyunlarda da), **YZ tarafındaki "Son Oynananlar"da HİÇ
         çıkmamalı** (kullanıcı kararı: YZ oyunu senin cihazında bitiyor,
         orada etiket bilgi taşımaz). YZ sekmesinde kırmızı sayı da olmamalı.
+      - **Süre aşımı teslimi:** bir oyunun 48 saatlik süresi dolup teslim
+        sayıldığında da rozet ÇIKMALI (o senaryoda bitiş modalını görmen
+        mümkün değil — asıl işe yaradığı yer burası). O satırın etiketi
+        `OYUN BİTTİ` değil **`TESLİM`** olmalı ve sağda kırmızı `-2`
+        durmalı. **Rakip tarafında** ise aynı oyun `OYUN BİTTİ` görünmeli
+        (o kazandı) — `TESLİM` yalnızca teslim EDENİN satırında.
+      - **Küçük ekran:** 320 px genişlikte, sistem yazı boyutu en büyükte, 4
+        kişilik + `YENİ` rozetli bir teslim satırında hiçbir şey taşmamalı
+        ve etiket iki satıra BÖLÜNMEMELİ.
       - ⚠ **Uygulama ikonundaki rozete KARIŞMAMALI** (kullanıcı kararı):
         biten oyun ikon rozetini artırMAMALI ve girişte hangi sekmenin
         açıldığını DEĞİŞTİRMEMELİ.

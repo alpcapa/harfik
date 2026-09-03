@@ -578,6 +578,75 @@ void main() {
     expect(find.text('YENİ'), findsNothing);
   });
 
+  // 3 Eylül 2026, kullanıcı sordu: süre yüzünden teslim senaryosunda satırda
+  // teslim göstergesi yoktu. Ayrı bir sütun yer sorunu çıkarırdı (kullanıcı
+  // da bunu söyledi), o yüzden AYNI kutunun metni değişiyor.
+  testWidgets('Son Oynadıklarım: teslimle biten oyunda etiket "TESLİM OLDUN"',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(
+            id: 'g-live',
+            onlineGameId: 'og-1',
+            surrendered: true,
+            rank: 2,
+            playerScore: 0,
+            aiScore: 147,
+            players: [
+              snap('Ironman', 0, colorIndex: 0),
+              snap('Esiner', 147, colorIndex: 1),
+            ])
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, const Size(420, 780));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: RecentGamesSection(
+            games: repo, userId: 'u-me', onlineOnly: true),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('TESLİM OLDUN'), findsOneWidget);
+    expect(find.text('OYUN BİTTİ'), findsNothing);
+    // Sağdaki -2 k-lig puanı DURUYOR — teslimin asıl sayısal işareti o.
+    expect(find.text('-2'), findsOneWidget);
+  });
+
+  // ⚠ Bayrak SATIR SAHİBİNE ait: rakibin süresi dolduysa BENİM satırım
+  // "OYUN BİTTİ" kalmalı (ben kazandım). `games.surrendered` kişi başına.
+  testWidgets('Son Oynadıklarım: RAKİBİN teslimi benim satırımı DEĞİŞTİRMEZ',
+      (tester) async {
+    final gw = FakeGamesGateway(userId: 'u-me')
+      ..history = [
+        gameRow(
+            id: 'g-live',
+            onlineGameId: 'og-1',
+            surrendered: false,
+            rank: 1,
+            playerScore: 147,
+            aiScore: 0,
+            players: [
+              snap('Ironman', 147, colorIndex: 0),
+              snap('Esiner', 0, colorIndex: 1),
+            ])
+      ];
+    final repo = await newRepoForWidget(tester, gw);
+    await setPhoneViewSize(tester, const Size(420, 780));
+    await tester.pumpWidget(MaterialApp(
+      theme: kelimekiTheme(),
+      home: Scaffold(
+        body: RecentGamesSection(
+            games: repo, userId: 'u-me', onlineOnly: true),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('OYUN BİTTİ'), findsOneWidget);
+    expect(find.text('TESLİM OLDUN'), findsNothing);
+  });
+
   testWidgets('Son Oynadıklarım: görülmemiş oyunda "YENİ" rozeti çıkar',
       (tester) async {
     final gw = FakeGamesGateway(userId: 'u-me')

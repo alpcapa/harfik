@@ -541,6 +541,64 @@ bilerek dar tuttu.
 (`onlineOnly`) — o satır ayrı bir `StatelessWidget` ve `widget.` erişimi yok;
 aynı sınıf hata Parça 184'te bir kez yapılmıştı.
 
+### Teslim: ayrı sütun DEĞİL, aynı kutunun metni
+
+Kullanıcı sordu (3 Eylül 2026): *"Süre yüzünden teslim senaryosu nasıl
+çalışıyor? Orada ayrıca bir teslim rozeti yoktu daha önce değil mi? …Ayrıca
+teslim rozeti koymak iyi olurdu ama yer sınırlı sanırım. Küçük ekranlarda
+kayabilir."*
+
+Üç tespit de doğruydu ve ölçüldü:
+
+1. **Süre aşımı teslimi normal bir bitiş gibi `games` satırı yazıyor** — iki
+   tarafa da birer satır (canlıda doğrulandı: teslim eden `surrendered=true,
+   rank=2, player_score=0`, rakip `false/1/147`). Yani haber rozeti bu
+   senaryoyu **kendiliğinden** kapsıyor, ve zaten en çok işe yaradığı yer
+   burası: oyunu bitiren bir hamle yapmadın, bitiş modalını görmen mümkün
+   değildi. Son bir haftada 6 oyun böyle kapanmış — nadir değil.
+2. **"Son Oynananlar"da teslim göstergesi YOKTU** (doğru hatırlamış);
+   `Teslim Oldu` yalnızca `GameHistoryModal` ve `SharedGamePage`'de. Ama
+   dolaylı bir işaret vardı: teslim her modda sabit **-2** k-lig puanı ve o
+   sayı satırın sağında KIRMIZI yazılıyor (normal kayıpta `-` görünür).
+3. **Yer endişesi haklıydı** ama çözüm ayrı bir sütun değil: `OYUN BİTTİ`
+   kutusunun METNİ teslimde `TESLİM OLDUN` oluyor.
+
+### Son düzen turu (aynı gün, kullanıcı)
+
+*"Oyun bitti yazısını büyük harf ve ortadaki boşluğa koy, yeni rozeti hemen
+yanına gelsin ve fontu büyüt biraz. Teslimi de Teslim Oldun yap."*
+
+- Etiket **ortadaki boşluğa** yerleşti: sol sütunun `flex-1`'i (portta
+  `Expanded`) Canlı'da KOŞULLU hâle geldi — boşluğu artık etiket alıyor.
+  ⚠ YZ'de etiket hiç olmadığından koşul şart: yoksa skor bloğu sağ kenardan
+  kopup ortaya kayardı.
+- `YENİ` rozeti **altta değil yanda** (yatay `Row`).
+- Punto 9 → **10 px**, rozet 8 → **9 px**.
+- ⚠ **Metin KAYNAKTA büyük harf, `uppercase`/`toUpperCase()` ile DEĞİL.**
+  CSS `text-transform` Türkçe'yi belgenin diline göre çeviriyor ve
+  "Bitti"nin i'si yanlış locale'de noktasız `BITTI` olur; bu repo native
+  dönüşümü zaten yasaklıyor (`trUpper`). Dönüşüme hiç gerek yoktu.
+
+**Ölçüldü (tarayıcı, 320 ve 360 px × 4 vaka, en dolusu 4 avatar + `YENİ`):**
+orta bloğun İÇERİĞİ en kötü durumda **113,9 px** ve bloğun kendisi **164 px**
+— **50 px pay**. 16 bileşimin hiçbirinde metin taşmıyor, iki satıra düşmüyor,
+sol sütun kırpılmıyor. Yani kullanıcının "küçük ekranlarda kayabilir"
+endişesi ölçümle karşılandı.
+
+⚠ **Web'de yazı ölçeği ölçümü ANLAMSIZ ve bu bir eksik değil:** Tailwind'in
+`text-[10px]` mutlak px, tarayıcı sistem yazı boyutuyla ölçeklemez (sayfanın
+tamamı zoom'lanır, kutular da büyür). Ölçek riski YALNIZCA portta var; onun
+kapısı `text_scale_test.dart` + cihaz kontrol listesindeki 320 px maddesi.
+Portta etiket ayrıca `Flexible` + `maxLines: 1` + `ellipsis` taşıyor.
+
+⚠ **Bayrak SATIR SAHİBİNE ait.** `games.surrendered` kişi başına: rakibin
+süresi dolduysa BENİM satırım `OYUN BİTTİ` kalır (ben kazandım).
+`GameHistoryModal` da "Teslim Oldu"yu yalnızca teslim olanın kendi satırında
+gösteriyor — aynı kural, bilerek.
+
+⚠ **Renk nötr bırakıldı.** Teslimin kırmızısı zaten sağdaki -2'de; etiketi de
+kırmızı yapmak yanındaki `YENİ` rozetiyle yarışırdı.
+
 ### Doğrulama
 
 Canlıda 7 kontrol koşturuldu, ikisi güvenlik negatifi: yabancı bir kimlik ne

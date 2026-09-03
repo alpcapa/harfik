@@ -83,7 +83,7 @@ interface RecentGamesSectionProps {
   onlineGames?: { id: string; slots: { name: string | null; avatarUrl: string | null }[] }[];
   /**
    * Bitişini kullanıcının GÖRMEDİĞİ oyunların `games.id`'leri — o satırlarda
-   * "OYUN BİTTİ"nin altına kırmızı bir "YENİ" rozeti düşer (3 Eylül 2026,
+   * etiketin YANINA kırmızı bir "YENİ" rozeti düşer (3 Eylül 2026,
    * kullanıcı isteği).
    *
    * ⚠ Yalnızca Canlı tarafta verilir. YZ oyunlarında bitişi ZATEN görüyorsun
@@ -196,7 +196,14 @@ export function RecentGamesSection({
               onClick={() => setFocusedId(g.id)}
               className="shadow-raised flex items-center gap-2.5 rounded-md px-2.5 py-2 border border-border bg-panel w-full text-left active:scale-[0.99] transition-transform"
             >
-              <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+              {/* ⚠ `flex-1` KOŞULLU (3 Eylül 2026): Canlı'da boşluğu ORTADAKİ
+                  etiket alıyor (kullanıcı: "ortadaki boşluğa koy"), o yüzden
+                  sol sütun içeriğine küçülüyor. YZ'de etiket HİÇ YOK — orada
+                  boşluğu sol sütun almalı, yoksa skor bloğu sağ kenardan
+                  kopup ortaya kayardı. */}
+              <span
+                className={`min-w-0 flex flex-col gap-0.5 ${onlineOnly ? '' : 'flex-1'}`}
+              >
                 {/* Rakip isimlerinin yerine katılımcı avatarları.
                     ⚠ 2 EYLÜL 2026'DA DEĞİŞTİ. Burada şu yazılıydı:
                     "dondurulmuş `players` snapshot'ı avatar_url TAŞIMIYOR
@@ -256,16 +263,37 @@ export function RecentGamesSection({
                   aynı gün ikinci turda bunu istedi). Canlı'da ise tam tersi:
                   hamleni yapıp gittiğinde oyun SEN YOKKEN bitiyor ve bugün
                   bunu hiçbir yer söylemiyor.
-                  Bitişini görmediğin oyunlarda altına kırmızı "YENİ" düşer;
+                  Bitişini görmediğin oyunlarda YANINA kırmızı "YENİ" düşer;
                   sekmeden çıkınca o rozet kalkar, "OYUN BİTTİ" kalır. */}
               {onlineOnly && (
-                <span className="shrink-0 flex flex-col items-center gap-0.5 px-1">
-                  <span className="text-[9px] font-mono uppercase tracking-[0.5px] text-muted leading-none">
-                    Oyun Bitti
+                <span className="flex-1 min-w-0 flex items-center justify-center gap-1">
+                  {/* Teslimle biten oyunda metin "TESLİM" (3 Eylül 2026,
+                      kullanıcı isteği). AYRI bir sütun EKLENMEDİ: satır
+                      zaten avatar+tarih | etiket | skor | k-lig, dördüncü
+                      bir metin sütunu 360 px'lik ekranda sıkışırdı
+                      (kullanıcı da bunu sordu). Aynı kutuyu kullanmak yer
+                      maliyetini SIFIRA indiriyor — üstelik "TESLİM" 6
+                      karakter, "OYUN BİTTİ" 10; sütun DARALIYOR.
+                      ⚠ Bayrak SATIR SAHİBİNE ait: `games.surrendered` kişi
+                      başına, yani rakibin süresi dolduysa BENİM satırım
+                      `OYUN BİTTİ` kalır (ben kazandım). `GameHistoryModal`
+                      da "Teslim Oldu"yu yalnızca teslim olanın kendi
+                      satırında gösteriyor — aynı kural.
+                      Renk BİLEREK nötr: teslimin kırmızısı zaten sağdaki
+                      -2 k-lig puanında; ikinci bir kırmızı, yanındaki
+                      "YENİ" rozetiyle yarışırdı. */}
+                  {/* ⚠ Metin KAYNAKTA büyük harf, CSS `uppercase` ile
+                      DEĞİL: `text-transform` Türkçe'yi belgenin diline
+                      göre çeviriyor ve "Bitti"nin i'si yanlış locale'de
+                      "BITTI" (noktasız I) olur. Bu repo native
+                      büyük/küçük dönüşümünü zaten yasaklıyor
+                      (`trUpper`) — burada dönüşüme hiç gerek yok. */}
+                  <span className="text-[10px] font-mono tracking-[0.5px] text-muted leading-none whitespace-nowrap">
+                    {g.surrendered ? 'TESLİM OLDUN' : 'OYUN BİTTİ'}
                   </span>
                   {newlyFinishedIds?.has(g.id) && (
-                    <span className="text-[8px] font-mono font-bold uppercase tracking-[0.5px] text-white bg-red rounded px-1 py-px leading-none">
-                      Yeni
+                    <span className="shrink-0 text-[9px] font-mono font-bold tracking-[0.5px] text-white bg-red rounded px-1 py-px leading-none">
+                      YENİ
                     </span>
                   )}
                 </span>
