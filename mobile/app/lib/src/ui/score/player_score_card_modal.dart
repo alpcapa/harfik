@@ -507,98 +507,120 @@ class _KafaKafaya extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bar = headToHeadBar(data);
-    // Üç satır ORTAK bir eksende: yüzdeler ve oyun sayısı BARIN genişliğinde
-    // (96) şeritler. Avatar satırı 26+6+96+6+26 = 160 olduğundan bar zaten
-    // satırın tam ortasında — `center` üç şeridi barla hizalar, ayrı bir
-    // dolgu hesabı gerekmiyor. Simetri avatar boyutundan BAĞIMSIZ: iki yan
-    // eşit olduğu sürece hiza kendiliğinden korunur.
+    // Etiketler BARIN KENDİ SÜTUNUNDA, avatarlar o sütunun iki yanında.
+    //
+    // ⚠ Yazılar 4 Eylül 2026'da bara YAKLAŞTIRILDI (kullanıcı: "çubuk
+    // üzerindeki ve altındaki yazıları bara yakınlaştır") ve düzen bunun
+    // için değişti — `SizedBox(height: 2)`yi kısmak YETMEZDİ. Önceki yapıda
+    // üç satır TEK bir dış sütundaydı ve ortadaki satırın yüksekliğini bar
+    // (10) değil AVATAR (26) belirliyordu: barın altında/üstünde 8'er px
+    // ölü alan kalıyordu, yani 2 px'lik boşluk etiketi bara 10 px uzakta
+    // tutuyordu ve sıfırlansa bile 8 px inmiyordu. Flutter'da negatif boşluk
+    // YOK (`Padding`/`Container.margin` non-negative assert'i var), yani
+    // çözüm zaten buydu: etiketleri bara komşu yap.
+    //
+    // ÖLÇÜLDÜ (widget testi, 390×844): etiket ile bar arası 3 px (2 px
+    // boşluk + 1 px çerçeve), iki avatarın da dikey merkezi barın merkeziyle
+    // AYNI (752,50) ve blok yine 26+6+96+6+26 = 160 px geniş. Web ikizinde
+    // aynı ölçüm 10 → 2 px ve blok yüksekliği 48 → 32.
+    //
+    // Hiza KENDİLİĞİNDEN korunuyor, ayrı bir dolgu hesabı yok: sütun dikey
+    // olarak SİMETRİK (9+2 üstte, 2+9 altta), yani sütunun ortası barın
+    // ortası ve `center` 26'lık avatarı oraya oturtuyor.
     //
     // ⚠ Avatar 18 → 26 (3 Eylül 2026, kullanıcı: "avatarlar çok küçük
     // duruyor"). 26 bu projede avatarın STANDART boyutu (kullanıcı kararı:
     // "hepsi 26 olsun"), keyfi bir sayı değil.
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    return Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Yüzdeler barın ÜSTÜNDE, kendi alanlarının üzerinde: kırmızı hep
-        // sol uçtan başlar, yeşil hep sağ uçta biter, o yüzden uçlara
-        // yaslamak etiketi her zaman kendi diliminin üzerinde tutar.
-        // ⚠ Beraberlik dilimi ortada DURUR ama yüzdesi YAZILMAZ (kullanıcı
-        // kararı). Sıfır olan uç etiketi de yazılmaz ama `Opacity` ile
-        // yerini korur — `SizedBox.shrink` olsaydı tek kalan etiket
-        // `spaceBetween` altında ortaya kayardı.
+        KAvatar(url: theirAvatarUrl, name: theirName, size: 26),
+        const SizedBox(width: 6),
         SizedBox(
           width: 96,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _Yuzde(deger: bar.left, renk: kRed),
-              _Yuzde(deger: bar.right, renk: kGreen),
+              // Yüzdeler barın ÜSTÜNDE, kendi alanlarının üzerinde: kırmızı hep
+              // sol uçtan başlar, yeşil hep sağ uçta biter, o yüzden uçlara
+              // yaslamak etiketi her zaman kendi diliminin üzerinde tutar.
+              // ⚠ Beraberlik dilimi ortada DURUR ama yüzdesi YAZILMAZ (kullanıcı
+              // kararı). Sıfır olan uç etiketi de yazılmaz ama `Opacity` ile
+              // yerini korur — `SizedBox.shrink` olsaydı tek kalan etiket
+              // `spaceBetween` altında ortaya kayardı.
+              SizedBox(
+                width: 96,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _Yuzde(deger: bar.left, renk: kRed),
+                    _Yuzde(deger: bar.right, renk: kGreen),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 2),
+              Semantics(
+                label: '$theirName ${data.losses} - ${data.wins} sen',
+                child: Container(
+                  width: 96,
+                  // 10 px — 26'lık avatarın yanında 8 px cılız kalıyordu.
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: kVoid,
+                    border: Border.all(color: kBorder),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  // Sol = bakılan kişi, orta = beraberlik (nötr), sağ = bakan.
+                  //
+                  // ⚠ SIFIR dilimler hiç ÇİZİLMİYOR: `Expanded(flex: 0)` bu
+                  // düzende güvenilir değil (esnek olmayan çocuk kendi
+                  // ölçüsüne düşer, `ColoredBox`ın ölçüsü yok). Üç dilim
+                  // toplamı 100 olduğundan en az biri > 0 ve oranlar bozulmaz.
+                  // Web'de karşılığı zararsız (`width: 0%`), yani bu koruma
+                  // PORTA ÖZGÜ — ikizde aramaya gerek yok.
+                  // ⚠⚠ `crossAxisAlignment: stretch` ŞART, VARSAYILAN DEĞİL.
+                  // 3 Eylül 2026'da cihazda çubuk BOŞ göründü (kullanıcı
+                  // bildirdi) ve testler yeşildi. Sebep: `ColoredBox`ın çocuğu
+                  // ve kendi ölçüsü yok; `Row`un varsayılanı `center` olduğu
+                  // için dikey kısıt GEVŞEK geliyor ve gevşek kısıtta ölçüsüz
+                  // bir kutu EN KÜÇÜK boyutu (0) alıyor. Yani dilimler widget
+                  // ağacında duruyor ama sıfır yükseklikte — hiçbir piksel
+                  // boyanmıyor. `stretch` dikey kısıtı TIGHT yapıyor.
+                  // Test artık boyanan ALANI ölçüyor (varlık yetmez); bu satır
+                  // kaldırılırsa GERÇEKTEN düşer.
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    if (bar.left > 0)
+                      Expanded(flex: bar.left, child: const ColoredBox(color: kRed)),
+                    if (bar.middle > 0)
+                      Expanded(
+                          flex: bar.middle, child: const ColoredBox(color: kMuted)),
+                    if (bar.right > 0)
+                      Expanded(
+                          flex: bar.right, child: const ColoredBox(color: kGreen)),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 2),
+              SizedBox(
+                width: 96,
+                child: Text('${data.games} oyun',
+                    textAlign: TextAlign.center,
+                    // Sistem yazı boyutu tavanda (1,3) bile 96'ya sığıyor, ama
+                    // sarma sınıfı hatasına (kök CLAUDE.md → "Sistem Yazı
+                    // Boyutu", sınıf 3) hiç kapı bırakmıyoruz.
+                    maxLines: 1,
+                    softWrap: false,
+                    style: const TextStyle(
+                        fontFamily: 'SpaceMono', fontSize: 9, color: kMuted)),
+              ),
             ],
           ),
         ),
-        const SizedBox(height: 2),
-        Row(mainAxisSize: MainAxisSize.min, children: [
-          KAvatar(url: theirAvatarUrl, name: theirName, size: 26),
-          const SizedBox(width: 6),
-          Semantics(
-            label: '$theirName ${data.losses} - ${data.wins} sen',
-            child: Container(
-              width: 96,
-              // 10 px — 26'lık avatarın yanında 8 px cılız kalıyordu.
-              height: 10,
-              decoration: BoxDecoration(
-                color: kVoid,
-                border: Border.all(color: kBorder),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              clipBehavior: Clip.antiAlias,
-              // Sol = bakılan kişi, orta = beraberlik (nötr), sağ = bakan.
-              //
-              // ⚠ SIFIR dilimler hiç ÇİZİLMİYOR: `Expanded(flex: 0)` bu
-              // düzende güvenilir değil (esnek olmayan çocuk kendi
-              // ölçüsüne düşer, `ColoredBox`ın ölçüsü yok). Üç dilim
-              // toplamı 100 olduğundan en az biri > 0 ve oranlar bozulmaz.
-              // Web'de karşılığı zararsız (`width: 0%`), yani bu koruma
-              // PORTA ÖZGÜ — ikizde aramaya gerek yok.
-              // ⚠⚠ `crossAxisAlignment: stretch` ŞART, VARSAYILAN DEĞİL.
-              // 3 Eylül 2026'da cihazda çubuk BOŞ göründü (kullanıcı
-              // bildirdi) ve testler yeşildi. Sebep: `ColoredBox`ın çocuğu
-              // ve kendi ölçüsü yok; `Row`un varsayılanı `center` olduğu
-              // için dikey kısıt GEVŞEK geliyor ve gevşek kısıtta ölçüsüz
-              // bir kutu EN KÜÇÜK boyutu (0) alıyor. Yani dilimler widget
-              // ağacında duruyor ama sıfır yükseklikte — hiçbir piksel
-              // boyanmıyor. `stretch` dikey kısıtı TIGHT yapıyor.
-              // Test artık boyanan ALANI ölçüyor (varlık yetmez); bu satır
-              // kaldırılırsa GERÇEKTEN düşer.
-              child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                if (bar.left > 0)
-                  Expanded(flex: bar.left, child: const ColoredBox(color: kRed)),
-                if (bar.middle > 0)
-                  Expanded(
-                      flex: bar.middle, child: const ColoredBox(color: kMuted)),
-                if (bar.right > 0)
-                  Expanded(
-                      flex: bar.right, child: const ColoredBox(color: kGreen)),
-              ]),
-            ),
-          ),
-          const SizedBox(width: 6),
-          KAvatar(url: myAvatarUrl, name: 'Sen', size: 26),
-        ]),
-        const SizedBox(height: 2),
-        SizedBox(
-          width: 96,
-          child: Text('${data.games} oyun',
-              textAlign: TextAlign.center,
-              // Sistem yazı boyutu tavanda (1,3) bile 96'ya sığıyor, ama
-              // sarma sınıfı hatasına (kök CLAUDE.md → "Sistem Yazı
-              // Boyutu", sınıf 3) hiç kapı bırakmıyoruz.
-              maxLines: 1,
-              softWrap: false,
-              style: const TextStyle(
-                  fontFamily: 'SpaceMono', fontSize: 9, color: kMuted)),
-        ),
+        const SizedBox(width: 6),
+        KAvatar(url: myAvatarUrl, name: 'Sen', size: 26),
       ],
     );
   }

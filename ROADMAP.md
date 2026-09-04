@@ -202,6 +202,7 @@ otomatik yol YOK (gönderim elle).
 |---|---|
 | `f75a12c` (#441) | arka plandan dönüş artık "ekrana giriş" sayılıyor — `away_return.dart` yeni, `setup_screen.dart` + `live_games_tab.dart` bağlandı |
 | `19e17fe` (#443) | Hızlı Başlangıç'ın oyun sonu cümlesi tek cümleye indi ve kazananı söylüyor — `help_modal.dart` + `help_modal_test.dart` |
+| bu tur (#447) | Skor kartındaki kafa kafaya çubuğunun yazıları bara yaklaştı (10 → 2 px) — `player_score_card_modal.dart` |
 
 Sıradaki sürümün şu anki içeriği bu ikisi; yeni işler geldikçe tablo büyür.
 
@@ -232,6 +233,11 @@ git log --oneline 711eaaa..origin/main -- mobile/app mobile/kelimeki_core
    Metin web'le BİREBİR aynı olmalı (`HelpModal.tsx` ↔ `help_modal.dart`);
    `help_modal_test.dart` cümlenin tamamını değil yalnızca "Yüksek puanı
    olan kazanır" ibaresini görüyor, yani sapmayı CI yakalamaz.
+   Bir de #447'nin yüzeyi: **başkasının skor kartındaki** kafa kafaya
+   çubuğu — yüzdeler ve "N oyun" bara komşu mu, iki avatar hâlâ barla
+   aynı hizada mı. Blok 16 px kısaldı ve satır alta yaslı (`items-end` ↔
+   `CrossAxisAlignment.end`), yani çubuk "TÜM OYUNLAR" butonuna göre
+   biraz aşağı iner — beklenen budur, bozulma değil.
 3. **Test ettiğin paketin TAZE olduğunu doğrula:** Setup'taki
    `Derleme <sha>` satırı `main`'in başıyla aynı olmalı. Appetize'da
    Android ve iOS AYRI zamanlarda tazeleniyor (bkz.

@@ -181,11 +181,21 @@ function HeadToHeadBarView({
 }) {
   const bar = headToHeadBar(data);
   return (
-    // Üç satır ORTAK bir eksende: yüzdeler ve oyun sayısı BARIN genişliğinde
-    // (`w-24`) şeritler, ortalanmış. Avatar satırı 26+6+96+6+26 olduğundan
-    // bar zaten satırın tam ortasında — yani `items-center` üç şeridi barla
-    // hizalar, ayrı bir dolgu hesabı gerekmiyor. Simetri avatar boyutundan
-    // BAĞIMSIZ: iki yan eşit olduğu sürece hiza kendiliğinden korunur.
+    // Etiketler BARIN KENDİ SÜTUNUNDA, avatarlar o sütunun iki yanında.
+    //
+    // ⚠ Yazılar 4 Eylül 2026'da bara YAKLAŞTIRILDI (kullanıcı: "çubuk
+    // üzerindeki ve altındaki yazıları bara yakınlaştır") ve düzen bunun
+    // için değişti — sütun boşluğunu kısmak YETMEZDİ. Önceki yapıda üç
+    // satır TEK bir dış sütundaydı ve ortadaki satırın yüksekliğini bar
+    // (10) değil AVATAR (26) belirliyordu: barın altında ve üstünde 8'er
+    // px ölü alan kalıyordu, yani `gap-0.5` etiketi bara 2 px değil 10 px
+    // uzakta tutuyordu ve boşluk sıfırlansa bile 8 px inmiyordu. Etiketler
+    // bara komşu olunca ölü alan aradan çıktı: mesafe 10 → 2 px (ölçüldü).
+    //
+    // Avatarların barla hizası KENDİLİĞİNDEN korunuyor, ayrı bir dolgu
+    // hesabı yok: sütun dikey olarak SİMETRİK (9+2 üstte, 2+9 altta), yani
+    // 32 px'lik sütunun ortası barın ortası; `items-center` 26'lık avatarı
+    // oraya oturtuyor. Yatay geometri de DEĞİŞMEDİ — 26+6+96+6+26 = 160.
     //
     // ⚠ Avatar 18 → 26 (3 Eylül 2026, kullanıcı: "avatarlar çok küçük
     // duruyor"). 26, bu projede avatarın STANDART boyutu (kullanıcı kararı:
@@ -193,23 +203,23 @@ function HeadToHeadBarView({
     // avatarın yanında 8 px cılız kalıyordu. Ölçüldü: blok 144 → 160 px,
     // kartın 336 px'lik iç genişliğinde "Tüm Oyunlar" butonuyla çakışma yok
     // (buton sağ kenarı 126,9 ↔ blok sol kenarı 197).
-    <div className="flex flex-col items-center gap-0.5 min-w-0">
-      {/* Yüzdeler barın ÜSTÜNDE, kendi alanlarının üzerinde: kırmızı hep
-          sol uçtan başlar, yeşil hep sağ uçta biter, o yüzden uçlara
-          yaslamak (`justify-between`) etiketi her zaman kendi diliminin
-          üzerinde tutar — dilim daralsa bile çakışmazlar.
-          ⚠ Beraberlik dilimi ortada DURUR ama yüzdesi YAZILMAZ (kullanıcı
-          kararı, 3 Eylül 2026). Sıfır olan uç etiketi de yazılmaz —
-          olmayan bir alanı etiketlemek yanıltıcı olurdu — ama `invisible`
-          ile yerini korur, yoksa tek kalan etiket ortaya kayardı. */}
-      <span className="w-24 flex justify-between text-[9px] font-mono font-bold leading-none">
-        <span className={bar.left > 0 ? 'text-red' : 'invisible'}>%{bar.left}</span>
-        <span className={bar.right > 0 ? 'text-green' : 'invisible'}>%{bar.right}</span>
-      </span>
-      <span className="flex items-center gap-1.5">
-        <Avatar url={theirAvatar} name={theirName} size={26} />
+    <div className="flex items-center gap-1.5 min-w-0">
+      <Avatar url={theirAvatar} name={theirName} size={26} />
+      <div className="flex w-24 flex-col items-center gap-0.5">
+        {/* Yüzdeler barın ÜSTÜNDE, kendi alanlarının üzerinde: kırmızı hep
+            sol uçtan başlar, yeşil hep sağ uçta biter, o yüzden uçlara
+            yaslamak (`justify-between`) etiketi her zaman kendi diliminin
+            üzerinde tutar — dilim daralsa bile çakışmazlar.
+            ⚠ Beraberlik dilimi ortada DURUR ama yüzdesi YAZILMAZ (kullanıcı
+            kararı, 3 Eylül 2026). Sıfır olan uç etiketi de yazılmaz —
+            olmayan bir alanı etiketlemek yanıltıcı olurdu — ama `invisible`
+            ile yerini korur, yoksa tek kalan etiket ortaya kayardı. */}
+        <span className="w-full flex justify-between text-[9px] font-mono font-bold leading-none">
+          <span className={bar.left > 0 ? 'text-red' : 'invisible'}>%{bar.left}</span>
+          <span className={bar.right > 0 ? 'text-green' : 'invisible'}>%{bar.right}</span>
+        </span>
         <span
-          className="flex h-2.5 w-24 overflow-hidden rounded-full bg-void border border-border"
+          className="flex h-2.5 w-full overflow-hidden rounded-full bg-void border border-border"
           role="img"
           aria-label={`${theirName} ${data.losses} - ${data.wins} ${myName}`}
           title={`${theirName} ${data.losses} · Beraberlik ${data.draws} · ${myName} ${data.wins}`}
@@ -219,11 +229,11 @@ function HeadToHeadBarView({
           <span className="bg-muted h-full" style={{ width: `${bar.middle}%` }} />
           <span className="bg-green h-full" style={{ width: `${bar.right}%` }} />
         </span>
-        <Avatar url={myAvatar} name={myName} size={26} />
-      </span>
-      <span className="w-24 text-center text-[9px] font-mono text-muted leading-none">
-        {data.games} oyun
-      </span>
+        <span className="w-full text-center text-[9px] font-mono text-muted leading-none">
+          {data.games} oyun
+        </span>
+      </div>
+      <Avatar url={myAvatar} name={myName} size={26} />
     </div>
   );
 }
