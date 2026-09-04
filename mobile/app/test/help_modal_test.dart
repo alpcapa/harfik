@@ -61,7 +61,7 @@ void main() {
     expectText('+$bingoBonus Bingo bonus'); // sabit motordan geliyor
     expectText('istediğin harfe dönüşür');
     expectText('TDK sözlüğündeki');
-    expectText('Art arda 2 tur pas geçilince');
+    expectText('Yüksek puanı olan kazanır');
 
     await shoot(tester, key, 'help_quick');
   });
