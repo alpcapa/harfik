@@ -87,6 +87,14 @@ var mı).
       (izin verildi), ikisi birbirini tüketiyor. Play kapalı testinden
       yapılacak TEMİZ kurulumda koşulacak — o kurulum aynı zamanda §4.1'i
       (App Links ile kayıt onayı) da karşılıyor, yani ikisi tek turda biter.
+      ⚠ **O kurulum 4 Eylül'de YAPILDI** (kullanıcı `.apk`'yı silip kapalı
+      test kanalından 1.0.6'yı kurdu; §4.5 ile kanıtlandı). Yani bu madde
+      ARTIK ENGELLİ DEĞİL, koşulmayı bekliyor: kaldırma hem bizim 7 günlük
+      bayrağımızı hem Android'in izin verisini sildiğinden pencere yeniden
+      çıkacak. **Bedeli §1.5 değil** (o zaten geçti, işaretli) — bedeli bu
+      kurulumda bildirimlerin kapalı kalması; §2/§3 izin ister ama onlar da
+      geçti ve FCM imzadan bağımsız olduğu için Play derlemesinde yeniden
+      koşulmaları gerekmiyor.
 - [x] **1.5 "BİLDİRİMLERİ AÇ".** Bas → **Android'in kendi** izin diyaloğu
       çıkmalı. İzin ver.
       ✅ **4 Eylül 2026: geçti** (1.0.6, sha `711eaaa`). Kullanıcının tarifi:
