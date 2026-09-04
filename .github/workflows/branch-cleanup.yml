@@ -16,6 +16,16 @@
 # Pratik sonucu: merge'den sonra o dala BİR DAHA PUSH ETME — push silinmiş
 # dalı diriltir. Sonraki iş origin/main'den YENİ bir dalda başlar.
 #
+# ⚠ TETİKLEYEN İNSAN OLMAK ZORUNDA — ajan bu workflow'u ÇALIŞTIRAMAZ
+# (4 Eylül 2026'da ölçüldü): `POST /actions/workflows/branch-cleanup.yml/
+# dispatches` → **403 Resource not accessible by integration**. GitHub App'in
+# `actions: write` yetkisi yok, yani ref silme 403'ünün yanında dispatch de
+# kapalı. O gün bir oturum "workflow'u ben tetikleyebiliyorum" diye söz verdi
+# ve deneyince yanıldığı çıktı; bu satır o vaadin tekrarını önlemek için var.
+# Doğrusu kullanıcıya şu adımı vermek: Actions → "Dal temizliği" →
+# Run workflow → (önce dry_run AÇIK) → listeyi doğrula → dry_run KAPALI ile
+# tekrarla.
+#
 # GÜVENLİK: varsayılan DRY RUN. Gerçekten silmek için dry_run'ı false yap.
 # Şunlara hiçbir koşulda dokunmaz: varsayılan dal (main), keep listesindeki
 # dallar, branch protection'lı dallar ve AÇIK bir PR'ın head'i olan dallar.

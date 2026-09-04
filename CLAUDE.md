@@ -156,6 +156,16 @@ tuzağı da bu depo tek turda yaşadı:**
 `git cherry` de tek başına YETMEZ: yama-kimliği eşitliği arar, sonradan
 farklı bağlamda yeniden inen bir değişikliği "yok" işaretler.
 
+⚠ **Dal SİLMEYİ ajan yapamaz — iki kapı da kapalı (4 Eylül 2026'da ölçüldü).**
+`git push --delete` → **403** (oturumun git kimliği yalnızca kendi tahsisli
+dalına yazabiliyor), GitHub MCP'de ref silen araç YOK, ve
+`branch-cleanup.yml`i **dispatch etmek de 403** (`Resource not accessible by
+integration` — App'in `actions: write`i yok). Yani doğru davranış: dalları
+silmeye çalışmak ya da "ben hallederim" demek değil, kullanıcıya şu adımı
+vermek — **Actions → "Dal temizliği" → Run workflow**, önce `dry_run` AÇIK,
+liste doğrulanınca KAPALI ile tekrar. O gün bir oturum önce "tetikleyebilirim"
+diye söz verip yanıldı; vaat etmeden ÖNCE dene.
+
 ## Belgeleri Güncel Tutma
 
 Anlamlı bir değişiklik yapıldığında (yeni dosya/component/util/hook, klasör yapısı değişikliği, sözlük kelime sayısı gibi somut rakamlar, migration/akış değişikliği vb.) **standart olarak** hem bu dosyayı (`CLAUDE.md`) hem de `README.md`'yi kontrol et ve gerekiyorsa aynı PR'da güncelle — özellikle "Klasör Yapısı" (burada) ve "Proje Yapısı" (`README.md`) ağaçları, ve `README.md`'deki kelime sayısı gibi rakamlar zamanla koddan kopabiliyor (23 Temmuz 2026'da fark edildi: README hâlâ eski **92.503** kelime rakamını taşıyordu, gerçek liste sonradan yapılan çok-sözcüklü madde temizlikleriyle ~64 bine düşmüştü; ayrıca `ErrorBoundary`/`PlayerBadge`/`useModalA11y`/`useOnlineStatus`/`gameStorage`/`gameSync`/`feedbackSync`/`onboarding`/`ranking`/`visitTracking` gibi dosyalar hiç listeye girmemişti). Bu bir "fırsat bulunca yapılır" işi değil — migration senkron kontrolü (aşağıda, "Migration'lar" bölümü) gibi asıl işin bir parçası say.
