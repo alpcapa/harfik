@@ -458,6 +458,10 @@ src/
                 # mplus-rounded-1c-800-subset.woff2 ÜRETİLMİŞ, yalnızca RankSeal'ın harfi
                 # (yeniden üretimi: "k-lig Ödül & Rütbe Sistemi" → Rütbe Rozeti Fontu)
   hooks/        # useAuth, useModalA11y, useOnlineStatus, useAppIconBadge, useNicknameAvailability, useRankScores, useBoardZoom
+.claude/        # oturum kurulumu: hooks/session-start.sh — npm install + Flutter
+                # stable + iki paketin pub get'i (bkz. mobile/CLAUDE.md, "Flutter
+                # SDK bu ortamda HAZIR"). Amacı: Dart testleri YERELDE koşsun,
+                # kanıt yalnızca CI olmasın.
 marketing/      # reklam/tanıtım çıktıları (üretilmiş PNG + metin) — uygulamaya girmez
 mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
                 # sözlük asset'i + golden vector fixture'ları (bkz. mobile/CLAUDE.md)
