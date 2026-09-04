@@ -509,9 +509,25 @@ BİLİNÇLİ — gerekçe `config/env.dart` başlığında.
       ⚠ Linke MUTLAKA uygulamanın kurulu olduğu cihazdan dokunulmalı —
       iPad'den açılırsa `kelimeki://` şemasını karşılayan uygulama olmadığı
       için test sessizce geçersiz olur (aynı tuzak madde 4.5'te de yazılı).
-- [ ] **4.5 Arkadaş davet linki** (`https://kelimeki.com/davet/<token>`) —
+- [x] **4.5 Arkadaş davet linki** (`https://kelimeki.com/davet/<token>`) —
       Play derlemesinde uygulamayı, `.apk`da tarayıcıyı açar; ikisi de
       geçerli.
+      ✅ **4 Eylül 2026: `.apk` yarısı geçti** (1.0.6, sha `711eaaa`,
+      debug imza). Link telefondan açıldı → **tarayıcıda** açıldı, sayfa
+      düzgün geldi, hata ekranı yok. Beklenen sonuç buydu: assetlinks
+      parmak izi debug imzayla uyuşmuyor.
+      Sunucudan iki teyit: token T3 adına oluştu (`create_friend_invite_link`
+      idempotent, tek kalıcı link) ve dokunduktan SONRA `use_count` **0'da
+      kaldı** — yani linki AÇMAK sayacı artırmıyor, yalnızca başarılı bir
+      kabul artırıyor. (Kendi linkine dokunulduğu için sunucu zaten
+      reddediyor: *"Kendi linkinle arkadaş olamazsın."*)
+      ⏳ **Play yarısı açık:** aynı linkin UYGULAMAYI açması Play kurulumunda
+      koşulacak. Kabul akışının uygulama içi maddeleri de
+      (`testing-arkadaslar-canli.md`: "artık arkadaşsınız", mükerrer
+      kontrolü, ağ hatasında davetin kaybolmaması, geçersiz token mesajı)
+      aynı sebeple o tura bağlı — hepsi linkin uygulamayı açmasını varsayıyor.
+      ⚠ O tur için YENİ bir hesap gerekecek: elimizdeki hesaplar
+      (Ironman ↔ T3) zaten arkadaş, kabul akışı onlarla sınanamaz.
       ⚠ **LİNKE UYGULAMANIN KURULU OLDUĞU CİHAZDAN dokun** (29 Ağustos
       2026'da yarım kaldı): link iPad'den açıldı, sayfa doğru geldi ama
       Android'deki davranış HİÇ sınanmadı — Kelimeki'nin kurulu olmadığı bir
