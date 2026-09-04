@@ -45,6 +45,7 @@ import 'open_online_game.dart';
 import '../tokens.dart';
 import '../loading_note.dart';
 import '../game/neo_box.dart';
+import '../../util/away_return.dart';
 import '../../util/offline_notice.dart';
 
 const Color _text = kText;
@@ -92,6 +93,8 @@ class _LiveGamesTabState extends State<LiveGamesTab>
   OnlineGamesSnapshot? _snapshot;
   LiveSubTab _subTab = LiveSubTab.active;
   bool _appliedDefaultTab = false;
+  /// Öne dönüşte "bu bir yeniden giriş mi?" sorusunu yanıtlar.
+  final AwayTracker _awayTracker = AwayTracker();
 
   /// Son yükleme sunucuya ulaşamadı. Bu, "çevrimdışısın" DEMEK DEĞİLDİR:
   /// tek bir düşen isteğe bakıp öyle demek, başka yerde bağlantısı çalışan
@@ -152,7 +155,20 @@ class _LiveGamesTabState extends State<LiveGamesTab>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _scheduleReload();
+    if (state != AppLifecycleState.resumed) {
+      _awayTracker.markAway();
+      return;
+    }
+    // Uzun bir aradan sonra dönüş = sekmeye yeniden giriş (bkz.
+    // `util/away_return.dart`, web'deki eşi `LiveGamesTab.tsx`): varsayılan
+    // alt sekme kararı yeniden silahlanır. Tek başına sekmeyi DEĞİŞTİRMEZ —
+    // aşağıdaki karar yalnızca bekleyen bir DAVET varsa "Oyun Davetleri"ne
+    // geçiyor, yoksa kullanıcı bulunduğu sekmede kalıyor.
+    // Üstte bir oyun ekranı varsa (Canlı oyun/`game_screen`) bu dönüş bu
+    // sekmeye bir giriş değil — bkz. `setup_screen.dart`'taki aynı kapı.
+    final tabVisible = ModalRoute.of(context)?.isCurrent ?? true;
+    if (_awayTracker.takeLongAway() && tabVisible) _appliedDefaultTab = false;
+    _scheduleReload();
   }
 
   @override

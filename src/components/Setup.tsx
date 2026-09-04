@@ -27,6 +27,7 @@ import { useRankScores } from "../hooks/useRankScores";
 import { RecentGamesSection } from "./RecentGamesSection";
 import { ShareIcon } from "./RelationIcons";
 import { shareKelimekiLink } from "../utils/shareLink";
+import { createAwayTracker } from "../utils/awayReturn";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { OFFLINE_AI_SUGGESTION, OFFLINE_AI_CTA } from "../utils/offlineNotice";
 import { TermsModal } from "./TermsModal";
@@ -447,6 +448,21 @@ export function Setup({
     // sekmeyi açardı (aynı bayat-veri sınıfı).
     setLiveCounts(null);
   }, [user]);
+  // ...ve "bir kez" GİRİŞ BAŞINA değil, EKRANA GİRİŞ başına bir kez olmalı.
+  // Arka planda açık kalan bir sekme/masaüstü penceresi hiç unmount olmadığı
+  // için ref aylar boyunca dolu kalıyordu: kullanıcı uygulamayı öne
+  // getirdiğinde, sırası kendisinde olsa bile "Yapay Zeka ile" sekmesiyle
+  // karşılaşıyordu (21 Ağustos 2026, kullanıcı bildirdi). Uygulamadan
+  // GERÇEKTEN uzaklaşıp dönmek (bkz. `LONG_AWAY_MS`) yeni bir giriş sayılır
+  // ve varsayılan yeniden silahlanır; kısa bir alt-tab sayılmaz — "kullanıcı
+  // bir sekmede otururken yeni davet/hamle onu oradan koparmaz" kuralı
+  // aynen duruyor. Yeniden silahlanmak tek başına sekmeyi DEĞİŞTİRMEZ:
+  // aşağıdaki karar effect'i hâlâ `decideInitialMainView`e soruyor ve yalnızca
+  // "live" dönerse sekmeyi değiştiriyor — bekleyen iş yokken dönüş kullanıcıyı
+  // hiç oynatmıyor. (Kurtarma sırasında güncellendi: 21 Ağustos'ta bu karar
+  // `applyLoginDefaultOnce` adlı tek bir yardımcıydı, sonradan üç sinyalli
+  // `decideInitialMainView`e ayrıldı.)
+  const awayTrackerRef = useRef(createAwayTracker());
   useEffect(() => {
     if (!user) {
       setLiveActionCount(0);
@@ -486,17 +502,35 @@ export function Setup({
     };
     refresh();
     const unsubscribe = subscribeMyOnlineGames(scheduleRefresh);
+    const markAway = () => awayTrackerRef.current.markAway();
     const onForeground = () => {
-      if (document.visibilityState === "visible") scheduleRefresh();
+      if (document.visibilityState !== "visible") return;
+      // Uzun bir aradan sonra dönüldüyse varsayılan sekme kararı yeniden
+      // silahlanır (yukarı bkz.) — kararı aşağıdaki karar effect'i taze
+      // sayılarla verecek; burada yalnızca izin veriliyor.
+      if (awayTrackerRef.current.takeLongAway())
+        appliedLoginDefaultRef.current = false;
+      scheduleRefresh();
     };
-    document.addEventListener("visibilitychange", onForeground);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") onForeground();
+      else markAway();
+    };
+    // `blur`/`focus` de dinlenmek ZORUNDA: masaüstünde başka bir pencereye
+    // geçmek çoğu zaman `visibilitychange` üretmiyor (pencere hâlâ "visible"
+    // sayılıyor, yalnızca odağı kaybediyor) — tam da kullanıcının bildirdiği
+    // senaryo. Yalnızca visibilitychange dinlenseydi uzakta geçen süre hiç
+    // ölçülemez, ref bir daha hiç sıfırlanmazdı.
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("blur", markAway);
     window.addEventListener("focus", onForeground);
     window.addEventListener("online", onForeground);
     return () => {
       cancelled = true;
       if (debounceId != null) window.clearTimeout(debounceId);
       unsubscribe();
-      document.removeEventListener("visibilitychange", onForeground);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("blur", markAway);
       window.removeEventListener("focus", onForeground);
       window.removeEventListener("online", onForeground);
     };

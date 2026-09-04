@@ -513,7 +513,8 @@ mobile/
                            # kabuklar (KModal/KDialogCard/NeoBox/KIconButton)
       util/                # saf yardımcılar: deep_link, push_rules, semver,
                            # share_board + web ikizleri (game_list_order,
-                           # recent_game_avatars, head_to_head, platform)
+                           # recent_game_avatars, head_to_head, platform,
+                           # away_return)
     test/                  # util + controller (golden replay) + widget testleri
                            # + support/ (paylaşılan test altyapısı)
     android/ ios/          # flutter create çıktısı + elle değişiklikler

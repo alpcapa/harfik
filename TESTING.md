@@ -59,6 +59,23 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       çıkarsan seçim yeni oturuma taşındığından test, varsayılan hiç
       çalışmasa bile geçer (5 Ağustos 2026'ya kadar tam olarak bu oluyordu,
       bkz. bölüm 8'in son iki maddesi).
+- [ ] **Arka plandan dönüş de "giriş" sayılır (21 Ağustos 2026).** Girişli
+      kullanıcıyla Setup'ta **"Yapay Zeka ile"** sekmesinde dur. Uygulamayı
+      (masaüstü PWA penceresi ya da tarayıcı sekmesi) arka plana al —
+      **başka bir pencereye geçmek yeterli, minimize etmeye gerek yok**; bu
+      ayrım önemli, çünkü masaüstünde o durumda `visibilitychange` hiç
+      tetiklenmiyor. **5 dakikadan uzun** bekle (bu arada karşı taraf hamle
+      yapsın ya da davet göndersin), sonra pencereyi öne getir:
+      **"Arkadaşınla" sekmesi kendiliğinden açılmalı** (davet varsa "Oyun
+      Davetleri" alt sekmesiyle).
+- [ ] **Negatif eş — kısa dönüş kullanıcıyı yerinden ETMEZ.** Aynı senaryoyu
+      bu kez ~30 saniyelik bir alt-tab ile koş: sekme DEĞİŞMEMELİ (yalnızca
+      rozet güncellenir). Beş dakikayı beklemek istemiyorsan bu maddeyi
+      atlama — asıl risk burada, yanlış tarafa düşen bir eşik kullanıcıyı
+      bilerek oturduğu sekmeden koparır.
+- [ ] **Bekleyen iş yokken dönüş de yerinden ETMEZ.** Canlı'da hiçbir
+      bekleyen davet/hamle yokken 5+ dakika uzaklaşıp dön: "Yapay Zeka ile"
+      sekmesinde kalmalısın.
 - [ ] **Kurma formunun arkadaş listesi hesap değişiminde tazelenmeli.** Bir
       hesapla "+ Yeni Canlı Oyun"u aç (arkadaş listesi yüklensin), kapatmadan
       çıkış yapıp BAŞKA bir hesapla gir, tekrar "+ Yeni Canlı Oyun"a bas.

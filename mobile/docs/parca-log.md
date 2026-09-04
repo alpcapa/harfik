@@ -20,6 +20,42 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 124 — arka plandan dönüş artık "ekrana giriş" sayılıyor
+     (21 Ağustos 2026 yazıldı, **4 Eylül 2026'da kurtarıldı**; web + port
+     AYNI PR):** kullanıcı webde bildirdi — arka planda açık kalan uygulama
+     öne getirildiğinde, sırası kendisinde olmasına rağmen "Arkadaşınla"
+     sekmesi açık gelmiyordu. Sebep bir hata değil, **"bir kez" kuralının
+     KAPSAMI**: `_appliedLoginDefault` (web `appliedLoginDefaultRef`) hesap
+     başına bir kez uygulanıyor ve ekran hiç dispose OLMUYOR (`SetupScreen`
+     `MaterialApp.home`, oyunlar `Navigator.push` — Parça 38'in "Setup'a her
+     geliş" dersinin aynısı), yani o bir kez ilk girişte tükeniyordu.
+     **Portta bu web'den DAHA sık görülür**: mobil uygulama gün boyunca
+     defalarca arka plana alınıyor.
+     - ⚠ **Neden bu ciltte:** Parça 124 numarası donmuş `parca-log-110-138.md`
+       cildine düşüyor; kök `CLAUDE.md`'nin "Doküman Boyutu Bütçesi" kuralı
+       dondurulmuş bir cilde yeni girdi yazmayı YASAKLIYOR ("girişi AKTİF
+       cilde taşı"), o yüzden burada. Commit `f5f81ad`, dal
+       `claude/friend-tab-not-opening-04aa9o` — PR açılmadığı için `main`'e
+       hiç girmemişti, dal temizliğinde fark edildi.
+     - **Yeni `lib/src/util/away_return.dart`** (web `src/utils/awayReturn.ts`
+       portu): uzaklaşma/dönüş anlarını sayıyor, eşik **5 dakika**
+       (`kLongAway`). Sinyal `AppLifecycleState` — `resumed` DIŞINDAKİ her
+       durum "uzaklaştı" sayılıyor; iOS'ta bildirim bandı/Kontrol Merkezi
+       `inactive` üretiyor ama süre kısa kaldığından eşiği geçemiyor.
+     - **İKİ ekran birden bağlandı** (`setup_screen.dart` ana sekme,
+       `live_games_tab.dart` alt sekme) — yalnız birini bağlamak, sekmede
+       oturan kullanıcıyı yarı yolda bırakırdı.
+     - **Yeniden silahlanmak tek başına sekmeyi DEĞİŞTİRMEZ:**
+       `_refreshLiveBadge` hâlâ yalnızca bekleyen iş varsa Canlı'ya geçiyor,
+       alt sekme kararı da yalnızca bekleyen DAVET varsa "Oyun Davetleri"ne.
+       Alt sekmeyi zorla "Devam Edenler"e çekmek BİLEREK yapılmadı — bekleyen
+       hiçbir iş yokken bile kullanıcıyı yerinden ederdi.
+     - **Eşik web dosyası OKUNARAK kilitli** (`test/away_return_test.dart`,
+       `offline_notice_test`in deseni) — biri değişip öteki kalırsa mobil
+       test paketi düşer. Kararın kendisi de 6 testle sınanıyor (kısa
+       kesinti → false, ilk `markAway` kazanır, karar bir kez tüketilir).
+     - **Flutter SDK bu ortamda YOK** — Dart yarısının kanıtı CI.
+
    - ✅ **Parça 188 — kafa kafaya çubuğunun avatarları 18 → 26 px
      (3 Eylül 2026, kullanıcı cihazda gördü; değişen
      `ui/score/player_score_card_modal.dart` + web ikizi

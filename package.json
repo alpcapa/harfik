@@ -24,6 +24,7 @@
     "verify-rematch-slots": "esbuild scripts/verify-rematch-slots.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-rematch-slots.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-rematch-slots.mjs",
     "verify-head-to-head": "esbuild scripts/verify-head-to-head.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-head-to-head.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-head-to-head.mjs",
     "verify-draft-rescue": "esbuild scripts/verify-draft-rescue.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-draft-rescue.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-draft-rescue.mjs",
+    "verify-away-return": "esbuild scripts/verify-away-return.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-away-return.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-away-return.mjs",
     "verify-cloud-save-mirror": "esbuild scripts/verify-cloud-save-mirror.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-cloud-save-mirror.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-cloud-save-mirror.mjs",
     "verify-fetch-my-games": "node scripts/run-verify-fetch-my-games.mjs",
     "verify-hook-order": "node scripts/verify-hook-order.mjs",

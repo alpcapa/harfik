@@ -296,6 +296,11 @@ mobile/
                              # yuvarlama 33+33+33=99 verir), web `headToHead.ts`
                              # ikizi; `test/head_to_head_test.dart` ↔
                              # `npm run verify-head-to-head` aynı vakalar
+      util/away_return.dart  # "uzun aradan sonra öne dönüş = ekrana yeniden
+                             # giriş" eşiği (5 dk); web `src/utils/awayReturn.ts`
+                             # ile ELLE senkron — `away_return_test.dart` eşiği
+                             # WEB DOSYASINI OKUYARAK kilitliyor, biri değişip
+                             # öteki kalırsa test paketi düşer
       util/platform.dart      # bu istemcinin platformu (ios/android/app-web) —
                              # telemetri; web `src/utils/platform.ts` karşılığı,
                              # değer kümesi sunucu kısıtıyla ELLE senkron
