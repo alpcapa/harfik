@@ -196,10 +196,25 @@ görünür tutuyor, çünkü fark tam da unutulmaya müsait yerde duruyor —
 otomatik yol YOK (gönderim elle).
 
 **Kapalı testteki paket:** 1.0.6 (525) = commit `711eaaa` (#431).
-**O paketten beri porta dokunan tek iş:** `f75a12c` (#441) — *arka plandan
-dönüş artık "ekrana giriş" sayılıyor* (`away_return.dart` yeni,
-`setup_screen.dart` + `live_games_tab.dart` bağlandı). Yani sıradaki
-sürümün şu anki içeriği bundan ibaret; yeni işler geldikçe bu satır büyür.
+**O paketten beri porta dokunan işler:**
+
+| Commit | Ne |
+|---|---|
+| `f75a12c` (#441) | arka plandan dönüş artık "ekrana giriş" sayılıyor — `away_return.dart` yeni, `setup_screen.dart` + `live_games_tab.dart` bağlandı |
+| `19e17fe` (#443) | Hızlı Başlangıç'ın oyun sonu cümlesi tek cümleye indi ve kazananı söylüyor — `help_modal.dart` + `help_modal_test.dart` |
+
+Sıradaki sürümün şu anki içeriği bu ikisi; yeni işler geldikçe tablo büyür.
+
+⚠ **Bu tabloyu kendi PR'ın için de güncelle — bölüm ilk yazıldığında
+KENDİ değişikliğini atlamıştı.** 4 Eylül 2026'da bir sonraki oturum fark
+etti: satır *"porta dokunan tek iş #441"* diyordu, oysa bölümü yazan PR
+**#443'ün kendisiydi** ve o da porta dokunuyordu (yukarıdaki ikinci satır).
+Kendi diff'ini saymamak kolay bir hata; refleks, listeye güvenmek değil
+ölçmek:
+
+```
+git log --oneline 711eaaa..origin/main -- mobile/app mobile/kelimeki_core
+```
 
 **Göndermeden önce, sırayla:**
 
@@ -213,6 +228,10 @@ sürümün şu anki içeriği bundan ibaret; yeni işler geldikçe bu satır bü
    iş yokken dönüş yerinden etmemeli, açık oyun ekranında dönüş sekme
    değiştirmemeli). Asıl risk pozitif dalda değil bunlarda: eşik yanlış
    tarafa düşerse kullanıcı bilerek oturduğu sekmeden koparılır.
+   Ayrıca #443'ün yüzeyi: **Yardım → Hızlı Başlangıç** kartının 🏁 maddesi.
+   Metin web'le BİREBİR aynı olmalı (`HelpModal.tsx` ↔ `help_modal.dart`);
+   `help_modal_test.dart` cümlenin tamamını değil yalnızca "Yüksek puanı
+   olan kazanır" ibaresini görüyor, yani sapmayı CI yakalamaz.
 3. **Test ettiğin paketin TAZE olduğunu doğrula:** Setup'taki
    `Derleme <sha>` satırı `main`'in başıyla aynı olmalı. Appetize'da
    Android ve iOS AYRI zamanlarda tazeleniyor (bkz.
