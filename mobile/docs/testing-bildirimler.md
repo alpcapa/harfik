@@ -80,10 +80,26 @@ var mı).
       Not: bu turda pencerenin YENİDEN çıkabilmesinin sebebi §2.2'de
       bildirimlerin sistem ayarlarından kapatılmış olmasıydı; izin durumu
       sıfırlanınca soru yeniden anlamlı hale geliyor.
-- [ ] **1.4 "ŞİMDİ DEĞİL" sistem denemesi HARCAMAMALI.** Bas → sistem
+- [x] **1.4 "ŞİMDİ DEĞİL" sistem denemesi HARCAMAMALI.** Bas → sistem
       diyaloğu ÇIKMAMALI. Uygulamayı kapat-aç, Canlı sekmesini yeniden aç →
       pencere **hemen tekrar çıkmamalı** (7 gün aralık).
-      ⏳ **4 Eylül 2026'da KOŞULMADI ve bu bilinçli:** aynı turda 1.5 seçildi
+      ✅ **4 Eylül 2026: geçti** (1.0.6). Kullanıcı "ŞİMDİ DEĞİL"e bastı ve
+      **Android'in diyaloğu çıkmadı** — maddenin sınadığı şey bu.
+      ⚠ **Kanıtın türü: kullanıcı gözlemi, ölçüm DEĞİL.** Bu maddenin
+      sunucuda izi yok (bayrak cihazda, `SharedPreferences`); doğrulanacak
+      başka bir yer de yok. İkinci yarısı (kapat-aç sonrası pencerenin
+      hemen geri gelmemesi) ayrıca RAPOR EDİLMEDİ — 7 günlük aralığın
+      kendisi `push_rules.dart`'ta testli olduğu için ayrıca koşulması
+      istenmedi.
+      ⚠ **Bu madde bir kez YANLIŞ KAPALI sanıldı ve bir kez de fazladan
+      açık kaldı** — dersi ikisinde de aynı: *"Bunlar ok"* gibi bir onay
+      HANGİ maddeyi kapattığını söylemez. Kullanıcı 1.4+1.5'i sorup
+      *"Bunlar ok"* dediğinde ben bunu "açıklama tamam" diye okudum, o ise
+      "ikisi de geçti" demek istemişti; ayrıca dayanak gösterdiği gözlem
+      (*"ok deyince Android dialogu çıkıyor"*) 1.5'in yolu, 1.4'ünkü değil.
+      **Kural: grup onayını tiklemeden önce hangi maddeleri kapsadığını
+      TEK TEK teyit et** — bu turda §3.1'de de aynı sınıf hata yapılmıştı.
+      Öncesinde şöyle yazıyordu: *4 Eylül 2026'da KOŞULMADI ve bu bilinçli:* aynı turda 1.5 seçildi
       (izin verildi), ikisi birbirini tüketiyor. Play kapalı testinden
       yapılacak TEMİZ kurulumda koşulacak — o kurulum aynı zamanda §4.1'i
       (App Links ile kayıt onayı) da karşılıyor, yani ikisi tek turda biter.
