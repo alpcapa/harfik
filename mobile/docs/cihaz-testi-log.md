@@ -36,7 +36,12 @@ Buradaki "✅", "bu turda koşuldu" demektir — "bir daha koşulmasın" değil.
 | 13 · k-lig ödül & rütbe | ✅ | 12 Ağu (Parça 66) |
 
 **FAZ B (gerçek native iOS/Android): HİÇ BAŞLAMADI** — ön koşulları bile
-yapılmadı (imzalama anahtarı, Apple Developer üyeliği, `assetlinks.json`).
+yapılmadı
+> ⚠ **AŞILDI (4 Eylül 2026):** Android tarafı başladı ve büyük kısmı
+> koşuldu — bu dosyanın sonundaki *"FAZ B — İLK GERÇEK CİHAZ TURU"*
+> bölümüne bak. Aşağıdaki paragraf 17 Ağustos'un durumudur, tarihsel
+> kayıt olarak bırakıldı.
+ (imzalama anahtarı, Apple Developer üyeliği, `assetlinks.json`).
 Oraya ertelenmiş bilinen maddeler: `kelimeki://` deep link'leri (davet +
 şifre sıfırlama + kayıt onayı kanalı), paylaş sayfasının iPad popover
 ankrajı (Parça 86), HEIC seçimi ve galeri izni reddi (Parça 87).
@@ -348,3 +353,91 @@ test oyunu ise (artık meşru birer oyun kaydı olduklarından) bırakıldı.
 ise yalnızca 2 kişilik dalda üretiliyor — tek dal koşmak, fonksiyonun maili
 KOŞULSUZ gönderip göndermediğini de ayırt edemezdi.
 
+
+---
+
+## FAZ B — İLK GERÇEK CİHAZ TURU (4 Eylül 2026, Android)
+
+Yukarıdaki bölüm 17 Ağustos'ta "FAZ B: HİÇ BAŞLAMADI" diyerek donmuştu.
+Bu turla başladı ve büyük kısmı aynı gün koşuldu.
+
+**Derleme:** `mobile-latest` prerelease'indeki `kelimeki.apk`, sha
+`d07c06d`, sürüm 1.0.6. ⚠ Bu APK **debug anahtarıyla** imzalı: workflow
+`key.properties`'i APK adımından SONRA yazıyor (yalnızca `.aab` için),
+Gradle release'i `debug` imzasına düşürüyor. Sonucu: `assetlinks.json`'daki
+parmak izi tutmaz, `https://kelimeki.com/...` bağlantıları tarayıcıda
+açılır. **Bu bir arıza değil**; Play'e giden `.aab` başka bir anahtarla
+imzalı olduğundan o davranış mağaza sürümünde değişecek.
+
+### Koşulanlar
+
+| Bölüm | Sonuç |
+|---|---|
+| §0 kimlik (`Derleme d07c06d` · `depo ok` · giriş girişi görünür) | ✅ |
+| Geri tuşu / geri jesti — sekiz vaka | ✅ sıfır bulgu |
+| §1.1/1.2 (bağlam yokken pencere çıkmamalı, T3 ile) · §1.6 | ✅ |
+| §2.1–§2.5 token yaşam döngüsü | ✅ |
+| §3.1 · §3.2 · §3.4 · §3b · §3c · §3d · §3e · §3f | ✅ |
+
+**Geri tuşu ilk kez sınandı.** `PopScope`/`WillPopScope` depoda HÂLÂ yok,
+yani her şey Flutter'ın varsayılanına düşüyor; sekiz vaka da (Setup kökü,
+yerel oyun, canlı oyun, modal, joker modalı, yeni mesaj popup'ı, ilk açılış
+tanıtımı, kenar jesti ↔ taş sürükleme) doğru davrandı. ⚠ Kod okunarak
+"yeni mesaj popup'ı `barrierDismissible: false` olduğu halde geri tuşuyla
+kapanır" öngörülmüştü; **cihazda kapanmadı.** Öngörü ölçümü yenmedi.
+
+**§2.5 — "cihazda doğrulama bekliyor" maddesi kapandı.** Doğru kurulum
+tarif edildiği gibi değildi: 2.4'teki çıkış satırı zaten sildiğinden,
+ardından gelen giriş UPDATE dalına değil temiz bir INSERT'e düşüyor ve
+42501'in yaşandığı yol hiç sınanmıyor. Gerçek kurulum, satırın BAŞKA bir
+kullanıcıya bağlı kalması: **uçak modunda çıkış yapıldı** (`signOut`
+temizliği `try/catch` içinde yutuluyor — kodun kendi yorumu bunu zaten
+bekliyor), sonra ağ açılıp ikinci hesapla girildi. Ölçüm: toplam satır
+7'de kaldı, T3 0 · Ironman 1, ve `created_at` 08:16:15 ↔ `updated_at`
+08:19:26 — **aradaki 3 dk 11 sn satırın silinip yeniden yaratılmadığını,
+GÜNCELLENDİĞİNİ kanıtlıyor.** Delete+insert olsaydı sonuç yine "7 satır,
+doğru sahip" görünecekti; bu ayrım olmadan madde yine kapanmış sanılırdı.
+
+**Push ölçümü göz kararıyla değil sunucudan yapıldı.** `_notify_your_turn`
+trigger'ı pg_net ile çağırdığından yanıt gövdesi `net._http_response
+.content`te duruyor: `{"ok":true,"pushed":N}`. Turda üç kez ayırt edici
+oldu — bir "gelmedi" vakasında `pushed: 1` çıkıp sorunun sunucuda
+olmadığını gösterdi; §3.4'te bayrak kapatılınca 1 → 0 düştü; 10 dakikalık
+bastırmanın kendisi de (hedefin O OYUNDAKİ son hamlesi ölçüt, genel değil)
+çağrının hiç yapılmamasıyla doğrulandı.
+
+**Gözlem (bulgu değil): uygulama ön plandayken bildirim tamamen sessiz.**
+Kodda `FirebaseMessaging.onMessage` dinleyicisi YOK — yalnızca
+`onMessageOpenedApp` ve `getInitialMessage`, yani *dokunma* yolları.
+Android ön plandaki bildirim mesajını kendiliğinden göstermediğinden ekranda
+hiçbir iz kalmıyor. `testing-bildirimler.md` §3d maddeyi zaten *"sen
+uygulamada DEĞİLKEN"* diye tanımlıyor, yani kapsam dışı; ama bir turda
+"bildirim gelmedi" diye yanlış teşhise yol açtı. Ön planda bir iz bırakmak
+gerekip gerekmediği ÜRÜN kararı, açık bırakıldı.
+
+### Koşulmayanlar ve sebebi
+
+- **§1.4/§1.5** (sistem izin diyaloğu ve "ŞİMDİ DEĞİL") — izin bu turdan
+  önce verilmişti; ikisi aynı kurulumda zaten koşulamıyor (Android 13+
+  ikinci retten sonra diyaloğu bir daha göstermiyor). Temiz bir kurulum
+  ister, en sona bırakıldı.
+- **§3.1b** (uyarı e-postasında "takdirde") — 24 saate yaklaşan bir sıra
+  penceresi gerektiriyor, planlanamıyor.
+- **§2.6** (hesap silme token'ı da silmeli) — sıradaki.
+
+### DERS: tur tekrarlandı, çünkü KAYIT bayattı
+
+Kullanıcı turun sonunda söyledi: *"bu testlerin çoğunu zaten yapmıştık.
+Muhtemelen senin dosyalar güncel değildi ama yine de bilerek bir tur daha
+katlandım emin olmak için."*
+
+Doğrusu buydu. Bu dosya 17 Ağustos'ta donmuştu ve FAZ B'yi "HİÇ BAŞLAMADI"
+gösteriyordu; `testing-bildirimler.md` §2.5 hâlâ "cihazda doğrulama
+bekliyor" diyordu. Kayıt bayat olduğunda maliyeti bir sonraki oturum
+ödemiyor — **kullanıcı ödüyor**, bir turu ikinci kez koşarak.
+
+Kök `CLAUDE.md`'nin "her tamamladığın işten sonra ilgili dosyaları
+güncelle" kuralının bu dosyadaki karşılığı şu: **bir cihaz maddesi
+geçtiğinde kaydı AYNI oturumda düşülür.** Turun sonuna bırakılırsa oturum
+sıkıştırma yer ve ölçümler özete iner; "sonra toplarım" bu dosyada iki kez
+denendi, ikisinde de tutmadı.

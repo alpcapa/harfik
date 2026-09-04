@@ -119,7 +119,19 @@ Her adımdan sonra Supabase'de:
       anahtar `token` olduğundan ikinci kullanıcının upsert'ü UPDATE dalına
       düşüyor, `push_tokens_update_own` politikası mevcut satıra bakıp reddediyor
       (`42501`). Devir artık `register_push_token` RPC'siyle (SECURITY DEFINER).
-      **Cihazda doğrulama bekliyor** — yeni derleme gerekiyor.
+      ✅ **4 Eylül 2026: CİHAZDA KOŞULDU ve GEÇTİ** (1.0.6, sha `d07c06d`).
+      ⚠ **Ama yukarıdaki tarif tek başına bu maddeyi KOŞTURMUYOR:** 2.4'teki
+      çıkış satırı zaten sildiğinden, ardından gelen giriş UPDATE dalına
+      değil temiz bir INSERT'e düşer ve 42501'in yaşandığı yol hiç
+      denenmemiş olur. Satırın BAŞKA bir kullanıcıya bağlı KALMASI gerekiyor;
+      kurulum şu: **uçak modunda çıkış yap** (`signOut` temizliği
+      `try/catch` içinde yutuluyor, satır sunucuda kalır) → ağı aç → ikinci
+      hesapla gir.
+      Ölçüm: toplam satır 7'de kaldı, eski sahip 0 · yeni sahip 1, ve
+      `created_at` 08:16:15 ↔ `updated_at` 08:19:26 — aradaki fark satırın
+      silinip yeniden yaratılmadığını, GÜNCELLENDİĞİNİ kanıtlıyor.
+      **Bu ayrımı ölçmeden madde kapatılmaz:** delete+insert de "doğru
+      sahip, tek satır" görüntüsü verir.
 
 ⚠ **BU İKİSİNİ BİRİM TESTİ YAKALAYAMAZ.** `FakeStore` yazılanı bir listeye
 ekliyor; RLS diye bir şey yok. Yani "testler yeşil" burada yalnızca çağrının
