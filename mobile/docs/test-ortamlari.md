@@ -123,7 +123,18 @@ katmanı mantığı (299 test + gerçek Supabase ile 8.1-8.8), auth akışları.
 Bunlarda cihaza özgü bir risk yok — bir fark görürsen o zaten YENİ bir
 bulgudur, tekrar değil.
 
-### Ön koşullar (platform başına, TEK SEFERLİK — henüz hiçbiri yapılmadı)
+### Ön koşullar (platform başına, TEK SEFERLİK)
+
+⚠ **DURUM 4 Eylül 2026'da DEĞİŞTİ** (başlık bir süre "henüz hiçbiri
+yapılmadı" diyordu): **Android'in üçü de kapandı** — imzalama anahtarı
+üretilip GitHub secret'ına kondu (`ANDROID_KEYSTORE_BASE64`, imzalı
+`.aab`'yi o üretiyor) ve `public/.well-known/assetlinks.json` yayında.
+iOS satırları hâlâ açık (Apple Developer üyeliği yok).
+
+⚠ **CI'nın `.apk`'sı yine de DEBUG imzalı:** workflow `key.properties`'i
+APK adımından SONRA yazıyor, yani release anahtarı yalnızca `.aab`'ye
+giriyor. Dolayısıyla o APK'da App Links tarayıcıda açılır — assetlinks
+yayında olsa bile parmak izi tutmaz. Beklenen davranış budur.
 
 | | Android | iOS |
 |---|---|---|
@@ -141,7 +152,11 @@ açar; o zamana kadar tarayıcıda açılırlar (bozuk değil, yalnızca eksik).
 ### Appetize triyajı — ne KANITLAR, ne kanıtlaMAZ (17 Ağustos 2026)
 
 Ön koşulların üçü de (Apple üyeliği, Android cihaz, imzalama anahtarı)
-henüz açık değil; gerçek tur ertelendi. Bu arada Appetize'da neyin
+henüz açık değil; gerçek tur ertelendi.
+> ⚠ **AŞILDI (4 Eylül 2026):** Android tarafı için üçü de açıldı ve ilk
+> gerçek cihaz turu koşuldu — `mobile/docs/cihaz-testi-log.md` →
+> "FAZ B — İLK GERÇEK CİHAZ TURU". Aşağıdaki triyaj tablosu Appetize
+> için hâlâ geçerli. Bu arada Appetize'da neyin
 koşulabileceği aşağıda ayıklandı. **Bir maddenin "gerçek cihaz ister"
 olması Appetize'ın değil MADDENİN kendi özelliği** — bu yüzden liste
 kaynaktan çıkarılabildi, emülatöre girmeden.

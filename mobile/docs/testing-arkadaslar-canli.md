@@ -378,6 +378,13 @@
       olacak." çıkmalı ve yeni oyunda 4. koltuk gerçekten `{"type":"ai"}`
       olmalı (sunucudan doğrula). Biten oyunu SEN kurmamışsan da çalışmalı —
       kurucu artık sen olursun.
+- [ ] **Tekrar Oyna — oyun GEÇMİŞİNDEN (4 Eylül 2026).** "Tüm Oyunlarım"da
+      bitmiş bir Canlı oyunun tahta önizlemesine dokun: menü **Paylaş ·
+      Tekrar Oyna · Kapat** olmalı. Akış ve metinler oyun sonundakiyle
+      birebir. ⚠ **YZ oyununun kartında ÇIKMAMALI**, ⚠ başka birinin
+      geçmişine bakarken de çıkmamalı. ⚠ Kadro, geçmiş kaydından değil
+      biten oyunun `online_games.slots` satırından çözülüyor — 4 kişilik +
+      YZ'li bir oyunda YZ'nin yine 4. koltukta olduğunu sunucudan doğrula.
 - [ ] **Tekrar Oyna — artık arkadaş değilseniz.** Rakibi arkadaşlıktan
       çıkarıp dene: "Yalnızca arkadaşlarını davet edebilirsin." mesajı
       görünmeli ve TAMAM'a basınca LİSTEYE DÖNÜLMEMELİ (oyun ekranı ayakta

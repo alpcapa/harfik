@@ -9,12 +9,15 @@ import {
   fetchGameMoves,
   toggleGameLike,
   markGameShared,
+  fetchFinishedGameSlots,
+  createOnlineGame,
 } from '../lib/api';
 import type { BoardSnapshotTile, GameHistoryEntry, GameLiker, GamePlayerSnapshot } from '../lib/database.types';
 import type { HistoryEntry } from '../game/types';
 import { buildSnapshotGameState } from '../utils/boardSnapshot';
 import { MoveHistoryModal } from './MoveHistoryModal';
 import { useAuth } from '../hooks/useAuth';
+import { buildRematchSlots } from '../utils/rematchSlots';
 import { PLAYER_COLORS } from '../game/constants';
 import { PlayerBadge } from './PlayerBadge';
 import { GameBoardPreview } from './GameBoardPreview';
@@ -297,6 +300,29 @@ export function GameHistoryModal({
 
   // Tahta önizlemesine tıklanınca açılan Kapat/Paylaş aksiyon menüsü.
   const [boardSheetId, setBoardSheetId] = useState<string | null>(null);
+  /**
+   * "Tekrar Oyna" (4 Eylül 2026, kullanıcı isteği: menüde yalnızca Paylaş ve
+   * Kapat vardı). Oyun sonundaki rövanşın aynısı — kadro AYNEN taşınır ve
+   * davet gider — ama YALNIZCA Canlı oyunlarda: YZ kayıtlarında yeni bir
+   * yerel oyun başlatmak, o an kaydedilmiş devam eden oyunu ezme riski
+   * taşıyor (bkz. `docs/decisions/local-game-persistence.md`) ve kapsam
+   * bilerek dar tutuldu.
+   *
+   * Onay adımı KOZMETİK DEĞİL: iki mevcut "Tekrar Oyna" da onay soruyor,
+   * çünkü buton davet gönderiyor (bkz. kök CLAUDE.md, "Tekrar Oyna").
+   */
+  const [rematch, setRematch] = useState<{
+    gameId: string;
+    playerCount: number;
+    names: string[];
+    withAi: boolean;
+    phase: 'confirm' | 'busy' | 'sent' | 'error';
+    message?: string;
+  } | null>(null);
+  // `handleRematch` useCallback'i state'e bağımlı olmasın diye (her tuşta
+  // yeniden kurulmasın); okuduğu değer her zaman en güncel olan.
+  const rematchRef = useRef<typeof rematch>(null);
+  rematchRef.current = rematch;
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [shareErrorId, setShareErrorId] = useState<string | null>(null);
   const copiedTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -332,6 +358,32 @@ export function GameHistoryModal({
       setLikersLoading(false);
     });
   }, [likersByGame]);
+
+  /**
+   * Rövanşı açar. Kadro geçmiş kaydından ÇIKMIYOR (`GamePlayerSnapshot`
+   * `user_id` taşımaz), o yüzden biten oyunun `online_games.slots` satırı
+   * ayrıca okunuyor; sıralama kuralı `buildRematchSlots`ta, oyun
+   * ekranındakiyle TEK kaynaktan.
+   */
+  const handleRematch = useCallback(async () => {
+    const st = rematchRef.current;
+    if (!st || !user?.id) return;
+    setRematch({ ...st, phase: 'busy' });
+    try {
+      const slots = await fetchFinishedGameSlots(st.gameId);
+      if (!slots) {
+        throw new Error('Bu oyunun kadrosuna ulaşılamadı, rövanş açılamıyor.');
+      }
+      await createOnlineGame(st.playerCount as 2 | 4, buildRematchSlots(slots, user.id));
+      setRematch({ ...st, phase: 'sent' });
+    } catch (err) {
+      setRematch({
+        ...st,
+        phase: 'error',
+        message: err instanceof Error ? err.message : 'Davet gönderilemedi.',
+      });
+    }
+  }, [user?.id]);
 
   const handleShare = useCallback(async (entry: GameHistoryEntry) => {
     const text = SHARE_MESSAGE;
@@ -832,6 +884,27 @@ export function GameHistoryModal({
                     onClose={() => setBoardSheetId(null)}
                     actions={[
                       { label: 'Paylaş', onSelect: () => void handleShare(entry) },
+                      // Rövanş yalnızca KENDİ geçmişinde ve yalnızca Canlı
+                      // oyunlarda: `userId` doluysa admin başkasının
+                      // geçmişine bakıyordur (o oyunun tarafı değil),
+                      // `online_game_id` boşsa kayıt yerel bir YZ oyunudur.
+                      ...(!userId && entry.online_game_id && user?.id
+                        ? [
+                            {
+                              label: 'Tekrar Oyna',
+                              onSelect: () =>
+                                setRematch({
+                                  gameId: entry.online_game_id!,
+                                  playerCount: entry.player_count,
+                                  names: players
+                                    .filter((p, i) => !p.is_ai && i !== meIndex)
+                                    .map((p) => p.name),
+                                  withAi: players.some((p) => p.is_ai),
+                                  phase: 'confirm',
+                                }),
+                            },
+                          ]
+                        : []),
                       { label: 'Kapat', onSelect: () => setExpandedId(null) },
                     ]}
                   />
@@ -923,6 +996,69 @@ export function GameHistoryModal({
         };
         return <MoveHistoryModal state={state} onClose={close} />;
       })()}
+
+      {/*
+        Rövanş onayı — düzen/metin `OnlineGameScreen`deki ikiziyle BİREBİR
+        (kullanıcı ikisini aynı iş sanıyor, çünkü öyleler). Biri değişirse
+        öteki de. z-[200]: Modal 150, ActionSheet 160 — bunun ikisinin de
+        üstünde kalması gerekiyor.
+      */}
+      {rematch && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
+          <div className="w-full max-w-sm bg-panel border border-[#B8C2D1] rounded-2xl shadow-[0_20px_45px_rgba(15,23,42,0.5)] p-6 flex flex-col gap-4 outline-none">
+            <p className="text-base font-bold text-text font-sans">Tekrar Oyna</p>
+            {rematch.phase === 'sent' ? (
+              <>
+                <p className="text-sm text-text font-sans leading-relaxed">Davetiniz gönderilmiştir.</p>
+                <p className="text-xs text-muted font-mono leading-relaxed">
+                  {rematch.names.join(', ')} yanıt verince oyun başlayacak.
+                  {rematch.withAi && ' 4. koltuk Yapay Zeka.'}
+                </p>
+                <button
+                  onClick={() => setRematch(null)}
+                  className="btn-raised py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+                >
+                  Tamam
+                </button>
+              </>
+            ) : rematch.phase === 'error' ? (
+              <>
+                <p className="text-sm text-red font-sans leading-relaxed">{rematch.message}</p>
+                <button
+                  onClick={() => setRematch(null)}
+                  className="btn-raised-neutral py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
+                >
+                  Kapat
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-text font-sans leading-relaxed">
+                  {rematch.names.join(', ')} ile aynı kadroda yeni bir oyun açılacak ve davet
+                  gönderilecek.
+                  {rematch.withAi && ' 4. koltuk yine Yapay Zeka olacak.'} Emin misin?
+                </p>
+                <div className="flex gap-2 mt-1">
+                  <button
+                    disabled={rematch.phase === 'busy'}
+                    onClick={() => void handleRematch()}
+                    className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-35"
+                  >
+                    {rematch.phase === 'busy' ? 'Gönderiliyor…' : 'Tekrar Oyna'}
+                  </button>
+                  <button
+                    disabled={rematch.phase === 'busy'}
+                    onClick={() => setRematch(null)}
+                    className="btn-raised-neutral flex-1 py-2.5 rounded-md bg-void border border-border text-text text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform disabled:opacity-35"
+                  >
+                    Vazgeç
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }

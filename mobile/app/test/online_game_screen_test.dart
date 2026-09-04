@@ -162,7 +162,7 @@ void main() {
         createdBy: 'esiner',
         myRole: 'invitee',
       ));
-      final slots = rematchSlots(g, 'me');
+      final slots = rematchSlots(g.slots, 'me');
       expect([for (final s in slots) s.toJson()], [
         {'type': 'human', 'user_id': 'me'},
         {'type': 'human', 'user_id': 'esiner'},
@@ -182,7 +182,7 @@ void main() {
           slotAi,
         ],
       ));
-      expect([for (final s in rematchSlots(g, 'me')) s.toJson()], [
+      expect([for (final s in rematchSlots(g.slots, 'me')) s.toJson()], [
         {'type': 'human', 'user_id': 'me'},
         {'type': 'human', 'user_id': 'a'},
         {'type': 'human', 'user_id': 'b'},

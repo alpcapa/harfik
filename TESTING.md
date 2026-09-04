@@ -195,6 +195,16 @@ e-posta görünümünü gerçek bir gelen kutusunda doğrula.
       + YZ'li bir oyunda YZ yine 4. koltukta kalmalı. Rakibi arkadaşlıktan
       çıkarıp denersen "Yalnızca arkadaşlarını davet edebilirsin." görünmeli
       ve ekranda kalınmalı.
+- [ ] **Oyun GEÇMİŞİNDEN "Tekrar Oyna" (4 Eylül 2026).** "Tüm Oyunlarım"da
+      bitmiş bir **Canlı** oyunun kartını aç, tahta önizlemesine tıkla:
+      menüde **Paylaş · Tekrar Oyna · Kapat** olmalı. Tekrar Oyna → oyun
+      sonundakiyle AYNI onay metni → onayla → "Davetiniz gönderilmiştir."
+      ve yeni oyun "Rakip Bekleniyor"da görünmeli. **Biten oyunu SEN
+      kurmamışsan da çalışmalı** (davet edilen taraf da rövanş açabilir).
+      ⚠ **Bir YZ oyununun kartında "Tekrar Oyna" ÇIKMAMALI** — kapsam
+      bilerek yalnızca Canlı oyunlar (yerel yeni oyun, kaydedilmiş devam
+      eden oyunu ezebilirdi). ⚠ Admin panelinden BAŞKA bir üyenin geçmişine
+      bakarken de çıkmamalı (o oyunun tarafı değilsin).
 - [ ] **Yerel/YZ oyununda da "Tekrar Oyna" (11 Ağustos 2026).** Bir YZ oyununu
       bitir: buton "Yeni Oyun Aç" DEĞİL "Tekrar Oyna" olmalı; onaydan sonra
       Setup'a uğramadan aynı kadroyla taze bir oyun açılmalı. **Aynı ekranda

@@ -21,6 +21,10 @@ import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../../util/share_board.dart';
 import '../../data/auth_service.dart';
+import '../../data/friends_api.dart' show friendErrorText;
+import '../../data/online_games_api.dart' show rematchSlots;
+import '../online_games_scope.dart';
+import '../game/dialog_shell.dart';
 import '../auth/k_avatar.dart';
 import '../chat/game_chat_history_modal.dart';
 import '../game/action_sheet.dart';
@@ -403,13 +407,85 @@ class _GameHistoryModalState extends State<GameHistoryModal> {
         ),
       );
 
-  /// Açık tahta önizlemesine dokununca. Web'in iki seçeneği: Paylaş / Kapat.
+  /// Açık tahta önizlemesine dokununca: Paylaş / (Tekrar Oyna) / Kapat.
+  ///
+  /// "Tekrar Oyna" 4 Eylül 2026'da eklendi (kullanıcı isteği) ve YALNIZCA
+  /// Canlı oyunlarda çıkıyor — YZ kayıtlarında yeni bir yerel oyun
+  /// başlatmak, o an kaydedilmiş devam eden oyunu ezme riski taşıyor
+  /// (`docs/decisions/local-game-persistence.md`), kapsam bilerek dar.
+  /// Kapsam yoksa (çevrimdışı derleme) ya da liste başkasına aitse
+  /// gösterilmez — çalışmayan bir kontrol koymuyoruz.
   Future<void> _openBoardSheet(GameHistoryEntry entry) async {
+    final canRematch = widget.isMe &&
+        entry.onlineGameId != null &&
+        widget.games.gateway.currentUserId != null &&
+        OnlineGamesScope.maybeOf(context) != null;
     await showActionSheet(context, actions: [
       ActionSheetItem(label: 'Paylaş', onSelect: () => unawaited(_share(entry))),
+      if (canRematch)
+        ActionSheetItem(
+            label: 'Tekrar Oyna',
+            onSelect: () => unawaited(_handleRematch(entry))),
       ActionSheetItem(
           label: 'Kapat', onSelect: () => setState(() => _expandedId = null)),
     ]);
+  }
+
+  /// Geçmişten rövanş — oyun sonundaki "Tekrar Oyna" ile AYNI iş
+  /// (`online_game_screen.dart` → `_handleRematch`); metinler ve buton
+  /// etiketleri de bilerek birebir, kullanıcı ikisini aynı şey sanıyor.
+  ///
+  /// ⚠ Kadro geçmiş kaydından ÇIKMIYOR: `GamePlayerSnapshot` isim/skor/YZ
+  /// taşır, **`user_id` YOK** ve `create_online_game` koltuk başına user_id
+  /// istiyor. Bu yüzden biten oyunun `online_games.slots` satırı ayrıca
+  /// okunuyor; sıralama kuralı `rematchSlots`ta, oyun ekranıyla TEK kaynak.
+  Future<void> _handleRematch(GameHistoryEntry entry) async {
+    final repo = OnlineGamesScope.maybeOf(context);
+    final myId = widget.games.gateway.currentUserId;
+    final onlineId = entry.onlineGameId;
+    if (repo == null || myId == null || onlineId == null) return;
+
+    final meIndex = _findMeIndex(entry, entry.players);
+    final names = <String>[
+      for (var i = 0; i < entry.players.length; i++)
+        if (!entry.players[i].isAi && i != meIndex) entry.players[i].name,
+    ];
+    final withAi = entry.players.any((p) => p.isAi);
+
+    // Kabul butonu SOLDA (Parça 25 kuralı) — showKConfirm bunu garanti eder.
+    final ok = await showKConfirm(
+      context,
+      title: 'Tekrar Oyna',
+      message: '${names.join(', ')} ile aynı kadroda yeni bir oyun açılacak ve '
+          'davet gönderilecek.'
+          '${withAi ? ' 4. koltuk yine Yapay Zeka olacak.' : ''} Emin misin?',
+      confirmLabel: 'TEKRAR OYNA',
+    );
+    if (!ok || !mounted) return;
+
+    String? error;
+    try {
+      final slots = await repo.finishedGameSlots(onlineId);
+      if (slots == null) {
+        error = 'Bu oyunun kadrosuna ulaşılamadı, rövanş açılamıyor.';
+      } else {
+        await repo.create(entry.playerCount, rematchSlots(slots, myId));
+      }
+    } catch (e) {
+      // LiveGameCreateForm/oyun ekranıyla AYNI helper: sunucunun Türkçe
+      // reddini ham toString() gürültüsü olmadan gösterir.
+      error = friendErrorText(e);
+    }
+    if (!mounted) return;
+    await showKInfo(
+      context,
+      title: 'Tekrar Oyna',
+      message: error ??
+          'Davetiniz gönderilmiştir.\n\n'
+              '${names.join(', ')} yanıt verince oyun başlayacak.'
+              '${withAi ? ' 4. koltuk Yapay Zeka.' : ''}',
+      buttonLabel: error == null ? 'TAMAM' : 'KAPAT',
+    );
   }
 
   /// Web `handleShare` sırası: önce oyunu paylaşıma aç (link ancak öyle bir

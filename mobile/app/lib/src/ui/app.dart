@@ -22,6 +22,7 @@ import 'text_scale.dart';
 import 'game/logo_mark.dart';
 import 'live/open_online_game.dart';
 import 'online_scope.dart';
+import 'online_games_scope.dart';
 
 class KelimekiApp extends StatelessWidget {
   final AppServices services;
@@ -121,6 +122,12 @@ class KelimekiApp extends StatelessWidget {
         // kapsam kökte durduğundan yeni tüketiciler parametre gerektirmiyor.
         child: OnlineScope(
           status: services.onlineStatus,
+          // Canlı oyun deposu da ağaç genelinde — bugün tek tüketicisi oyun
+          // geçmişindeki "Tekrar Oyna" (rövanş). Aynı gerekçe: kapsam kökte
+          // durunca `showGameHistory`nin üç çağrı yeri ve aradaki widget'lar
+          // hiç değişmiyor (bkz. `online_games_scope.dart` başlığı).
+          child: OnlineGamesScope(
+          repo: services.onlineGames,
           child: ListenableBuilder(
           listenable: services.auth,
           builder: (context, _) {
@@ -174,6 +181,7 @@ class KelimekiApp extends StatelessWidget {
               ],
             );
             },
+          ),
           ),
         ),
       ),

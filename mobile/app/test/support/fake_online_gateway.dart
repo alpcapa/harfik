@@ -133,6 +133,15 @@ class FakeOnlineGamesGateway implements OnlineGamesGateway {
     onCheckInviteExpiry?.call(gameId);
   }
 
+  /// Biten oyunun ham koltukları — oyun geçmişindeki "Tekrar Oyna" testleri
+  /// doldurur. Varsayılan `null` = "erişilemedi", yani rövanşın hata dalı.
+  Map<String, List<Map<String, Object?>>?> finishedSlots = {};
+
+  @override
+  Future<List<Map<String, Object?>>?> finishedGameSlots(
+      String onlineGameId) async =>
+      finishedSlots[onlineGameId];
+
   /// Bitişi görülmemiş oyunlar — testler tek tek doldurabilsin diye alan.
   List<String> unseenFinished = const [];
 

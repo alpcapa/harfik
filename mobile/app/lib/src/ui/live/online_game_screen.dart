@@ -967,7 +967,7 @@ class _OnlineGameScreenState extends State<OnlineGameScreen>
     try {
       await widget.onlineGames.create(
         widget.game.playerCount,
-        rematchSlots(widget.game, widget.myUserId),
+        rematchSlots(widget.game.slots, widget.myUserId),
       );
     } catch (e) {
       // LiveGameCreateForm ile AYNI helper: `create_online_game`in Türkçe
