@@ -202,7 +202,7 @@ otomatik yol YOK (gönderim elle).
 |---|---|
 | `f75a12c` (#441) | arka plandan dönüş artık "ekrana giriş" sayılıyor — `away_return.dart` yeni, `setup_screen.dart` + `live_games_tab.dart` bağlandı |
 | `19e17fe` (#443) | Hızlı Başlangıç'ın oyun sonu cümlesi tek cümleye indi ve kazananı söylüyor — `help_modal.dart` + `help_modal_test.dart` |
-| bu tur (#447) | Skor kartındaki kafa kafaya çubuğunun yazıları bara yaklaştı (10 → 2 px) ve "TÜM OYUNLAR" butonu barın hizasına oturdu — `player_score_card_modal.dart` |
+| `7312eb8` (#447) | Skor kartındaki kafa kafaya çubuğunun yazıları bara yaklaştı (10 → 2 px) ve "TÜM OYUNLAR" butonu barın hizasına oturdu — `player_score_card_modal.dart` |
 
 Sıradaki sürümün şu anki içeriği bu ikisi; yeni işler geldikçe tablo büyür.
 

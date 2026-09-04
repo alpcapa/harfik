@@ -212,6 +212,28 @@ okumak için `curl` şart.) Flutter/Pages yüzeyi için kanıtlanmadı. Ayrınt�
 sonrası dal hijyeni, PR'da CI koşmazsa ne yapılacağı):
 `mobile/CLAUDE.md` → "Deploy Doğrulaması".
 
+⚠ **`main`'e merge YAYIN GARANTİSİ DEĞİL — Vercel bir commit'i sessizce
+atlayabiliyor (4 Eylül 2026, ölçüldü).** #447 merge edildi, GitHub Actions
+`7312eb8` için koştu ve yeşildi, ama Vercel'in dağıtım listesinde o commit
+için **hiç satır yoktu**; üretim 30+ dakika bir önceki commit'te (`a940626`)
+kaldı ve site eski kodu servis etmeye devam etti. Hata mesajı yok, düşen bir
+iş yok — tabloda "`main`'e her merge" satırı bunu vaat ediyor gibi görünse
+de gerçek şu: **tek kanıt sha.** Yani "merge edildi" demek "canlıda" demek
+değil; `curl` ile sha'yı OKU.
+
+**Kurtarma — dalın Preview'ını Production'a yükselt** (Vercel → Deployments
+→ dalın satırı → `…` → Promote to Production). Squash merge'te dal başının
+AĞACI `main`'inkiyle birebir aynıdır (bu turda doğrulandı: iki commit de
+`f49deda…` ağacını gösteriyordu), yani doğru kod anında canlıya çıkar.
+⚠ **Bedeli:** sayfa artık DALIN sha'sını bildirir (`395778d`), `main`'in
+başını değil — yani yukarıdaki "sha'yı `main`'le karşılaştır" kontrolü bir
+sonraki gerçek üretim yayınına kadar eşleşmez. Karşılaştırmayı yaparken
+bunu bil, yoksa "yayın yine kaçtı" diye yanlış teşhis koyarsın.
+Ajan bunu kendi başına ölçemez: bu oturumun Vercel erişimi yalnızca BAŞKA
+bir projeyi görüyordu (`list_deployments` → 403 / listede yalnızca
+`sharedxp`), yani panel kullanıcıda. Ajanın yapabildiği tek şey siteyi
+`curl`lamak — o da zaten kesin olan kanıt.
+
 ## Flutter / Mobil Port (`mobile/`)
 
 5 Ağustos 2026'da başladı — iOS+Android için Flutter portu. **Tüm port
