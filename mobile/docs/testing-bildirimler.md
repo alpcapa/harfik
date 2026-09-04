@@ -53,21 +53,37 @@ oyunu/daveti OLMAYAN bir test hesabı gerekiyor (SQL ile bak:
 `online_games` içinde `slots`ta o kullanıcı geçen `active`/`pending` satır
 var mı).
 
-- [ ] **1.1 Bağlamsız açılış.** GİRİŞ YAP, Canlı sekmesine GİRME → hiçbir
+- [x] **1.1 Bağlamsız açılış.** GİRİŞ YAP, Canlı sekmesine GİRME → hiçbir
       izin penceresi çıkmamalı (ne bizimki ne sistemin).
-- [ ] **1.2 Boş Canlı sekmesi.** Aynı (oyunsuz) hesapla Canlı sekmesini aç →
+- [x] **1.2 Boş Canlı sekmesi.** Aynı (oyunsuz) hesapla Canlı sekmesini aç →
       yine hiçbir pencere çıkmamalı.
 - [x] **1.2-misafir** (29 Ağustos 2026): girişsiz Canlı sekmesi → pencere
       YOK. Geçti, ama yukarıdaki nedenle 1.2'nin YERİNE geçmez.
-- [ ] **1.3 Gerçek tetikleyici.** Bir Canlı oyun başlat (ya da bir davet
+- [x] **1.3 Gerçek tetikleyici.** Bir Canlı oyun başlat (ya da bir davet
       al), Canlı sekmesini aç → **"Bildirimleri açalım mı?"** penceremiz
       çıkmalı; "BİLDİRİMLERİ AÇ" / "ŞİMDİ DEĞİL".
+      ✅ **4 Eylül 2026: geçti** — pencere gerçek tetikleyicide çıktı.
+      Not: bu turda pencerenin YENİDEN çıkabilmesinin sebebi §2.2'de
+      bildirimlerin sistem ayarlarından kapatılmış olmasıydı; izin durumu
+      sıfırlanınca soru yeniden anlamlı hale geliyor.
 - [ ] **1.4 "ŞİMDİ DEĞİL" sistem denemesi HARCAMAMALI.** Bas → sistem
       diyaloğu ÇIKMAMALI. Uygulamayı kapat-aç, Canlı sekmesini yeniden aç →
       pencere **hemen tekrar çıkmamalı** (7 gün aralık).
-- [ ] **1.5 "BİLDİRİMLERİ AÇ".** Bas → **Android'in kendi** izin diyaloğu
+      ⏳ **4 Eylül 2026'da KOŞULMADI ve bu bilinçli:** aynı turda 1.5 seçildi
+      (izin verildi), ikisi birbirini tüketiyor. Play kapalı testinden
+      yapılacak TEMİZ kurulumda koşulacak — o kurulum aynı zamanda §4.1'i
+      (App Links ile kayıt onayı) da karşılıyor, yani ikisi tek turda biter.
+- [x] **1.5 "BİLDİRİMLERİ AÇ".** Bas → **Android'in kendi** izin diyaloğu
       çıkmalı. İzin ver.
-- [ ] **1.6 İzin verildikten sonra bir daha sorulmamalı.** Canlı sekmesine
+      ✅ **4 Eylül 2026: geçti** (1.0.6, sha `711eaaa`). Kullanıcının tarifi:
+      *"App'de bildirim gönderme mesajımız çıkıp ok diyince ayrıca Android
+      izin ver/verme dialogu çıkıyor"* — İKİ ADIM TASARIM GEREĞİ böyle ve
+      maddenin sınadığı şey tam olarak bu zincir. İkinci diyaloğun ayrıca
+      çıkması fazlalık DEĞİL: Android 13+ sistem diyaloğunu ikinci retten
+      sonra bir daha hiç göstermediğinden, uygulama önce kendi yumuşak
+      penceresiyle soruyor ve o tek atışı ancak kullanıcı "aç" dediğinde
+      harcıyor.
+- [x] **1.6 İzin verildikten sonra bir daha sorulmamalı.** Canlı sekmesine
       birkaç kez gir-çık → pencere çıkmamalı.
 ⚠ **1.4 ile 1.5 AYNI KURULUMDA İKİSİ BİRDEN YAPILAMAZ** (29 Ağustos 2026'da
 fark edildi, sıra planlanırken): pencere tek seferlik bir karar soruyor —
