@@ -164,3 +164,40 @@ SONRAKİ süpürmelerde.
 zaman oldu" sorusunun cevabı olmalı. Bu kod tabanında ikisinin ayrıştığı
 **üç** yol var (offline kuyruk, misafir migrasyonu, terk süpürmesi) ve
 ilk ikisi bunu zaten biliyordu — üçüncüsü atlanmıştı.
+
+### Kural GENELLEŞTİ — istemciden yazılan her tablo tarandı (4 Eylül 2026)
+
+Kullanıcı: *"Bu mantık admindeki tüm datalar için de geçerli olmalı."*
+Haklı — yukarıdaki hata terk yoluna özgü değil, bir SINIF: **gecikmeli yazan
+her yol, olay anını taşımak zorunda.**
+
+Risk yalnızca kuyruklu/tekrar denemeli yollarda; anlık `insert` eden bir
+tabloda `now()` zaten olay anı. İstemciden yazılan tabloların TAMAMI:
+
+| Tablo | Gecikmeli yol var mı | Durum |
+|---|---|---|
+| `games` | offline kuyruk (`gameSync`) **+ terk süpürmesi** | kuyruk baştan doğruydu, terk yolu 4 Eylül'de düzeltildi |
+| `game_finishes` | aynı iki yol | 4 Eylül'de düzeltildi (hiç damgalamıyordu) |
+| `feedback` | offline kuyruk (`feedbackSync`) | ⚠ **açıktı** — kuyruk damgayı TUTUYOR ama GÖNDERMİYORDU; 4 Eylül'de düzeltildi |
+| `game_starts` | yok | temiz |
+| `guest_visits` | yok | temiz |
+| `device_visits` | yok | temiz |
+| `client_errors` | yok (kuyruk YOK; hız sınırı + tekrar bastırma var, o başka şey) | temiz |
+| `local_game_saves` | var, ama bir METRİK değil | ilgisiz |
+
+Sunucunun yazdığı tablolar (`profiles`, `online_games` ve türevleri,
+`friend_requests`, `league_rewards`) tanım gereği bu sınıfın dışında — orada
+`now()` gerçekten olay anı.
+
+⚠ **`feedback` en sinsi olanıydı:** kuyruk `created_at`i zaten kaydediyordu
+(TTL hesabı için) — yani doğru veri elin altındaydı ve yalnızca `insert`e
+konmamıştı. Bir alanın var olması onun KULLANILDIĞI anlamına gelmiyor.
+
+**Kapı üç tabloda da aynı:** `_clamp_created_at` BEFORE INSERT trigger'ı
+(`games`, `game_finishes`, `feedback`). İstemcinin `created_at` yazabildiği
+tablolar tam olarak bu üçü; dördüncüsü eklenirse trigger ona da bağlanmalı.
+
+**Yeni bir kuyruk/tekrar-deneme yolu yazarken sor:** *bu satır, olayın
+gerçekleştiği andan SONRA yazılabilir mi?* Cevap evetse olay anı payload'a
+girmeli ve `insert`e konmalı — ikisi ayrı iş, birincisi ikincisini garanti
+etmiyor (bkz. `feedback`).

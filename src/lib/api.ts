@@ -2779,6 +2779,16 @@ export async function submitFeedback(
   email: string | undefined,
   source: FeedbackSource,
   relatedTo?: string | null,
+  /**
+   * Mesajın GERÇEKTEN yazıldığı an (ISO). Verilmezse sunucunun `now()`
+   * varsayılanı kalır — anlık gönderimde doğrusu budur.
+   *
+   * ⚠ Offline kuyruktan gönderirken VERİLMESİ ZORUNLU: kuyruktaki mesaj
+   * günler sonra iletilebilir ve damgalanmazsa admin panelinde yazıldığı
+   * güne değil İLETİLDİĞİ güne düşer. Kuyruk bu değeri zaten tutuyordu
+   * (TTL için), yalnızca göndermiyordu — bkz. `feedbackSync.ts`.
+   */
+  createdAt?: string,
 ): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   const {
@@ -2790,6 +2800,7 @@ export async function submitFeedback(
     message: message.trim(),
     source,
     related_to: relatedTo ?? null,
+    ...(createdAt ? { created_at: createdAt } : {}),
   });
   if (error) throw new Error(error.message);
 }
