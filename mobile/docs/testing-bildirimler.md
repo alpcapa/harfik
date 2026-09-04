@@ -589,12 +589,26 @@ kapalı test kanalından kurulmuş derleme ister.
 **Kurulum:** mağazada DAHA YENİ bir sürüm yayınlıyken cihazdaki ESKİ sürümü
 aç (yani sürüm N kuruluyken N+1 kanala düşmüş olmalı).
 
+⚠ **Pratik sonuç — "güncelleme varken" dalı BİR SÜRÜM TURUNA YAYILIR ve
+aynı gün koşulamaz.** Kanaldan en yeniyi kurduğun anda o dalı test etme
+imkânını o tur için harcamış olursun. Doğru sıra: N kuruluyken bekle,
+N+1'i kanala at, SONRA uygulamayı aç. 4 Eylül 2026'da bu kaçırıldı — 525
+kurulup 525 beklendi. Sıradaki fırsat: 1.0.6 kuruluyken 1.0.7 yayınlanınca.
+
 - [ ] **Güncelleme varken:** uygulama açılır açılmaz Play'in tam ekran
       güncelleme penceresi KENDİLİĞİNDEN açılmalı; güncelleme uygulamadan
       ÇIKMADAN tamamlanmalı ve uygulama yeni sürümle geri gelmeli.
       Doğrula: Setup'ın teşhis satırındaki `Derleme <sha>` değişmiş olmalı.
-- [ ] **Güncelleme yokken:** hiçbir pencere açılmamalı, uygulama normal
+- [x] **Güncelleme yokken:** hiçbir pencere açılmamalı, uygulama normal
       açılmalı.
+      ✅ **4 Eylül 2026: geçti.** Kullanıcı `.apk`'yı kaldırıp kapalı test
+      kanalından 1.0.6 (525) kurdu ve uygulamayı açtı → pencere ÇIKMADI
+      (*"App'i açtım ama güncelleme gelmedi"*). Kanalda 525'ten yenisi
+      olmadığı için beklenen sonuç tam olarak buydu.
+      ⚠ **Bu bulgu ilk anda hata sanıldı** — çünkü "güncelleme gelmedi"
+      cümlesi hem bu maddenin GEÇMESİ hem bir üsttekinin DÜŞMESİ gibi
+      okunabiliyor. Ayıran tek soru: *kanalda kurulu olandan daha yüksek
+      bir `versionCode` var mı?* Yoksa doğru davranış sessizliktir.
 - [ ] **Uçak modunda:** uygulama ÇÖKMEMELİ, akış sessizce atlanmalı. Sonra
       ağı aç ve uygulamayı öne al → kontrol TEKRAR denenmeli (pencere
       açılmalı). ⚠ Bu dal özellikle önemli: "soramadım"ı "güncel" saymak,
