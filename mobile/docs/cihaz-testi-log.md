@@ -377,7 +377,8 @@ imzalı olduğundan o davranış mağaza sürümünde değişecek.
 | Geri tuşu / geri jesti — sekiz vaka | ✅ sıfır bulgu |
 | §1.1/1.2 (bağlam yokken pencere çıkmamalı, T3 ile) · §1.6 | ✅ |
 | §2.1–§2.5 token yaşam döngüsü | ✅ |
-| §3.1 · §3.2 · §3.4 · §3b · §3c · §3d · §3e · §3f | ✅ |
+| §3.2 · §3.4 · §3b · §3d · §3e · §3f | ✅ |
+| §3.1 + §3.1b (süre uyarısı bildirimi VE e-postası) | ✅ gün içinde, ayrıca |
 | §3.3 soğuk başlangıç (bildirimden) | ✅ |
 | Oturum kalıcılığı (öldür → simgeden aç) | ✅ |
 | §2.6 hesap silme (T5) | ✅ *(kanıtın sınırı için aşağı bkz.)* |
@@ -486,6 +487,23 @@ dersinin (kayıt bayatlarsa turu KULLANICI tekrar koşar) doğrudan uygulaması.
 ⚠ Not: rövanş gerçek bir kullanıcıya (test hesabına değil) davet gönderdi.
 Bu maddeyi bir daha koşarken karşı tarafı T2/T3 gibi bir test hesabı seç —
 aksi halde gerçek bir oyuncuya bildirim ve e-posta gidiyor.
+
+⚠ **§3.1 önce ERKEN ✅ yazılmıştı, sonra gerçekten kapandı — ayrım önemli.**
+Turun ortasında "bildirim geliyor" maddesi geçmiş sayılmıştı, oysa o gün
+ölçülen şey **§3d**'nin "Sıra sende!" push'uydu (`notify-your-turn`). §3.1
+ise 24 saate yaklaşan sıra için `notify-deadline-warnings`'ün gönderdiği
+AYRI bir uyarı. İkisi farklı kanal; biri çalışıyor diye öteki kanıtlanmış
+olmuyor. Madde gün içinde gerçek uyarı düşünce kapandı ve **§3.1b** (aynı
+uyarının e-postasında "takdirde" yazımı) de aynı anda doğrulandı — o zaten
+yalnızca bu e-posta geldiğinde koşulabilen bir maddeydi.
+
+⚠ **`testing-bildirimler.md`'nin KUTULARI ile bu günlüğün TABLOSU ayrışmıştı.**
+Gün içinde geçen maddeler buradaki tabloya yazıldı ama asıl kontrol
+listesinde işaretlenmedi; kullanıcı fark etti. Bir sonraki tur o listeyi
+açık görüp maddeleri yeniden koşacaktı — yani bu, günün dersinin ta
+kendisinin ikinci kez tekrarlanması olurdu. İkisi aynı turda eşitlendi.
+**Kural: bir madde geçtiğinde işareti KONTROL LİSTESİNE düşülür; bu günlük
+turun anlatısıdır, kaydın kendisi değil.**
 
 ### Koşulmayanlar ve sebebi
 
