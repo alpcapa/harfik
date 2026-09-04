@@ -53,6 +53,7 @@ class FakeGamesGateway implements GamesGateway {
     required int durationSeconds,
     required bool multiSession,
     required bool endedBySurrender,
+    int? finishedAtMs,
   }) async {
     finishes.add({
       'user_id': userId,
@@ -60,6 +61,10 @@ class FakeGamesGateway implements GamesGateway {
       'duration_seconds': durationSeconds,
       'multi_session': multiSession,
       'ended_by_surrender': endedBySurrender,
+      // ⚠ Sahte uç bu alanı KAYDETMEK ZORUNDA: terk kaydının doğru güne
+      // yazıldığını yalnızca burası görebiliyor (gerçek uçta `created_at`
+      // olarak gidiyor).
+      'finished_at_ms': finishedAtMs,
     });
   }
 

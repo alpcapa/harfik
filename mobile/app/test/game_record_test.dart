@@ -16,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kelimeki/src/data/game_record.dart';
 import 'package:kelimeki/src/data/games_api.dart';
 import 'package:kelimeki/src/storage/app_storage.dart';
+import 'package:kelimeki/src/storage/local_save_store.dart' show abandonTimeout;
 import 'package:kelimeki/src/storage/pending_queue_store.dart';
 import 'package:kelimeki/src/util/platform.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
@@ -206,6 +207,38 @@ void main() {
       await repo.saveDurable(record);
       expect(gw.inserted, hasLength(1));
       expect(gw.notified, hasLength(1)); // hâlâ tek
+    });
+
+    // ⚠ 4 Eylül 2026, sahada görüldü: terk kaydı SÜPÜRMENİN koştuğu ana
+    // damgalanıyordu, sürenin dolduğu ana değil. Kullanıcı uygulamayı bir
+    // hafta sonra açtığında bir haftalık terkler hep "bugün"e düşüyordu —
+    // bir hesapta 19 kayıt tek bir saniyeye indi ve panelde "dün 38 teslim"
+    // diye göründü. Doğru an: son etkinlik + abandonTimeout (7 gün).
+    test('terk kaydı SÜPÜRME anına değil, sürenin DOLDUĞU ana yazılır',
+        () async {
+      final gw = FakeGamesGateway(userId: 'u-1');
+      final repo = await newRepo(gw);
+      final (state, _) = scenario('abandonedSurrender');
+
+      // Oyuna son dokunuş 30 gün önce; yani süre 23 gün önce doldu.
+      // Süpürme ise ŞİMDİ (fixedNow) koşuyor.
+      final sonEtkinlik =
+          fixedNow.subtract(const Duration(days: 30)).millisecondsSinceEpoch;
+      final beklenen = sonEtkinlik + abandonTimeout.inMilliseconds;
+
+      await repo.recordAbandoned(state, endedAtMs: sonEtkinlik);
+
+      // (a) Telemetri satırı
+      expect(gw.finishes.single['finished_at_ms'], beklenen,
+          reason: 'game_finishes süpürme anına yazılıyor');
+      // (b) `games` satırı — ikisi AYNI anı taşımalı, yoksa iki tablo farklı
+      //     güne düşer ve panel ile oyun geçmişi birbirini tutmaz.
+      expect(gw.inserted.single['created_at'],
+          DateTime.fromMillisecondsSinceEpoch(beklenen).toUtc().toIso8601String(),
+          reason: 'games satırı süpürme anına yazılıyor');
+      // (c) Ve bu an GERÇEKTEN geçmişte: 23 gün önce.
+      expect(DateTime.parse(gw.inserted.single['created_at'] as String)
+          .isBefore(fixedNow), isTrue);
     });
 
     test('normal bitişte terk bildirimi GİTMEZ', () async {

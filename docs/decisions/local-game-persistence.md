@@ -94,3 +94,73 @@ isteniyorsa tek seferlik bir temizlik sorgusu gerekir.
   **Doğrulama sınırı:** gerçek ağ kesintisiyle uçtan uca (uçak modunda oynayıp bağlantıyı geri getirme) bu ortamdan test EDİLEMEDİ — saf karar fonksiyonları + `tsc` + `npm run build` + Playwright duman testleriyle doğrulandı; elle koşulacak maddeler `TESTING.md` bölüm 4'e eklendi.
 
 - **Bitmiş oyunların offline/misafir kuyruğu (`src/utils/gameSync.ts`):** `saveGameDurable`, `buildGameRecord`'un (`src/utils/gameRecord.ts`) ürettiği kaydı önce hemen göndermeyi dener; bu başarısız olursa — çevrimdışıyken, ağ hatasında ya da bu cihazda hiç giriş yapılmamışken (misafir) — kaydı `localStorage`'a (`kelimeki:pending-games`, en fazla `MAX_PENDING_GAMES=300`, aşılırsa en eskiler düşer) kuyruklar. Her kayıt istemcide üretilen bir `id` (uuid) ve gerçek bitiş anını taşıyan bir `created_at` (ISO) içerir: `id`, kaybolan bir cevaptan sonra aynı kaydın tekrar denenmesi sunucuda ikinci bir satır açmasın diye — `saveGame` (`src/lib/api.ts`) bu durumda dönen "23505" (unique violation) hatasını başarı sayar; `created_at`, kayıt günler sonra senkronlanabildiğinden sunucunun `insert` anındaki varsayılan `now()`'ı yerine geçer, böylece oyun geçmişinde doğru kronolojik yere yerleşir. `flushPendingGames`, uygulama açılışında/`online` olayında/giriş durumu değişince (`App.tsx`'teki `useEffect([user])`) çağrılır; bu cihazda **daha önce hiç oturum yoksa** (saf misafir) ağa hiç dokunmadan hemen çıkar, kuyruk kişi bu cihazda giriş/kayıt yapana kadar sessizce bekler — o an geldiğinde tüm kuyruk o hesaba aktarılır. Kuyruk yalnızca tutulduğu cihaza özeldir; farklı cihazlarda ayrı ayrı birikir ve her biri kendi cihazında oturum açıldığında kendi kuyruğunu gönderir. Bir kayıt `created_at`'ten itibaren `PENDING_EXPIRY_MS` (7 gün — `gameStorage.ts`'teki `ABANDON_TIMEOUT_MS` ile aynı süre/gerekçe) içinde bu cihazda talep edilmezse (giriş/kayıt olunmazsa) `readQueue` onu sessizce düşürür; misafir 7 gün içinde giriş yaparsa tüm bekleyen oyunlar sanki baştan giriş yapmış gibi hesabına işlenir. 20 Temmuz 2026 rebrand'i (Harfik→Kelimeki) `PENDING_KEY`'i taşımadan yeniden adlandırdığından, o deploy'dan önce kuyruklanmış kayıtlar eski `harfik:pending-games` anahtarında mahsur kalmıştı — `migrateLegacyQueue` bunları bir kereliğine yeni anahtara taşıyıp bu sorunu giderdi.
+
+## ⚠ Terk kaydı SÜPÜRME anına yazılıyordu — "dün 38 teslim" (4 Eylül 2026)
+
+Kullanıcı admin panelinde gördü: *"Dün 38 terk gözüküyor. Bu mümkün mü?"*
+Dünkü 73 bitişin 38'i "Teslim" — %52.
+
+**Rakam gerçekti, TARİHİ yanlıştı.** Bunlar bir hafta önce terk edilmiş
+oyunların dün süpürülmesiydi.
+
+**Teşhis, yazılma deseninden çıktı** (tek kullanıcının 31 kaydı):
+
+```
+14:46:02.49 → 14:46:07.99    19 kayıt, 6 SANİYE
+15:29:18-19                   3 kayıt
+16:08:44                      2 kayıt
+16:52:27                      2 kayıt
+```
+
+19 oyun 6 saniyede oynanamaz; üstelik süreleri hepsi farklı (155 sn, 176,
+856, 361, 1074…), yani 19 ayrı gerçek oyun. Kullanıcının kendi geçmişi de
+doğruladı: 26-27 Ağustos'ta 17 oyun bitirmiş, 3 Eylül'de 1. **3 Eylül,
+27 Ağustos'un tam 7 gün sonrası** — `ABANDON_TIMEOUT_MS`. Gün içindeki
+küçük partiler eşiğin KAYAN bir pencere olmasından: 15:29'da süpürülenler
+27 Ağustos 15:29'da son dokunulmuş kayıtlar.
+
+**Kök sebep tek satır:** `buildGameRecord` `created_at`i
+`new Date().toISOString()` ile, yani kaydın OLUŞTURULDUĞU anla damgalıyordu.
+Normal bitişte doğru (kayıt bitişle aynı anda oluşuyor); terk yolunda yanlış,
+çünkü orada kayıt sürenin dolduğu an değil **kullanıcının uygulamayı bir
+sonraki açtığı an** oluşuyor. `logGameFinish` ise hiç damgalamıyordu,
+sunucunun `now()` varsayılanına düşüyordu.
+
+**Doğru an: son etkinlik + 7 gün.** Deterministik ve uygulamanın ne zaman
+açıldığından bağımsız. Artık iki yazıcıya da (`games` ve `game_finishes`)
+AYNI değer veriliyor — ayrışırlarsa panel ile oyun geçmişi birbirini tutmaz.
+
+**Yollar ve taşıdıkları an:**
+
+| Yol | Kaynak | Terk anı |
+|---|---|---|
+| Bulut kaydı süpürmesi (`refreshCloudSaves` → `penalizeAbandonedSave`) | `lastActiveMs` | `+ ABANDON_TIMEOUT_MS` |
+| localStorage kuyruğu (`takePendingAbandonedGame`) | `PendingAbandonedGame.expiredAtMs` (kuyruğa girerken hesaplanır) | doğrudan |
+| Port (`GamesRepo.recordAbandoned`) | `endedAtMs` | `+ abandonTimeout` |
+
+⚠ `expiredAtMs` **kuyruğa girerken** hesaplanıyor, tüketilirken değil —
+tüketim anı aylar sonra olabilir. Alan yoksa (bu değişiklikten önce kuyruğa
+girmiş kayıt) eski davranışa düşülür; geriye dönük doğru anı üretmenin yolu
+yok.
+
+**Sunucu kapısı — `_clamp_created_at` trigger'ı:** istemci artık
+`game_finishes.created_at` yazabildiğinden ileri tarih uydurulabilir hâle
+geldi (`games.created_at` zaten istemciden geliyordu, offline kuyruk için).
+İkisine de BEFORE INSERT trigger'ı kondu: `now() + 5 dk`'yı aşan damga
+sessizce `now()`a kırpılır.
+- **CHECK değil trigger:** `now()` volatile, Postgres CHECK'te kabul etmiyor.
+- **Reddetmiyor, kırpıyor:** saati ileri kurulmuş bir telefon yüzünden gerçek
+  bir oyun kaydını çöpe atmak, tarihi düzeltmekten pahalı.
+- **Yalnızca İLERİ tarihe:** geçmiş meşru — offline kuyruk, terk süpürmesi ve
+  misafirken oynanıp sonra hesaba taşınan oyunlar hep geçmiş yazar.
+
+**Geriye dönük düzeltme YAPILAMAZ ve yapılmadı:** yanlış tarihlenmiş
+satırların gerçek terk anını üretecek veri yok — `local_game_saves`
+satırları iddia edilirken siliniyor, `games` satırı da özgün `savedAt`i
+taşımıyor. Yani 3 Eylül'ün 38'i olduğu yerde kalıyor; düzelme bundan
+SONRAKİ süpürmelerde.
+
+**Ders:** bir kaydın `created_at`i "satırı ne zaman yazdım" değil "olay ne
+zaman oldu" sorusunun cevabı olmalı. Bu kod tabanında ikisinin ayrıştığı
+**üç** yol var (offline kuyruk, misafir migrasyonu, terk süpürmesi) ve
+ilk ikisi bunu zaten biliyordu — üçüncüsü atlanmıştı.

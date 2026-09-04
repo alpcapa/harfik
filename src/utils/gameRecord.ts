@@ -15,6 +15,17 @@ export function buildGameRecord(
   state: GameState,
   surrendered: boolean,
   surrenderingIndex?: number,
+  /**
+   * Oyunun gerçekten BİTTİĞİ an (epoch ms). Verilmezse "şimdi" kullanılır —
+   * normal bitişte doğrusu budur, kayıt bitişle aynı anda oluşuyor.
+   *
+   * ⚠ Terk-edilme yolunda VERİLMESİ ZORUNLU (4 Eylül 2026, kullanıcı sahada
+   * gördü): orada kayıt, sürenin dolduğu an değil kullanıcının uygulamayı
+   * BİR SONRAKİ AÇTIĞI an oluşuyor. Damgalanmayınca 7 gün önce terk edilmiş
+   * oyunlar bugüne yazılıyordu — bir kullanıcının 19 kaydı tek bir saniyeye
+   * düştü ve "dün 38 teslim" diye göründü. Doğru an: son etkinlik + 7 gün.
+   */
+  finishedAtMs?: number,
 ): NewGame | null {
   // Anlık teslim olma akışında bu, SURRENDER dispatch edilmeden HEMEN önce
   // (hâlâ eski state ile) çağrılır — o yüzden teslim olacak oyuncu burada
@@ -51,7 +62,7 @@ export function buildGameRecord(
   }));
   return {
     id: crypto.randomUUID(),
-    created_at: new Date().toISOString(),
+    created_at: new Date(finishedAtMs ?? Date.now()).toISOString(),
     player_score: human.score,
     ai_score: bestOpponentScore,
     result,
