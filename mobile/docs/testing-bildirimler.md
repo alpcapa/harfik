@@ -535,11 +535,27 @@ BİLİNÇLİ — gerekçe `config/env.dart` başlığında.
       kaldı** — yani linki AÇMAK sayacı artırmıyor, yalnızca başarılı bir
       kabul artırıyor. (Kendi linkine dokunulduğu için sunucu zaten
       reddediyor: *"Kendi linkinle arkadaş olamazsın."*)
-      ⏳ **Play yarısı açık:** aynı linkin UYGULAMAYI açması Play kurulumunda
-      koşulacak. Kabul akışının uygulama içi maddeleri de
+      ✅ **Play yarısı da geçti (4 Eylül 2026, aynı gün).** Play kanalından
+      kurulmuş 1.0.6 (525) pakette aynı linke telefondan dokunuldu →
+      **uygulama açıldı** (tarayıcı DEĞİL) ve uygulama içinde sunucunun
+      reddi göründü: *"Kendi linkinle arkadaş olamazsın."*
+      **Bu tek gözlem üç şeyi birden kanıtlıyor** ve bu yüzden "uygulama
+      açıldı"dan daha güçlü: (1) App Links doğrulaması GEÇTİ — kurulu paket
+      release imzalı, `assetlinks.json` parmak izi tutuyor; (2)
+      `deep_link.dart` token'ı ayrıştırıp doğru ekrana yönlendirdi; (3)
+      kabul RPC'si GERÇEKTEN çağrıldı ve hatası kullanıcıya taşındı — yani
+      yalnızca rota değil, zincirin tamamı çalışıyor.
+      Sunucudan teyit: T3'ün token'ında (`52370565…`) `use_count` **0'da
+      kaldı** — red sayacı artırmıyor, `.apk` turundaki ölçümle aynı.
+      ⚠ **Yan fayda — bu madde `.apk` ↔ `.aab` AYIRT EDİCİSİDİR:** `Derleme
+      <sha>` satırı ikisini ayıramaz (aynı koşudan, aynı sha). Bu ayırır:
+      link uygulamayı açıyorsa paket Play'in, tarayıcıyı açıyorsa yan
+      yüklenmiş `.apk`.
+      ⏳ **Kabul akışının uygulama içi maddeleri hâlâ açık**
       (`testing-arkadaslar-canli.md`: "artık arkadaşsınız", mükerrer
-      kontrolü, ağ hatasında davetin kaybolmaması, geçersiz token mesajı)
-      aynı sebeple o tura bağlı — hepsi linkin uygulamayı açmasını varsayıyor.
+      kontrolü, ağ hatasında davetin kaybolmaması, geçersiz token mesajı) —
+      ama artık gerekçe App Links DEĞİL: linkin uygulamayı açtığı
+      kanıtlandı. Tek engel **YENİ bir hesap** (aşağı bkz.).
       ⚠ O tur için YENİ bir hesap gerekecek: elimizdeki hesaplar
       (Ironman ↔ T3) zaten arkadaş, kabul akışı onlarla sınanamaz.
       ⚠ **LİNKE UYGULAMANIN KURULU OLDUĞU CİHAZDAN dokun** (29 Ağustos
