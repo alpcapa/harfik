@@ -43,6 +43,7 @@ import type { OnlineGame, OnlineGameSlot } from '../lib/database.types';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
 import { CountBadge } from './CountBadge';
+import { createAwayTracker } from '../utils/awayReturn';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { orderActiveGames, orderByExpiry } from '../utils/gameListOrder';
 import {
@@ -592,6 +593,12 @@ export function LiveGamesTab({
   // Son uygulanan hesabın id'si — `user` referansı hesap değişmeden de
   // değiştiğinden (aşağı bkz.) sıfırlama kararı buna göre veriliyor.
   const lastUserIdRef = useRef<string | null>(user?.id ?? null);
+  // Uzun bir aradan sonra öne dönüş = sekmeye yeniden giriş (bkz.
+  // `src/utils/awayReturn.ts` ve Setup.tsx'teki eşi). Kullanıcı "Son
+  // Oynananlar"dayken uygulamayı saatlerce arka planda bırakıp dönerse ve o
+  // arada bir davet geldiyse, ref tükendiği için varsayılan sekme kararı bir
+  // daha hiç verilmiyordu — badge artıyor ama davet görünmüyordu.
+  const awayTrackerRef = useRef(createAwayTracker());
 
   // Otomatik yeniden deneme merdiveni — kullanıcı "Tekrar Dene"ye basmak
   // ZORUNDA kalmasın diye. Bir yükleme düştüğünde ekran kendi kendini
@@ -797,16 +804,31 @@ export function LiveGamesTab({
     // online'ı da) neredeyse aynı anda tetiklediğinden `reload()`'u
     // doğrudan değil, realtime olaylarıyla aynı 300ms'lik `scheduleReload`
     // debounce'ından çağırıyoruz — art arda gelenler tek bir isteğe iner.
+    const markAway = () => awayTrackerRef.current.markAway();
     const onForeground = () => {
-      if (document.visibilityState === 'visible') scheduleReload();
+      if (document.visibilityState !== 'visible') return;
+      // Yeniden silahlanmak tek başına sekmeyi DEĞİŞTİRMEZ: aşağıdaki
+      // varsayılan-sekme effect'i yalnızca bekleyen bir DAVET varsa
+      // "Oyun Davetleri"ne geçiyor, yoksa kullanıcı bulunduğu sekmede
+      // kalıyor — yani bekleyen iş yokken dönüş hiçbir şeyi oynatmıyor.
+      if (awayTrackerRef.current.takeLongAway()) appliedDefaultTabRef.current = false;
+      scheduleReload();
     };
-    document.addEventListener('visibilitychange', onForeground);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') onForeground();
+      else markAway();
+    };
+    // `blur` şart — masaüstünde başka pencereye geçmek `visibilitychange`
+    // üretmiyor (bkz. Setup.tsx'teki aynı not).
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('blur', markAway);
     window.addEventListener('focus', onForeground);
     window.addEventListener('online', onForeground);
     return () => {
       token.current = true;
       unsubscribe();
-      document.removeEventListener('visibilitychange', onForeground);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('blur', markAway);
       window.removeEventListener('focus', onForeground);
       window.removeEventListener('online', onForeground);
       if (reloadTimeoutRef.current != null) window.clearTimeout(reloadTimeoutRef.current);

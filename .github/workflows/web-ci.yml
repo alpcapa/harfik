@@ -146,6 +146,11 @@ jobs:
             git diff -- mobile/app/test/goldens/initial_main_view.json
             exit 1
           fi
+      # "Uzun aradan sonra öne dönüş = ekrana yeniden giriş" eşiği
+      # (`src/utils/awayReturn.ts`). Aynı sebeple duman testiyle
+      # sınanamıyor: Setup'ın varsayılan-sekme effect'i yalnızca giriş
+      # yapılmış kullanıcıda ve Supabase yapılandırılmışken çalışıyor.
+      - run: npm run verify-away-return
 
       - run: npm run build
 

@@ -1369,6 +1369,32 @@ kayıtların panelde görünmesi ikincil.
       geri ver → doğru sekme yine de açılmalı (karar düşen istekte
       tüketilmez).
 
+**Arka plandan dönüş de bir "giriş" (Parça 124 — 21 Ağustos 2026'da
+yazıldı, 4 Eylül 2026'da kurtarıldı).** Varsayılan artık hesap başına DEĞİL,
+**ekrana giriş başına** bir kez uygulanıyor; uzun bir aradan sonra öne dönmek
+de giriş sayılıyor (eşik 5 dakika). Risk dengede: eşik yanlış tarafa düşerse
+kullanıcı bilerek oturduğu sekmeden koparılır, o yüzden negatif eşleri de koş.
+
+- [ ] **Uzun dönüş sekmeyi açar.** Girişli hesapla Setup'ta **"Yapay Zeka
+      ile"** sekmesinde dur, uygulamayı arka plana al. Bu arada karşı taraf
+      (T2) hamle yapsın ya da davet göndersin. **5 dakikadan uzun** bekleyip
+      uygulamaya dön: **"Arkadaşınla" sekmesi kendiliğinden açılmalı**
+      (bekleyen davet varsa "Oyun Davetleri" alt sekmesiyle).
+- [ ] **Negatif eş — kısa kesinti sekmeyi DEĞİŞTİRMEZ.** Bildirim bandını
+      aşağı çekip kapat, ya da uygulamadan çıkıp birkaç saniye sonra dön:
+      sekme aynı kalmalı (yalnızca rozet güncellenebilir). iOS'ta bu
+      `inactive` üretiyor — süre kısa olduğu için eşiği geçmemeli.
+- [ ] **Negatif eş — bekleyen iş yokken dönüş de yerinden etmez.** Canlı'da
+      hiçbir davet/hamle beklemiyorken 5+ dakika uzaklaşıp dön: "Yapay Zeka
+      ile" sekmesinde kalmalısın.
+- [ ] **Alt sekme de aynı kuralı izliyor.** "Arkadaşınla → Son Oynananlar"da
+      dururken uygulamayı 5+ dakika arka plana al, bu arada T2 sana DAVET
+      göndersin, dön: "Oyun Davetleri" alt sekmesi açılmalı. Davet yokken
+      (yalnızca sıra sende) alt sekme DEĞİŞMEMELİ — bu bilinçli.
+- [ ] **Oyun ekranı etkilenmiyor.** Açık bir Canlı oyunda uzun süre arka
+      planda kalıp dön: tahta/sıra normal tazelenmeli, hiçbir sekme/ekran
+      değişimi olmamalı (bu kural yalnızca Setup ve Canlı sekmesinde).
+
 ## 18. Telemetri — sürüm ve ekran adı (23 Ağustos 2026, Parça 130)
 
 Cihazda koşulur; karşılığı admin panelinin "Hatalar" sekmesi ve

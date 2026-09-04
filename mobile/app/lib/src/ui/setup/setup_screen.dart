@@ -49,6 +49,7 @@ import '../friends/friends_modal.dart' show showFriendInfoDialog;
 import '../../game/game_controller.dart';
 import '../../game/local_game_repo.dart';
 import '../../storage/local_save_store.dart' show abandonTimeout;
+import '../../util/away_return.dart';
 import '../../util/share_board.dart';
 import '../rank/league_rank.dart';
 import '../rank/rank_scores.dart';
@@ -164,6 +165,10 @@ class _SetupScreenState extends State<SetupScreen>
   /// Girişte "Arkadaşınla"ya otomatik geçiş — yalnızca hesap başına BİR
   /// KEZ (web `appliedLoginDefaultRef`); `_lastUserId` değişince sıfırlanır.
   bool _appliedLoginDefault = false;
+
+  /// Öne dönüşte "bu bir yeniden giriş mi?" sorusunu yanıtlar (web
+  /// `awayTrackerRef`).
+  final AwayTracker _awayTracker = AwayTracker();
 
   /// Web `lastAuthUserIdRef` (`useRef<string|null>(null)`) — React'te bu
   /// ref'in effect'i mount'tan HEMEN sonra bir kez kendiliğinden çalışıp
@@ -313,7 +318,23 @@ class _SetupScreenState extends State<SetupScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) return;
+    if (state != AppLifecycleState.resumed) {
+      _awayTracker.markAway();
+      return;
+    }
+    // Uzun bir aradan sonra dönüş = ekrana yeniden giriş: varsayılan sekme
+    // kararı yeniden silahlanır (bkz. `util/away_return.dart`). Tek başına
+    // sekmeyi DEĞİŞTİRMEZ — `_refreshLiveBadge` hâlâ yalnızca bekleyen bir
+    // iş varsa Canlı'ya geçiriyor, yani boş dönüşte kullanıcı yerinde kalır.
+    // Üstte bir oyun ekranı varsa bu dönüş Setup'a bir GİRİŞ değil: sekmeyi
+    // kullanıcının arkasında sessizce değiştirmemek için karar atlanır (yine
+    // de tüketilir — bir sonraki dönüş kendi süresini ölçsün). Webde bunun
+    // karşılığı yapısal: orada Setup oyun sırasında zaten unmount oluyor,
+    // yani ref'ler her dönüşte kendiliğinden tazeleniyor.
+    final setupVisible = ModalRoute.of(context)?.isCurrent ?? true;
+    if (_awayTracker.takeLongAway() && setupVisible) {
+      _appliedLoginDefault = false;
+    }
     _scheduleLiveBadgeRefresh();
     // Bulut senkronu da öne dönüşte tazelenmeli — web'in `refreshCloudSaves`
     // için kurduğu visibilitychange/focus/online dinleyicilerinin karşılığı
