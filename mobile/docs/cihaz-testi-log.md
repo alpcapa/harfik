@@ -382,6 +382,7 @@ imzalı olduğundan o davranış mağaza sürümünde değişecek.
 | §3.3 soğuk başlangıç (bildirimden) | ✅ |
 | Oturum kalıcılığı (öldür → simgeden aç) | ✅ |
 | §2.6 hesap silme (T5) | ✅ *(kanıtın sınırı için aşağı bkz.)* |
+| §4.4 `kelimeki://reset` şifre sıfırlama derin bağlantısı | ✅ 4 Eylül, sunucudan uçtan uca ölçüldü |
 | Galeri izni reddi + HEIC avatarı | ✅ geçen hafta, gerçek cihaz |
 | Sözlük yükleme SÜRESİ | ✅ geçen hafta, gerçek cihaz |
 | Uçak modunda kelime anlamı | ✅ geçen hafta, gerçek cihaz |
