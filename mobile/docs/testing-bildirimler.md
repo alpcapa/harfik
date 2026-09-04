@@ -37,6 +37,20 @@ kimliğinin ürüne gömülme sebebi bu (kök `CLAUDE.md` → "Deploy Doğrulama
       derlemeyle KARŞILAŞTIR** (`Derleme a1b2c3d · GG.AA SS:DD`).
       Tutmuyorsa teste devam etme — bayat derlemedesin.
 
+⚠ **TERS YÖN DE GEÇERLİ ve 4 Eylül 2026'da bir kez daha yaşandı** (kullanıcı:
+*"App'i açtım ama güncelleme gelmedi"*). Play'den kurulacak bir tur için
+**önce yan yüklenmiş `.apk`'yı kaldır** — Play onun üstüne KURAMAZ. Sebep
+0.1'in aynısı (imza farkı) ama sonucu sessiz: Play "güncelle" demez,
+uygulama içi güncelleme uyarısı da HİÇ çıkmaz.
+
+⚠ **`.apk`'nın `versionCode`'u 525 DEĞİL, 1'dir.** `--build-number` yalnızca
+`.aab` adımına veriliyor (`mobile-build.yml`), APK `pubspec.yaml`'ın `+1`ini
+alır. Yani aynı koşudan çıkan iki paketin sürüm ADI aynı (1.0.6), sha'sı
+aynı, `versionCode`'u FARKLI. **Sonuç: Setup'ın teşhis satırındaki sha
+"hangi paket kurulu" sorusunu AYIRT EDEMEZ** — `.apk` ile `.aab` aynı sha'yı
+gösterir. Ayırt etmenin yolu Play Store ürün sayfası: "Yükle" diyorsa
+kurulu kopya Play'in değildir.
+
 ## 1. Bildirim izni akışı
 
 Tetikleyici bilerek açılış/giriş DEĞİL: **Canlı sekmesi açıldı VE en az bir
