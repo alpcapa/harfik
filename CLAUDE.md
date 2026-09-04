@@ -132,6 +132,30 @@ komutluk bir grep taraması da var.
 - Her feature/fix ayrı branch → PR → main'e merge
 - Main'e merge = Vercel otomatik deploy tetiklenir
 
+**Bir dal PR'sız BIRAKILMAZ (4 Eylül 2026, kullanıcı isteği).** Oturum
+biterken dalda iş varsa iki seçenek vardır: PR aç, ya da dalı sil. Üçüncü
+seçenek — "dursun, sonra bakarız" — bu depoda İKİ gerçek işi kaybetti:
+`origin`'de duran sekiz eski `claude/*` dalı tarandığında, ikisinin `main`'e
+HİÇ girmemiş iş taşıdığı görüldü (mağaza başlık görseli üreticisi, 22
+Ağustos; ve kullanıcının bildirdiği bir hatanın web+port düzeltmesi, 21
+Ağustos). İkisi de iki hafta boyunca kayıptı ve yalnızca dal temizliği
+sırasında, tesadüfen bulundu. Kurtarma bedeli ayrıca düz bir cherry-pick
+değildi: `main` o arada ilerlediğinden ikisi de elle uyarlandı (PR #441).
+Bir dalı bilerek açık bırakıyorsan nedenini ve sıradaki adımı `ROADMAP.md`'ye
+yaz — dalın kendisi bir hatırlatıcı DEĞİL, kimse ona bakmıyor.
+
+⚠ **"Bu dal merge edilmiş mi?" sorusunu commit sayısıyla cevaplama — üç
+tuzağı da bu depo tek turda yaşadı:**
+
+| Tuzak | Neden yanıltıyor | Doğrusu |
+|---|---|---|
+| `git log main..dal` | Depo **squash** merge ediyor; merge edilmiş dalın commit'leri `main`'de ayrı SHA olarak GÖRÜNMEZ, dal "1500 commit ileri" çıkar | Commit'in getirdiği İÇERİĞİ `main`'de ara (dosya/sembol/metin) |
+| Sığ klon | Oturumun klonu 50 commit'likti; `merge-base` boş dönüp dallar "ilgisiz geçmiş" gibi göründü | Önce `git fetch --unshallow` |
+| Harf duyarlı `grep` | "AYRI zamanlarda" yazan bir not "ayrı zamanlarda" aranınca bulunamadı, merge edilmiş bir dal "kayıp iş var" sanıldı | Türkçe metinde `grep -i`; İ/ı dönüşümü için ayrıca `trUpper`/`trLower` refleksi |
+
+`git cherry` de tek başına YETMEZ: yama-kimliği eşitliği arar, sonradan
+farklı bağlamda yeniden inen bir değişikliği "yok" işaretler.
+
 ## Belgeleri Güncel Tutma
 
 Anlamlı bir değişiklik yapıldığında (yeni dosya/component/util/hook, klasör yapısı değişikliği, sözlük kelime sayısı gibi somut rakamlar, migration/akış değişikliği vb.) **standart olarak** hem bu dosyayı (`CLAUDE.md`) hem de `README.md`'yi kontrol et ve gerekiyorsa aynı PR'da güncelle — özellikle "Klasör Yapısı" (burada) ve "Proje Yapısı" (`README.md`) ağaçları, ve `README.md`'deki kelime sayısı gibi rakamlar zamanla koddan kopabiliyor (23 Temmuz 2026'da fark edildi: README hâlâ eski **92.503** kelime rakamını taşıyordu, gerçek liste sonradan yapılan çok-sözcüklü madde temizlikleriyle ~64 bine düşmüştü; ayrıca `ErrorBoundary`/`PlayerBadge`/`useModalA11y`/`useOnlineStatus`/`gameStorage`/`gameSync`/`feedbackSync`/`onboarding`/`ranking`/`visitTracking` gibi dosyalar hiç listeye girmemişti). Bu bir "fırsat bulunca yapılır" işi değil — migration senkron kontrolü (aşağıda, "Migration'lar" bölümü) gibi asıl işin bir parçası say.
