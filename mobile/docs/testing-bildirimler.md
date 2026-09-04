@@ -169,7 +169,7 @@ YALNIZCA `_HomeGate`'in açılış çağrısıyla açıklanabilir.
 `notify-deadline-warnings` cron'u süresi dolmak üzere olan sıraları
 uyarıyor; push e-postanın YANINDA gidiyor, yerine değil.
 
-- [ ] **3.1 Bildirim geliyor.** İki hesapla bir Canlı oyun kur, sıranın son
+- [x] **3.1 Bildirim geliyor.** İki hesapla bir Canlı oyun kur, sıranın son
       tarihini uyarı penceresine sokacak şekilde bekle (ya da fonksiyonu
       elle tetikle) → cihaza bildirim düşmeli, başlık/gövde Türkçe ve
       okunur olmalı.
@@ -185,11 +185,17 @@ uyarıyor; push e-postanın YANINDA gidiyor, yerine değil.
         KALDIRILIP yeniden kurulunca banner geldi. Kanal önemiyle ilgili bir
         şey test ederken önce uygulamayı kaldır — yoksa doğru kodu yanlış
         sanırsın.
-- [ ] **3.1b Aynı uyarının E-POSTASINDA "takdirde" yazmalı** — "taktirde"
+- [x] **3.1b Aynı uyarının E-POSTASINDA "takdirde" yazmalı** — "taktirde"
       değil. Düzeltme repoda duruyordu ama hiç canlıya çıkmamıştı; push
       dağıtımıyla birlikte gitti.
-- [ ] **3.2 Bildirime dokun** → uygulama açılmalı ve **doğru Canlı oyun**
+      ✅ **4 Eylül 2026: §3.1 ile BİRLİKTE koşuldu ve geçti** (1.0.6, sha
+      `711eaaa`) — süre uyarısı cihaza düştü ve aynı uyarının e-postasında
+      yazım doğru çıktı. Kaynak da tutuyor:
+      `notify-deadline-warnings/index.ts` → *"hamle yapmadığınız takdirde"*.
+- [x] **3.2 Bildirime dokun** → uygulama açılmalı ve **doğru Canlı oyun**
       gelmeli (yanlış oyun ya da yalnızca Setup değil).
+      ✅ **4 Eylül 2026: geçti** (1.0.6, `711eaaa`) — hem arka plandan
+      (`onMessageOpenedApp`) hem soğuk başlangıçtan (§3.3) doğru oyun açıldı.
 - [x] **3.3 Uygulama TAMAMEN kapalıyken** (soğuk başlangıç) aynı test.
       ✅ **4 Eylül 2026: geçti** (1.0.6, `d07c06d`) — üstelik zor dalından:
       uygulama girişsiz açıldı, giriş yapılınca doğru oyun DOĞRUDAN açıldı.
@@ -197,9 +203,17 @@ uyarıyor; push e-postanın YANINDA gidiyor, yerine değil.
       ⚠ Girişsiz açılış oturum kalıcılığı hatası SANILDI; ölçüldü ve değil
       (öldür → simgeden aç = girişli). Test boyunca aynı hesap hem web'de
       hem telefonda açıktı, token o yüzden bir kez geçersizleşti.
-- [ ] **3.4 Bildirimi kapatmış bir kullanıcıya push GİTMEMELİ**
+- [x] **3.4 Bildirimi kapatmış bir kullanıcıya push GİTMEMELİ**
       (`profiles.push_notifications_enabled = false`) — ama **e-posta yine
       gitmeli**. İkisi ayrı kanal.
+      ✅ **4 Eylül 2026: push yarısı ÖLÇÜLDÜ ve geçti.** Bayrak SQL ile
+      kapatıldı, rakip oynadı, `net._http_response.content` **`pushed: 0`**
+      döndü (bayrak açıkken aynı yol `pushed: 1` veriyordu); bayrak hemen
+      geri açıldı. 10 dk bastırması elendi — hedefin o oyundaki son hamlesi
+      32 dk öncesindeydi.
+      ⚠ **E-posta yarısı bu yoldan sınanamaz:** `notify-your-turn`ün e-posta
+      kanalı BİLEREK yok (kaynağında yazılı). O yarı `notify-deadline-warnings`
+      penceresi çıktığında koşulur.
       ⚠ **Bu tercihin ARAYÜZÜ YOK ve bu bilinçli** (29 Ağustos 2026, kullanıcı
       kararı): *"Bildirim ayarlarını app'den yönetemiyor, ayarlara
       gönderiyorsa yapmanın bir anlamı yok. Kullanıcı ayarlara gider yapar."*
@@ -223,6 +237,13 @@ uyarıyor; push e-postanın YANINDA gidiyor, yerine değil.
       elle tetikleyip `push_tokens`a bakmak yeterli; temizlik sunucuda oluyor.
 
 ## 3b. Davet bildirimleri (Faz 2, 30 Ağustos 2026 — SUNUCU tarafı canlı)
+
+✅ **4 Eylül 2026 — bölüm cihazda koşuldu ve GEÇTİ** (1.0.6, sha `711eaaa`;
+kullanıcı: *"3b, e, f ok"*). ⚠ İki alt madde bu turda YAPISAL OLARAK
+koşulamadı ve açık sayılmalı: **3 gün cevapsız istek için günlük cron
+hatırlatıcısı** (elle tetiklenemez, beklemek gerekiyor) ve **"1.0.2 ve
+öncesinde dokunmak bir yere götürmez"** notu (1.0.6'da konusuz — yönlendirme
+zaten var).
 
 Üç yeni push kanalı deploy edildi. **Sürüm gerekmedi**, sahadaki paket
 token'ı zaten kaydediyordu — yani 1.0.1'i olan bir testçi de bunları alır.
@@ -308,6 +329,20 @@ davranış, çelişki değil.
 
 ## 3d. "Sıra sende" bildirimi (Faz 4 — SUNUCU; deploy edildiyse her sürümde çalışır)
 
+✅ **4 Eylül 2026 — bölümün ölçülebilir maddeleri koşuldu ve GEÇTİ**
+(1.0.6, sha `711eaaa`). Üçü sunucudan da doğrulandı: bildirimin gelmesi
+(`pushed: 1`), **hamleyi yapana gelmemesi**, ve **10 dk bastırması** —
+sonuncusu, hedefin o oyundaki son hamlesinden 70 sn sonra tetiklenen
+devirde `http_post`un HİÇ yapılmamasıyla ölçüldü. ⚠ **YZ dalı koşulmadı**
+(4 kişilik + YZ'li bir Canlı oyun gerekiyor) ve **oyun bitiren hamlede
+kimseye gitmemesi** de ayrıca sınanmadı.
+
+⚠ **Bu bölümü koşarken uygulamanın ARKA PLANDA olması şart** (madde zaten
+"sen uygulamada DEĞİLKEN" diyor): kodda `FirebaseMessaging.onMessage`
+dinleyicisi YOK, yani uygulama ön plandayken bildirim hiç gösterilmez.
+4 Eylül'de bu bir turda "bildirim gelmedi" diye yanlış teşhise yol açtı;
+sunucu `pushed: 1` döndüğü için ayırt edilebildi.
+
 Tetikleyici sunucuda (trigger + `notify-your-turn`), yani 1.0.1/1.0.2 dahil
 her istemcinin hamlesi bildirim üretir; yalnızca DOKUNUNCA tahtaya gitme
 1.0.3 ister (§3c).
@@ -348,6 +383,11 @@ her istemcinin hamlesi bildirim üretir; yalnızca DOKUNUNCA tahtaya gitme
 
 ## 3e. Bildirim ÇAKIŞTIRMA + simge rozeti (31 Ağustos 2026 — SUNUCU; her sürümde)
 
+✅ **4 Eylül 2026 — bölüm cihazda koşuldu ve GEÇTİ** (1.0.6, sha `711eaaa`;
+kullanıcı: *"3b, e, f ok"*). ⚠ **Arkadaşlık isteği + 3 gün sonraki
+hatırlatıcısının aynı satıra çakışması** açık kalmalı — hatırlatıcı cron'u
+beklemek gerekiyor.
+
 Bir kullanıcı uygulama simgesinde **9** rozetinin takılı kaldığını bildirdi.
 Rozet uygulamanın kendi sayacı DEĞİL: Samsung One UI onu panelde **hâlâ
 duran** bildirimlerden türetiyor. Etiket olmadığı için aynı oyunun her "sıra
@@ -377,6 +417,13 @@ sahaya çıkmadı → §3f. Yani burada "rozet 0 oldu" ARAMA; aranan şey rozeti
       teşhis yanlış demektir, bildir.
 
 ## 3f. Rozet SIFIRLAMA + sürüm damgası (31 Ağustos 2026 — SÜRÜM İSTER, henüz çıkmadı)
+
+✅ **4 Eylül 2026 — bölüm KOŞULABİLİR HALE GELDİ ve GEÇTİ** (1.0.6, sha
+`711eaaa`; kullanıcı: *"3b, e, f ok"*). Başlıktaki "henüz çıkmadı" ve
+"`c1c0437` görüyorsan ATLA" uyarısı ARTIK GEÇERSİZ: kod 1.0.5 ile sahaya
+çıktı. Sürüm damgası ayrıca sunucudan doğrulandı — `push_tokens` satırı
+`app_version = 1.0.6` yazdı ve token yaşam döngüsü boyunca (§2.2-§2.5) her
+yeniden kayıtta güncel kaldı.
 
 ⚠ **Bu bölüm 1.0.3'te KOŞULAMAZ.** İkisi de istemci değişikliği ve sürüm
 bilerek yükseltilmedi (kullanıcı kararı: işler toplu çıkacak). Buradaki
