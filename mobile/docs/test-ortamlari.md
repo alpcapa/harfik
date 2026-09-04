@@ -16,6 +16,14 @@ Bu dosyada dört bölüm var (hepsi `mobile/TESTING.md`den olduğu gibi taşınd
 
 ---
 
+⚠ **Appetize'ın Android ve iOS uygulamaları AYRI zamanlarda tazelenir**
+(3 Eylül 2026'da ölçüldü): ikisi `mobile-build.yml`in AYRI işlerinde ayrı
+`publicKey`lere yükleniyor — Android işi ~8 dakikada biter, iOS macOS
+runner'ında ~15 dakika sürer. Yani merge'den sonraki pencerede Android app'i
+TAZE, iOS app'i hâlâ ESKİ derlemedir. Panelde *"updated N hours ago"*
+görmek bir arıza değil, bu farkın kendisi olabilir. **Tazeliğin kesin
+ölçüsü panel metni DEĞİL, Setup ekranındaki `Derleme <sha>` satırıdır.**
+
 ## Web derlemesi (ücretsiz tarayıcı test ortamı)
 
 **Adres:** `https://alpcapa.github.io/kelimeki/` — `main`e giren her mobil
