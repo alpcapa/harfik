@@ -306,6 +306,15 @@
        hiçbir şey zorlamıyordu. Ortak dosyaya çıkarıldı, iki taraf aynı
        vakalarla testli: `npm run verify-game-list-order` +
        `game_list_order_test.dart` (10 vaka, yön iddiaları negatif eş).
+     - ✅ **CİHAZDA DOĞRULANDI (3 Eylül 2026, kullanıcı — Appetize/Android):**
+       *"Sıralama doğru geliyor."*
+       ⚠ Yol üstünde ölçülen işletim ayrıntısı: **Appetize'ın Android ve iOS
+       uygulamaları AYRI işlerde, AYRI zamanlarda yükleniyor** (Android işi
+       ~8 dk, iOS macOS runner'ında ~15 dk). Yani merge'den hemen sonra
+       Android app'i tazeyken iOS app'i hâlâ bir önceki derlemedir —
+       panelde "updated N hours ago" görülmesinin sebebi budur, arıza değil.
+       Tazeliğin kesin ölçüsü panel metni değil, Setup'taki
+       `Derleme <sha>` satırı.
      - Davetler/bekleyenler `created_at`e (davet süresi ondan işliyor),
        yerel YZ kayıtları `updated_at`e (7 günlük silinme ondan işliyor)
        göre ARTAN. İkisinin de depo sorgusu `desc` döndüğü için sıra
