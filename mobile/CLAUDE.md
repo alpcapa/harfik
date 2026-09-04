@@ -687,6 +687,18 @@ mobile/
                              #     Parça 158). Hizalama buna BAĞLI DEĞİL — (a) ve
                              #     (b) 28 Ağustos'a kadar aynı yola bağlıydı ve
                              #     hata tam oradan çıktı (Parça 159)
+      ui/online_games_scope.dart # OnlineGamesScope — Canlı oyun DEPOSUNUN ağaç
+                             # genelinde erişilebilir hâli (InheritedWidget,
+                             # kökte bir kez). Tüketicisi bugün oyun
+                             # geçmişindeki "Tekrar Oyna" (rövanş): depo o
+                             # modala kadar hiç taşınmıyordu ve elden geçirmek
+                             # İKİ zinciri birden değiştirmeyi gerektiriyordu
+                             # (setup→RecentGamesSection, account_button→
+                             # ScoreCardModal). Aynı gerekçe online_scope.dart'ta
+                             # yazılı; ayrıca showGameHistory'nin beş çağrı
+                             # yerinden birinin auth geçmemesi yüzünden kafa
+                             # kafaya çubuğu bir kez sessizce kaybolmuştu
+                             # (Parça 185)
       ui/online_scope.dart   # OnlineScope — bağlantı durumunun AĞAÇ GENELİNDE
                              # erişilebilir hâli (InheritedNotifier, kökte bir
                              # kez kurulur). Tüketicisi bugün KAvatar: çevrimiçine
