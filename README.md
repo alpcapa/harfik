@@ -214,6 +214,8 @@ src/
     ├── pwa.ts             # PWA/service worker yardımcıları
     └── database.types.ts  # şema tipleri
 
+.claude/                   # oturum başlangıç hook'u: npm install + Flutter SDK +
+                           # pub get (Dart testleri yerelde koşabilsin)
 marketing/                 # reklam/tanıtım + mağaza çıktıları — üretilmiş görsel/metin;
                            # uygulamaya girmez (node scripts/sponsored-post/build.mjs)
 └── store/                 # mağaza listeleme görselleri (npm run generate-store-header)

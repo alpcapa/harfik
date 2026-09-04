@@ -32,7 +32,7 @@ on:
       keep:
         description: 'Korunacak dallar (virgülle ayrılmış)'
         type: string
-        default: 'main,claude/word-game-flutter-port-dr9dos'
+        default: 'main'
       min_age_days:
         description: 'Bu kadar günden YENİ dallara dokunma (0 = yaş filtresi yok)'
         type: string

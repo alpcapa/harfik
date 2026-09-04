@@ -213,7 +213,17 @@ Bu adımın 15 Ağustos 2026'da nasıl kırıldığı (boşluk taşıyan bir
 *"koşu yok"* demeden önce hangi filtrenin neyi elediği:
 `mobile/docs/deploy-verification.md`.
 
-## Flutter SDK bu ortama İNDİRİLEBİLİR — Dart'ı körlemesine yazma (26 Ağustos 2026)
+## Flutter SDK bu ortamda HAZIR — Dart'ı körlemesine yazma (26 Ağustos 2026;
+## 4 Eylül 2026'da otomatikleşti)
+
+⚠ **Aşağıdaki elle kurulum artık oturum başında KENDİLİĞİNDEN yapılıyor**
+(`.claude/hooks/session-start.sh`): Flutter stable indirilir, iki paketin
+`pub get`i çözülür ve `flutter`/`dart` PATH'e girer. Yani `flutter test`,
+`dart analyze` ve `dart run test/run_all.dart` doğrudan koşulabilir —
+soğuk konteynerde ~2,5 dk, sonraki oturumlarda ~2 sn (önbellekli).
+Blok, hook koşmadığı bir bağlamda (yerel makine, hook devre dışı) elle
+yapmak için duruyor.
+
 
 Uzun süre "bu ortamda Flutter SDK yok, kanıt CI" diye çalışıldı. **Bunun
 bedeli o gün ödendi:** `board_widget.dart`'ta bir blok taşınırken fazladan
