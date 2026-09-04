@@ -187,6 +187,38 @@ kez görülmesi — o an tez biter. Görülene kadar planlama **12'yi taban**
 kabul etsin, ama *"biri düşerse sayaç sıfırlanır"* iddiası KESİN
 yazılmasın. Kaynak kayıt: `marketing/play-store/console-formlari.md` §7.
 
+## Sıradaki sürüme binecekler — `main`'de var, MAĞAZADA yok (4 Eylül 2026)
+
+Kullanıcı kararı: *"sürüme gönderme, daha üzerine yeni işler gelecek."*
+Yani `main` ile mağazadaki paket bilerek ayrışıyor; bu bölüm o farkı
+görünür tutuyor, çünkü fark tam da unutulmaya müsait yerde duruyor —
+`main` yeşil, web canlı, CI derlemesi hazır, ama Play'e giden hiçbir
+otomatik yol YOK (gönderim elle).
+
+**Kapalı testteki paket:** 1.0.6 (525) = commit `711eaaa` (#431).
+**O paketten beri porta dokunan tek iş:** `f75a12c` (#441) — *arka plandan
+dönüş artık "ekrana giriş" sayılıyor* (`away_return.dart` yeni,
+`setup_screen.dart` + `live_games_tab.dart` bağlandı). Yani sıradaki
+sürümün şu anki içeriği bundan ibaret; yeni işler geldikçe bu satır büyür.
+
+**Göndermeden önce, sırayla:**
+
+1. **Sürüm adını elle artır — İKİ dosya birden:** `mobile/app/pubspec.yaml`
+   (`version:`) **ve** `mobile/app/lib/src/config/env.dart` (`appVersion`).
+   İkisi parite testiyle zorunlu tutuluyor, biri unutulursa CI düşer.
+   Derleme numarası (`versionCode`) ELLE VERİLMEZ — CI `--build-number` ile
+   `github.run_number`ı basıyor, yani her koşu Play için yeni ve artan.
+2. **Cihaz turu:** `mobile/TESTING.md` bölüm 17'deki away-return maddeleri —
+   özellikle ÜÇ NEGATİF EŞ (kısa alt-tab sekmeyi değiştirmemeli, bekleyen
+   iş yokken dönüş yerinden etmemeli, açık oyun ekranında dönüş sekme
+   değiştirmemeli). Asıl risk pozitif dalda değil bunlarda: eşik yanlış
+   tarafa düşerse kullanıcı bilerek oturduğu sekmeden koparılır.
+3. **Test ettiğin paketin TAZE olduğunu doğrula:** Setup'taki
+   `Derleme <sha>` satırı `main`'in başıyla aynı olmalı. Appetize'da
+   Android ve iOS AYRI zamanlarda tazeleniyor (bkz.
+   `mobile/docs/test-ortamlari.md`), yani iOS'ta eski derlemeyi test etmek
+   kolay bir hata.
+
 ## Modeller — hangi iş için hangisi
 
 Ölçüt maliyet değil **hata bedeli** ve **ufuk uzunluğu**:
