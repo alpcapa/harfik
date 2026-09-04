@@ -493,8 +493,22 @@ BİLİNÇLİ — gerekçe `config/env.dart` başlığında.
 - [ ] **4.3 CI `.apk`'sında 4.1'i tekrarla** → link **tarayıcıda** açılır
       (App Links doğrulaması debug imzada geçmez). Bu BEKLENEN sonuç; hata
       ekranı olmadığı sürece geçer sayılır.
-- [ ] **4.4 Şifremi unuttum** → `kelimeki://reset` linki uygulamayı açmalı
+- [x] **4.4 Şifremi unuttum** → `kelimeki://reset` linki uygulamayı açmalı
       ve şifre değiştirme penceresi gelmeli (custom şema, imzadan bağımsız).
+      ✅ **4 Eylül 2026: geçti** (1.0.6, sha `711eaaa`, DEBUG imzalı CI
+      APK'sı — madde imzadan bağımsız olduğu için bu yeterli kanıt).
+      **Sunucu kaydından uçtan uca ölçüldü**, "uygulama açıldı" gözlemine
+      bırakılmadı:
+      `12:11:59 user_recovery_requested (referer kelimeki://reset)` →
+      **`12:13:55 GET /verify → 303, referer kelimeki://reset`** (link
+      dokunuldu, sunucu özel şemaya yönlendirdi) →
+      `12:13:56 login provider=recovery grant_type=pkce` →
+      `12:14:25 user_modified (PUT /user)`.
+      Şifre değişince **otomatik giriş** olması bir yan etki değil, `recovery`
+      sağlayıcısıyla açılan oturumun tasarlanmış davranışı.
+      ⚠ Linke MUTLAKA uygulamanın kurulu olduğu cihazdan dokunulmalı —
+      iPad'den açılırsa `kelimeki://` şemasını karşılayan uygulama olmadığı
+      için test sessizce geçersiz olur (aynı tuzak madde 4.5'te de yazılı).
 - [ ] **4.5 Arkadaş davet linki** (`https://kelimeki.com/davet/<token>`) —
       Play derlemesinde uygulamayı, `.apk`da tarayıcıyı açar; ikisi de
       geçerli.

@@ -34,6 +34,11 @@ parça" demek. Ayrıntı ve bu kuralın atlanmasının bedeli: `mobile/CLAUDE.md
   ekranında hesap/giriş girişi görünüyorsa gömülmüştür; görünmüyorsa APK
   offline modda derlenmiş demektir (sırlar eksik ya da yanlış adla
   girilmiş).
+- ⚠ **T2 = Google Play'e verilen test hesabı (4 Eylül 2026).** Play
+  incelemesi bu hesapla giriş yapıyor, yani **şifresi DEĞİŞTİRİLEMEZ** ve
+  şifre sıfırlama gibi maddelerde kullanılamaz. Bu tür testler için T3 ya da
+  `erkantest26` seç. (Hesap silme maddesinde T5 kullanılmış ve silinmiştir;
+  elde T2, T3, erkantest26 kaldı.)
 - İki test hesabı (ör. T1/T2) ve **aynı hesapla açılmış bir web oturumu**:
   bu listenin en değerli maddeleri web ↔ mobil aynı veriyi görüyor mu diye
   soruyor.
