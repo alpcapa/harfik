@@ -37,6 +37,20 @@ kimliğinin ürüne gömülme sebebi bu (kök `CLAUDE.md` → "Deploy Doğrulama
       derlemeyle KARŞILAŞTIR** (`Derleme a1b2c3d · GG.AA SS:DD`).
       Tutmuyorsa teste devam etme — bayat derlemedesin.
 
+⚠ **TERS YÖN DE GEÇERLİ ve 4 Eylül 2026'da bir kez daha yaşandı** (kullanıcı:
+*"App'i açtım ama güncelleme gelmedi"*). Play'den kurulacak bir tur için
+**önce yan yüklenmiş `.apk`'yı kaldır** — Play onun üstüne KURAMAZ. Sebep
+0.1'in aynısı (imza farkı) ama sonucu sessiz: Play "güncelle" demez,
+uygulama içi güncelleme uyarısı da HİÇ çıkmaz.
+
+⚠ **`.apk`'nın `versionCode`'u 525 DEĞİL, 1'dir.** `--build-number` yalnızca
+`.aab` adımına veriliyor (`mobile-build.yml`), APK `pubspec.yaml`'ın `+1`ini
+alır. Yani aynı koşudan çıkan iki paketin sürüm ADI aynı (1.0.6), sha'sı
+aynı, `versionCode`'u FARKLI. **Sonuç: Setup'ın teşhis satırındaki sha
+"hangi paket kurulu" sorusunu AYIRT EDEMEZ** — `.apk` ile `.aab` aynı sha'yı
+gösterir. Ayırt etmenin yolu Play Store ürün sayfası: "Yükle" diyorsa
+kurulu kopya Play'in değildir.
+
 ## 1. Bildirim izni akışı
 
 Tetikleyici bilerek açılış/giriş DEĞİL: **Canlı sekmesi açıldı VE en az bir
@@ -66,13 +80,37 @@ var mı).
       Not: bu turda pencerenin YENİDEN çıkabilmesinin sebebi §2.2'de
       bildirimlerin sistem ayarlarından kapatılmış olmasıydı; izin durumu
       sıfırlanınca soru yeniden anlamlı hale geliyor.
-- [ ] **1.4 "ŞİMDİ DEĞİL" sistem denemesi HARCAMAMALI.** Bas → sistem
+- [x] **1.4 "ŞİMDİ DEĞİL" sistem denemesi HARCAMAMALI.** Bas → sistem
       diyaloğu ÇIKMAMALI. Uygulamayı kapat-aç, Canlı sekmesini yeniden aç →
       pencere **hemen tekrar çıkmamalı** (7 gün aralık).
-      ⏳ **4 Eylül 2026'da KOŞULMADI ve bu bilinçli:** aynı turda 1.5 seçildi
+      ✅ **4 Eylül 2026: geçti** (1.0.6). Kullanıcı "ŞİMDİ DEĞİL"e bastı ve
+      **Android'in diyaloğu çıkmadı** — maddenin sınadığı şey bu.
+      ⚠ **Kanıtın türü: kullanıcı gözlemi, ölçüm DEĞİL.** Bu maddenin
+      sunucuda izi yok (bayrak cihazda, `SharedPreferences`); doğrulanacak
+      başka bir yer de yok. İkinci yarısı (kapat-aç sonrası pencerenin
+      hemen geri gelmemesi) ayrıca RAPOR EDİLMEDİ — 7 günlük aralığın
+      kendisi `push_rules.dart`'ta testli olduğu için ayrıca koşulması
+      istenmedi.
+      ⚠ **Bu madde bir kez YANLIŞ KAPALI sanıldı ve bir kez de fazladan
+      açık kaldı** — dersi ikisinde de aynı: *"Bunlar ok"* gibi bir onay
+      HANGİ maddeyi kapattığını söylemez. Kullanıcı 1.4+1.5'i sorup
+      *"Bunlar ok"* dediğinde ben bunu "açıklama tamam" diye okudum, o ise
+      "ikisi de geçti" demek istemişti; ayrıca dayanak gösterdiği gözlem
+      (*"ok deyince Android dialogu çıkıyor"*) 1.5'in yolu, 1.4'ünkü değil.
+      **Kural: grup onayını tiklemeden önce hangi maddeleri kapsadığını
+      TEK TEK teyit et** — bu turda §3.1'de de aynı sınıf hata yapılmıştı.
+      Öncesinde şöyle yazıyordu: *4 Eylül 2026'da KOŞULMADI ve bu bilinçli:* aynı turda 1.5 seçildi
       (izin verildi), ikisi birbirini tüketiyor. Play kapalı testinden
       yapılacak TEMİZ kurulumda koşulacak — o kurulum aynı zamanda §4.1'i
       (App Links ile kayıt onayı) da karşılıyor, yani ikisi tek turda biter.
+      ⚠ **O kurulum 4 Eylül'de YAPILDI** (kullanıcı `.apk`'yı silip kapalı
+      test kanalından 1.0.6'yı kurdu; §4.5 ile kanıtlandı). Yani bu madde
+      ARTIK ENGELLİ DEĞİL, koşulmayı bekliyor: kaldırma hem bizim 7 günlük
+      bayrağımızı hem Android'in izin verisini sildiğinden pencere yeniden
+      çıkacak. **Bedeli §1.5 değil** (o zaten geçti, işaretli) — bedeli bu
+      kurulumda bildirimlerin kapalı kalması; §2/§3 izin ister ama onlar da
+      geçti ve FCM imzadan bağımsız olduğu için Play derlemesinde yeniden
+      koşulmaları gerekmiyor.
 - [x] **1.5 "BİLDİRİMLERİ AÇ".** Bas → **Android'in kendi** izin diyaloğu
       çıkmalı. İzin ver.
       ✅ **4 Eylül 2026: geçti** (1.0.6, sha `711eaaa`). Kullanıcının tarifi:
@@ -521,11 +559,27 @@ BİLİNÇLİ — gerekçe `config/env.dart` başlığında.
       kaldı** — yani linki AÇMAK sayacı artırmıyor, yalnızca başarılı bir
       kabul artırıyor. (Kendi linkine dokunulduğu için sunucu zaten
       reddediyor: *"Kendi linkinle arkadaş olamazsın."*)
-      ⏳ **Play yarısı açık:** aynı linkin UYGULAMAYI açması Play kurulumunda
-      koşulacak. Kabul akışının uygulama içi maddeleri de
+      ✅ **Play yarısı da geçti (4 Eylül 2026, aynı gün).** Play kanalından
+      kurulmuş 1.0.6 (525) pakette aynı linke telefondan dokunuldu →
+      **uygulama açıldı** (tarayıcı DEĞİL) ve uygulama içinde sunucunun
+      reddi göründü: *"Kendi linkinle arkadaş olamazsın."*
+      **Bu tek gözlem üç şeyi birden kanıtlıyor** ve bu yüzden "uygulama
+      açıldı"dan daha güçlü: (1) App Links doğrulaması GEÇTİ — kurulu paket
+      release imzalı, `assetlinks.json` parmak izi tutuyor; (2)
+      `deep_link.dart` token'ı ayrıştırıp doğru ekrana yönlendirdi; (3)
+      kabul RPC'si GERÇEKTEN çağrıldı ve hatası kullanıcıya taşındı — yani
+      yalnızca rota değil, zincirin tamamı çalışıyor.
+      Sunucudan teyit: T3'ün token'ında (`52370565…`) `use_count` **0'da
+      kaldı** — red sayacı artırmıyor, `.apk` turundaki ölçümle aynı.
+      ⚠ **Yan fayda — bu madde `.apk` ↔ `.aab` AYIRT EDİCİSİDİR:** `Derleme
+      <sha>` satırı ikisini ayıramaz (aynı koşudan, aynı sha). Bu ayırır:
+      link uygulamayı açıyorsa paket Play'in, tarayıcıyı açıyorsa yan
+      yüklenmiş `.apk`.
+      ⏳ **Kabul akışının uygulama içi maddeleri hâlâ açık**
       (`testing-arkadaslar-canli.md`: "artık arkadaşsınız", mükerrer
-      kontrolü, ağ hatasında davetin kaybolmaması, geçersiz token mesajı)
-      aynı sebeple o tura bağlı — hepsi linkin uygulamayı açmasını varsayıyor.
+      kontrolü, ağ hatasında davetin kaybolmaması, geçersiz token mesajı) —
+      ama artık gerekçe App Links DEĞİL: linkin uygulamayı açtığı
+      kanıtlandı. Tek engel **YENİ bir hesap** (aşağı bkz.).
       ⚠ O tur için YENİ bir hesap gerekecek: elimizdeki hesaplar
       (Ironman ↔ T3) zaten arkadaş, kabul akışı onlarla sınanamaz.
       ⚠ **LİNKE UYGULAMANIN KURULU OLDUĞU CİHAZDAN dokun** (29 Ağustos
@@ -575,12 +629,26 @@ kapalı test kanalından kurulmuş derleme ister.
 **Kurulum:** mağazada DAHA YENİ bir sürüm yayınlıyken cihazdaki ESKİ sürümü
 aç (yani sürüm N kuruluyken N+1 kanala düşmüş olmalı).
 
+⚠ **Pratik sonuç — "güncelleme varken" dalı BİR SÜRÜM TURUNA YAYILIR ve
+aynı gün koşulamaz.** Kanaldan en yeniyi kurduğun anda o dalı test etme
+imkânını o tur için harcamış olursun. Doğru sıra: N kuruluyken bekle,
+N+1'i kanala at, SONRA uygulamayı aç. 4 Eylül 2026'da bu kaçırıldı — 525
+kurulup 525 beklendi. Sıradaki fırsat: 1.0.6 kuruluyken 1.0.7 yayınlanınca.
+
 - [ ] **Güncelleme varken:** uygulama açılır açılmaz Play'in tam ekran
       güncelleme penceresi KENDİLİĞİNDEN açılmalı; güncelleme uygulamadan
       ÇIKMADAN tamamlanmalı ve uygulama yeni sürümle geri gelmeli.
       Doğrula: Setup'ın teşhis satırındaki `Derleme <sha>` değişmiş olmalı.
-- [ ] **Güncelleme yokken:** hiçbir pencere açılmamalı, uygulama normal
+- [x] **Güncelleme yokken:** hiçbir pencere açılmamalı, uygulama normal
       açılmalı.
+      ✅ **4 Eylül 2026: geçti.** Kullanıcı `.apk`'yı kaldırıp kapalı test
+      kanalından 1.0.6 (525) kurdu ve uygulamayı açtı → pencere ÇIKMADI
+      (*"App'i açtım ama güncelleme gelmedi"*). Kanalda 525'ten yenisi
+      olmadığı için beklenen sonuç tam olarak buydu.
+      ⚠ **Bu bulgu ilk anda hata sanıldı** — çünkü "güncelleme gelmedi"
+      cümlesi hem bu maddenin GEÇMESİ hem bir üsttekinin DÜŞMESİ gibi
+      okunabiliyor. Ayıran tek soru: *kanalda kurulu olandan daha yüksek
+      bir `versionCode` var mı?* Yoksa doğru davranış sessizliktir.
 - [ ] **Uçak modunda:** uygulama ÇÖKMEMELİ, akış sessizce atlanmalı. Sonra
       ağı aç ve uygulamayı öne al → kontrol TEKRAR denenmeli (pencere
       açılmalı). ⚠ Bu dal özellikle önemli: "soramadım"ı "güncel" saymak,
