@@ -433,9 +433,15 @@ class _PlayerScoreCardModalState extends State<PlayerScoreCardModal> {
             // (`score_card_modal.dart`) ve geçmiş modalının BAŞLIĞI da
             // aynı ada çekildi, o buton da sola yaslandı. Yani bugün
             // projede tek ad var: "Tüm Oyunlar".
+            // ⚠ Hiza `end` DEĞİL `center` (4 Eylül 2026, kullanıcı: "Tüm
+            // oyunları da barın ortasına hizalamak mümkün mü?"). Ayrı bir
+            // hesap gerekmiyor: kafa kafaya bloğu dikey olarak SİMETRİK
+            // olduğundan bloğun ortası BARIN ortası. Web ikizinde ölçüldü:
+            // buton merkezi ile bar merkezi arasındaki fark 7,75 → 0 px.
+            // Blok simetrisi bozulursa bu hiza da bozulur.
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
               GestureDetector(
                 onTap: () async {

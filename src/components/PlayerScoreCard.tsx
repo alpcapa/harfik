@@ -458,8 +458,15 @@ export function PlayerScoreCard({ member, onClose, isAdminView }: PlayerScoreCar
           Kullanıcı aynı gün "Hepsinde Tüm oyunlar olsun / Ve sola
           yapışsın" dedi: kendi skor kartının butonu (`ScoreCard.tsx`) ve
           portun geçmiş modalı başlığı da aynı ada çekildi ve o buton da
-          sola yaslandı — projede artık TEK ad var. */}
-      <div className="mt-1.5 flex items-end justify-between gap-3">
+          sola yaslandı — projede artık TEK ad var.
+          ⚠ Hiza `items-end` DEĞİL `items-center` (4 Eylül 2026, kullanıcı:
+          "Tüm oyunları da barın ortasına hizalamak mümkün mü?"). Ayrı bir
+          hesap gerekmiyor: kafa kafaya bloğu dikey olarak SİMETRİK
+          olduğundan bloğun ortası BARIN ortası — yani `items-center`
+          butonu tam barın hizasına oturtuyor (ölçüldü: buton merkezi ile
+          bar merkezi arasındaki fark 7,75 → 0 px). Blok simetrisi bozulursa
+          (ör. alt/üst etiketlerden biri kaldırılırsa) bu hiza da bozulur. */}
+      <div className="mt-1.5 flex items-center justify-between gap-3">
         <button
           onClick={() => setShowAllGames(true)}
           className="shrink-0 text-[11px] font-mono font-bold uppercase tracking-[1px] text-accent active:opacity-70 transition-opacity"
