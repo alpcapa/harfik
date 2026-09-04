@@ -143,8 +143,8 @@ export function QuickStart({ onDetailedClick }: { onDetailedClick?: () => void }
         (Birkaç istisna dışında)
       </QuickItem>
       <QuickItem icon="🏁">
-        Harf kutunu bitirir ve torbada başka taş kalmazsa oyun biter. Art arda 2 tur pas
-        geçilince de oyun biter.
+        Eldeki tüm taşlar biter ve torbada taş kalmazsa veya tüm oyuncular art arda
+        2 tur pas geçerse oyun biter. Yüksek puanı olan kazanır.
       </QuickItem>
       {onDetailedClick ? (
         <button

@@ -424,8 +424,9 @@ class _QuickStart extends StatelessWidget {
         const SizedBox(height: 8),
         const _QuickItem(
           icon: '🏁',
-          text: 'Harf kutunu bitirir ve torbada başka taş kalmazsa oyun biter. '
-              'Art arda 2 tur pas geçilince de oyun biter.',
+          text: 'Eldeki tüm taşlar biter ve torbada taş kalmazsa veya tüm '
+              'oyuncular art arda 2 tur pas geçerse oyun biter. Yüksek puanı '
+              'olan kazanır.',
         ),
         const SizedBox(height: 12),
         _LinkButton(label: 'Detaylı Kurallar →', onTap: onDetailed),
