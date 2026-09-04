@@ -386,6 +386,7 @@ imzalı olduğundan o davranış mağaza sürümünde değişecek.
 | Uçak modunda kelime anlamı | ✅ geçen hafta, gerçek cihaz |
 | Paylaşma (gerçek hedef uygulamalarla) | ✅ 4 Eylül, yeniden koşuldu |
 | Sürükle-bırak hissi (zoom açık/kapalı) | ✅ 4 Eylül, yeniden koşuldu |
+| Geçmişten "Tekrar Oyna" (aynı gün eklendi) | ✅ 4 Eylül, sha `711eaaa` |
 
 **Geri tuşu ilk kez sınandı.** `PopScope`/`WillPopScope` depoda HÂLÂ yok,
 yani her şey Flutter'ın varsayılanına düşüyor; sekiz vaka da (Setup kökü,
@@ -473,6 +474,18 @@ değişiklik YOK, o üçü tekrar koşulmadan kapatıldı.
 **Kural olarak yazılıyor:** "daha önce koşmuştuk" bir maddeyi tek başına
 kapatmaz — o maddenin DOKUNDUĞU dosyalar o tarihten beri değişti mi, önce
 ona bakılır. Bu turda beş maddenin ikisi tam bu kontrolle yakalandı.
+
+**Turun ortasında eklenen özellik AYNI TURDA cihazda doğrulandı.** Kullanıcı
+oyun geçmişindeki aksiyon menüsüne "Tekrar Oyna" istedi (o sırada yalnızca
+Paylaş/Kapat vardı); özellik yazıldı, `711eaaa` ile merge edildi, APK
+tazelendi ve aynı oturumda telefonda koşuldu: menü üç maddeli geldi, davet
+gönderildi ve sunucuda `pending` bir 2 kişilik oyun oluştuğu ölçüldü
+(11:47:05). Yani bu madde hiç "bir sonraki tura" devredilmedi — bugünün
+dersinin (kayıt bayatlarsa turu KULLANICI tekrar koşar) doğrudan uygulaması.
+
+⚠ Not: rövanş gerçek bir kullanıcıya (test hesabına değil) davet gönderdi.
+Bu maddeyi bir daha koşarken karşı tarafı T2/T3 gibi bir test hesabı seç —
+aksi halde gerçek bir oyuncuya bildirim ve e-posta gidiyor.
 
 ### Koşulmayanlar ve sebebi
 

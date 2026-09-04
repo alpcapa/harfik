@@ -378,7 +378,7 @@
       olacak." çıkmalı ve yeni oyunda 4. koltuk gerçekten `{"type":"ai"}`
       olmalı (sunucudan doğrula). Biten oyunu SEN kurmamışsan da çalışmalı —
       kurucu artık sen olursun.
-- [ ] **Tekrar Oyna — oyun GEÇMİŞİNDEN (4 Eylül 2026).** "Tüm Oyunlarım"da
+- [x] **Tekrar Oyna — oyun GEÇMİŞİNDEN (4 Eylül 2026).** ✅ **AYNI GÜN CİHAZDA KOŞULDU ve GEÇTİ** (1.0.6, sha `711eaaa`): menü üç maddeli geldi, davet gönderildi, sunucuda `pending` bir 2 kişilik oyun oluştu (11:47:05). "Tüm Oyunlarım"da
       bitmiş bir Canlı oyunun tahta önizlemesine dokun: menü **Paylaş ·
       Tekrar Oyna · Kapat** olmalı. Akış ve metinler oyun sonundakiyle
       birebir. ⚠ **YZ oyununun kartında ÇIKMAMALI**, ⚠ başka birinin
