@@ -299,6 +299,17 @@ Parça'nın gerilemediğini doğrulayan TARİHLİ tur. Dosyanın bölüm
 numaralarının 14'ten yeniden başlaması bu ayrımın zaten var olduğunun
 kanıtıydı.
 
+**4 Eylül 2026 — `mobile/CLAUDE.md` uyarı bandındaydı (80 KB), aynı
+kuralla bölündü.** Dosyanın en büyük tek bloğu "Klasör Yapısı" ağacıydı:
+**24,5 KB, dosyanın %30'u**, ve içeriğinin çoğu dosya başına tarihli
+gerekçe/uyarı — yani her turda değil, O DOSYAYA dokunurken gereken bilgi.
+Açıklamalı ağaç `mobile/docs/klasor-yapisi.md`'ye taşındı (satırlar
+değiştirilmeden), yerine yalnızca KLASÖR düzeyinde bir özet + ağaçtan çıkan
+iki kural (üretilmiş dosyalar listesi, elle senkron web↔port çiftleri)
+kaldı; dosya **60 KB**'a indi. `auto` sınıfının kesme noktası bir kez daha
+"kural ↔ dosya başına ayrıntı" oldu — kök `CLAUDE.md`'nin kendi 26 Ağustos
+bölmesindeki ayrımın aynısı.
+
 **Her kesme noktası boyut değil, İÇERİĞİN TÜRÜ:** kural ↔ anlatı, tek
 oturum ↔ iki oturum, normal kullanıcı ↔ admin. Hiçbir satır
 değiştirilmedi, bölüm numaraları korundu — atıflar kırılmasın diye.
