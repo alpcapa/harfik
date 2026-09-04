@@ -70,6 +70,18 @@ doldurulabilir. Doldurulmadı çünkü ölçülmedi.
 **Paket:** `mobile-latest` prerelease'indeki `kelimeki.aab`, koşu 525,
 `711eaaa`'dan derlenmiş, release anahtarıyla imzalı (4 Eyl 10:36).
 
+| | |
+|---|---|
+| İndirme | `https://github.com/alpcapa/kelimeki/releases/download/mobile-latest/kelimeki.aab` |
+| Boyut | 63.210.820 bayt |
+| SHA-256 | `96f176e64d79a622a2c33cb8e49588c9ce9f15ad13e6bb55060b0f99b4769aca` |
+| Yüklendiği an | 4 Eyl 2026, 10:36:00 UTC (release varlığı) |
+
+⚠ Bu SHA-256 **4 Eylül 10:36'daki** pakete ait. `mobile-latest` her mobil
+derlemede üzerine yazıldığından, gönderimden önce indirdiğin dosyanın
+özetini bununla KARŞILAŞTIR — tutmuyorsa arada yeni bir derleme olmuş
+demektir ve gönderdiğin paket bu satırın anlattığı paket değildir.
+
 **Sürüm adı (Console):** `1.0.6 (525)`
 
 **Sürüm notları (`tr-TR`, 491/500 karakter):**
