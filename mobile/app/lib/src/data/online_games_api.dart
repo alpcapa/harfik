@@ -280,6 +280,11 @@ abstract class OnlineGamesGateway {
   Future<void> checkTurnTimeout(String gameId);
   Future<void> checkInviteExpiry(String gameId);
 
+  /// BİTMİŞ bir oyunun ham `slots` dizisi — oyun geçmişindeki "Tekrar
+  /// Oyna" rövanş kadrosunu buradan kuruyor. Web `fetchFinishedGameSlots`
+  /// ikizi. Erişim yoksa ya da satır gitmişse `null`.
+  Future<List<Map<String, Object?>>?> finishedGameSlots(String onlineGameId);
+
   /// Bitişini GÖRMEDİĞİM Canlı oyunlarımın `games.id`'leri (3 Eylül 2026).
   /// Web `fetchUnseenFinishedGames` ikizi.
   Future<List<String>> unseenFinishedGames();
@@ -356,6 +361,25 @@ class SupabaseOnlineGamesGateway implements OnlineGamesGateway {
   Future<void> markFinishesSeen({String? onlineGameId}) async {
     await client.rpc('mark_game_finishes_seen',
         params: {'p_online_game_id': onlineGameId});
+  }
+
+  @override
+  Future<List<Map<String, Object?>>?> finishedGameSlots(
+      String onlineGameId) async {
+    // RLS (`online_games_select_party`) kapıyı zaten tutuyor: yalnızca oyunu
+    // KURAN ya da davet edilmiş olan okuyabilir. Kabul edilmiş davet
+    // satırları silinmediğinden davet edilen taraf da rövanş açabiliyor.
+    final row = await client
+        .from('online_games')
+        .select('slots')
+        .eq('id', onlineGameId)
+        .maybeSingle();
+    if (row == null) return null;
+    final raw = row['slots'] as List?;
+    if (raw == null || raw.isEmpty) return null;
+    return [
+      for (final s in raw) (s as Map).cast<String, Object?>(),
+    ];
   }
 
   @override
@@ -644,6 +668,19 @@ class OnlineGamesRepo {
   Future<void> respondInvite(String inviteId, {required bool accept}) =>
       gateway.respondInvite(inviteId, accept);
 
+  /// Biten bir oyunun kadrosu — oyun geçmişindeki "Tekrar Oyna" için.
+  ///
+  /// Geçmiş kaydının kendi oyuncu anlık görüntüsü (`games.players`) yalnızca
+  /// isim/skor/YZ taşıyor, **`user_id` YOK**; `create_online_game` ise koltuk
+  /// başına `user_id` istiyor. Biten oyunun `online_games` satırı
+  /// silinmediğinden kadro oradan çözülüyor. Erişilemezse `null` — çağıran
+  /// bunu "rövanş açılamadı" olarak gösterir, sessizce yutmaz.
+  Future<List<OnlineSlot>?> finishedGameSlots(String onlineGameId) async {
+    final raw = await gateway.finishedGameSlots(onlineGameId);
+    if (raw == null) return null;
+    return [for (final m in raw) OnlineSlot.fromJson(m)];
+  }
+
   // ── Oynanış (tek oyun) ────────────────────────────────────────────────
 
   /// Web `refresh()`'in veri yarısı: state + kendi rafım + hamleler TEK
@@ -843,12 +880,18 @@ enum InitialMainView { local, live }
 /// YZ zaten olamaz (biten oyun geçerliyse yenisi de geçerli).
 /// `list_my_online_games`'in eklediği name/avatar/relation alanları RPC'ye
 /// GÖNDERİLMEZ — `NewGameSlot` yalnız type+user_id yazar.
-List<NewGameSlot> rematchSlots(OnlineGame game, String myUserId) => [
+///
+/// ⚠ 4 Eylül 2026: imza `OnlineGame` yerine KOLTUK LİSTESİ alıyor. Sebep,
+/// ikinci bir çağıranın doğması — oyun geçmişindeki "Tekrar Oyna"
+/// (`game_history_modal.dart`) elinde bir `OnlineGame` DEĞİL, biten oyunun
+/// ayrıca okunmuş `slots` dizisi tutuyor. Kopyalamak yerine imza daraltıldı;
+/// web ikizi de aynı gün aynı sebeple `src/utils/rematchSlots.ts`e çıkarıldı.
+List<NewGameSlot> rematchSlots(List<OnlineSlot> slots, String myUserId) => [
       NewGameSlot.human(myUserId),
-      for (final s in game.slots)
+      for (final s in slots)
         if (!s.isAi && s.userId != null && s.userId != myUserId)
           NewGameSlot.human(s.userId!),
-      for (final s in game.slots)
+      for (final s in slots)
         if (s.isAi) const NewGameSlot.ai(),
     ];
 

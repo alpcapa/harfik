@@ -50,6 +50,7 @@ import {
 } from '../utils/validator';
 import { getFormedWords, getFullWordAt, key } from '../utils/board';
 import { nearbyDraftCell } from '../utils/draftRescue';
+import { buildRematchSlots, rematchHasAi, rematchOpponentNames } from '../utils/rematchSlots';
 import { trLower } from '../utils/turkish';
 import { hasSeenChatIntro, markChatIntroSeen, getChatLastReadAt, markChatRead } from '../utils/onboarding';
 import { swallowNextClick } from '../utils/ghostClick';
@@ -1231,36 +1232,18 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
 
   /**
    * "Tekrar Oyna": biten oyunun kadrosunu AYNEN yeni bir Canlı oyuna taşır.
-   * Sıra `create_online_game`'in üç kısıtına göre kuruluyor: (1) ilk koltuk
-   * ÇAĞIRAN olmak zorunda — biten oyunu ben kurmamış olabilirim, o yüzden
-   * kendimi başa alıyorum; (2) 4 kişilikte YZ yalnız son koltukta olabilir —
-   * insanları kendi aralarındaki sırayla koruyup YZ'leri sona yazmak bunu
-   * kendiliğinden sağlıyor; (3) 2 kişilikte YZ zaten olamaz (biten oyun
-   * geçerliyse yenisi de geçerli). `list_my_online_games`'in eklediği
-   * name/avatar/relation alanları RPC'ye GÖNDERİLMEZ — yalnız type+user_id.
+   * Sıralama kuralı ve `create_online_game`in üç kısıtı ORTAK dosyada —
+   * `src/utils/rematchSlots.ts` (aynı mantık oyun geçmişindeki "Tekrar
+   * Oyna"da da kullanılıyor; kopyalanırsa ayrışır).
    */
-  const rematchSlots = (): OnlineGameSlot[] => {
-    const humans = game.slots.filter(
-      (s): s is Extract<OnlineGameSlot, { type: 'human' }> => s.type === 'human',
-    );
-    const ais = game.slots.filter((s) => s.type === 'ai');
-    return [
-      { type: 'human', user_id: myUserId },
-      ...humans.filter((s) => s.user_id !== myUserId).map((s) => ({ type: 'human' as const, user_id: s.user_id })),
-      ...ais.map(() => ({ type: 'ai' as const })),
-    ];
-  };
-
-  const opponentNames = game.slots
-    .filter((s) => s.type === 'human' && s.user_id !== myUserId)
-    .map((s) => (s.type === 'human' ? s.name ?? 'Bir arkadaşın' : ''));
-  const rematchHasAi = game.slots.some((s) => s.type === 'ai');
+  const opponentNames = rematchOpponentNames(game.slots, myUserId);
+  const hasAiSlot = rematchHasAi(game.slots);
 
   const handleRematch = async () => {
     setRematch({ phase: 'busy' });
     try {
-      await createOnlineGame(game.player_count as 2 | 4, rematchSlots());
-      setRematch({ phase: 'sent', names: opponentNames, withAi: rematchHasAi });
+      await createOnlineGame(game.player_count as 2 | 4, buildRematchSlots(game.slots, myUserId));
+      setRematch({ phase: 'sent', names: opponentNames, withAi: hasAiSlot });
     } catch (err) {
       setRematch({ phase: 'error', message: err instanceof Error ? err.message : 'Davet gönderilemedi.' });
     }
@@ -1654,7 +1637,7 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
                 <p className="text-sm text-text font-sans leading-relaxed">
                   {opponentNames.join(', ')} ile aynı kadroda yeni bir oyun açılacak ve davet
                   gönderilecek.
-                  {rematchHasAi && ' 4. koltuk yine Yapay Zeka olacak.'} Emin misin?
+                  {hasAiSlot && ' 4. koltuk yine Yapay Zeka olacak.'} Emin misin?
                 </p>
                 <div className="flex gap-2 mt-1">
                   <button

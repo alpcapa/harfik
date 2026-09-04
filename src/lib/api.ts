@@ -1465,6 +1465,42 @@ export async function fetchOnlineGameState(gameId: string): Promise<OnlineGameSt
 }
 
 /**
+ * BİTMİŞ bir Canlı oyunun koltuklarını (`online_games.slots`) döner —
+ * oyun geçmişindeki "Tekrar Oyna" rövanş kadrosunu buradan kuruyor.
+ *
+ * NEDEN AYRI BİR OKUMA GEREKİYOR (4 Eylül 2026): geçmiş kaydının kendi
+ * oyuncu anlık görüntüsü (`games.players` → `GamePlayerSnapshot`) yalnızca
+ * `name`/`score`/`is_ai` taşıyor, **`user_id` YOK** — isim kimlik değil ve
+ * `create_online_game` koltuk başına `user_id` istiyor. Biten oyunun
+ * `online_games` satırı silinmediği için (canlıda 71 `finished` satır
+ * ölçüldü) kadro oradan çözülebiliyor.
+ *
+ * RLS zaten kapıyı tutuyor (`online_games_select_party`): yalnızca oyunu
+ * KURAN ya da davet edilmiş olan okuyabilir. Kabul edilmiş davet satırları
+ * silinmediğinden (canlıda 91 `accepted`) davet edilen taraf da rövanş
+ * açabiliyor — yani buton kurucuyla sınırlı değil.
+ *
+ * Erişim yoksa ya da satır gitmişse `null` döner; çağıran bunu "rövanş
+ * kurulamadı" olarak gösterir, sessizce yutmaz.
+ */
+export async function fetchFinishedGameSlots(
+  onlineGameId: string,
+): Promise<OnlineGameSlot[] | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from('online_games')
+    .select('slots')
+    .eq('id', onlineGameId)
+    .maybeSingle();
+  if (error) {
+    console.error('[Kelimeki] fetchFinishedGameSlots hatası:', error.message);
+    return null;
+  }
+  const slots = (data as { slots?: OnlineGameSlot[] } | null)?.slots;
+  return Array.isArray(slots) && slots.length > 0 ? slots : null;
+}
+
+/**
  * Verilen aktif Canlı oyunların her biri için "sırası kimde" (`current`
  * koltuk indeksi) bilgisini tek sorguda döner — `LiveGamesTab`'ın "Sıra
  * sende" rozetini ve `Setup`'taki "Arkadaşınla" sekmesindeki bekleyen
