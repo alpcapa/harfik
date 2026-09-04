@@ -176,7 +176,13 @@ uyarıyor; push e-postanın YANINDA gidiyor, yerine değil.
       dağıtımıyla birlikte gitti.
 - [ ] **3.2 Bildirime dokun** → uygulama açılmalı ve **doğru Canlı oyun**
       gelmeli (yanlış oyun ya da yalnızca Setup değil).
-- [ ] **3.3 Uygulama TAMAMEN kapalıyken** (soğuk başlangıç) aynı test.
+- [x] **3.3 Uygulama TAMAMEN kapalıyken** (soğuk başlangıç) aynı test.
+      ✅ **4 Eylül 2026: geçti** (1.0.6, `d07c06d`) — üstelik zor dalından:
+      uygulama girişsiz açıldı, giriş yapılınca doğru oyun DOĞRUDAN açıldı.
+      Yani bekleyen derin bağlantı auth bitene kadar tutuluyor.
+      ⚠ Girişsiz açılış oturum kalıcılığı hatası SANILDI; ölçüldü ve değil
+      (öldür → simgeden aç = girişli). Test boyunca aynı hesap hem web'de
+      hem telefonda açıktı, token o yüzden bir kez geçersizleşti.
 - [ ] **3.4 Bildirimi kapatmış bir kullanıcıya push GİTMEMELİ**
       (`profiles.push_notifications_enabled = false`) — ama **e-posta yine
       gitmeli**. İkisi ayrı kanal.

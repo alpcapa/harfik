@@ -378,6 +378,8 @@ imzalı olduğundan o davranış mağaza sürümünde değişecek.
 | §1.1/1.2 (bağlam yokken pencere çıkmamalı, T3 ile) · §1.6 | ✅ |
 | §2.1–§2.5 token yaşam döngüsü | ✅ |
 | §3.1 · §3.2 · §3.4 · §3b · §3c · §3d · §3e · §3f | ✅ |
+| §3.3 soğuk başlangıç (bildirimden) | ✅ |
+| Oturum kalıcılığı (öldür → simgeden aç) | ✅ |
 
 **Geri tuşu ilk kez sınandı.** `PopScope`/`WillPopScope` depoda HÂLÂ yok,
 yani her şey Flutter'ın varsayılanına düşüyor; sekiz vaka da (Setup kökü,
@@ -414,6 +416,26 @@ hiçbir iz kalmıyor. `testing-bildirimler.md` §3d maddeyi zaten *"sen
 uygulamada DEĞİLKEN"* diye tanımlıyor, yani kapsam dışı; ama bir turda
 "bildirim gelmedi" diye yanlış teşhise yol açtı. Ön planda bir iz bırakmak
 gerekip gerekmediği ÜRÜN kararı, açık bırakıldı.
+
+**§3.3 geçti ve beklenmedik bir yoldan daha güçlü bir kanıt verdi.**
+Uygulama tamamen kapalıyken bildirim düştü, dokunuldu — ama uygulama
+GİRİŞSİZ açıldı ve Setup'ta kaldı. Giriş yapılınca **doğru oyun doğrudan
+açıldı**, yani dokunuşun taşıdığı derin bağlantı araya bir giriş ekranı
+girmesine rağmen KAYBOLMADI, auth bitene kadar kuyrukta tutulup sonra
+tüketildi. Bu, düz bir soğuk başlangıçtan daha zor bir senaryo.
+
+⚠ **Girişsiz açılış BULGU DEĞİL — ama teşhisi ölçmeden verilemezdi.**
+Sunucu kaydı: 09:30:57'de `refresh_token_not_found` (400), 09:31:50'de
+parola girişi, 09:31:53'te push token yeniden yazıldı. Kritik ayrım
+`push_tokens.created_at`'in 08:16:15'te KALMASI: uygulama çıkışta bu satırı
+siliyor (§2.4'te ölçüldü), silinmediğine göre kullanıcı çıkış YAPMAMIŞ —
+yani oturum kendiliğinden düşmüştü. Bu noktada "oturum süreç ölümünden sağ
+çıkmıyor" gibi görünüyordu, ki öyle olsaydı mağazaya çıkışı bloke ederdi.
+**Doğrudan sınandı:** uygulama öldürülüp SİMGEDEN açıldı → girişli geldi.
+Yani kalıcılık sağlam; 09:30'daki olay tek seferlik bir token
+geçersizleşmesi, muhtemelen aynı hesabın (Ironman) test boyunca hem web'de
+hem telefonda açık tutulmasından. **Bir sonraki tur bunu görürse önce
+hesabın başka bir yerde açık olup olmadığına baksın**, oturum koduna değil.
 
 ### Koşulmayanlar ve sebebi
 
