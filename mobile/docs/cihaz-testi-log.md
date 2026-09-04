@@ -381,6 +381,11 @@ imzalı olduğundan o davranış mağaza sürümünde değişecek.
 | §3.3 soğuk başlangıç (bildirimden) | ✅ |
 | Oturum kalıcılığı (öldür → simgeden aç) | ✅ |
 | §2.6 hesap silme (T5) | ✅ *(kanıtın sınırı için aşağı bkz.)* |
+| Galeri izni reddi + HEIC avatarı | ✅ geçen hafta, gerçek cihaz |
+| Sözlük yükleme SÜRESİ | ✅ geçen hafta, gerçek cihaz |
+| Uçak modunda kelime anlamı | ✅ geçen hafta, gerçek cihaz |
+| Paylaşma (gerçek hedef uygulamalarla) | ✅ 4 Eylül, yeniden koşuldu |
+| Sürükle-bırak hissi (zoom açık/kapalı) | ✅ 4 Eylül, yeniden koşuldu |
 
 **Geri tuşu ilk kez sınandı.** `PopScope`/`WillPopScope` depoda HÂLÂ yok,
 yani her şey Flutter'ın varsayılanına düşüyor; sekiz vaka da (Setup kökü,
@@ -449,6 +454,25 @@ değil. Madde geçmiş sayıldı; ikinci bir test hesabını yakmak bedele
 değmedi (kullanıcı kararı). **Genel kural: bir silme testinde ÖNCE var
 olduğu ölçülür, SONRA silinir.** Silme fonksiyonu sildiği sayıları
 döndürüyor ama hiçbir yere yazmıyor — sonradan bakılacak denetim izi yok.
+
+**Emülatörün kanıtlayamadığı beş madde de kapandı — üçü geçen haftaki
+gerçek cihaz turundan, ikisi bugün YENİDEN koşularak.** Triyaj tablosu
+sürükleme akıcılığını, HEIC avatarını ve sözlük yükleme süresini
+"emülatörde ölçülemez" diye işaretliyordu; hepsi gerçek telefonda koşuldu.
+
+⚠ İkisi bilerek tekrarlandı, çünkü kullanıcının testinden SONRA kodları
+değişmişti — kapatmadan önce dosya bazında bakıldı:
+- `share_board.dart` 2 Eylül'de değişti (#422, "iPad'de asılı kalan
+  paylaşım"), yani geçen haftaki paylaşma turu düzeltme ÖNCESİNİ ölçmüştü.
+- Tahtanın dokunuş yüzeyi zoom'la sekiz commit'te yeniden yazıldı
+  (#395/396/397/399/410/411/413/414) — sürükleme hissi tam o yüzeyde
+  yargılanıyor.
+`avatar_picker.dart` ve sözlük yükleme yolunda ise 27 Ağustos'tan beri
+değişiklik YOK, o üçü tekrar koşulmadan kapatıldı.
+
+**Kural olarak yazılıyor:** "daha önce koşmuştuk" bir maddeyi tek başına
+kapatmaz — o maddenin DOKUNDUĞU dosyalar o tarihten beri değişti mi, önce
+ona bakılır. Bu turda beş maddenin ikisi tam bu kontrolle yakalandı.
 
 ### Koşulmayanlar ve sebebi
 
