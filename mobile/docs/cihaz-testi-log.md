@@ -375,7 +375,7 @@ imzalı olduğundan o davranış mağaza sürümünde değişecek.
 |---|---|
 | §0 kimlik (`Derleme d07c06d` · `depo ok` · giriş girişi görünür) | ✅ |
 | Geri tuşu / geri jesti — sekiz vaka | ✅ sıfır bulgu |
-| §1.1/1.2 (bağlam yokken pencere çıkmamalı, T3 ile) · §1.6 | ✅ |
+| §1.1/1.2 (bağlam yokken pencere çıkmamalı, T3 ile) · §1.3 · §1.5 · §1.6 | ✅ |
 | §2.1–§2.5 token yaşam döngüsü | ✅ |
 | §3.2 · §3.4 · §3b · §3d · §3e · §3f | ✅ |
 | §3.1 + §3.1b (süre uyarısı bildirimi VE e-postası) | ✅ gün içinde, ayrıca |
@@ -507,10 +507,15 @@ turun anlatısıdır, kaydın kendisi değil.**
 
 ### Koşulmayanlar ve sebebi
 
-- **§1.4/§1.5** (sistem izin diyaloğu ve "ŞİMDİ DEĞİL") — izin bu turdan
-  önce verilmişti; ikisi aynı kurulumda zaten koşulamıyor (Android 13+
-  ikinci retten sonra diyaloğu bir daha göstermiyor). Temiz bir kurulum
-  ister, en sona bırakıldı.
+- **§1.4** ("ŞİMDİ DEĞİL" dalı) — 1.5 ile birbirini tüketiyor ve bu turda
+  1.5 seçildi. **§1.5 ise gün içinde KOŞULDU ve geçti:** §2.2'de bildirimler
+  sistem ayarlarından kapatıldığı için izin durumu sıfırlanmış, pencere
+  yeniden çıkmış ve "BİLDİRİMLERİ AÇ" Android'in kendi diyaloğunu açmıştı.
+  Kullanıcı bunu önce fazlalık sandı (*"ayrıca Android izin ver/verme
+  dialogu çıkıyor"*) — iki adım TASARIM GEREĞİ: sistem diyaloğu ikinci
+  retten sonra kalıcı olarak kaybolduğundan uygulama önce kendi yumuşak
+  penceresiyle soruyor. §1.4 Play kapalı testinin temiz kurulumunda
+  koşulacak; o kurulum §4.1'i de karşılıyor.
 - **§3.1b** (uyarı e-postasında "takdirde") — 24 saate yaklaşan bir sıra
   penceresi gerektiriyor, planlanamıyor.
 
