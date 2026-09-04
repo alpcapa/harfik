@@ -47,6 +47,7 @@ npm run generate-klig-paths  # KLigMark.tsx + portun klig_mark_data.dart'ı
 npm run generate-icons       # favicon / app icon (public/) — og-image DEĞİL
 npm run generate-og-image    # public/og-image.png (sosyal paylaşım kartı)
 npm run generate-play-assets # Play mağaza ikonu + öne çıkan görsel
+npm run generate-store-header # marketing/store/ — mağaza başlık görseli (4096×2304, ≤1 MB)
 npm run generate-golden-vectors  # Flutter portu parite fixture'ları (motor değişince ZORUNLU)
 npm run generate-meanings-db     # meanings.json → portun SQLite asset'i
 npm run verify-league-tiers      # k-lig kademe/ödül tablosu: migration SQL'i ↔ TS
@@ -212,8 +213,9 @@ src/
     ├── pwa.ts             # PWA/service worker yardımcıları
     └── database.types.ts  # şema tipleri
 
-marketing/                 # reklam/tanıtım çıktıları — üretilmiş PNG + metin;
+marketing/                 # reklam/tanıtım + mağaza çıktıları — üretilmiş görsel/metin;
                            # uygulamaya girmez (node scripts/sponsored-post/build.mjs)
+└── store/                 # mağaza listeleme görselleri (npm run generate-store-header)
 
 mobile/                    # Flutter (iOS+Android) portu — ayrıntı: mobile/CLAUDE.md
 ├── kelimeki_core/         # oyun motorunun saf Dart portu (web motoruna eşitliği

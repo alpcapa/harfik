@@ -47,6 +47,7 @@ npm run generate-klig-paths      # KLigMark.tsx + portun klig_mark_data.dart'ın
 npm run generate-icons           # favicon / app icon (public/) — og-image DEĞİL
 npm run generate-og-image        # public/og-image.png (sosyal paylaşım kartı)
 npm run generate-play-assets     # Play mağaza ikonu (512) + öne çıkan görsel (1024×500)
+npm run generate-store-header    # marketing/store/ — mağaza başlık görseli (4096×2304, ≤1 MB)
 # Öteki pazarlama üreticileri (generate-reel, generate-fb-cover) bu listede
 # DEĞİL, kendi kararlarıyla birlikte docs/decisions/marketing-assets.md'de.
 ```

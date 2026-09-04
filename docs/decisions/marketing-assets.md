@@ -78,6 +78,48 @@ listesi). `npm run generate-play-assets`.
   arkadaş adı/e-posta görünmemeli — görseller herkese açık yayınlanıyor)
   `metin.md`'de.
 
+### Mağaza başlık görseli (`scripts/store-header/`, 22 Ağustos 2026)
+
+`marketing/store/kelimeki-play-header-4096x2304.jpg` (4096×2304).
+`npm run generate-store-header`. Google Play Games'in header/landscape
+yuvasının şartları: **JPEG ya da 24-bit PNG, şeffaf DEĞİL, 4096×2304, ≤1 MB**
+(aynı kullanıcı akışındaki 512×512 ≤1 MB ikon yuvasını `public/icon-512.png`
+zaten karşılıyor — o dosya 24-bit RGB, alfasız, 104 KB; yeniden üretilmedi).
+
+⚠ **Bu bölüm 4 Eylül 2026'da kurtarıldı:** üretici 22 Ağustos'ta yazılmış ama
+PR açılmadığı için `main`'e hiç girmemişti (dal `claude/image-asset-specs-8hzwri`,
+commit `d85ad12`). Metin o commit'ten, yalnızca yeri güncellendi — o gün
+anlatılar hâlâ kök `CLAUDE.md`'deydi.
+
+- **Kompozisyon `kapak.tsx`in aynısı, oranı farklı:** üretimdeki
+  `GameBoardPreview`→`Board` tahtaları + `LandingLogo` + slogan; "ortada
+  güvenli kutu + kenarlarda taşan dekor" ilkesi (başlık görselini mağaza
+  yüzeyleri kendi düzenine göre kırpıyor). Güvenli kutu 1024 CSS px ve
+  **en dar (kare) kırpmanın içinde olduğu ÖLÇÜLÜYOR** — betik her koşuda
+  `x 512–1536 ⊂ 448–1600` kontrolünü basıyor, sığdı varsayılmıyor.
+- **Kapaktaki "kelimeki.com" ve "Ücretsiz · Kurulum yok · Üyelik gerekmez"
+  satırları BİLEREK yok:** mağaza sayfasında adres gereksiz ve "kurulum yok"
+  bir uygulama mağazasında olgusal olarak YANLIŞ olurdu (orada ürün zaten
+  kurulan şey). Kalan mesaj logo + slogan.
+- **⚠ İKİ TAHTA ÜST ÜSTE BİNDİRİLMEZ.** Denendi: ikisi de `opacity: .42`
+  olduğundan bindirme bölgesinde harfler birbirinin içinden geçip alt orta
+  bölgede gözle görülür "hayalet" ikinci bir satır üretiyordu. Çözüm: her
+  tahta tuvalin YARISINI kaplayan kendi kabına kırpılıyor ve tahtanın kendi
+  kart kenarları (yuvarlatılmış köşe + gölge) dört yandan kadraj dışında
+  kalıyor — geriye tek bir birleşme yeri kalıyor, o da tam merkezde,
+  perdenin en opak noktasında, yani görünmüyor. (İlk sürüm `OLCEK 1.35` ile
+  alt %27'yi boş beyaz bırakmıştı; tahtalar 1.9'a çıkıp dikeyde de taşıyor.)
+- **1 MB tavanı 9,4 megapiksele karşı DAR — biçim ölçümle seçiliyor:** betik
+  önce kayıpsız 24-bit PNG deniyor (**2,06 MB — SIĞMIYOR**), sonra tavanın
+  altına giren en yüksek kaliteli JPEG'e düşüyor (**q95, 4:4:4 alt örnekleme
+  YOK → 849.732 bayt = 0,810 MB**). İki biçim de yuvanın kabul ettiği
+  biçimler. Çıktının kendi baytlarından `4096×2304 · kanal=3 · alfa=false ·
+  ≤1 MB` doğrulanıyor; şartlardan biri tutmazsa betik hata koduyla çıkıyor.
+- **Tuval 2048×1152 CSS px, ekran görüntüsü 2× ile alınıyor** (kapak/reel ile
+  aynı desen). `npm run build` ÖNCE koşmuş olmalı ve sayfa `http://` üzerinden
+  açılır — `file://` mutlak asset yollarını çözemediğinden tüm puntoları
+  sessizce 16px okur.
+
 ### Facebook sayfa kapağı (`scripts/kapak/`, 20 Ağustos 2026)
 
 `marketing/sponsored-2026-08/kelimeki-fb-kapak.png` (1640×624).
