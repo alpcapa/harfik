@@ -265,6 +265,14 @@ NewGameRecord? buildGameRecord(
   int? surrenderingIndex,
   required String Function() newId,
   required DateTime Function() now,
+  /// Oyunun gerçekten BİTTİĞİ an (epoch ms). Verilmezse [now] kullanılır —
+  /// normal bitişte doğrusu budur.
+  ///
+  /// ⚠ Terk-edilme yolunda VERİLMESİ ZORUNLU (4 Eylül 2026, web ikizinde
+  /// sahada görüldü): orada kayıt, sürenin dolduğu an değil kullanıcının
+  /// uygulamayı BİR SONRAKİ AÇTIĞI an oluşuyor. Damgalanmayınca bir haftalık
+  /// terkler bugüne yazılıyordu. Doğru an: son etkinlik + [abandonTimeout].
+  int? finishedAtMs,
 }) {
   final effectivePlayers = surrenderingIndex == null
       ? state.players
@@ -300,7 +308,11 @@ NewGameRecord? buildGameRecord(
 
   return NewGameRecord(
     id: newId(),
-    createdAt: now().toUtc().toIso8601String(),
+    createdAt: (finishedAtMs == null
+            ? now()
+            : DateTime.fromMillisecondsSinceEpoch(finishedAtMs))
+        .toUtc()
+        .toIso8601String(),
     playerScore: human.score,
     aiScore: bestOpponentScore,
     result: result,

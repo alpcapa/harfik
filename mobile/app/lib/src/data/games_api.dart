@@ -19,6 +19,7 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/env.dart';
+import '../storage/local_save_store.dart' show abandonTimeout;
 import '../storage/pending_queue_store.dart';
 import '../util/platform.dart';
 import '../util/uuid.dart';
@@ -243,12 +244,17 @@ abstract class GamesGateway {
   /// ⚠ `utm_source` null gidiyor — `logGameStart`ın aynı gerekçesi (portun
   /// `?ref=` damgası henüz yok), yani satır sunucuda 'bilinmiyor' kaynağına
   /// düşüyor. 'direkt' yazmak webin gerçek doğrudan trafiğini şişirirdi.
+  ///
+  /// [finishedAtMs]: bitişin gerçekten olduğu an. Verilmezse sunucunun
+  /// `now()` varsayılanı kalır (normal bitişte doğrusu bu). ⚠ Terk-edilme
+  /// yolunda ZORUNLU — bkz. `recordAbandoned`.
   Future<void> logGameFinish({
     required String? userId,
     required int playerCount,
     required int durationSeconds,
     required bool multiSession,
     required bool endedBySurrender,
+    int? finishedAtMs,
   });
 
   /// `notify-local-game-abandoned` Edge Function'ı — terk edilme cezasının
@@ -370,6 +376,7 @@ class SupabaseGamesGateway implements GamesGateway {
     required int durationSeconds,
     required bool multiSession,
     required bool endedBySurrender,
+    int? finishedAtMs,
   }) async {
     await client.from('game_finishes').insert({
       'user_id': userId,
@@ -377,6 +384,10 @@ class SupabaseGamesGateway implements GamesGateway {
       'duration_seconds': durationSeconds,
       'multi_session': multiSession,
       'ended_by_surrender': endedBySurrender,
+      if (finishedAtMs != null)
+        'created_at': DateTime.fromMillisecondsSinceEpoch(finishedAtMs)
+            .toUtc()
+            .toIso8601String(),
       'utm_source': null,
     });
   }
@@ -553,14 +564,25 @@ class GamesRepo {
   Future<void> recordAbandoned(GameState state,
       {required int endedAtMs}) async {
     if (state.turnCount < 2) return;
+    // Terk anı = son etkinlik + 7 gün. Bu metodun KOŞTUĞU an DEĞİL: buraya
+    // ancak kullanıcı uygulamayı yeniden açınca geliniyor ve o an haftalar
+    // sonra olabilir. Damgalanmazsa bir haftalık terkler "bugün"e yazılır
+    // (4 Eylül 2026, web ikizinde sahada görüldü: bir kullanıcının 19 kaydı
+    // tek bir saniyeye düştü, panelde "dün 38 teslim" diye göründü).
+    final finishedAtMs = endedAtMs + abandonTimeout.inMilliseconds;
     await logFinish(
       playerCount: state.players.length,
       durationSeconds: _durationSeconds(state, endedAtMs),
       multiSession: state.multiSession,
       endedBySurrender: true,
+      finishedAtMs: finishedAtMs,
     );
     final record = buildGameRecord(state,
-        surrendered: true, surrenderingIndex: 0, newId: _newId, now: _now);
+        surrendered: true,
+        surrenderingIndex: 0,
+        newId: _newId,
+        now: _now,
+        finishedAtMs: finishedAtMs);
     if (record != null) await saveDurable(record);
   }
 
@@ -842,6 +864,7 @@ class GamesRepo {
     required int durationSeconds,
     required bool multiSession,
     required bool endedBySurrender,
+    int? finishedAtMs,
   }) async {
     try {
       await gateway.logGameFinish(
@@ -850,6 +873,7 @@ class GamesRepo {
         durationSeconds: durationSeconds,
         multiSession: multiSession,
         endedBySurrender: endedBySurrender,
+        finishedAtMs: finishedAtMs,
       );
     } catch (e) {
       debugPrint('[Kelimeki] logGameFinish hatası: $e');

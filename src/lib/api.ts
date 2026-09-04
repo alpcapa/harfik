@@ -264,6 +264,16 @@ export async function logGameFinish(
   multiSession: boolean,
   endedBySurrender = false,
   userId?: string | null,
+  /**
+   * Bitişin gerçekten olduğu an (epoch ms). Verilmezse sunucunun `now()`
+   * varsayılanı kalır — normal bitişte doğrusu budur.
+   *
+   * ⚠ Terk-edilme yolunda VERİLMESİ ZORUNLU: orada satır, sürenin dolduğu an
+   * değil kullanıcının uygulamayı bir sonraki açtığı an yazılıyor. Bkz.
+   * `buildGameRecord`in aynı parametresi — ikisi AYNI anı taşımalı, yoksa
+   * `games` ile `game_finishes` farklı günlere düşer.
+   */
+  finishedAtMs?: number,
 ): Promise<void> {
   if (!supabase) return;
   let resolvedUserId = userId;
@@ -284,6 +294,9 @@ export async function logGameFinish(
       multi_session: multiSession,
       ended_by_surrender: endedBySurrender,
       utm_source: getStoredUtmSource() ?? 'direkt',
+      ...(finishedAtMs != null
+        ? { created_at: new Date(finishedAtMs).toISOString() }
+        : {}),
     });
   if (error) {
     console.error('[Kelimeki] logGameFinish hatası:', error.message);
@@ -2766,6 +2779,16 @@ export async function submitFeedback(
   email: string | undefined,
   source: FeedbackSource,
   relatedTo?: string | null,
+  /**
+   * Mesajın GERÇEKTEN yazıldığı an (ISO). Verilmezse sunucunun `now()`
+   * varsayılanı kalır — anlık gönderimde doğrusu budur.
+   *
+   * ⚠ Offline kuyruktan gönderirken VERİLMESİ ZORUNLU: kuyruktaki mesaj
+   * günler sonra iletilebilir ve damgalanmazsa admin panelinde yazıldığı
+   * güne değil İLETİLDİĞİ güne düşer. Kuyruk bu değeri zaten tutuyordu
+   * (TTL için), yalnızca göndermiyordu — bkz. `feedbackSync.ts`.
+   */
+  createdAt?: string,
 ): Promise<void> {
   if (!supabase) throw new Error('Supabase yapılandırılmadı.');
   const {
@@ -2777,6 +2800,7 @@ export async function submitFeedback(
     message: message.trim(),
     source,
     related_to: relatedTo ?? null,
+    ...(createdAt ? { created_at: createdAt } : {}),
   });
   if (error) throw new Error(error.message);
 }

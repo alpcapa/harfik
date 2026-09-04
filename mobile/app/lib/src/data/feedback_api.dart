@@ -58,10 +58,17 @@ enum FeedbackSubmitResult {
 /// `feedback` tablosuna tek ağ çağrısının soyutlaması — gerçek uç
 /// [SupabaseFeedbackGateway], testlerde bellek içi sahte.
 abstract class FeedbackGateway {
+  /// [createdAtMs]: mesajın GERÇEKTEN yazıldığı an. Verilmezse sunucunun
+  /// `now()` varsayılanı kalır (anlık gönderimde doğrusu bu).
+  ///
+  /// ⚠ Kuyruktan gönderirken ZORUNLU: kuyruktaki mesaj günler sonra
+  /// iletilebilir ve damgalanmazsa admin panelinde yazıldığı güne değil
+  /// İLETİLDİĞİ güne düşer.
   Future<void> insert({
     required String message,
     String? email,
     required String source,
+    int? createdAtMs,
   });
 }
 
@@ -74,6 +81,7 @@ class SupabaseFeedbackGateway implements FeedbackGateway {
     required String message,
     String? email,
     required String source,
+    int? createdAtMs,
   }) async {
     // Web submitFeedback birebir: girişliyse user_id bağlanır; e-posta
     // alanı boşsa hesabın e-postasına düşülür (`email || user?.email`).
@@ -87,6 +95,10 @@ class SupabaseFeedbackGateway implements FeedbackGateway {
       'message': message.trim(),
       'source': source,
       'related_to': null, // ?contact=1&re= yalnızca web'de var
+      if (createdAtMs != null)
+        'created_at': DateTime.fromMillisecondsSinceEpoch(createdAtMs)
+            .toUtc()
+            .toIso8601String(),
     });
   }
 }
@@ -167,6 +179,10 @@ class FeedbackRepo {
           message: message,
           email: e.payload['email'] as String?,
           source: FeedbackSource.fromDb(e.payload['source'] as String?).db,
+          // Kuyruk girişin YAZILDIĞI anı zaten tutuyor (TTL için) — mesaj
+          // günler sonra iletilse de panelde doğru güne düşsün diye o an
+          // gönderiliyor.
+          createdAtMs: e.createdAt,
         );
         if (ok) {
           await storage.queue.remove(e.id);
@@ -184,11 +200,16 @@ class FeedbackRepo {
     required String message,
     String? email,
     required String source,
+    int? createdAtMs,
   }) async {
     final g = gateway;
     if (g == null) return false;
     try {
-      await g.insert(message: message, email: email, source: source);
+      await g.insert(
+          message: message,
+          email: email,
+          source: source,
+          createdAtMs: createdAtMs);
       return true;
     } catch (e) {
       debugPrint('[Kelimeki] geri bildirim gönderilemedi, kuyrukta: $e');

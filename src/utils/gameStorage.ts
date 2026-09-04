@@ -36,6 +36,16 @@ export interface PendingAbandonedGame {
   durationSeconds: number;
   multiSession: boolean;
   /**
+   * Terk-edilmenin GERÇEKLEŞTİĞİ an (epoch ms) = son etkinlik + 7 gün.
+   *
+   * ⚠ Kaydın YAZILDIĞI an değil: bu kuyruk, kullanıcı uygulamayı bir sonraki
+   * açtığında tüketiliyor ve o an aylar sonra olabilir. 4 Eylül 2026'da
+   * sahada görüldü — bir haftalık terkler hep "bugün" sayılıyordu. Bu alan
+   * eklenmeden önceki kayıtlarda yok; o durumda tüketen taraf "şimdi"ye
+   * düşer (eski davranış), çünkü geriye dönük doğru anı üretmenin yolu yok.
+   */
+  expiredAtMs?: number;
+  /**
    * Terk edilip silinen tam GameState — App.tsx bunu, oyun gerçekten
    * başlamışsa (`turnCount>=2`, mevcut "Çık" akışındaki `gameStarted` ile
    * aynı eşik) hesap sahibi için bir teslim kaydı (-2 k-lig cezası)
@@ -100,6 +110,9 @@ export function loadGameState(): SavedGame | null {
         playerCount: state.players.length,
         durationSeconds: Math.max(0, Math.round((savedAt - Date.parse(state.startedAt)) / 1000)),
         multiSession: state.multiSession,
+        // Terk anı = son etkinlik + 7 gün. Bu satırın koştuğu an DEĞİL: buraya
+        // ancak kullanıcı uygulamayı yeniden açınca geliniyor.
+        expiredAtMs: savedAt + ABANDON_TIMEOUT_MS,
         state,
       });
       clearGameState();

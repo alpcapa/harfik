@@ -233,8 +233,21 @@ export default function App() {
       0,
       Math.round((lastActiveMs - Date.parse(abandoned.startedAt)) / 1000),
     );
-    void logGameFinish(abandoned.players.length, durationSeconds, abandoned.multiSession, true, uid);
-    const record = buildGameRecord(abandoned, true, 0);
+    // Terk anı = son etkinlik + 7 gün. Bu fonksiyonun KOŞTUĞU an değil:
+    // buraya ancak kullanıcı uygulamayı yeniden açınca geliniyor ve o an
+    // haftalar sonra olabilir. Damgalanmazsa bir haftalık terkler "bugün"e
+    // yazılır (4 Eylül 2026, sahada görüldü: bir kullanıcının 19 kaydı tek
+    // bir saniyeye düştü, panelde "dün 38 teslim" diye göründü).
+    const finishedAtMs = lastActiveMs + ABANDON_TIMEOUT_MS;
+    void logGameFinish(
+      abandoned.players.length,
+      durationSeconds,
+      abandoned.multiSession,
+      true,
+      uid,
+      finishedAtMs,
+    );
+    const record = buildGameRecord(abandoned, true, 0, finishedAtMs);
     if (record) void saveGameDurable(record);
   };
 
@@ -688,8 +701,19 @@ export default function App() {
     // işlenir. Hiç oynanmamış (turnCount<2) bir kayıt ceza almadığından
     // telemetriye de hiç girmez.
     if (pending?.state && pending.state.turnCount >= 2) {
-      void logGameFinish(pending.playerCount, pending.durationSeconds, pending.multiSession, true);
-      const record = buildGameRecord(pending.state, true, 0);
+      // `expiredAtMs` terk anını (son etkinlik + 7 gün) taşır; bu effect'in
+      // koştuğu an DEĞİL. Alan yoksa (bu değişiklikten önce kuyruğa girmiş
+      // kayıt) eski davranışa, yani "şimdi"ye düşülür.
+      const finishedAtMs = pending.expiredAtMs;
+      void logGameFinish(
+        pending.playerCount,
+        pending.durationSeconds,
+        pending.multiSession,
+        true,
+        undefined,
+        finishedAtMs,
+      );
+      const record = buildGameRecord(pending.state, true, 0, finishedAtMs);
       if (record) void saveGameDurable(record);
     }
   }, []);

@@ -63,7 +63,17 @@ function enqueue(item: PendingFeedback): void {
 async function trySubmit(item: PendingFeedback): Promise<boolean> {
   if (!navigator.onLine) return false;
   try {
-    await submitFeedback(item.message, item.email ?? undefined, item.source, item.relatedTo);
+    // `item.created_at` mesajın YAZILDIĞI an — kuyruk bunu TTL için zaten
+    // tutuyordu ama göndermiyordu, yani günler sonra iletilen bir mesaj
+    // admin panelinde iletildiği güne düşüyordu (4 Eylül 2026, terk
+    // kayıtlarındaki aynı hata sınıfının ikinci örneği).
+    await submitFeedback(
+      item.message,
+      item.email ?? undefined,
+      item.source,
+      item.relatedTo,
+      item.created_at,
+    );
     return true;
   } catch {
     return false;

@@ -52,10 +52,20 @@ class MemFeedbackGateway implements FeedbackGateway {
 
   @override
   Future<void> insert(
-      {required String message, String? email, required String source}) async {
+      {required String message,
+      String? email,
+      required String source,
+      int? createdAtMs}) async {
     final f = failWith;
     if (f != null) throw f;
-    inserted.add({'message': message, 'email': email, 'source': source});
+    // ⚠ `created_at_ms` KAYDEDİLMEK ZORUNDA: kuyruktan giden mesajın doğru
+    // güne yazıldığını yalnızca burası görebiliyor.
+    inserted.add({
+      'message': message,
+      'email': email,
+      'source': source,
+      'created_at_ms': createdAtMs,
+    });
   }
 }
 
@@ -175,6 +185,31 @@ void main() {
           message: 'bekleyen', email: null, source: FeedbackSource.general);
       expect(await offline.flushPending(), 0);
       expect(await s.queue.count(feedbackKind), 1);
+    });
+
+    // ⚠ 4 Eylül 2026: terk kayıtlarındaki hata sınıfının ikinci örneği.
+    // Kuyruk mesajın YAZILDIĞI anı zaten tutuyordu (TTL için) ama
+    // GÖNDERMİYORDU — günler sonra iletilen bir mesaj admin panelinde
+    // iletildiği güne düşüyordu.
+    test('kuyruktan giden mesaj İLETİLDİĞİ değil YAZILDIĞI güne yazılır',
+        () async {
+      final storage = openTestStorage();
+      final gw = MemFeedbackGateway()..failWith = Exception('ağ');
+      final repo = newRepo(gw, storage);
+
+      final yazilmaAni = clock;
+      await repo.submitDurable(
+          message: 'çevrimdışı yazıldı',
+          email: null,
+          source: FeedbackSource.general);
+
+      // Üç gün sonra bağlantı geri geliyor.
+      clock = yazilmaAni + const Duration(days: 3).inMilliseconds;
+      gw.failWith = null;
+      expect(await repo.flushPending(), 1);
+
+      expect(gw.inserted.single['created_at_ms'], yazilmaAni,
+          reason: 'mesaj iletildiği güne yazılıyor');
     });
   });
 
