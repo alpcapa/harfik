@@ -50,8 +50,8 @@ yolu budur.
 | 1.0.2 | **435** | `d3d4702` | 30 Ağu 2026 | **30 Ağu, 12:07** (Submission 8) | yayınlandı → pasif | Faz 1 paketi + Play In-App Update. İnceleme **10 dk** (15:29 → Published 15:39, Console saatleri) |
 | 1.0.3 | **449** | — | 31 Ağu 2026 (`c1c0437`) | **31 Ağu, 08:00** | yayınlandı → pasif | Telemetriden çıkan İKİ ÇÖKME (derin bağlantı rotası — 11 cihaz · rafta sınır dışı erişim) + bildirim rozetinin gerçekten sıfırlanması |
 | 1.0.4 | **467** | — | 31 Ağu 2026 (`72278c3`) | **1 Eyl, 10:25** | yayınlandı → pasif | Faz 6'nın istemci yarısı + Faz 7'nin iki çökmesi + hata hız sınırı |
-| 1.0.5 | **501** | `4a0a29b` | 1 Eyl 2026 (`f28b3da`) | **2 Eyl, 14:22** (paket) · sürüm 17:58'de güncellendi | ✅ **kapalı testte YAYINDA** (Alpha, tam dağıtım) | Tahta zoom'u + zoom tanıtım balonu + yazı ölçeği + mesaj kutusu etiketi + cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar). `.aab` 63.146.275 bayt, SHA-256 `200e82b9…451d4`. İnceleme ≈23 dk. Yayın sonrası cihazda doğrulandı (kullanıcı: *"1.0.5 turu testi tamam."*) |
-| **1.0.6** | **525** | `711eaaa` | 3 Eyl 2026 (`a33fdaa`) | **4 Eyl, 15:53** (Submission 12) | 🕘 **İNCELEMEDE** | Aşağı bkz. |
+| 1.0.5 | **501** | `4a0a29b` | 1 Eyl 2026 (`f28b3da`) | **2 Eyl, 14:22** (paket) · sürüm 17:58'de güncellendi | yayınlandı → **pasif** (4 Eyl, 1.0.6 devraldı) | Tahta zoom'u + zoom tanıtım balonu + yazı ölçeği + mesaj kutusu etiketi + cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar). `.aab` 63.146.275 bayt, SHA-256 `200e82b9…451d4`. İnceleme ≈23 dk. Yayın sonrası cihazda doğrulandı (kullanıcı: *"1.0.5 turu testi tamam."*) |
+| **1.0.6** | **525** | `711eaaa` | 3 Eyl 2026 (`a33fdaa`) | **4 Eyl, 15:53** (Submission 12) | ✅ **kapalı testte YAYINDA** (Alpha) | Aşağı bkz. |
 
 ⚠ **1.0.0/1.0.1'in `versionCode`'u hâlâ ölçülmedi** (Console'un paket
 listesi ekran görüntüsünde 435'te kesiliyordu). Ama gönderim ↔ SÜRÜM ADI
@@ -88,7 +88,7 @@ bölümü) — "ölçüldü" işaretli üç satır Console'dan doğrudan okundu,
 
 | # | Gönderim | Kapsam | Durum | Sürüm (çıkarım) |
 |---|---|---|---|---|
-| 12 | 4 Eyl 2026, 15:53 | Closed testing - Alpha | 🕘 **İncelemede** | **1.0.6 (525)** — ölçüldü |
+| 12 | 4 Eyl 2026, 15:53 | Closed testing - Alpha | ✅ **Published** | **1.0.6 (525)** — ölçüldü |
 | 11 | 2 Eyl 2026, 17:24 | Closed testing - Alpha | Published | 1.0.5 (501) |
 | 10 | 1 Eyl 2026, 13:27 | Closed testing - Alpha | Published | 1.0.4 (467) |
 | 9 | 31 Ağu 2026, 11:01 | Closed testing - Alpha | Published | 1.0.3 (449) |
@@ -109,7 +109,7 @@ buradaki satır sayısı bilerek tutmuyor.
 ⚠ Console'un kaydı **1 Mayıs 2026'dan itibaren** tutuluyor (sayfanın kendi
 notu). Daha eskisi burada görünmez.
 
-## 1.0.6 (525) — GÖNDERİLDİ, incelemede (4 Eyl 2026, 15:53)
+## 1.0.6 (525) — YAYINDA (gönderim 4 Eyl 2026, 15:53 · Published 16:22'den önce)
 
 **Paket:** `mobile-latest` prerelease'indeki `kelimeki.aab`, koşu 525,
 `711eaaa`'dan derlenmiş, release anahtarıyla imzalı (4 Eyl 10:36).
@@ -473,7 +473,7 @@ beraberlik sayılması, terk edilen oyunun yanlış güne yazılması.
 |---|---|---|---|---|
 | 1.0.2 (435) | 30 Ağu 15:29 | 15:39 | **10 dk** | Console |
 | 1.0.5 (501) | 2 Eyl 17:24 | ~17:58 | **~34 dk** | Console (gönderim) + release satırının "Last updated"ı |
-| 1.0.6 (525) | 4 Eyl 15:53 | — | 🕘 | Console |
+| 1.0.6 (525) | 4 Eyl 15:53 | ≤ 16:22 | **≤ 29 dk** | Console (gönderim) + 16:22'de "Published" görüldü |
 
 ⚠ **DÜZELTME (4 Eylül 2026):** bu bölüm daha önce 1.0.5 için **"≈23 dakika
 (~14:40 → ~15:03)"** diyordu. O rakam Console'dan değil kullanıcının
@@ -485,8 +485,16 @@ Console'a göre paket 14:22'de YÜKLENDİ ama incelemeye 17:24'te GÖNDERİLDİ.
 "Submission activity"deki **gönderim** anını al, paket listesindeki yükleme
 anını değil.
 
-Çıkarım: "10 dakika" bir kural değil **alt sınır**; yarım saati normal say
-ve "yayınlanmadı herhâlde" teşhisini bir saatten önce kurma.
+⚠ **1.0.6'nın süresi bir ÜST SINIR, ölçüm değil.** Console'un "Submitted"
+sütunu gönderim anını verir ama YAYIN anını satırın kendisi göstermiyor;
+elimizdeki tek şey 16:22'de çekilen ve satırı "Published" gösteren ekran
+görüntüsü. Yani inceleme 29 dakikadan KISA sürmüş, ne kadar kısa
+bilinmiyor. Kesin süre satırın ok işaretine girilerek okunabilir —
+okunmadı.
+
+Çıkarım: "10 dakika" bir kural değil **alt sınır**; üç ölçümün üçü de
+(10 dk · ~34 dk · ≤29 dk) yarım saat bandında. Yarım saati normal say ve
+"yayınlanmadı herhâlde" teşhisini bir saatten önce kurma.
 
 ⚠ **Published ≠ testçinin telefonunda.** Kapalı testte paket yayınlansa bile
 testçiye ulaşması için ayrı koşullar var; ayrıntı ve çare (opt-in linkine
