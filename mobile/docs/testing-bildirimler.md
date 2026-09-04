@@ -147,8 +147,22 @@ kırık kod da o senaryoyu geçerdi.
 **İzole etmek için** hiç aktif oyunu/daveti OLMAYAN bir hesapla yap: uygulama
 Canlı'ya kendiliğinden gitmez, dolayısıyla satırın silinmesi/geri gelmesi
 YALNIZCA `_HomeGate`'in açılış çağrısıyla açıklanabilir.
-- [ ] **2.6 Hesabı sil** (Hesap Ayarları → Hesabımı Sil) → o kullanıcının
+- [x] **2.6 Hesabı sil** (Hesap Ayarları → Hesabımı Sil) → o kullanıcının
       satırı da gitmeli (`delete_account_cascade`).
+      ✅ **4 Eylül 2026: geçti** (T5 silindi) — `profiles`, `auth.users`,
+      `push_tokens` ve kendi 8 oyun kaydı sıfırlandı, **sahipsiz token
+      kalmadı**.
+      ⚠ **KANITIN SINIRI YAZILI OLSUN:** silme öncesi satırın VAR OLDUĞU
+      ölçülemedi (giriş ile silme tek adımda yapıldı), yani "satır silindi"
+      dolaylı kanıta dayanıyor — T5 09:40:55'te telefondan giriş yaptı ve bu
+      uygulamada giriş her seferinde token yazıyor (aynı gün §2.3/§2.5 ve
+      09:31:53'te üç kez ölçüldü), silme 09:41:55'te oldu. Kod tarafı da
+      koşulsuz: `delete from public.push_tokens where user_id = p_uid`
+      (migration `20260828114537`, satır 243) bir dala bağlı değil.
+      **Bir sonraki turda ÖNCE token satırını doğrula, SONRA sil** — iki
+      adımı birleştirmek bu maddeyi ölçülemez hale getiriyor. Silme
+      fonksiyonu sildiği sayıları bir özet olarak DÖNDÜRÜYOR ama hiçbir yere
+      YAZMIYOR, yani sonradan bakılacak bir denetim izi yok.
 
 ## 3. Bildirimin düşmesi ve dokunma
 

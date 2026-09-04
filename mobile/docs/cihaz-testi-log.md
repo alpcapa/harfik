@@ -380,6 +380,7 @@ imzalı olduğundan o davranış mağaza sürümünde değişecek.
 | §3.1 · §3.2 · §3.4 · §3b · §3c · §3d · §3e · §3f | ✅ |
 | §3.3 soğuk başlangıç (bildirimden) | ✅ |
 | Oturum kalıcılığı (öldür → simgeden aç) | ✅ |
+| §2.6 hesap silme (T5) | ✅ *(kanıtın sınırı için aşağı bkz.)* |
 
 **Geri tuşu ilk kez sınandı.** `PopScope`/`WillPopScope` depoda HÂLÂ yok,
 yani her şey Flutter'ın varsayılanına düşüyor; sekiz vaka da (Setup kökü,
@@ -437,6 +438,18 @@ geçersizleşmesi, muhtemelen aynı hesabın (Ironman) test boyunca hem web'de
 hem telefonda açık tutulmasından. **Bir sonraki tur bunu görürse önce
 hesabın başka bir yerde açık olup olmadığına baksın**, oturum koduna değil.
 
+**§2.6 geçti ama ölçüm sırası kaçtı — bu bir usul dersi.** T5 silindi;
+`profiles`/`auth.users`/`push_tokens`/kendi 8 oyun kaydı sıfırlandı ve
+sahipsiz token kalmadı. Ancak giriş ile silme TEK adımda yapıldığı için
+silme öncesi token satırının var olduğu ölçülemedi — T5'in zaten baştan
+token'ı yoktu, yani sonradan "satır yok" görmek tek başına hiçbir şey
+kanıtlamıyor. Dolaylı kanıt güçlü (T5 09:40:55'te telefondan girdi, giriş
+her seferinde token yazıyor, silme 09:41:55) ve kod koşulsuz, ama ölçüm
+değil. Madde geçmiş sayıldı; ikinci bir test hesabını yakmak bedele
+değmedi (kullanıcı kararı). **Genel kural: bir silme testinde ÖNCE var
+olduğu ölçülür, SONRA silinir.** Silme fonksiyonu sildiği sayıları
+döndürüyor ama hiçbir yere yazmıyor — sonradan bakılacak denetim izi yok.
+
 ### Koşulmayanlar ve sebebi
 
 - **§1.4/§1.5** (sistem izin diyaloğu ve "ŞİMDİ DEĞİL") — izin bu turdan
@@ -445,7 +458,6 @@ hesabın başka bir yerde açık olup olmadığına baksın**, oturum koduna de�
   ister, en sona bırakıldı.
 - **§3.1b** (uyarı e-postasında "takdirde") — 24 saate yaklaşan bir sıra
   penceresi gerektiriyor, planlanamıyor.
-- **§2.6** (hesap silme token'ı da silmeli) — sıradaki.
 
 ### DERS: tur tekrarlandı, çünkü KAYIT bayattı
 
