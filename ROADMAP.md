@@ -252,6 +252,34 @@ Play Store öncesi kapsamlı incelemenin ilk geçişi. **Kapatılan madde
 `docs/decisions/supabase-ops.md` → "Play Store öncesi güvenlik geçişi"ne
 yazıldı. Aşağıdakiler hâlâ açık.
 
+**İncelemenin dört geçişi var; biri bitti, üçü duruyor** (kullanıcı isteği,
+5 Eylül 2026: *"Play Store öncesi kapsamlı bir code review... Buglar,
+temizlik, güvenlik, performans"*). Sıra ve gerekçe:
+
+| # | Geçiş | Durum |
+|---|---|---|
+| 1 | **Güvenlik** — RLS, grant'ler, RPC yetkileri, Edge Function kapıları | ✅ **BİTTİ** (5 Eylül 2026) |
+| 2 | **Hata avı** — reducer/validator değişmezleri, web↔port paritesi, eşzamanlı yazım yarışları, hook sırası | ⬜ |
+| 3 | **Performans** — bundle, sıcak sorguların index kapsamı (advisor'ın kendi listesi var), liste render'ı, N+1 RPC | ⬜ |
+| 4 | **Temizlik** — ölü kod (bilinen örnek: `App.tsx`'teki `spectating` dalı), erişilemez şubeler, kullanılmayan bağımlılıklar, bayat doküman atıfları | ⬜ |
+
+⚠ **Her geçiş KENDİ oturumunda koşulmalı.** Ölçüldü: web `src/` 38.6K +
+port 68.3K + Edge Function 4.1K satır, yani 111 bin satır uygulama kodu tek
+bağlam penceresine sığmıyor. Tek turda "hepsini tara" denirse — hangi model
+olursa olsun — yüzeysel bir liste ve yanlış pozitif çıkar.
+
+⚠ **Model: Opus 5, efor `high`–`xhigh`.** Fable'a verme: `ROADMAP`in kendi
+ölçütü Fable'ı "geri dönüşü OLMAYAN" iş için ayırıyor, inceleme ise rapor
+üretir — yanlışsa bedeli bir turu yeniden koşmak. Fable'ın hak ettiği yer
+bulguların DÜZELTMESİ: veri kaskadına ya da web+port+DB'yi birlikte
+değiştirmeye çıkan bir düzeltme o sınıfa girer.
+
+⚠ **Güvenlik geçişinin en büyük dersi:** dört bulgunun biri ölçünce BÜYÜDÜ
+(anon sızıntısı), üçü ölçünce KÜÇÜLDÜ (#19/#20 kabul edildi, #21
+sömürülebilir değildi). İlk rapordaki öncelik sırasını ölçümler tersine
+çevirdi. Sonraki geçişlerde de bulguyu ciddiyetiyle birlikte YAZMADAN önce
+ölç.
+
 Zeminin sağlam olduğunu da kayda geçir, çünkü bir sonraki tur bunu yeniden
 ölçmesin: 28 tablonun 28'inde RLS açık, 71 `SECURITY DEFINER` fonksiyonun
 71'inde `search_path` sabitlenmiş, yazma politikalarında istisnasız
