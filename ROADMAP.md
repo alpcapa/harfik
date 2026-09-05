@@ -289,28 +289,61 @@ Zeminin sağlam olduğunu da kayda geçir, çünkü bir sonraki tur bunu yeniden
 herkese açık POST hedefi olmalarına rağmen doğru yazılmış (atomik iddia,
 taze pencere, hedefi gövdeden değil canlı durumdan alma) — bulgu değiller.
 
-### 18. `submit_move` puana değil yalnızca taşa hakem — **KARAR GEREKİYOR**
+### 18. `submit_move` puana değil yalnızca taşa hakem — **GÖLGE FAZINDA**
 
-**Model: Opus 5** (ürün kararı + motor bilgisi). Ölçüldü: fonksiyon oturum,
-sıra sahipliği, katılımcılık, hücre geçerliliği, dolu hücre, **rafta
-gerçekten olan taş**, vergi hedefi/tutarı ve verginin puanı aşamamasını
-sunucuda doğruluyor — ama şunları HİÇ yapmıyor:
+**Durum (5 Eylül 2026):** ayna yazıldı, canlıya uygulandı, gölge fazı AÇIK.
+Karar hâlâ istemcinin değerleriyle veriliyor; sunucu paralelde kendi hesabını
+yapıp sapmayı `move_shadow_diffs`e yazıyor. **Zorlama fazına ancak o tablo
+gerçek oyunlarda boş kaldıktan sonra geçilecek.**
 
-- `words` tablosuna bakmıyor → kelime sözlükte olmak zorunda değil
-- harf puanlarını yeniden hesaplamıyor → `p_base_points` istemciden geldiği
-  gibi işleniyor
-- puan tavanı yok (tek kontrol `p_base_points < 0`)
+**Madde ölçünce BÜYÜDÜ.** İlk yazımda üç eksik sayılıyordu (sözlük yok, harf
+puanı yeniden hesaplanmıyor, tavan yok). Fonksiyonun tamamı okununca iki şey
+daha çıktı:
 
-Yani bir oyunun **meşru katılımcısı**, kendi sırasında, uygulamayı atlayıp
-doğrudan RPC çağırarak tek hamlede istediği puanı yazabilir. Etki veri
-sızıntısı değil **k-lig ve `league_rewards` bütünlüğü**.
+- **Yerleştirme MEŞRUİYETİ de denetlenmiyordu.** Bitişiklik, süreklilik,
+  "aynı satır/sütun", ilk hamlede ev karesi, kelime oluşması — hiçbiri yoktu.
+  Katılımcı 7 taşı tahtaya dağınık serpebiliyordu.
+- **`p_lost_shares` bir TRANSFER kanalıydı:** tutar yalnızca `p_base_points`i
+  aşmamakla sınırlı, o da sınırsız — yani suç ortağının puanı da istendiği
+  kadar yükseltilebiliyordu (iki hesaplı danışıklı senaryo).
 
-**Karar şıkları:** (a) skoru sunucuda yeniden hesapla — motorun puanlama
-kısmının SQL'e ya da bir Edge Function'a taşınması gerekir, ucuz değil;
-(b) makul bir tavan koy (ör. tek hamlede teorik maksimum) — ucuz, tam
-çözmez; (c) "istemci-otoriter skor" olarak bilinçli kabul et ve YAZ.
-Bugün (c) fiilen geçerli ama hiçbir yerde yazılı değil — en azından bu
-düzeltilmeli.
+**Sömürülmüş mü? Hayır** — 2.641 `play` hamlesi tarandı: max 56 puan, p99 38.
+
+**Çözüm SQL'de, Edge Function'da DEĞİL.** Motorun Deno kopyası zaten vardı
+(`_game/`, `play-ai-turn` kullanıyor) ama ölçüm tersini söyledi: Edge yolu her
+hamleye bir ağ adımı ekler ve her soğuk isolate'te 63.905 kelimeyi yükler
+(~1 MB) — bu maliyet YZ turunda kabul edilmişti, insan hamlesinin kritik
+yoluna girmemeli. SQL'de sözlük zaten `public.words` (`word` PRIMARY KEY): bir
+hamlenin oluşturabileceği EN FAZLA 8 kelimenin tamamı **1,1 ms**. Üstelik RPC
+imzası değişmediğinden **kurulu mobil sürümler kırılmıyor**, EXECUTE revoke
+penceresi beklemek gerekmiyor.
+
+**Maliyet ölçüldü:** +7,5-8,6 ms/hamle (bölge hesabı %56'sı). `submit_move`
+bugün zaten ortalama 23-42 ms; kullanıcının hissettiği süre ağ gidiş-dönüşü
+olduğundan fark %5'in altında.
+
+**Parite kanıtı** (kör test değil, negatif eşleriyle): 2.641 gerçek üretim
+hamlesi boş tahtadan yeniden oynatıldı — skorda 0 sapma, yapısal+sözlükte 0
+yanlış red. Vergide ham 10 sapmanın 7'si harness'ın kendi varsayımı (teslim
+bayrağını oyun sonu snapshot'ından okuyordum), 3'ü 24 Ağustos "iletken hücre"
+kural değişikliğinden önceki hamleler — üçünde de ESKİ kural kayıtlı değeri
+birebir üretiyor. Açıklanamayan sapma: **0**. Ayrıntı:
+`docs/decisions/roadmap-arsiv.md` → "Temizlik geçişi"nin ardındaki bölüm.
+
+**AÇIK KALAN İŞ — zorlama fazı:**
+1. `move_shadow_diffs`i izle. **Boş değilse zorlamaya GEÇME**, önce sapmayı
+   çöz (tablo `girdi` sütununda board+placed+players var, vaka tekrar üretilir).
+2. Cihazda dört yolu ayrıca sına (mevcut veride az geçiyor): 4 kişilik oyunda
+   bölge etkileşimi, joker bitiş bonusu, oyun ortasında teslim, ve iletken
+   hücre kuralının kendisi (bu dal golden vector'lara ilk girdiğinde sıfır
+   kapsama vermişti — en riskli yer orası).
+3. Zorlama migration'ı: `submit_move` `p_base_points`/`p_words`/
+   `p_word_scores`/`p_lost_shares`i YOK SAYIP `_km_*` çıktısını kullansın,
+   yapısal/sözlük hatasında `raise exception` etsin.
+4. ⚠ Zorlamaya geçince istemci ile sunucu arasındaki HER kural farkı
+   kullanıcıya hata olarak görünür. `verify-sql-engine-parity` sabitleri ve
+   hata metinlerini kilitliyor ama davranışı kilitleyemiyor — o yüzden 1. adım
+   atlanamaz.
 
 ### 19. `anon` için sınırsız telemetri yazımı — **ÖLÇÜLDÜ: KABUL EDİLDİ**
 

@@ -165,6 +165,15 @@ jobs:
       # yalnızca migration değişen bir PR'da da koşmak ZORUNDA.
       - run: npm run verify-league-tiers
 
+      # Oyun motorunun DÖRDÜNCÜ kopyası SQL'de (`submit_move` artık hamleyi
+      # kendi hesaplıyor — ROADMAP #18). Metin karşılaştırması mümkün değil
+      # (farklı dil), bu yüzden bu adım mekanik olanı kilitliyor: sayısal
+      # sabitler (SIZE/CORNER/RACK/BINGO, X2 bölgesi, X3 merkezi, köşe
+      # sınırları) ve kullanıcıya gösterilen hata metinleri. Biri değişip
+      # öteki unutulursa oyun iki yüzeyde FARKLI kurallarla oynanır.
+      # ⚠ `paths` listesinde `supabase/migrations/**` zaten var.
+      - run: npm run verify-sql-engine-parity
+
       - run: npm run generate-initial-main-view-golden
       - name: Golden tazeliği (initial_main_view)
         run: |

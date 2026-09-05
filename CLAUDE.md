@@ -33,6 +33,7 @@ npm run verify-rematch-slots     # Rövanş kadrosu: ilk koltuk çağıran, YZ'l
 npm run verify-head-to-head      # Kafa kafaya oran çubuğu: üç dilim TAM 100 eder mi (kümülatif yuvarlama)
 npm run verify-fetch-my-games    # Oyun geçmişi: ağ hatası ↔ boş liste ayrımı (sahte Supabase ucu)
 npm run verify-league-tiers      # k-lig kademe/ödül tablosu: migration SQL'i ↔ leagueRank.ts
+npm run verify-sql-engine-parity # motorun DÖRDÜNCÜ (SQL) kopyası ↔ src/ sabitleri ve hata metinleri
 npm run generate-initial-main-view-golden # Giriş sekmesi kuralı: web→port davranış golden'ı (CI tazeliği zorluyor)
 npm run verify-live-games-load    # Canlı oyun listesi: düşen istek sessizce tekrarlanır (boş liste sanılmaz)
 npm run verify-shared-realtime    # Canlı oyun aboneliği: üç çağıran → TEK Realtime kanalı (sunucu maliyeti çarpanı)
@@ -110,6 +111,7 @@ koptu" (bkz. "Belgeleri Güncel Tutma").
 |---|---|
 | Yeni dosya/component/hook, klasör yapısı, somut rakamlar | `CLAUDE.md` + `README.md` ("Belgeleri Güncel Tutma") |
 | `src/game/`, `src/utils/` motor dosyaları | `npm run generate-golden-vectors` + Dart core testleri |
+| Motorun **DÖRDÜNCÜ** kopyası: `supabase/migrations/`'deki `_km_*` fonksiyonları (`submit_move` hamleyi kendi hesaplıyor) | `src/`'deki kural değişirse SQL aynası da ELLE güncellenmeli. **`npm run verify-sql-engine-parity` sabitleri ve hata metinlerini kilitler** (CI'da); davranış paritesi ayrı kanıtlandı (2.641 gerçek hamle yeniden oynatıldı) ve `move_shadow_diffs` tablosu sürekli ölçüyor |
 | Motorun **ÜÇÜNCÜ** kopyası: `supabase/functions/_game/` (`ai.ts`/`validator.ts`/`board.ts`/`constants.ts`/`types.ts`/`turkish.ts`/`tiles.ts`) | `src/`'deki eşi değişirse ELLE kopyala **ve** `play-ai-turn`'ü yeniden deploy et. **`npm run verify-edge-engine-parity` bu ayrışmayı yakalar** (CI'da koşuyor) — golden vector'lar GÖREMEZ (yalnızca web↔port'u kanıtlar), derleyici de göremez (`tsconfig.json` yalnızca `src`'i içeriyor). Kapı 5 Eylül 2026'da, iki motor değişikliği (YZ köşe açılışı · bölge "iletken hücre" kuralı) buraya hiç işlenmediği ve aylarca CANLIDA kaldığı için eklendi |
 | `src/data/meanings.json` | `npm run generate-meanings-db` |
 | `LogoMark`/`KLigMark` | `npm run generate-logo-paths` / `generate-klig-paths` (ikisi de web+Dart yazar) |

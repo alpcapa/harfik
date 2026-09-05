@@ -1696,3 +1696,51 @@ türetildiği kuralın kendisi; normal ölçekte AYNI sayıları verdiği ölç�
 kanıtlanabilir biçimde etkisiz (kutular zaten içerikten geniş), büyüyünce
 kutu içeriğe göre açılıyor. Izgaraya çevirmek oralarda görünümü kaydırırdı,
 çünkü o genişlikler içeriğe tıpatıp oturmuyor (ör. `k-lig` için `w-8`).
+
+## 25. Sunucu-otoriter hamle — gölge fazı (5 Eylül 2026, ROADMAP #18)
+
+**Neden elle:** `submit_move` artık her hamleyi kendi motoruyla da hesaplayıp
+istemcinin gönderdiğiyle karşılaştırıyor. Bu fazda karar DEĞİŞMİYOR (hâlâ
+istemcinin değeri kullanılıyor), yalnızca sapma `move_shadow_diffs` tablosuna
+yazılıyor. Amaç: zorlama fazına geçmeden önce aynanın sahada gerçekten
+istemciyle aynı sonucu verdiğini ölçmek. **Tablo boş kalmazsa zorlamaya
+GEÇİLMEZ.**
+
+Otomatik kanıt zaten var (2.641 gerçek hamle yeniden oynatıldı, 0
+açıklanamayan sapma) ama o kanıt yalnızca GERÇEKLEŞMİŞ yolları kapsıyor.
+Aşağıdaki dördü mevcut veride az geçtiği için elle koşulmalı.
+
+Her turdan sonra kontrol (Supabase → SQL Editor):
+```sql
+select alan, count(*), max(created_at)
+from public.move_shadow_diffs group by alan order by 2 desc;
+```
+Beklenen: **sıfır satır.** Satır varsa `girdi` sütununda board + placed +
+players duruyor, vaka birebir tekrar üretilebilir.
+
+- [ ] **25.1 — Normal Canlı oyun (2 kişilik).** Birkaç hamle oyna: kelime
+      kur, çapraz kelime oluştur, pas geç, taş değiştir. Sorgu boş kalmalı.
+- [ ] **25.2 — 4 kişilik oyunda bölge etkileşimi.** Rakibin bölgesine gir
+      ve/veya sınırına değ; vergi onay modalı çıksın, hamleyi onayla.
+      Ekranda görünen vergi ile skorlara yansıyan pay tutmalı; sorgu boş
+      kalmalı. **En riskli yol burası** — bölge hesabı maliyetin %56'sı ve
+      SQL aynasının en karmaşık parçası.
+- [ ] **25.3 — İletken hücre kuralı (24 Ağustos 2026).** Rakip senin 4×4
+      köşe bloğuna kendi zincirine BAĞLI OLMAYAN bir taş koysun; sen o taşın
+      ötesine oynayıp bölgeni büyüt. Bölge dış hattı büyümeli ve sorgu boş
+      kalmalı. (Bu dal golden vector'lara ilk girdiğinde SIFIR kapsama
+      vermişti — otomatik kanıtın en zayıf olduğu yer.)
+- [ ] **25.4 — Joker bitiş bonusu.** Torba boşken rafını YALNIZCA jokerle
+      bitir (1 joker +25, 2 joker +50). Bonus skora yansımalı, sorgu boş
+      kalmalı.
+- [ ] **25.5 — Oyun ortasında teslim (48 saat zaman aşımı).** Teslim olan
+      oyuncunun bölgesi doğal alana dönmeli; sonraki hamlelerde ona vergi
+      ödenmemeli. Sorgu boş kalmalı.
+- [ ] **25.6 — Eski istemci.** Mağazadan/Appetize'dan ESKİ bir sürümle bir
+      hamle oyna. RPC imzası değişmediği için çalışmalı ve sapma yazmamalı —
+      bu, "kurulu sürümler kırılmıyor" iddiasının sahadaki kanıtı.
+
+⚠ **Hız kontrolü:** hamle gönderimi gözle fark edilir şekilde yavaşlamamalı.
+Ölçülen ek maliyet +7,5-8,6 ms (ağ gidiş-dönüşünün %5'inden az); hissedilir
+bir yavaşlama varsa sebep başka yerdedir, önce `move_shadow_diffs`in
+'hata' satırlarına bak.
