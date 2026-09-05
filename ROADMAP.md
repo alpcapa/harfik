@@ -296,6 +296,27 @@ Karar hâlâ istemcinin değerleriyle veriliyor; sunucu paralelde kendi hesabın
 yapıp sapmayı `move_shadow_diffs`e yazıyor. **Zorlama fazına ancak o tablo
 gerçek oyunlarda boş kaldıktan sonra geçilecek.**
 
+⚠ **"Tablo boş" TEK BAŞINA KANIT DEĞİL — kapı payda olmadan okunamıyor
+(5 Eylül 2026 akşamı ölçüldü).** Boş bir tablonun iki zıt anlamı var: (a)
+sunucu istemciyle birebir uyuştu, (b) o koddan hiç hamle geçmedi ya da sensör
+öldü. Gölge fazı canlıya alındıktan ~1 saat sonra gerçek durum (b)'ye çok
+yakındı: **0 sapma, ama payda yalnızca 10 hamle** (7 oyun, 6 oyuncu) — ve
+ROADMAP'in "cihazda ayrıca sına" dediği riskli yolların TAMAMI sıfır
+kapsamlıydı (0 vergili hamle, 0 joker bitişi, 0 bingo). Kapı nominal olarak
+açıktı, kanıt olarak boştu.
+
+İki şey eklendi:
+1. **Sensörün canlı olduğu kanıtlandı** (negatif eş): `_km_shadow_check`e
+   kasten yanlış bir istemci base'i verildi → `base_points` sapması YAZILDI;
+   geçerli bir hamlede ise sıfır satır. Yani boşluk sensör ölümünden değil.
+2. **`move_shadow_coverage` tablosu** (payda) — her gölge kontrolü bir gün
+   satırını artırır ve riskli yolları AYRI sayar: `hamle`, `cok_oyunculu`,
+   `vergi`, `joker`, `teslim_var`, `blokta_rakip` (sonuncusu 24 Ağustos
+   "iletken hücre" kuralının ÖN KOŞULU — kuralın yükte olduğunu kanıtlamaz,
+   ama sıfırsa hiç denenmediğini kesinleştirir). Sayaç yapısal erken-return'den
+   ÖNCE ve KENDİ exception bloğunda artıyor; ikisi de
+   `verify-sql-engine-parity`de kilitli ve negatif eşle sınandı.
+
 **Madde ölçünce BÜYÜDÜ.** İlk yazımda üç eksik sayılıyordu (sözlük yok, harf
 puanı yeniden hesaplanmıyor, tavan yok). Fonksiyonun tamamı okununca iki şey
 daha çıktı:
@@ -331,8 +352,18 @@ birebir üretiyor. Açıklanamayan sapma: **0**. Ayrıntı:
 `docs/decisions/roadmap-arsiv.md` → "Temizlik geçişi"nin ardındaki bölüm.
 
 **AÇIK KALAN İŞ — zorlama fazı:**
-1. `move_shadow_diffs`i izle. **Boş değilse zorlamaya GEÇME**, önce sapmayı
-   çöz (tablo `girdi` sütununda board+placed+players var, vaka tekrar üretilir).
+1. `move_shadow_diffs`i **`move_shadow_coverage` ile BİRLİKTE** oku. Boş
+   değilse zorlamaya GEÇME, önce sapmayı çöz (tablo `girdi` sütununda
+   board+placed+players var, vaka tekrar üretilir). Boşsa da paydaya bak:
+   ```sql
+   select * from public.move_shadow_coverage order by gun desc;
+   ```
+   **Sayısal kapı (öneri, kullanıcı onayına tabi):** `hamle` birkaç yüze
+   ulaşmadan ve `vergi` · `joker` · `blokta_rakip` sütunlarının her biri
+   sıfırdan çıkmadan zorlamaya geçme — bunlar tam da 2. maddedeki riskli
+   yollar, ve az geçtikleri için gerçek trafikte kendiliğinden birikmeleri
+   zaman alır. `cok_oyunculu` ile `teslim_var` gerçek trafikte hiç
+   birikmeyebilir; onlar için 2. maddedeki cihaz turu tek kanıt.
 2. Cihazda dört yolu ayrıca sına (mevcut veride az geçiyor): 4 kişilik oyunda
    bölge etkileşimi, joker bitiş bonusu, oyun ortasında teslim, ve iletken
    hücre kuralının kendisi (bu dal golden vector'lara ilk girdiğinde sıfır

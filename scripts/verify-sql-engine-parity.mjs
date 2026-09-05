@@ -44,7 +44,9 @@ const sql = readdirSync(migDir)
     f.includes('km_engine_sql_mirror') ||
     f.includes('km_all_territories') ||
     f.includes('km_shadow') ||
-    f.includes('submit_move_shadow_phase'),
+    f.includes('submit_move_shadow_phase') ||
+    f.includes('move_shadow_coverage') ||
+    f.includes('shadow_check_coverage_counter'),
   )
   .sort()
   .map((f) => readFileSync(path.join(migDir, f), 'utf8'))
@@ -124,7 +126,7 @@ const beklenen = [
   '_km_corner_bounds', '_km_corner_cell', '_km_fresh_corners',
   '_km_validate_structural', '_km_validate_words',
   '_km_conquered_chain', '_km_all_territories', '_km_invasion_split',
-  '_km_shadow_check',
+  '_km_shadow_check', '_km_foe_in_own_block',
 ];
 for (const fn of beklenen) {
   check(`${fn} tanımlı`, sql.includes(`function public.${fn}(`));
@@ -138,6 +140,32 @@ check('_km_shadow_check hata yutucuyla sarılı (gerçek hamleyi bozamaz)',
 check('vergi ÖNCEKİ tahtayla hesaplanıyor (v_board_before)',
   sql.includes('v_board_before'),
   'submit_move yaması tahtayı dondurmuyor — vergi yanlış hesaplanır');
+
+// ── 5. Kapsam sayacı (payda) kendi yutucusunda mı ───────────────────────────
+// NEDEN: sayaç dıştaki genel handler'a düşerse, sayaçtaki bir hata
+// `move_shadow_diffs`e sahte bir 'hata' satırı yazar ve "tablo boş kalsın"
+// kapısını kendi gürültüsüyle kapatır — gölge fazının ölçüsü bozulur.
+const sayacDosyasi = readdirSync(migDir)
+  .filter((f) => f.includes('shadow_check_coverage_counter'))
+  .map((f) => readFileSync(path.join(migDir, f), 'utf8'))
+  .join('\n');
+// ⚠ Bölge, sayacın BAŞLANGICI ile yapısal doğrulama arasıyla SINIRLI. Serbest
+// bir lazy-regex burada işe YARAMIYOR: fonksiyonun SONUNDAKİ genel handler da
+// aynı metni taşıdığı için eşleşme oraya kadar uzayıp sayacın yutucusu
+// silinmiş olsa bile yeşil veriyordu (negatif eşle yakalandı).
+const sayacBasi = sayacDosyasi.indexOf('insert into public.move_shadow_coverage');
+const yapisalYeri = sayacDosyasi.indexOf('_km_validate_structural');
+const sayacBolgesi = sayacBasi >= 0 && yapisalYeri > sayacBasi
+  ? sayacDosyasi.slice(sayacBasi, yapisalYeri)
+  : '';
+check('kapsam sayacı kendi exception bloğunda (sahte "hata" satırı yazamaz)',
+  /exception when others then null;\s*end;/.test(sayacBolgesi),
+  'sayaç dıştaki handler\'a düşüyor — move_shadow_diffs kirlenir');
+
+check('kapsam sayacı yapısal erken-return\'den ÖNCE artıyor',
+  sayacDosyasi.indexOf('move_shadow_coverage') <
+    sayacDosyasi.indexOf('_km_validate_structural'),
+  'en ilginç hamleler paydaya hiç girmez');
 
 console.log(failures === 0
   ? '\ntamam — SQL motor aynası TS kaynağıyla tutarlı'
