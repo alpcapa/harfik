@@ -189,11 +189,50 @@ yazılmasın. Kaynak kayıt: `marketing/play-store/console-formlari.md` §7.
 
 ## Sıradaki sürüme binecekler — `main`'de var, MAĞAZADA yok (4 Eylül 2026)
 
-Kullanıcı kararı: *"sürüme gönderme, daha üzerine yeni işler gelecek."*
-Yani `main` ile mağazadaki paket bilerek ayrışıyor; bu bölüm o farkı
-görünür tutuyor, çünkü fark tam da unutulmaya müsait yerde duruyor —
-`main` yeşil, web canlı, CI derlemesi hazır, ama Play'e giden hiçbir
-otomatik yol YOK (gönderim elle).
+⚠ **KARAR DEĞİŞTİ — 5 Eylül 2026 akşamı: sürüm YARIN (6 Eylül) gönderilecek.**
+Bekletme kararı 4 Eylül'de *"sürüme gönderme, daha üzerine yeni işler
+gelecek"* diyordu ve bugün de bir kez tekrarlandı (*"sürümü çıkartmaya
+değecek önemde değil bence, sürümü bekletelim"* — o an tablo üç satır
+görünüyordu). Tablo ÖLÇÜLÜP eksik iki satır eklenince kullanıcı kararı
+çevirdi: *"Aslında bayağı dolmuş. O zaman bunu yarın yeni sürüm ile
+gönderelim."* Yani karar tabloyu düzeltmenin doğrudan sonucu — bayat bir
+liste, bir sürümün gecikmesine mal oluyordu.
+
+Aşağıdaki liste bu sürümün içeriğidir. Ağırlık merkezi hata düzeltmesi;
+en güçlü gerekçe **#452** (taş değiştirmede taslak taşların kaybolması,
+motor katmanı).
+
+`main` ile mağazadaki paket bilerek ayrışıyor; bu bölüm o farkı görünür
+tutuyor, çünkü fark tam da unutulmaya müsait yerde duruyor — `main` yeşil,
+web canlı, CI derlemesi hazır, ama Play'e giden hiçbir otomatik yol YOK
+(gönderim elle).
+
+⚠ **Göndermeden ÖNCE doğrulanacak açık soru:** yeni bir sürüm yayınlamak
+14 gün sayacını sıfırlıyor mu? Beklenen cevap HAYIR (şart "12 tester'ın 14
+gün kesintisiz opt-in kalması", build güncellemek bunu bozmaz) ama bu
+**ölçülmedi** ve bu oturumun Play Console erişimi yok — deponun Console
+iddialarını ölçmeden yazmama kuralı burada da geçerli (bkz. yukarıdaki
+*"12 gerçek sayı mı, tavan mı"* açık sorusu). Kartın kendi metninden
+teyit et; sıfırlıyorsa yarınki sürüm pencereyi 5 gün geri atar.
+
+**Test penceresi:** 5 Eylül itibarıyla **10. gün**, 14. gün ≈ 10 Eylül.
+
+**Kalan günler için kullanıcının niyeti (KARAR DEĞİL, tartışma açık):**
+seviyeli YZ oyununu kalan günlere koymak. Ajanın çekincesi kayda geçsin —
+madde `docs/decisions/product-backlog.md`'de duruyor ve dördü de oradan
+çıkıyor: (1) zorluk algoritmasının kendisi kullanıcı kararıyla BİLEREK
+ertelenmiş (*"Zorluk algoritmasını yaptığımız zaman değerlendiririz"*),
+(2) migration ŞART (puan `leaderboard`/`player_stats` view'larında
+hesaplandığından `games`e seviye alanı gerekiyor), (3) YZ motorun ÜÇ
+kopyasında yaşıyor (`src/utils/ai.ts` · `_game/ai.ts` ·
+`kelimeki_core/find_move.dart`) + golden vector'lar, (4) kaydın kendi
+uyarısı: yerel oyun skorları k-lig'e aktığından YZ'nin gücü değişince
+lider tablosunda eski/yeni dönem karışır ve bu *"bir sürüm sınırına denk
+getirilmeli"* — test penceresinin ortası bunun tersi. Ajanın önerisi:
+üretime çıkıştan sonraki İLK özellik yapmak, kalan günleri ise başvuruyu
+bekleyen iki işe ayırmak (`Preview questions` + tester'lardan YAZILI geri
+bildirim; ikisi de yukarıda açık). **Kullanıcı bu öneriye henüz yanıt
+vermedi.**
 
 **Kapalı testteki paket:** 1.0.6 (525) = commit `711eaaa` (#431).
 **O paketten beri porta dokunan işler:**
