@@ -1698,7 +1698,15 @@ karşılaştırıldı; **9 çalışma-zamanı dosyasının 9'u birebir aynı**.
 `_game/types.ts` canlıda YOK ve bu beklenen: dosya yalnızca `type`/`interface`
 ihraç ediyor, transpile'da tamamen siliniyor (v6'da da yoktu).
 
-⚠ **ÖLÇÜLEMEYEN tek şey çalışma zamanı açılışı.** Bu ortam `supabase.co`ya
+**SAHADA DOĞRULANDI (5 Eylül 2026, aynı gün):** gerçek bir 4 kişilik Canlı
+oyunda (iki test hesabı + 4. koltuk YZ) YZ `KAKTÜS` oynadı — 6 taş,
+**(12,7) → (12,12)**. Köşe 3'ün ev karesi (12,12) ve kelime oradan SOLA
+uzuyor; eski kod başlangıcı yalnızca 9-12 bloğundan seçip sağa/aşağı
+uzattığından bu hamle yapısal olarak imkânsızdı (tavan 4 taştı). Aynı hamle
+paketin açıldığını da kanıtladı. Aşağıdaki uyarı bu ölçümle KAPANDI, tarihsel
+kayıt olarak duruyor.
+
+⚠ **O ana kadar ÖLÇÜLEMEYEN tek şey çalışma zamanı açılışıydı.** Bu ortam `supabase.co`ya
 POST atamıyor (ajan vekili engelliyor — aynı sınır #22'de de kayıtlı), ve
 YZ'li aktif oyun olmadığından fonksiyon deploy'dan sonra hiç çağrılmadı
 (`function_edge_logs`'ta kayıt yok). Paketin esbuild ile temiz bundle olduğu
