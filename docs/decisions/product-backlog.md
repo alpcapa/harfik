@@ -14,6 +14,59 @@ maddeleri, burası İKİ platformu birden ilgilendiren ve bilinçli olarak
 ertelenmiş ürün fikirleri. Bir madde yapılınca buradan silinip ilgili
 bölümün kendi tarihli notuna taşınır.
 
+- **YZ zorluk seviyesi (Kolay/Normal/Zor) + seviyeye göre k-lig puanı
+  (5 Eylül 2026, kullanıcı fikri — ÖLÇÜLDÜ, bilinçli ertelendi):**
+  Kullanıcı: *"İleride belki seviye seçtirebiliriz. Kolay, Normal, Zor gibi.
+  Kazandığı puanları da ona göre veririz. Kolay 1, Normal 2, Zor 3 puan
+  gibi."* Aynı turda "şimdilik böyle kalsın" denildi.
+
+  **Kadran zaten ölçüldü — uygulayan yeniden ölçmesin.** Mekanizma:
+  `findAIMove` en iyi hamle yerine **en iyi N hamleden birini** rastgele
+  seçsin (tüm hamleler arasından düzgün rastgele DEĞİL — o YZ'yi rakip
+  olmaktan çıkarıyor). 24'er oyun, oyuncu 0 mevcut YZ (N=1), oyuncu 1 top-N:
+
+  | N | P1 kazanma | Ort. P0 | Ort. P1 | P1 ort. hamle puanı |
+  |---|---|---|---|---|
+  | 1 (bugünkü) | %54 | 221 | 223 | 12,3 |
+  | 3 | %25 | 247 | 194 | 10,5 |
+  | 5 | %21 | 249 | 182 | 9,7 |
+  | 10 | %8 | 252 | 168 | 8,9 |
+  | 25 | %0 | 275 | 130 | 7,0 |
+  | hepsi | %0 | 295 | 116 | 6,1 |
+
+  ⚠ **Bu tablo YZ↔YZ'dir, insan oranı DEĞİL.** N=1 satırındaki %54 iki AYNI
+  motorun birbirine karşı oynaması, yani yapısı gereği ~%50 — bilgi taşımaz,
+  yalnızca sıfır çizgisi. Gerçek insan oranı ayrı ölçüldü: yerel 2 kişilik
+  oyunlarda **%48,7** (17 Ağustos sonrası, 429 oyun; Eylül'de %41,4).
+  Erteleme kararı bu ikinci sayıya dayanıyor — YZ kabaca başa baş.
+
+  Kadranın en verimli adımı N=1→3 (kazanma %54→%25); sonrası azalan getiri.
+  Seviye eşlemesi için makul başlangıç: Zor=1, Normal=3, Kolay=10.
+
+  **Bedeli küçük değil, üç kalem:**
+  1. **Determinizm.** `findAIMove` bugün deterministik ve golden vector'lar
+     "aynı girdi → aynı hamle" varsayımına dayanıyor. Rastgelelik girdinin
+     PARÇASI olmalı: web ile port AYNI sırada AYNI sayıda rastgele değer
+     tüketmeli (torba/karıştırma için depo bunu zaten yapıyor, desen var).
+     `npm run verify-edge-engine-parity` de rastgeleliği enjekte edilebilir
+     hâle getirmeden çalışamaz.
+  2. **Motorun ÜÇ kopyası** (`src/utils/ai.ts`, portun `find_move.dart`'ı,
+     `supabase/functions/_game/ai.ts`) + golden vector'lar + parite kapısı
+     birlikte değişir. Edge kopyası ayrıca `play-ai-turn` yeniden deploy
+     ister.
+  3. **k-lig puanı ÜÇ yerde yaşıyor:** `src/utils/leaguePoints.ts`
+     (rank 1 → +2, rank 2 → +1 yalnızca 2 kişilik değilse, teslim → -2),
+     portun karşılığı, VE `leaderboard`/`player_stats` SQL view'ları — o
+     yorumun kendisi "view'larla aynı formül" diyor. Seviyeye göre puan
+     vermek üçünü birden değiştirmek demek, yani bir migration da gerekir.
+
+  ⚠ **Ürün tarafında bir kırılma:** yerel oyun skorları k-lig puanına
+  akıyor. YZ zayıflarsa bundan sonraki skorlar geçmişle kıyaslanabilir
+  olmaktan çıkar — lider tablosunda eski/yeni dönem karışır. Ya bilerek
+  kabul edilmeli ya da bir sürüm sınırına denk getirilmeli. Seviyeye göre
+  puan vermek (Kolay 1 / Normal 2 / Zor 3) bu sorunu ZATEN hafifletiyor;
+  ikisi bu yüzden birlikte düşünülmeli, ayrı ayrı değil.
+
 - **Hayalet taş tahtayla birlikte küçülmeli (24 Ağustos 2026, ölçüldü —
   ertelendi):** Sürüklenen taşın hayaleti SABİT 46 px (`App.tsx`'te
   `width/height: 46` + `scale(1.1)` = 50,6 px; portta `_buildGhost`'ta aynı
