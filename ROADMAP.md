@@ -252,7 +252,7 @@ Play Store öncesi kapsamlı incelemenin ilk geçişi. **Kapatılan madde
 `docs/decisions/supabase-ops.md` → "Play Store öncesi güvenlik geçişi"ne
 yazıldı. Aşağıdakiler hâlâ açık.
 
-**İncelemenin dört geçişi var; ikisi bitti, ikisi duruyor** (kullanıcı isteği,
+**İncelemenin dört geçişi var; üçü bitti, biri duruyor** (kullanıcı isteği,
 5 Eylül 2026: *"Play Store öncesi kapsamlı bir code review... Buglar,
 temizlik, güvenlik, performans"*). Sıra ve gerekçe:
 
@@ -260,7 +260,7 @@ temizlik, güvenlik, performans"*). Sıra ve gerekçe:
 |---|---|---|
 | 1 | **Güvenlik** — RLS, grant'ler, RPC yetkileri, Edge Function kapıları | ✅ **BİTTİ** (5 Eylül 2026) |
 | 2 | **Hata avı** — reducer/validator değişmezleri, web↔port paritesi, eşzamanlı yazım yarışları, hook sırası | ✅ **BİTTİ** (5 Eylül 2026) |
-| 3 | **Performans** — bundle, sıcak sorguların index kapsamı (advisor'ın kendi listesi var), liste render'ı, N+1 RPC | ⬜ |
+| 3 | **Performans** — bundle, sıcak sorguların index kapsamı (advisor'ın kendi listesi var), liste render'ı, N+1 RPC | ✅ **BİTTİ** (5 Eylül 2026) |
 | 4 | **Temizlik** — ölü kod (bilinen örnek: `App.tsx`'teki `spectating` dalı), erişilemez şubeler, kullanılmayan bağımlılıklar, bayat doküman atıfları | ⬜ |
 
 ⚠ **Her geçiş KENDİ oturumunda koşulmalı.** Ölçüldü: web `src/` 38.6K +
@@ -459,96 +459,14 @@ kadar içeriden) değeri al, ya da Supabase'in kendi güvenilir istemci-IP
 başlığını kullan. `feedback` limiti dışında bu deseni kopyalayan başka yer
 YOK (arandı) — yani düzeltme tek noktada.
 
-## Hata avı geçişi — KAPANDI (5 Eylül 2026)
+## İncelemenin KAPANMIŞ geçişleri → arşivde
 
-İncelemenin 2. geçişi (yukarıdaki tabloda ⬜ idi). Kapsam ROADMAP'in kendi
-tarifi: reducer/validator değişmezleri, web↔port paritesi, eşzamanlı yazım
-yarışları, hook sırası.
-
-**Yöntem — parite testlerinin GÖREMEDİĞİ yer.** Golden vector'lar web ile
-Dart'ı karşılaştırır; İKİSİNDE DE olan bir hatayı hiçbir zaman göremezler.
-Bu yüzden geçiş iki ayaklı koşuldu: (1) rastgele tam oyunlar + rastgele
-EYLEM dizileriyle motorun değişmezlerini doğrudan sınayan bir koşum,
-(2) aynı kaynaktan kopyalanmış dosyaların birbirinden ayrışıp ayrışmadığının
-ölçülmesi. Üç bulgunun üçünü de bu iki ayak buldu; mevcut testlerin hiçbiri
-kırmızıya dönmüyordu.
-
-**Üçü de KAPANDI** (5 Eylül 2026, aynı gün). #24 (`CONFIRM_SWAP` taslak
-taşları yok ediyordu) ve #25 (taş değiştirme seçimi indekse bağlıydı) web+port
-birlikte düzeltilip iki yeni golden fixture + `npm run verify-swap-invariants`
-kapısıyla; #23 (Edge Function'daki bayat motor kopyası) `src/`den taşınıp
-`play-ai-turn` yeniden deploy edilerek ve `npm run verify-edge-engine-parity`
-kapısı eklenerek. Üçünün de anlatısı `docs/decisions/roadmap-arsiv.md`'de.
-
-✅ **SAHADA DOĞRULANDI (5 Eylül 2026).** Deploy'un tek açık kalemi
-"çalışma zamanı açılışı ölçülemedi" idi; kullanıcı gerçek bir 4 kişilik
-Canlı oyun kurup (iki test hesabı + 4. koltuk YZ) YZ'nin oynamasını
-bekledi. Ölçüm `online_game_moves`tan:
-
-| | |
-|---|---|
-| Hamle | `KAKTÜS` — 6 taş, 7 puan |
-| Hücreler | **(12,7) → (12,12)** |
-
-**Bu tek satır düzeltmeyi kanıtlıyor.** Köşe 3'ün ev karesi (12,12);
-kelimenin SON harfi onun üstünde, yani kelime evden SOLA uzuyor ve 7.
-sütundan başlıyor. `cornerBounds(3)` = satır/sütun 9-12, ve eski kod
-başlangıç hücresini yalnızca o bloğun içinden seçip sağa/aşağı uzatıyordu —
-7. sütundan başlamayı hiç DENEMİYORDU, blok içinden başlayan 6 harflik bir
-kelime de 14. sütuna taşıp eleniyordu. Yani bu hamle eski kodla yapısal
-olarak imkânsızdı (o köşeden tavan 4 taştı). Aynı hamle paketin AÇILDIĞINI
-da kanıtlıyor: sözlük yüklendi, `findAIMove` koştu, `submit_move`a gitti.
-
-⚠ **Beklenen bir log satırı — hata DEĞİL:** aynı saniyede
-`[play-ai-turn] submit_move hatası: Sıra sende değil.` göründü. Sebebi
-tasarım: oyun ekranı açık olan HER katılımcının istemcisi `triggerAiTurn`
-çağırıyor (`OnlineGameScreen.tsx`), üç kişi ekrandayken iki istemci yarıştı,
-ikincisi 158 ms geç kalıp sıra kontrolüne takıldı. `online_game_moves`ta o
-tur için TEK satır var — çifte hamle yok, hakem çalıştı. Ama bu satır
-YZ'li her turda tekrarlanacak ve `function_edge_logs`ta gerçek hataları
-gölgeliyor; istenirse ayrı bir temizlik konusu (göndermeden önce sırayı
-yeniden oku, ya da bu reddi `error` yerine bilgi olarak logla).
-
-⚠ **`supabase.co` bu ortamdan TAMAMEN erişilemez** — #22'de "POST atamıyor"
-yazıyordu, ölçüldü: GET/OPTIONS/POST üçü de `000` dönüyor. Yani Edge
-Function'ları ajan tetikleyemez; bu sınıf doğrulama her zaman gerçek bir
-istemciden gelmek zorunda.
-
-⚠ **Geçişin en büyük dersi:** bu kod tabanında motorun ÜÇ kopyası var
-(web `src/`, port `mobile/kelimeki_core/`, Edge Function
-`supabase/functions/_game/`) ama otomatik parite kanıtı yalnızca İLK
-İKİSİ arasında. Üçüncüsü iki kez sessizce geriye kaldı ve ikisi de
-CANLIDA. Bir sonraki tur "üç kopya" cümlesini varsayım olarak alsın.
-
-### Zemin sağlam — bir sonraki tur bunları YENİDEN ölçmesin
-
-Aşağıdakiler bu geçişte ölçüldü ve temiz çıktı:
-
-- **Motor değişmezleri.** 60 rastgele tam YZ oyunu (2 ve 4 kişilik) + 80
-  rastgele EYLEM dizisi oyunu boyunca her adımda sınandı: taş korunumu
-  (bag+raf+tahta+placed = 100), negatif skor yok, raf hiç 7'yi aşmıyor,
-  **iki oyuncunun bölgesi hiç çakışmıyor** (`CLAUDE.md`'de yazılı değişmez),
-  sıra hiçbir zaman teslim olmuş oyuncuya düşmüyor, `moveHistory`'de negatif
-  puan yok. Tek ihlal #24 idi (düzeltildi; koşum artık UI kısıtı taklit
-  edilmeden de temiz).
-- **Türkçe dil kuralı.** `src/`'de Türkçe metne uygulanmış tek bir native
-  `toUpperCase`/`toLowerCase` YOK (bulunan kullanımlar e-posta başlığı, UTM,
-  ISO tarih gibi ASCII); isme göre sıralayan altı yerin altısı da `trCompare`.
-- **`JSON.parse`.** Yedi çağrı yerinin yedisi de `try/catch` içinde ve bozuk
-  localStorage'da "boş" sayıyor — bozuk kayıt açılışta çökertmiyor.
-- **Hook sırası.** `npm run verify-hook-order` temiz; ayrıca betiğin bilerek
-  görmediği sınıf da arandı — `src/` altında koşullu ya da döngü içinde
-  çağrılan hook YOK.
-- **`submit_move` eşzamanlılığı.** `online_games` satırında `for update`
-  kilidi + `p_move_id` ile idempotent yeniden deneme var. Web'in `p_move_id`
-  göndermemesi bir bulgu DEĞİL: portun kendi yorumunda (`online_api.dart:42`)
-  bilinçli bir mobil dayanıklılık kararı olarak yazılı. (Yine de ucuz bir
-  kalem: web telefonda da koşuyor ve tek satırlık bir UUID, yanıtı kaybolan
-  bir hamlenin ikinci denemesinde sahte "Sıra sende değil."i yapısal olarak
-  imkânsız kılardı.)
-- **Mevcut kapıların tamamı yeşil:** `tsc --noEmit`, 15 `verify-*` betiği,
-  `check-doc-size`, golden vector'lar TAZE (yeniden üretildi, sıfır fark),
-  6842 Dart parite kontrolü, 774 Flutter testi.
+2. geçişin (**hata avı**) ve 3. geçişin (**performans**) tam anlatıları —
+bulgular, ölçümler, "zemin sağlam" listeleri ve dersleri —
+`docs/decisions/roadmap-arsiv.md`'ye taşındı; başlıklar ("Hata avı geçişi —
+KAPANDI", "Performans geçişi — KAPANDI") değiştirilmedi. Yukarıdaki geçiş
+tablosu canlı indeks olarak burada kaldı. Açık kalan tek geçiş 4. (temizlik)
+ve güvenlik geçişinin hâlâ açık maddeleri yukarıda duruyor.
 
 ## Modeller — hangi iş için hangisi
 

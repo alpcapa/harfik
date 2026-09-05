@@ -2,7 +2,7 @@
 // Oturum yoksa "Giriş / Kayıt" düğmesi; oturum varsa profil küçük resmi ve
 // açılır menü (Hesap Ayarları, Skor Kartı, Çıkış) gösterir.
 // Yalnızca Supabase yapılandırıldığında görünür.
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import {
   signOut,
@@ -19,7 +19,7 @@ import { ScoreCard } from './ScoreCard';
 import { AccountSettingsModal } from './AccountSettingsModal';
 import { HelpModal } from './HelpModal';
 import { Leaderboard } from './Leaderboard';
-import { AdminDashboard } from './AdminDashboard';
+const AdminDashboard = lazy(() => import('./AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
 import { KLigMark } from './KLigMark';
 import { FriendsModal } from './FriendsModal';
 import { RankSeal } from './RankSeal';
@@ -341,6 +341,7 @@ export function UserMenu() {
         <HelpModal onClose={() => setModal(null)} />
       )}
       {modal === 'admin' && (
+        <Suspense fallback={null}>
         <AdminDashboard
           onClose={() => {
             setModal(null);
@@ -349,6 +350,7 @@ export function UserMenu() {
             refreshAdminPendingCount();
           }}
         />
+        </Suspense>
       )}
       {modal === 'friends' && (
         <FriendsModal

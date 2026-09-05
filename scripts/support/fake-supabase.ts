@@ -89,6 +89,76 @@ function builder() {
   return chain;
 }
 
+
+// ── Realtime kanalları (sahte) ────────────────────────────────────────────
+//
+// `subscribeMyOnlineGames` bir KANAL açıyor; paylaşılan kanal değişmezini
+// (çok dinleyici → tek abonelik) ölçebilmek için sahte istemcinin de
+// `channel`/`removeChannel` taşıması gerekiyor. Gerçek `RealtimeChannel`in
+// yalnızca burada kullanılan yüzeyi taklit ediliyor: `.on()` zincirlenir,
+// `.subscribe(cb)` durum geri çağrısını saklar.
+
+export interface FakeChannel {
+  name: string;
+  /** `.on('postgres_changes', {table}, cb)` ile kurulan bağlamalar. */
+  bindings: { table: string; cb: () => void }[];
+  statusCb: ((status: string) => void) | null;
+  removed: boolean;
+  on: (kind: string, opts: { table?: string }, cb: () => void) => FakeChannel;
+  subscribe: (cb?: (status: string) => void) => FakeChannel;
+}
+
+const channels: FakeChannel[] = [];
+
+/** Açılmış (ve henüz kaldırılmamış) kanallar. */
+export function __liveChannels(): FakeChannel[] {
+  return channels.filter((c) => !c.removed);
+}
+
+/** Kaldırılmışlar dahil, açılmış TÜM kanallar — "kaç kez açıldı" ölçümü. */
+export function __allChannels(): FakeChannel[] {
+  return channels;
+}
+
+export function __resetChannels(): void {
+  channels.length = 0;
+}
+
+/** Canlı kanallardaki `table` bağlamalarını tetikler (bir WAL olayı gibi). */
+export function __emit(table: string): void {
+  for (const c of __liveChannels()) {
+    for (const b of c.bindings) if (b.table === table) b.cb();
+  }
+}
+
+/** Canlı kanallara `SUBSCRIBED` durumu yollar (soket yeniden bağlandı). */
+export function __emitSubscribed(): void {
+  for (const c of __liveChannels()) c.statusCb?.('SUBSCRIBED');
+}
+
+function makeChannel(name: string): FakeChannel {
+  const ch: FakeChannel = {
+    name,
+    bindings: [],
+    statusCb: null,
+    removed: false,
+    on(_kind, opts, cb) {
+      ch.bindings.push({ table: opts.table ?? '', cb });
+      return ch;
+    },
+    subscribe(cb) {
+      if (cb) {
+        ch.statusCb = cb;
+        // Gerçek istemci gibi: bağlantı kurulunca `SUBSCRIBED` gelir.
+        cb('SUBSCRIBED');
+      }
+      return ch;
+    },
+  };
+  channels.push(ch);
+  return ch;
+}
+
 const client = {
   auth: {
     getSession: async () => ({
@@ -103,6 +173,11 @@ const client = {
         : { data: { user: spec.session?.user ?? null }, error: null },
   },
   from: () => builder(),
+  channel: (name: string) => makeChannel(name),
+  removeChannel: async (ch: FakeChannel) => {
+    ch.removed = true;
+    return 'ok';
+  },
   rpc: async (name: string) => {
     if (shouldFail()) return { data: null, error: NET };
     const err = spec.rpcError?.[name];

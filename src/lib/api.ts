@@ -18,6 +18,7 @@
 // fix'ler) tek tek düzeltildi; kalan tekrar yalnızca bir okunabilirlik
 // notu, ayrı bir davranış riski taşımıyor.
 import { FunctionsHttpError } from '@supabase/supabase-js';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { HeadToHead } from '../utils/headToHead';
 import { supabase, isSupabaseConfigured } from './supabase';
 import type {
@@ -1944,39 +1945,80 @@ export async function withdrawChatReports(targetUserId: string): Promise<void> {
  * `filter` verilmiyor — RLS (`online_games_select_party`/
  * `game_invites_select_party`) zaten yalnızca kendi satırlarını yayınlar,
  * postgres_changes bunu normal select gibi uyguluyor. Dönen fonksiyon
- * aboneliği iptal eder — bileşen unmount olduğunda çağrılmalı. Setup ve
- * LiveGamesTab bunu AYNI ANDA (biri diğerinin çocuğu olarak) çağırabildiğinden
- * kanal adı her seferinde benzersiz üretiliyor — sabit bir isim iki
- * abonelik aynı topic'i paylaşırdı.
+ * aboneliği iptal eder — bileşen unmount olduğunda çağrılmalı.
+ *
+ * **TEK KANAL, ÇOK DİNLEYİCİ (5 Eylül 2026 — performans geçişi).** Bu
+ * fonksiyonun ÜÇ çağıranı var ve üçü aynı anda canlı olabiliyor: `Setup`
+ * ("Arkadaşınla (N)" rozeti), `LiveGamesTab` (liste) ve `useAppIconBadge`
+ * (uygulama ikonu rozeti). Öncesinde her çağrı KENDİ kanalını açıyordu
+ * (`crypto.randomUUID` ile benzersiz ad) — yani tek bir kullanıcı için
+ * 3 kanal × 3 tablo = **9 ayrı Realtime aboneliği**.
+ *
+ * Bedeli ölçüldü: sunucuda WAL'daki her satır değişikliği, o değişikliği
+ * gören HER abonelik için ayrı ayrı RLS'ten geçiriliyor
+ * (`realtime.apply_rls`) ve bu tek başına veritabanının toplam yürütme
+ * süresinin **%75,8'i** (`pg_stat_statements`, 69 günlük pencere:
+ * 3,38 M çağrı / 18.327 s). Yani abonelik sayısı doğrudan çarpan.
+ *
+ * Çözüm çağıranları DEĞİŞTİRMİYOR: imza ve dönen "iptal et" fonksiyonu
+ * aynı kaldı, kanal içeride referans sayımıyla paylaşılıyor. Sonuç 9 → 3
+ * abonelik. Kanal adı yine benzersiz (sabit ad, oturum kapanıp yeniden
+ * açıldığında eski topic'e çarpabilirdi) ama artık kullanıcı başına BİR
+ * tane üretiliyor.
  */
+type MyGamesListener = { onChange: () => void; onResubscribe?: () => void };
+
+let myGamesChannel: RealtimeChannel | null = null;
+const myGamesListeners = new Set<MyGamesListener>();
+
 export function subscribeMyOnlineGames(
   onChange: () => void,
   onResubscribe?: () => void,
 ): () => void {
   if (!supabase) return () => {};
   const client = supabase;
-  // İLK `SUBSCRIBED` atlanır, 2.'den itibaren `onResubscribe` çağrılır.
-  //
-  // NEDEN (21 Ağustos 2026): Ağ değişiminin en doğrudan sinyali soketin
-  // kopup yeniden bağlanmasıdır — IP değişince websocket düşer, kütüphane
-  // yeniden bağlanır. O aralıkta yayınlanan olaylar KALICI OLARAK kaybolur
-  // (Realtime canlı bir akış, kuyruk değil), yani yeniden bağlanma anı tam
-  // olarak "gerçeği yeniden oku" anıdır — projenin `useOnlineStatus`/sohbet/
-  // bulut senkronunda üç kez öğrendiği aynı ders. İlk aboneliği atlamak
-  // şart: o, mount'taki `loadGames`in hemen ardından gelir ve aynı isteği
-  // ikinci kez attırırdı.
-  let subscribedOnce = false;
-  const channel = client
-    .channel(`my_online_games_${crypto.randomUUID()}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'online_games' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'game_invites' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'online_game_states' }, onChange)
-    .subscribe((status) => {
-      if (status !== 'SUBSCRIBED') return;
-      if (subscribedOnce) onResubscribe?.();
-      subscribedOnce = true;
-    });
+  const listener: MyGamesListener = { onChange, onResubscribe };
+  myGamesListeners.add(listener);
+
+  if (!myGamesChannel) {
+    // İLK `SUBSCRIBED` atlanır, 2.'den itibaren `onResubscribe` çağrılır.
+    //
+    // NEDEN (21 Ağustos 2026): Ağ değişiminin en doğrudan sinyali soketin
+    // kopup yeniden bağlanmasıdır — IP değişince websocket düşer, kütüphane
+    // yeniden bağlanır. O aralıkta yayınlanan olaylar KALICI OLARAK kaybolur
+    // (Realtime canlı bir akış, kuyruk değil), yani yeniden bağlanma anı tam
+    // olarak "gerçeği yeniden oku" anıdır — projenin `useOnlineStatus`/sohbet/
+    // bulut senkronunda üç kez öğrendiği aynı ders. İlk aboneliği atlamak
+    // şart: o, mount'taki `loadGames`in hemen ardından gelir ve aynı isteği
+    // ikinci kez attırırdı.
+    //
+    // Paylaşılan kanalda bu kural DİNLEYİCİ başına değil KANAL başına
+    // işliyor ve doğrusu bu: kanal zaten bağlıyken katılan bir dinleyici
+    // (ör. `LiveGamesTab` sonradan açıldığında) kendi ilk yüklemesini
+    // mount'ta zaten yapıyor — ona "yeniden bağlandık, tazele" demek o
+    // isteği ikinci kez attırırdı. Soket gerçekten kopup döndüğünde ise
+    // O ANDAKİ tüm dinleyiciler haber alır.
+    let subscribedOnce = false;
+    const fanOut = () => {
+      for (const l of myGamesListeners) l.onChange();
+    };
+    myGamesChannel = client
+      .channel(`my_online_games_${crypto.randomUUID()}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'online_games' }, fanOut)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'game_invites' }, fanOut)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'online_game_states' }, fanOut)
+      .subscribe((status) => {
+        if (status !== 'SUBSCRIBED') return;
+        if (subscribedOnce) for (const l of myGamesListeners) l.onResubscribe?.();
+        subscribedOnce = true;
+      });
+  }
+
   return () => {
+    myGamesListeners.delete(listener);
+    if (myGamesListeners.size > 0 || !myGamesChannel) return;
+    const channel = myGamesChannel;
+    myGamesChannel = null;
     void client.removeChannel(channel);
   };
 }
