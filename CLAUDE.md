@@ -725,16 +725,19 @@ Kullanıcı iPad'den çalışıyor; bunu tetikleyecek bir CLI/CI erişimi yok.
 2. **`verify_jwt` sessizce sıfırlanır:** parametre geçilmezse araç `true`
    varsayar ve önceki değeri KORUMAZ. **Her deploy'dan ÖNCE
    `list_edge_functions` ile mevcut değeri oku ve AYNI değeri açıkça geçir.**
-   `false` olması gereken SEKİZ fonksiyon (30 Ağustos 2026'da canlıdan
-   sayıldı — Faz 4'le `notify-your-turn` eklendi):
+   `false` olması gereken YEDİ fonksiyon (5 Eylül 2026'da canlıdan sayıldı):
    `notify-deadline-warnings`, `notify-friend-request-reminders`,
    `notify-turn-timeout-surrender`, `notify-welcome`,
-   `sweep-unconfirmed-accounts`, `inbound-email`, `push-selftest`,
-   `notify-your-turn`.
-   Sonuncusu bir TEŞHİS fonksiyonu (FCM kimlik zinciri kontrolü) ve
-   `verify_jwt: false` olması zararsız — yalnızca iki boolean döndürüyor,
-   hiçbir sır yazmıyor; ayrıntı `supabase/functions/push-selftest/index.ts`
-   başlığında. Silinebilir.
+   `sweep-unconfirmed-accounts`, `inbound-email`, `notify-your-turn`.
+   Yedisi de bir cron/webhook hedefi, yani gerçekten herkese açık bir POST
+   ucu olmak zorunda; güvenlik geçişi (5 Eylül 2026) üçünü ayrıca okuyup
+   doğru yazıldıklarını (atomik iddia, taze pencere, hedefi gövdeden değil
+   canlı durumdan alma) kayda geçirdi.
+   ⚠ Liste 30 Ağustos'ta SEKİZDİ; sekizinci `push-selftest` teşhis
+   fonksiyonuydu ve temizlik geçişinde canlıdan silindi (aşağı bkz.).
+   **Yeni bir fonksiyon `verify_jwt: false` alacaksa buraya YAZ** — bu liste
+   deploy öncesi okunan tek envanter, eksik kalırsa bir sonraki deploy onu
+   sessizce `true`ya çevirir.
 
 
 

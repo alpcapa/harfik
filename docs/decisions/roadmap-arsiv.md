@@ -2090,14 +2090,26 @@ Gerçekten kaldırılan yalnızca hiçbir sınıfa girmeyen ikisi oldu.
   gibi görünen tek "eksik dosya" bölünmenin kendisini anlatan tarihsel bir
   cümle, bayat bir atıf değil. `docs/decisions/` indeks tablosu da
   gerçek dosya listesiyle birebir tutuyor.
-- **Edge Function envanteri kapalı:** repodaki 17 fonksiyondan 16'sının
-  çağıranı var (`src/`, `mobile/`, migration cron'ları). Tek istisna
-  `push-selftest` — kök `CLAUDE.md`'de zaten "silinebilir" diye kayıtlı bir
-  teşhis fonksiyonu. **Silinmedi:** ajanın Supabase MCP'sinde Edge Function
-  SİLEN bir araç yok, yalnız repo kopyasını silmek canlıda kaynaksız bir
-  uç bırakırdı (daha kötü). Kullanıcının adımı: Supabase Dashboard → Edge
-  Functions → `push-selftest` → Delete; sonra `supabase/functions/push-selftest/`
-  klasörü de silinebilir.
+- **Edge Function envanteri kapalı — ve bir tanesi SİLİNDİ.** Repodaki 17
+  fonksiyondan 16'sının çağıranı vardı (`src/`, `mobile/`, migration
+  cron'ları); tek istisna `push-selftest`, kök `CLAUDE.md`'de zaten
+  "silinebilir" diye kayıtlı bir FCM teşhis fonksiyonuydu ve `verify_jwt:
+  false` ile herkese açık bir POST ucuydu.
+  **Sıra ÖNEMLİYDİ, ikisi aynı anda yapılamazdı:** ajanın Supabase MCP'sinde
+  Edge Function SİLEN bir araç YOK (`list`/`deploy`/`get` var, `delete`
+  yok), yani yalnız repo kopyasını silmek canlıda kaynaksız bir uç
+  bırakırdı — ölü kodu temizlemek yerine onu görünmez yapardı. Bu yüzden
+  önce kullanıcı panelden sildi (5 Eylül 2026), sonra `list_edge_functions`
+  ile 17 → **16** doğrulandı, ve ancak o zaman
+  `supabase/functions/push-selftest/` repodan kaldırıldı.
+  **Ders:** canlı bir kaynağın repo kopyasını silmeden önce canlıdaki
+  karşılığının gittiğini ÖLÇ; ajanın yetmediği yerde adımı kullanıcıya ver
+  ve dönüşünü doğrula — "silinebilir" notu silinmiş demek değil (bu notun
+  kendisi 30 Ağustos'tan beri duruyordu).
+  ⚠ Yan etki: kök `CLAUDE.md`'deki `verify_jwt: false` envanteri SEKİZDEN
+  YEDİYE indi. O liste her deploy öncesi okunan tek kaynak olduğundan aynı
+  PR'da güncellendi — güncellenmeseydi bir sonraki deploy silinmiş bir
+  fonksiyonu arardı.
 - **`scripts/generate-klig-logo.mjs`** hiçbir npm script'ten ya da dokümandan
   çağrılmıyor ama ÖLÜ DEĞİL — `generate-logo.mjs` gibi elle koşulan bir
   pazarlama üreticisi. Silmek yerine `docs/decisions/marketing-assets.md`'nin
