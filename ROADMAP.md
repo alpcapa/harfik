@@ -480,13 +480,39 @@ kapısıyla; #23 (Edge Function'daki bayat motor kopyası) `src/`den taşınıp
 `play-ai-turn` yeniden deploy edilerek ve `npm run verify-edge-engine-parity`
 kapısı eklenerek. Üçünün de anlatısı `docs/decisions/roadmap-arsiv.md`'de.
 
-⚠ **Açık kalan tek kalem geçişin kendisinden DEĞİL:** #23'ün deploy'u
-yerelde ve kaynak düzeyinde doğrulandı (yüklenen 9 dosyanın 9'u depoyla
-birebir), ama **çalışma zamanı açılışı ölçülemedi** — bu ortam
-`supabase.co`ya POST atamıyor (aynı sınır #22'de de kayıtlı) ve YZ'li aktif
-oyun olmadığından fonksiyon hiç çağrılmadı. İlk gerçek YZ turu paketi
-çalıştıracak; arıza SESSİZ olacağından (fonksiyonun `catch`i son çare olarak
-"pas geç"e düşüyor) o turda `function_edge_logs`a bakmakta fayda var.
+✅ **SAHADA DOĞRULANDI (5 Eylül 2026).** Deploy'un tek açık kalemi
+"çalışma zamanı açılışı ölçülemedi" idi; kullanıcı gerçek bir 4 kişilik
+Canlı oyun kurup (iki test hesabı + 4. koltuk YZ) YZ'nin oynamasını
+bekledi. Ölçüm `online_game_moves`tan:
+
+| | |
+|---|---|
+| Hamle | `KAKTÜS` — 6 taş, 7 puan |
+| Hücreler | **(12,7) → (12,12)** |
+
+**Bu tek satır düzeltmeyi kanıtlıyor.** Köşe 3'ün ev karesi (12,12);
+kelimenin SON harfi onun üstünde, yani kelime evden SOLA uzuyor ve 7.
+sütundan başlıyor. `cornerBounds(3)` = satır/sütun 9-12, ve eski kod
+başlangıç hücresini yalnızca o bloğun içinden seçip sağa/aşağı uzatıyordu —
+7. sütundan başlamayı hiç DENEMİYORDU, blok içinden başlayan 6 harflik bir
+kelime de 14. sütuna taşıp eleniyordu. Yani bu hamle eski kodla yapısal
+olarak imkânsızdı (o köşeden tavan 4 taştı). Aynı hamle paketin AÇILDIĞINI
+da kanıtlıyor: sözlük yüklendi, `findAIMove` koştu, `submit_move`a gitti.
+
+⚠ **Beklenen bir log satırı — hata DEĞİL:** aynı saniyede
+`[play-ai-turn] submit_move hatası: Sıra sende değil.` göründü. Sebebi
+tasarım: oyun ekranı açık olan HER katılımcının istemcisi `triggerAiTurn`
+çağırıyor (`OnlineGameScreen.tsx`), üç kişi ekrandayken iki istemci yarıştı,
+ikincisi 158 ms geç kalıp sıra kontrolüne takıldı. `online_game_moves`ta o
+tur için TEK satır var — çifte hamle yok, hakem çalıştı. Ama bu satır
+YZ'li her turda tekrarlanacak ve `function_edge_logs`ta gerçek hataları
+gölgeliyor; istenirse ayrı bir temizlik konusu (göndermeden önce sırayı
+yeniden oku, ya da bu reddi `error` yerine bilgi olarak logla).
+
+⚠ **`supabase.co` bu ortamdan TAMAMEN erişilemez** — #22'de "POST atamıyor"
+yazıyordu, ölçüldü: GET/OPTIONS/POST üçü de `000` dönüyor. Yani Edge
+Function'ları ajan tetikleyemez; bu sınıf doğrulama her zaman gerçek bir
+istemciden gelmek zorunda.
 
 ⚠ **Geçişin en büyük dersi:** bu kod tabanında motorun ÜÇ kopyası var
 (web `src/`, port `mobile/kelimeki_core/`, Edge Function
