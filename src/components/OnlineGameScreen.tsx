@@ -1251,6 +1251,15 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
 
   const handleConfirmSwap = async () => {
     if (!canAct || busy || !me || state.swapSelection.length === 0) return;
+    // ⚠ `swapSelection` seçildiği ANDAKİ rafın indeksleri. Araya sunucudan
+    // bir durum güncellemesi girdiyse indeks sınır dışına düşebilir; burada
+    // `me.rack[i].letter` okumak `TypeError` fırlatır ve bu satır `try`
+    // bloğunun DIŞINDA olduğundan hata yakalanmadan kaçar. Eksik harfle
+    // göndermek de YANLIŞ olurdu — o yüzden filtrelemiyoruz, gönderimi
+    // İPTAL ediyoruz; kullanıcı güncel rafta yeniden seçer. Port bu
+    // korumayı baştan beri taşıyordu (`online_game_screen.dart`), web'de
+    // yoktu (5 Eylül 2026 hata avı geçişi, #25).
+    if (state.swapSelection.some((i) => i < 0 || i >= me.rack.length)) return;
     const letters = state.swapSelection.map((i) => me.rack[i].letter);
     setBusy(true);
     try {

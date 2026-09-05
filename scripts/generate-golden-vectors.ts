@@ -436,6 +436,33 @@ function craftedAiExchangeScenario(): void {
   run.finish('reducer_crafted_ai_exchange');
 }
 
+/**
+ * Taş değiştirme + tahtada taslak taş — TAŞ KORUNUMU (5 Eylül 2026, hata avı
+ * geçişi #24).
+ *
+ * NEDEN AYRI BİR SENARYO: `CONFIRM_SWAP` eskiden `placed`i rafa geri almadan
+ * `{}` yazıyordu, yani swap modunda tahtada duran taslak taşlar oyundan
+ * tamamen siliniyordu (rastgele eylem koşumu 100 taşlık torbayı 93'e
+ * düşürdü). Bu kombinasyonu bugün DÖRT ekrandaki dört ayrı `if` engelliyor,
+ * yani mevcut senaryoların hiçbiri bu dala girmiyordu — düzeltme
+ * korumasız kalırdı. Fixture doğrudan reducer'a konuşuyor: UI guard'ları
+ * burada yok, dolayısıyla dal gerçekten çalışıyor.
+ */
+function craftedSwapDraftScenario(): void {
+  const run = new Runner(31, 1);
+  const d = (a: Action) => run.dispatch(a);
+  d({ type: 'START', players: [{ name: 'Taslakçı', isAI: false }, { name: 'Rakip', isAI: false }] });
+  // Swap moduna gir, sonra (UI'ın izin vermediği ama reducer'ın kabul ettiği
+  // yoldan) tahtaya iki taslak taş koy ve taş değiştir.
+  d({ type: 'TOGGLE_SWAP_MODE' });
+  d({ type: 'PLACE_TILE', r: 0, c: 0, rackIndex: 0 });
+  d({ type: 'PLACE_TILE', r: 0, c: 1, rackIndex: 0 });
+  d({ type: 'TOGGLE_SWAP_TILE', index: 0 });
+  d({ type: 'TOGGLE_SWAP_TILE', index: 2 });
+  d({ type: 'CONFIRM_SWAP' });
+  run.finish('reducer_crafted_swap_draft');
+}
+
 function syncScenario(): void {
   const run = new Runner(2024, 1);
   const d = (a: Action) => run.dispatch(a);
@@ -491,6 +518,31 @@ function syncScenario(): void {
     myRack: myRack2,
     mySlotIndex: 0,
   });
+  // 2b) "Karıştır → Değiştir → taş seç → arka plan senkronu" (hata avı #25):
+  //     turn İLERLEMEZ, yani swapMode bilerek korunur; ama raf sunucudaki
+  //     sıraya geri yazıldığından aynı indeks artık BAŞKA bir taşı gösterir →
+  //     swapSelection DÜŞMELİ. Fixture olmadan bu davranış korumasız kalırdı
+  //     (öteki sync vakalarının hiçbirinde dolu bir swapSelection yok).
+  //     ⚠ Bilerek 3. adımdan ÖNCE: orada `current` 1'e geçiyor ve
+  //     SHUFFLE_RACK sırası gelen oyuncunun rafına işlediğinden benim
+  //     rafımı hiç karıştırmazdı (senaryo sessizce anlamsızlaşırdı).
+  d({ type: 'TOGGLE_SWAP_MODE' }); // taslak taşı rafa geri alır
+  const sunucuRafi = JSON.parse(
+    JSON.stringify(run.state.players[0].rack.map(serTile)),
+  ) as Tile[];
+  d({ type: 'TOGGLE_SWAP_MODE' }); // moddan çık (karıştırma modda kapalı)
+  d({ type: 'SHUFFLE_RACK' });
+  d({ type: 'TOGGLE_SWAP_MODE' });
+  d({ type: 'TOGGLE_SWAP_TILE', index: 0 });
+  d({ type: 'TOGGLE_SWAP_TILE', index: 2 });
+  d({
+    type: 'SYNC_ONLINE_STATE',
+    publicState: toPublic(run.state, run.state.turnCount) as never,
+    myRack: sunucuRafi,
+    mySlotIndex: 0,
+  });
+  d({ type: 'TOGGLE_SWAP_MODE' }); // modu kapat, 3. adım temiz başlasın
+
   // 3) turn_count ilerlemiş sync: taslak temizlenir, raf sunucudan gelir
   const pubAdvanced = toPublic(run.state, run.state.turnCount + 1);
   pubAdvanced.current = 1;
@@ -831,6 +883,7 @@ async function main(): Promise<void> {
   craftedFinishScenario();
   craftedBingoScenario();
   craftedAiExchangeScenario();
+  craftedSwapDraftScenario();
   syncScenario();
   setRandomSource(); // Math.random'a geri dön
   console.log('tamam');

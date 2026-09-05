@@ -948,9 +948,22 @@ bağlı değil.)
     kaldırıldı (bkz. Parça 109), artık dört köşeden de bingo mümkün.
   - `reducer_crafted_ai_exchange.json` — YZ'nin "hamle yok → raf değiştir"
     dalı (yalnız B'lerden raf hiçbir kelime heceleyemez; doğal oyunda nadir).
+  - `reducer_crafted_swap_draft.json` — swap modunda tahtada taslak taş
+    varken `CONFIRM_SWAP` (5 Eylül 2026, hata avı geçişi #24). Bu
+    kombinasyonu bugün DÖRT ekrandaki dört ayrı `if` engelliyor, yani
+    doğal oyunda hiç oluşmuyor — fixture doğrudan reducer'a konuşuyor.
+    Eskiden taslak taşlar rafa da torbaya da dönmeden siliniyordu (100 →
+    98 taş); kural geri alınıp yeniden üretilerek fixture'ın duyarlı
+    olduğu kanıtlandı.
   - `reducer_sync.json` — SYNC_ONLINE_STATE birleşme mantığı: aynı
     turn_count'ta taslak taşların korunması + `subtractPlacedFromRack`
-    (taş çoğaltma hatasının önlemi), turn ilerleyince taslağın temizlenmesi.
+    (taş çoğaltma hatasının önlemi), turn ilerleyince taslağın temizlenmesi,
+    ve (2b adımı, hata avı #25) **rafı yeniden sıralayan bir senkronun
+    indeks tabanlı `swapSelection`ı düşürmesi** — "Karıştır"dan sonra aynı
+    indeks başka bir taşı gösterdiğinden seçim korunursa yanlış taş
+    değiştirilirdi. ⚠ 2b bilerek 3. adımdan ÖNCE: orada `current` 1'e
+    geçiyor ve `SHUFFLE_RACK` sırası gelen oyuncunun rafına işlediğinden
+    senaryo sessizce anlamsızlaşırdı.
 - Bilinçli kapsam DIŞI (vektörlerde yok): `MOVE_PLACED_TILE`in dolu hücreye
   reddi gibi bazı tekil no-op korumaları (kod birebir port, düşük risk);
   YZ'nin `freshCorners` çok-köşe dalı (üretimde erişilemez, TS'te de not

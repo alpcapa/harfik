@@ -471,7 +471,14 @@ Bu yüzden geçiş iki ayaklı koşuldu: (1) rastgele tam oyunlar + rastgele
 EYLEM dizileriyle motorun değişmezlerini doğrudan sınayan bir koşum,
 (2) aynı kaynaktan kopyalanmış dosyaların birbirinden ayrışıp ayrışmadığının
 ölçülmesi. Üç bulgunun üçünü de bu iki ayak buldu; mevcut testlerin hiçbiri
-kırmızıya dönmüyor.
+kırmızıya dönmüyordu.
+
+**Üçün ikisi KAPANDI** (5 Eylül 2026, aynı gün): #24 (`CONFIRM_SWAP` taslak
+taşları yok ediyordu) ve #25 (taş değiştirme seçimi indekse bağlıydı) web+port
+birlikte düzeltildi, iki yeni golden fixture + `npm run verify-swap-invariants`
+kapısıyla korumaya alındı — anlatı `docs/decisions/roadmap-arsiv.md`'de.
+Aşağıda yalnızca **#23** duruyor: o bir SUNUCU değişikliği ve kendi turunda
+gidiyor.
 
 ⚠ **Geçişin en büyük dersi:** bu kod tabanında motorun ÜÇ kopyası var
 (web `src/`, port `mobile/kelimeki_core/`, Edge Function
@@ -542,70 +549,6 @@ ancak ölçülürse tutuyor. Betiği düzeltmeden ÖNCE eklemek anlamsız
 (ilk koşuşta kırmızı). **Bu bir SUNUCU değişikliği: `main`'e merge
 beklemez, kapalı testteki paketi de anında etkiler.**
 
-### 24. `CONFIRM_SWAP` tahtadaki taslak taşları YOK EDİYOR — **GİZİL, ölçüldü**
-
-Rastgele eylem koşumu 100 taşlık torbanın **93'e düştüğü** bir dizi buldu.
-Sebep tek satır: `CONFIRM_SWAP` (`gameReducer.ts`) `placed: {}` yazıyor ama
-o taşları rafa GERİ ALMIYOR. `TOGGLE_SWAP_MODE` girişte `recallAll` çağırıyor,
-`CONFIRM_SWAP` çıkışta çağırmıyor — asimetri burada.
-
-```
-adım 33 CONFIRM_SWAP: 100 → 93 taş
-  önce:  swapMode=true  swapSelection=[0]  placed=7  raf=0
-```
-
-**Bugün UI'dan ERİŞİLEMEZ, ölçüldü** — dört ekranın dördü de taş koymayı
-`swapMode`'da engelliyor (`App.tsx:1371,1626` · `OnlineGameScreen.tsx:715,937`
-· `game_screen.dart:464` · `online_game_screen.dart:1165`) ve swap modunda
-"Karıştır"/raf sürüklemesi hiç gösterilmiyor. Yani bulgu bir arıza değil,
-**bir borç**: taş korunumu gibi bir değişmez, reducer'ın kendisinde değil,
-dört ayrı ekrandaki dört ayrı `if`te tutuluyor. Beşinci bir yüzey (ya da bu
-dördünden birinde bir gerileme) onu sessizce düşürür.
-
-⚠ **Port da BİREBİR aynı** (`reducer.dart` `_confirmSwap` → `placed: {}`) —
-yani parite KORUNMUŞ durumda ve golden vector'lar bu yüzden bunu asla
-göremez. Bu, "parite yeşil = doğru" varsayımının bu geçişteki en net
-karşı örneği.
-
-Düzeltme tek satır ve İKİ tarafta birden: `CONFIRM_SWAP`, `TOGGLE_SWAP_MODE`
-gibi önce `recallAll` çağırsın (ya da `placed` doluyken hiç çalışmasın).
-Motor dosyası değiştiğinden golden vector'lar yeniden üretilmeli.
-
-### 25. Taş değiştirme seçimi İNDEKSE bağlı, senkron rafı yeniden sıralıyor — **CANLIDA, dar**
-
-`swapSelection` raf İNDEKSLERİ tutuyor. `SYNC_ONLINE_STATE`, turn ilerlemediyse
-`swapMode`/`swapSelection`'ı bilerek koruyor (doğru karar — arka plandan dönen
-sekme seçimi silmesin) **ama rafı sunucudaki sıraya geri yazıyor.** Kullanıcı o
-turda "Karıştır"a bastıysa iki sıra farklıdır. Ölçüldü:
-
-```
-sunucu rafı  : L E L V N K S
-karıştırılan : N L K V S E L     ← kullanıcı "Karıştır"a bastı
-seçim: indeks 0 → "N"
-senkron sonrası: L E L V N K S   ← swapMode=true, swapSelection=[0] korundu
-indeks 0 artık → "L"             ⚠ "N" seçilmişti, "L" değişecek
-```
-
-Tetikleyici zinciri dar: aynı turda Karıştır → Değiştir → taş seç → araya bir
-senkron girmesi (10 dakikalık periyodik yenileme ya da uygulamaya geri dönüş).
-Seçim vurgusu gözle görülür biçimde başka taşa atlar, yani dikkatli kullanıcı
-fark eder — ama vurguya baktıktan SONRA gelen senkron sessizdir. Web ve port
-aynı davranışta.
-
-⚠ **Yan kalem — portta olan bir koruma web'de YOK.** `online_game_screen.dart`
-göndermeden önce `swapSelection.any((i) => i < 0 || i >= me.rack.length)` ile
-sınır dışı indekste gönderimi İPTAL ediyor; web'in `handleConfirmSwap`'i
-(`OnlineGameScreen.tsx:1254`) doğrudan `me.rack[i].letter` okuyor ve bu satır
-`try` bloğunun DIŞINDA — sınır dışı bir indeks `TypeError` fırlatır.
-**Bugün erişilemez, ölçüldü:** rafı turn ilerlemeden kısaltan tek sunucu yolu
-zaman aşımı teslimi ve o yol `is_game_over=true` yazıyor, `canAct` de bunu
-eliyor. Yine de web bu korumayı portla eşitlemeli — sınır kontrolü, kuralın
-kendisinden bağımsız olarak doğru olan taraf.
-
-Kalıcı düzeltme ikisini birden kapatır: seçimi indeksle değil taş KİMLİĞİYLE
-tut, ya da `SYNC_ONLINE_STATE` gelen raf mevcut raftan farklıysa
-`swapSelection`'ı temizlesin.
-
 ### Zemin sağlam — bir sonraki tur bunları YENİDEN ölçmesin
 
 Aşağıdakiler bu geçişte ölçüldü ve temiz çıktı:
@@ -615,7 +558,8 @@ Aşağıdakiler bu geçişte ölçüldü ve temiz çıktı:
   (bag+raf+tahta+placed = 100), negatif skor yok, raf hiç 7'yi aşmıyor,
   **iki oyuncunun bölgesi hiç çakışmıyor** (`CLAUDE.md`'de yazılı değişmez),
   sıra hiçbir zaman teslim olmuş oyuncuya düşmüyor, `moveHistory`'de negatif
-  puan yok. Tek ihlal #24; UI kısıtı taklit edilince koşum tamamen temiz.
+  puan yok. Tek ihlal #24 idi (düzeltildi; koşum artık UI kısıtı taklit
+  edilmeden de temiz).
 - **Türkçe dil kuralı.** `src/`'de Türkçe metne uygulanmış tek bir native
   `toUpperCase`/`toLowerCase` YOK (bulunan kullanımlar e-posta başlığı, UTM,
   ISO tarih gibi ASCII); isme göre sıralayan altı yerin altısı da `trCompare`.

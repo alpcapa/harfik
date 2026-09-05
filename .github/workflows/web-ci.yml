@@ -111,6 +111,14 @@ jobs:
       # Playwright'a gerek yok, saniyeler sürüyor — lint'in hemen yanında.
       - run: npm run verify-remaining-tiles
 
+      # Taş değiştirme değişmezleri (5 Eylül 2026 hata avı geçişi #24/#25):
+      # CONFIRM_SWAP taslak taşları yok etmemeli, ve rafı yeniden sıralayan
+      # bir senkron indeks tabanlı `swapSelection`ı düşürmeli. Golden
+      # vector'lar bunları GÖREMEZ — onlar web↔port paritesini kanıtlıyor,
+      # ikisinde de aynı olan bir hatayı değil (ikisi de aynı biçimde
+      # yanlıştı). Bu adım DOĞRULUĞU sınıyor.
+      - run: npm run verify-swap-invariants
+
       # İstemci hata telemetrisinin karar mantığı (ROADMAP #3): tekrar
       # bastırma, hız sınırı, "beklenen durumu kaydetme" filtresi. Duman
       # testiyle sınanamıyor — modül yalnızca Supabase yapılandırılmışken
