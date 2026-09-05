@@ -82,17 +82,35 @@ bölümün kendi tarihli notuna taşınır.
   1 insan + **3 YZ** (109 oyun); saf-insan yerel oyun SIFIR. Yani 4
   kişilikte seçilen seviye ÜÇ YZ'ye birden uygulanır.
 
-  ⚠ Migration gerekiyor: view'lar o oyunun seviyesini bilmek zorunda, yani
-  `games`e bir seviye alanı + puan dalında bir `case`. Normal = bugünkü
-  değer olduğundan yalnızca Kolay ve Zor sapıyor; geçmiş satırlar seviyesiz
-  olduğundan Normal sayılmalı (geriye dönük veri bozulmaz). Canlı oyunlar
-  alanı hiç doldurmaz → otomatik olarak Normal dalına düşer.
+  **PUAN TABLOSU (5 Eylül 2026, kullanıcı revizyonu — KESİN):**
 
-  ⚠ **Açık kalan alt soru — uygulayan karar vermeli:** bugünkü formülde 4
-  kişilikte 2. sıra da +1 alıyor (2 kişilikte almıyor). Kolay/Normal/Zor =
-  1/2/3 BİRİNCİLİK puanını ölçeklerken bu +1'e ne olacağı konuşulmadı:
-  sabit +1 mi kalsın, yoksa o da mı ölçeklensin (0/1/2 gibi)? Kullanıcıya
-  sorulmadan seçilmemeli.
+  | Oyun | 1. sıra | 2. sıra |
+  |---|---|---|
+  | Canlı 4 kişilik (YZ'li), seviye YOK → Normal | **+2** | **+1** |
+  | Yerel YZ 2 kişilik — Kolay / Normal / Zor | **1 / 2 / 4** | yok (bugün de yok) |
+  | Yerel YZ 4 kişilik — Kolay / Normal / Zor | **1 / 2 / 4** | **0 / 1 / 2** |
+
+  ⚠ **Zor = 4, 3 değil.** Bilinçli: zoru yenmek orantısız ödüllendiriliyor.
+  Sonradan "1/2/3 daha simetrik" diye düzeltilmesin.
+
+  ✅ **Normal, HER hücrede bugünkü değere eşit** (2 kişilik galibiyet +2;
+  4 kişilik +2/+1; Canlı +2/+1). Bunun büyük bir pratik sonucu var:
+  **geçmiş satırlar için veri taşıma GEREKMİYOR** — seviyesiz kayıtlar
+  (bugüne kadarki her şey + tüm Canlı oyunlar) doğal olarak Normal dalına
+  düşer ve puanları değişmez. Yani migration "kolon ekle + `case` yaz"dan
+  ibaret, geriye dönük yeniden hesaplama yok.
+
+  ⚠ Yine de migration ŞART: puan `leaderboard`/`player_stats` SQL
+  view'larında hesaplanıyor, yani view o oyunun seviyesini görmek zorunda →
+  `games`e bir seviye alanı gerekiyor.
+
+  ⚠ **Tabloda karşılığı olmayan tek hücre: TESLİM OLMA.** Bugün her koşulda
+  -2 ve revizyonda konuşulmadı. Varsayılan davranış "-2 olarak kalsın"
+  olmalı; seviyeye göre ölçeklenmesi istenirse ayrıca sorulmalı.
+
+  **Zorluk algoritmasının kendisi (hangi seviye = hangi N) BİLEREK
+  ertelendi** — kullanıcı: *"Zorluk algoritmasını yaptığımız zaman
+  değerlendiririz."* Yukarıdaki ölçüm tablosu o değerlendirmenin girdisi.
 
   ⚠ **Sorgu tuzağı — bu maddeyi uygulayan mutlaka okusun:** `games.players`
   jsonb'si KOLTUK sırasına değil **SIRALAMAYA (rank) göre** saklanıyor.
