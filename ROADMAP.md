@@ -245,6 +245,86 @@ git log --oneline 711eaaa..origin/main -- mobile/app mobile/kelimeki_core
    `mobile/docs/test-ortamlari.md`), yani iOS'ta eski derlemeyi test etmek
    kolay bir hata.
 
+## Güvenlik geçişi — açık kalan maddeler (5 Eylül 2026)
+
+Play Store öncesi kapsamlı incelemenin ilk geçişi. **Kapatılan madde
+(oturumsuz kimlik sızıntısı) burada DEĞİL** — uygulandı ve
+`docs/decisions/supabase-ops.md` → "Play Store öncesi güvenlik geçişi"ne
+yazıldı. Aşağıdakiler hâlâ açık.
+
+Zeminin sağlam olduğunu da kayda geçir, çünkü bir sonraki tur bunu yeniden
+ölçmesin: 28 tablonun 28'inde RLS açık, 71 `SECURITY DEFINER` fonksiyonun
+71'inde `search_path` sabitlenmiş, yazma politikalarında istisnasız
+`auth.uid() = user_id` var, Edge Function `verify_jwt` envanteri kök
+`CLAUDE.md`'deki 8'lik listeyle birebir tutuyor, repoda gömülü sır yok.
+`notify-turn-timeout-surrender` / `notify-welcome` / `notify-your-turn`
+herkese açık POST hedefi olmalarına rağmen doğru yazılmış (atomik iddia,
+taze pencere, hedefi gövdeden değil canlı durumdan alma) — bulgu değiller.
+
+### 18. `submit_move` puana değil yalnızca taşa hakem — **KARAR GEREKİYOR**
+
+**Model: Opus 5** (ürün kararı + motor bilgisi). Ölçüldü: fonksiyon oturum,
+sıra sahipliği, katılımcılık, hücre geçerliliği, dolu hücre, **rafta
+gerçekten olan taş**, vergi hedefi/tutarı ve verginin puanı aşamamasını
+sunucuda doğruluyor — ama şunları HİÇ yapmıyor:
+
+- `words` tablosuna bakmıyor → kelime sözlükte olmak zorunda değil
+- harf puanlarını yeniden hesaplamıyor → `p_base_points` istemciden geldiği
+  gibi işleniyor
+- puan tavanı yok (tek kontrol `p_base_points < 0`)
+
+Yani bir oyunun **meşru katılımcısı**, kendi sırasında, uygulamayı atlayıp
+doğrudan RPC çağırarak tek hamlede istediği puanı yazabilir. Etki veri
+sızıntısı değil **k-lig ve `league_rewards` bütünlüğü**.
+
+**Karar şıkları:** (a) skoru sunucuda yeniden hesapla — motorun puanlama
+kısmının SQL'e ya da bir Edge Function'a taşınması gerekir, ucuz değil;
+(b) makul bir tavan koy (ör. tek hamlede teorik maksimum) — ucuz, tam
+çözmez; (c) "istemci-otoriter skor" olarak bilinçli kabul et ve YAZ.
+Bugün (c) fiilen geçerli ama hiçbir yerde yazılı değil — en azından bu
+düzeltilmeli.
+
+### 19. `anon` için sınırsız telemetri yazımı — **DÜŞÜK, ucuz**
+
+**Model: Sonnet 5, efor `low`.** `client_errors`, `device_visits`,
+`guest_visits`, `game_starts` — dördünde de INSERT politikası
+`with_check: true`, yani oturumsuz sınırsız satır eklenebiliyor. Etkisi
+sızıntı değil maliyet + **admin panelindeki huni/büyüme sayılarının
+kirletilebilmesi**.
+
+⚠ Desen zaten projede VAR, bu dört tabloya uygulanmamış: `feedback`
+`feedback_rate_limit` tablosu + trigger'ıyla korunuyor, `game_finishes` ise
+`user_id IS NULL` şartıyla daraltılmış. Yeni bir mekanizma icat etme,
+`feedback_rate_limit_check` desenini kopyala.
+
+### 20. `CRON_SECRET` fail-open — **KULLANICI KONTROLÜ, kod işi değil**
+
+Beş Edge Function'da kapı `if (CRON_SECRET && ...)` biçiminde: **secret
+tanımlı değilse kontrol sessizce yok sayılıyor.** Dashboard'daki secret'lar
+ajandan görünmüyor, yani bu **ölçülemedi**.
+
+**Yapılacak:** Supabase Dashboard → Edge Functions → Secrets'ta `CRON_SECRET`
+var mı bak. Yoksa `sweep-unconfirmed-accounts` dahil beş fonksiyon internete
+açık demek. Desen ne olursa olsun ters — yokluğunda kapanmalı, açılmamalı;
+secret varsa bile koşulu `if (!CRON_SECRET || header !== ...)` yönüne
+çevirmek doğru olur.
+
+### 21. Advisor gürültüsü + Auth ayarları — **TEMİZLİK**
+
+**Model: Sonnet 5, efor `low`.**
+
+- Dört trigger fonksiyonu (`trg_award_league_rewards`,
+  `handle_friend_request_insert`, `keep_signup_utm_source`,
+  `_game_finishes_strip_anon_id`) `anon`+`authenticated`'a açık; öteki dördü
+  (`handle_new_user`, `_notify_welcome_email`, `_notify_your_turn`,
+  `feedback_rate_limit_check`) doğru şekilde yalnızca `service_role`. Postgres
+  trigger fonksiyonunun doğrudan çağrılmasını reddeder, yani sömürülebilir
+  GÖRÜNMÜYOR — ama bu **ölçülmedi** (deneme bloklandı). Grant'i temizlemek
+  advisor'ın 4 uyarısını da kapatır.
+- `pg_net` public şemada (advisor WARN).
+- Dashboard → Authentication: OTP süresi uzun + sızmış-parola koruması
+  kapalı. İkisi de tek tık, kodla ilgisi yok.
+
 ## Modeller — hangi iş için hangisi
 
 Ölçüt maliyet değil **hata bedeli** ve **ufuk uzunluğu**:

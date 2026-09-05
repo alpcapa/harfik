@@ -111,3 +111,65 @@ Aylardır CLAUDE.md'nin çeşitli yerlerinde ayrı ayrı "kesin sebebi netleşti
 
 1. **Import yolu — kök sebep artık netleşti:** Araç, verdiğin `entrypoint_path`i olduğu gibi kullanmıyor, tüm dosyaları örtük bir `source/` klasörünün altına yerleştiriyor. Doğru/kararlı tarif: `entrypoint_path: "source/index.ts"` VER, entrypoint dosyasının adını da `"source/index.ts"` YAP (böylece gerçekte `source/source/index.ts`e iner) ve kardeş bağımlılık dosyalarını (`_shared/email.ts` gibi) **hiçbir `source/` öneki OLMADAN** adlandır (böylece `source/_shared/email.ts`e iner) — bu durumda `source/source/index.ts`'ten `source/_shared/email.ts`'e giden doğru göreli yol her zaman `'../_shared/email.ts'`dir. `'./_shared/email.ts'` kullanan 6 fonksiyonun (`notify-account-banned`, `notify-account-unbanned`, `notify-deadline-warnings`, `notify-friend-request-reminders`, `notify-local-game-abandoned`, `notify-turn-timeout-surrender`) bugüne kadar hiç patlamadan çalışmasının sebebi, o fonksiyonların ilk deploy'unda bu tarifin (muhtemelen) tutarlı uygulanmamış olması, yani dosyaların gerçekte BEKLENENDEN farklı bir iç içe klasör yapısına yerleşmiş olmasıydı — CLAUDE.md'de "CI/CLI deploy'a geçilirse 6 fonksiyon anında bozulur" diye zaten öngörülmüştü, bu doğru bir öngörüydü. **Düzeltme:** 6 fonksiyonun hepsi `'../_shared/email.ts'`e çevrilip yukarıdaki tarifle yeniden deploy edildi — artık 11 Edge Function'ın tamamı aynı, tek doğru importu kullanıyor.
 2. **`verify_jwt` — aracın kendi varsayılanı `true`, parametre REQUIRED değilse bile geçilmezse önceki deploy'un değerini KORUMUYOR:** Bu araçla (CLI/`supabase functions deploy` değil) yapılan bir redeploy'da `verify_jwt` parametresi verilmezse, önceden `false` olan bir fonksiyon SESSİZCE `true`'ya döner — kod hiç değişmese bile. Bu, `notify-deadline-warnings`i (cron tarafından JWT'siz çağrılıyor, `verify_jwt:false` olması ŞART) bu incelemenin bir yan etkisi olarak neredeyse kırıyordu: fonksiyonun kodunu (CRON_SECRET kontrolü, satır başına try/catch) güncelleyip `verify_jwt` belirtmeden deploy edince araç onu `true`'ya çevirdi, `list_edge_functions`'la fark edilip aynı anda ikinci bir deploy'la (bu kez `verify_jwt: false` açıkça verilerek) geri alındı — production'a hiç sızmadı ama neredeyse pg_cron'un 15 dakikada bir 401 almaya başlamasına yol açıyordu. **Kural: `deploy_edge_function`'ı çağırmadan ÖNCE her zaman `list_edge_functions`/`get_edge_function` ile fonksiyonun MEVCUT `verify_jwt` değerini kontrol et ve deploy çağrısına AYNI değeri açıkça geçir — asla parametreyi atlayıp aracın varsayılanına (`true`) güvenme.** Projedeki `verify_jwt:false` olması gereken fonksiyonlar (**25 Ağustos 2026'da canlıdan sayıldı: ALTI tane** — bu liste uzun süre üç diyordu, sonradan eklenen üçü hiç işlenmemişti): `notify-deadline-warnings`, `notify-friend-request-reminders` (ikisi de pg_cron'dan JWT'siz çağrılıyor), `notify-turn-timeout-surrender` ve `notify-welcome` (Postgres'in kendisinden `net.http_post` ile JWT'siz çağrılıyor), `sweep-unconfirmed-accounts` (cron), `inbound-email` (Brevo webhook'u, kendi paylaşılan sırrıyla korunuyor) — geri kalanı `true`.
+
+### Play Store öncesi güvenlik geçişi (5 Eylül 2026) — `anon` kimlik sızıntısı
+
+Kullanıcı isteği: *"Play Store öncesi kapsamlı bir code review iyi olabilir.
+Buglar, temizlik, güvenlik, performans."* İlk geçiş güvenlikti; bulguların
+tamamı `ROADMAP.md` → "Güvenlik geçişi — açık kalan maddeler"de. Burada
+yalnızca **kapatılan** madde ve ondan çıkan kalıcı kural var.
+
+**Ne bulundu.** `profiles_select_own_or_admin` politikası bir kullanıcının
+YALNIZCA kendi profilini okumasına izin veriyor — yani başkalarının adı
+bilerek view'lara emanet edilmiş. Ama `leaderboard`, `player_stats`,
+`player_stats_overall` ve `k_lig_siralama` hem `anon`'a açıktı hem de
+`SECURITY DEFINER` olduğu için RLS'i atlıyordu. `set local role anon` ile
+ölçüldü:
+
+| Sorgu (`anon`) | Önce | Sonra |
+|---|---|---|
+| `profiles` / `games` | 0 satır ✅ | 0 satır |
+| `leaderboard` | **30 satır** (user_id + ad + soyad DOLU) | `42501 permission denied` |
+| `player_stats` | 46 satır | reddedildi |
+| `player_stats_overall` / `k_lig_siralama` | 30 / 30 satır | reddedildi |
+| `get_profile_age_gender(30 UUID)` | **19 kişide yaş + cinsiyet** | reddedildi |
+
+Yani yayınlanmış anon anahtarıyla, oturum açmadan, tüm üye listesi + ad
+soyad + 19 kişinin yaşı/cinsiyeti okunabiliyordu. Zincir iki halkalıydı:
+view'dan UUID topla → RPC'ye ver.
+
+**⚠ KURAL — advisor'ın önerdiği düzeltme özelliği KIRAR.** Supabase güvenlik
+paneli bu üç view için "`security_invoker`a çevir" diyor. Uygulansaydı
+`profiles` politikası devreye girer ve **girişli** kullanıcı da kendi
+satırından başkasını göremez, k-lig listesi boşalırdı. Doğru düzeltme
+grant'te: `anon` gider, `authenticated` aynen kalır. **Bir advisor önerisini
+uygulamadan önce her zaman sor: bu view/politika hangi ÖZELLİĞİ besliyor?**
+
+**⚠ İkinci kural — `security_invoker` aşağıdan yukarı miras KALMAZ.**
+`k_lig_siralama` zaten `security_invoker=true` taşıyordu, yani birileri onu
+"doğru" yapmıştı; ama `leaderboard`'dan (definer) select ettiği için o ayar
+hiçbir işe yaramıyordu. Bir view zincirinde atlama en alttaki definer
+view'dan gelir — dördü birlikte kapatılmalıydı, üçü değil.
+
+**Kullanıcı etkisi: YOK, ölçüldü.** Bu view'ları okuyan her istemci yolu
+oturum arkasında: web `Leaderboard` yalnızca `UserMenu`/`ScoreCard`/
+`PlayerScoreCard`'dan mount ediliyor; `useRankScores` misafirde `key` boş
+olduğu için isteği HİÇ göndermiyor; portun `RankScores.ensure`ı aynı şekilde
+`id != null` filtresiyle çıkıyor. İki anon route (`/game/:id`,
+`/davet/:token`) yalnızca `get_shared_game` ve `get_friend_invite_info`
+çağırıyor — ikisi de `anon`'da BIRAKILDI, bilerek. Uygulama sonrası
+`authenticated` rolüyle sondalandı: 30/30/46/30 satır, yani liste aynen
+çalışıyor.
+
+**⚠ Bu bir SUNUCU değişikliğiydi — kapalı testteki paketi de anında
+etkiledi.** `main`'e merge beklemez; yanılma bedeli port tarafında yeni bir
+sürüm turu olurdu. Bu yüzden portun kodu da uygulama ÖNCESİ okundu. Sunucu
+tarafı bir güvenlik düzeltmesinde refleks bu olmalı: istemcinin mağazadaki
+sürümü ne yapıyor?
+
+**Geri alma** tek satır ve anında: `grant select on public.leaderboard to
+anon;` (ve diğer üçü). Migration: `20260905050730_revoke_anon_identity_leak`.
+
+**`my_leaderboard_rank` bilerek dokunulmadı:** `SECURITY INVOKER` ve
+`k_lig_siralama`yı okuduğundan view revoke'u onu geçişli olarak zaten
+kapatıyor. En dar değişiklik tercih edildi.
