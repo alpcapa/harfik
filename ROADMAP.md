@@ -376,21 +376,33 @@ Brevo Inbound webhook'u ücretli plana bloke, bkz.
 `docs/decisions/support-email.md` → "GELEN ZİNCİRİ DURDURULDU". Boş
 `support_inbox` (0 satır) beklenen durum, arıza değil.
 
-### 21. Advisor gürültüsü + Auth ayarları — **TEMİZLİK**
+### 21. Advisor gürültüsü + Auth ayarları — **KISMEN YAPILDI**
 
-**Model: Sonnet 5, efor `low`.**
+**✅ Trigger fonksiyonlarının REST erişimi KAPATILDI** (5 Eylül 2026,
+migration `20260905055111_revoke_trigger_function_execute`, canlıya
+uygulandı). Dört fonksiyon (`trg_award_league_rewards`,
+`handle_friend_request_insert`, `keep_signup_utm_source`,
+`_game_finishes_strip_anon_id`) `anon`+`authenticated`e açıktı; ötekiler
+zaten yalnızca `service_role`'du, yani sekizin dördü kuruluştaki örtük
+grant'i temizlemeyi atlamıştı. Sonra sondalandı: sekiz trigger
+fonksiyonunun sekizinde de `anon`/`authenticated` kapalı, `service_role`
+açık, her biri bir trigger'a bağlı. Advisor'ın dört uyarısı kapandı.
 
-- Dört trigger fonksiyonu (`trg_award_league_rewards`,
-  `handle_friend_request_insert`, `keep_signup_utm_source`,
-  `_game_finishes_strip_anon_id`) `anon`+`authenticated`'a açık; öteki dördü
-  (`handle_new_user`, `_notify_welcome_email`, `_notify_your_turn`,
-  `feedback_rate_limit_check`) doğru şekilde yalnızca `service_role`. Postgres
-  trigger fonksiyonunun doğrudan çağrılmasını reddeder, yani sömürülebilir
-  GÖRÜNMÜYOR — ama bu **ölçülmedi** (deneme bloklandı). Grant'i temizlemek
-  advisor'ın 4 uyarısını da kapatır.
-- `pg_net` public şemada (advisor WARN).
-- Dashboard → Authentication: OTP süresi uzun + sızmış-parola koruması
-  kapalı. İkisi de tek tık, kodla ilgisi yok.
+⚠ Sömürülebilir oldukları GÖSTERİLMEDİ (Postgres trigger fonksiyonunun
+doğrudan çağrılmasını reddeder); bu derinlemesine savunmaydı. Trigger'ların
+bozulmayacağı ise ölçüldü: aynı işlem `feedback_rate_limit_check` için
+22 Temmuz 2026'da yapılmış ve o tarihten sonra `feedback`e 18 satır girmiş
+— her biri o BEFORE INSERT trigger'ından geçerek. **EXECUTE izni
+`create trigger` anında kontrol edilir, trigger ateşlenirken değil.**
+
+**⬜ Kalan iki kalem — ikisi de Dashboard, kod işi değil:**
+
+- **Authentication → OTP süresi uzun** ve **sızmış-parola koruması kapalı**
+  (advisor WARN). İkisi de tek tık.
+- **`pg_net` public şemada** (advisor WARN). ⚠ **YAPILMASI ÖNERİLMİYOR:**
+  şema taşımak çalışan cron zincirine (`net.http_post` çağıran üç iş)
+  dokunur ve kazancı bir uyarı satırını silmekten ibaret. Advisor'ın
+  kırmızısını temizlemek için çalışan bir zinciri riske atma.
 
 ### 22. `feedback` hız sınırı XFF ile atlanabilir — **AÇIK, ölçülmedi**
 

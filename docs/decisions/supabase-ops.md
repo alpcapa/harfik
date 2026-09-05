@@ -173,3 +173,14 @@ anon;` (ve diğer üçü). Migration: `20260905050730_revoke_anon_identity_leak`
 **`my_leaderboard_rank` bilerek dokunulmadı:** `SECURITY INVOKER` ve
 `k_lig_siralama`yı okuduğundan view revoke'u onu geçişli olarak zaten
 kapatıyor. En dar değişiklik tercih edildi.
+
+**Ek (aynı gün) — trigger fonksiyonlarının REST erişimi:** Sekiz
+`SECURITY DEFINER` trigger fonksiyonunun dördü `anon`+`authenticated`e
+`execute` iznine sahipti, yani `/rest/v1/rpc/<ad>` uçları açıktı; ötekiler
+zaten yalnızca `service_role`'du. Tutarsızlık giderildi (migration
+`20260905055111`). **Kalıcı kural: bir trigger fonksiyonu yazarken
+kuruluştaki örtük grant'i temizlemeyi unutma** — `revoke execute ... from
+public, anon, authenticated`. Trigger'ı bozmaz, çünkü **EXECUTE izni
+`create trigger` anında kontrol edilir, ateşlenirken değil**; bu depoda
+ölçüldü (`feedback_rate_limit_check` 22 Temmuz'da aynı şekilde kapatıldı ve
+sonrasında 18 geri bildirim satırı o trigger'dan geçerek girdi).
