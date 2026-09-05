@@ -1,7 +1,7 @@
 // Kelimeki — YZ rakip mantığı (çok oyunculu, köşe temelli)
 //
 // src/utils/ai.ts'in KOPYASI — bkz. types.ts'teki not.
-import { SIZE, cornerBounds, cornerCell } from './constants.ts';
+import { SIZE, cornerCell } from './constants.ts';
 import type { AIMove, BonusType, Placement, Player, Tile } from './types.ts';
 import { getWordSet } from './wordSet.ts';
 import { letterPoints } from './tiles.ts';
@@ -130,37 +130,53 @@ export function findAIMove(
     }
   };
 
+  // Verilen köşeden, tahtadaki mevcut taşlardan bağımsız yeni bir kelimeyle
+  // başlayan tüm yerleşimleri dener (yalnızca ilk hamle — her oyuncunun tek
+  // köşesi olduğundan bu, o köşe hiç kullanılmamışken geçerli tek durumdur).
+  //
+  // Kuralın tamamı `validatePlacement`'ta yazılı: ilk hamlenin TEK şartı,
+  // konan hücrelerden birinin ev karesi (`cornerCell`) olması — yön ya da
+  // "4x4 bloğun içinde başla" şartı YOK. Bu yüzden numaralandırma `tryPlace`
+  // ile aynı deseni izler: kelimenin HANGİ harfinin (`idx`) ev karesine
+  // denk geleceği tek tek denenir, yani kelime evden her iki yöne de uzayabilir.
+  //
+  // Önceki hâli başlangıç hücresini kelimenin İLK harfi varsayıp yalnızca
+  // sağa/aşağı uzatıyordu (ve başlangıcı 4x4 bloğa hapsediyordu). Bu, oyunun
+  // kuralı değil o döngünün kendi kısıtıydı ve sağ-alt köşeyi (ev 12,12)
+  // yapısal olarak cezalandırıyordu: eve VARAN bir kelimenin 6. satır/sütundan
+  // başlaması gerekir, orası blok dışı olduğundan hiç denenmiyordu — o köşedeki
+  // YZ açılışta en fazla 4 taş koyabiliyordu (2 kişilik oyunda YZ her zaman o
+  // köşede, yani her oyunda dezavantajlı başlıyordu).
   const tryCornerStart = (homeCorner: number) => {
-    const b = cornerBounds(homeCorner);
     const [homeR, homeC] = cornerCell(homeCorner);
-    for (let sr = b.r0; sr <= b.r1; sr++) {
-      for (let sc = b.c0; sc <= b.c1; sc++) {
-        for (const W of candidates()) {
-          for (const horiz of [true, false]) {
-            const er = horiz ? sr : sr + W.length - 1;
-            const ec = horiz ? sc + W.length - 1 : sc;
-            if (er >= SIZE || ec >= SIZE) continue;
-            let ok = true;
-            let touchesCorner = false;
-            const positions: [number, number][] = [];
-            for (let i = 0; i < W.length; i++) {
-              const rr = horiz ? sr : sr + i;
-              const cc = horiz ? sc + i : sc;
-              if (board[rr][cc]) {
-                ok = false;
-                break;
-              }
-              if (rr === homeR && cc === homeC) touchesCorner = true;
-              positions.push([rr, cc]);
+    for (const W of candidates()) {
+      for (let idx = 0; idx < W.length; idx++) {
+        for (const horiz of [true, false]) {
+          // W[idx] ev karesine oturur; kelime oradan geriye ve ileriye uzar.
+          const sr = horiz ? homeR : homeR - idx;
+          const sc = horiz ? homeC - idx : homeC;
+          if (sr < 0 || sc < 0) continue;
+          const er = horiz ? sr : sr + W.length - 1;
+          const ec = horiz ? sc + W.length - 1 : sc;
+          if (er >= SIZE || ec >= SIZE) continue;
+          let ok = true;
+          const positions: [number, number][] = [];
+          for (let i = 0; i < W.length; i++) {
+            const rr = horiz ? sr : sr + i;
+            const cc = horiz ? sc + i : sc;
+            if (board[rr][cc]) {
+              ok = false;
+              break;
             }
-            if (!ok || !touchesCorner) continue;
-            const tiles = consumeRack(W.split(''), rackLetters, owner);
-            if (!tiles) continue;
-            consider(
-              positions.map(([pr, pc], i) => ({ r: pr, c: pc, tile: tiles[i] })),
-              W,
-            );
+            positions.push([rr, cc]);
           }
+          if (!ok) continue;
+          const tiles = consumeRack(W.split(''), rackLetters, owner);
+          if (!tiles) continue;
+          consider(
+            positions.map(([pr, pc], i) => ({ r: pr, c: pc, tile: tiles[i] })),
+            W,
+          );
         }
       }
     }

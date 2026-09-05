@@ -33,6 +33,7 @@
 | Madde 16 — devam eden oyun kartlarının düzen ayrışması | 2 Eylül 2026 |
 | Hata avı geçişi #24 — `CONFIRM_SWAP` taslak taşları yok ediyordu | 5 Eylül 2026 |
 | Hata avı geçişi #25 — taş değiştirme seçimi indekse bağlıydı | 5 Eylül 2026 |
+| Hata avı geçişi #23 — Edge Function'daki motor kopyası bayattı (CANLIDA) | 5 Eylül 2026 |
 | Faz 1-7 + Faz dışı (push bildirimleri, madde 13'ün gövdesi) | 30-31 Ağustos, 1 Eylül 2026 |
 | 1.0.3, 1.0.4 ve 1.0.5 sürüm turları | 31 Ağustos, 1 ve 2 Eylül 2026 |
 | Sürüm A çıkışı + Sürüm B sözlük eklemeleri | 27 ve 31 Ağustos 2026 |
@@ -1663,3 +1664,117 @@ kendisinden bağımsız olarak doğru olan taraf.
 Kalıcı düzeltme ikisini birden kapatır: seçimi indeksle değil taş KİMLİĞİYLE
 tut, ya da `SYNC_ONLINE_STATE` gelen raf mevcut raftan farklıysa
 `swapSelection`'ı temizlesin.
+
+
+### #23 — KAPANIŞ (5 Eylül 2026)
+
+**Düzeltme:** iki fonksiyon `src/`den taşındı (`computeConqueredChain` +
+`computeAllTerritories` → `_game/validator.ts`; `tryCornerStart` →
+`_game/ai.ts`, artık kullanılmayan `cornerBounds` importu da çıkarıldı) ve
+`play-ai-turn` yeniden deploy edildi — **sürüm 7**, `verify_jwt: true`
+(canlıdan OKUNUP aynı değer açıkça geçildi, bkz. kök `CLAUDE.md`'deki tuzak).
+
+**Kapı: `npm run verify-edge-engine-parity`.** Metin diffi DEĞİL davranış
+karşılaştırması — `_game/` kopyası bilerek KISMİ (validatePlacement* orada
+yok, yorumlar kırpılmış, importlar farklı), düz bir diff gürültüden ibaret
+olurdu. Ölçülenler: bölge fixture'ının tamamı, puanlama fixture'ının tamamı,
+1690 hücre×puan vergi kombinasyonu, dört köşenin ilk hamlesi, ve web
+motoruyla oynanan gerçek bir oyunun 30 ara pozisyonu. Kapı Edge kopyasının
+sözlüğünü sahte bir Supabase istemcisiyle besliyor, böylece iki motor AYNI
+kelime havuzuyla karşılaştırılıyor ve fark yalnızca algoritmadan geliyor.
+
+⚠ **CI `paths` listesine `supabase/functions/**` eklendi** — yoksa yalnızca
+Edge kopyası değişen bir PR'da iş hiç koşmazdı, yani kapı tam da onu koruması
+gereken değişiklikte sessiz kalırdı.
+
+**Kapıyı YAZARKEN yeni bir etki ölçüldü:** ayrışma yalnızca ilk hamlede ve
+vergide değil, oyun ORTASINDA da hamle seçimini değiştiriyordu (web
+"CANİCE" 11 puan ↔ edge "CİCİ" 9 puan). İlk raporda bu yoktu — bulgu ölçünce
+BÜYÜDÜ, tıpkı güvenlik geçişindeki anon sızıntısı gibi.
+
+**Deploy doğrulaması — kaynak düzeyinde kesin:** `get_edge_function` ile
+canlıdaki içerik çekilip depodaki dosyalarla programatik olarak
+karşılaştırıldı; **9 çalışma-zamanı dosyasının 9'u birebir aynı**.
+`_game/types.ts` canlıda YOK ve bu beklenen: dosya yalnızca `type`/`interface`
+ihraç ediyor, transpile'da tamamen siliniyor (v6'da da yoktu).
+
+⚠ **ÖLÇÜLEMEYEN tek şey çalışma zamanı açılışı.** Bu ortam `supabase.co`ya
+POST atamıyor (ajan vekili engelliyor — aynı sınır #22'de de kayıtlı), ve
+YZ'li aktif oyun olmadığından fonksiyon deploy'dan sonra hiç çağrılmadı
+(`function_edge_logs`'ta kayıt yok). Paketin esbuild ile temiz bundle olduğu
+ve deploy'un kendisinin hatasız tamamlandığı doğrulandı, ama ilk gerçek YZ
+turuna kadar "açılıyor" kanıtı YOK. **Bu önemli, çünkü arıza SESSİZ olurdu:**
+`play-ai-turn`ün `catch`i son çare olarak "pas geç"e düşüyor — bozuk bir
+motor hata vermez, YZ yalnızca sürekli pas geçer.
+
+**Zamanlama bilinçliydi:** deploy anında YZ koltuklu AKTİF Canlı oyun YOKTU
+(ölçüldü: 16 aktif oyunun 0'ı, YZ'li dört oyunun dördü de `finished`), yani
+hiçbir devam eden oyun ortasından değişmedi. Ayrıca `submit_move`
+düzeltilmiş (daha yüksek) vergiyi reddetmiyor — tek kontrolleri hedefin
+geçerliliği, tutarın negatif olmaması ve toplamın `p_base_points`ı aşmaması.
+
+**Geri alma:** eski kod git'te; `_game/`'in önceki hâlini geri koyup yeniden
+deploy etmek yeterli. Panelden sürüm geri alma ajana kapalı.
+
+### 23. Edge Function'daki motor kopyası BAYAT — **CANLIDA, ölçüldü**
+
+`supabase/functions/_game/` (`ai.ts`, `validator.ts`, …) `src/`'nin elle
+tutulan kopyası ve `play-ai-turn` onu kullanıyor — yani **Canlı oyunlardaki
+YZ koltuğu bu kodla oynuyor.** İki ayrı motor değişikliği bu kopyaya hiç
+işlenmemiş. `list_edge_functions`: `play-ai-turn` ACTIVE, sürüm 6, son
+güncelleme **1 Ağustos 2026** — iki değişiklikten de ÖNCE.
+
+**23a — YZ'nin köşe açılışı (17 Ağustos 2026 düzeltmesi eksik).** Edge
+kopyasındaki `tryCornerStart` hâlâ eski hâlinde: başlangıç hücresini
+yalnızca 4×4 blok içinde arıyor ve kelimeyi yalnızca sağa/aşağı uzatıyor.
+Aynı sözlükle, aynı rafla (`A B A R T M A`), boş tahtada ölçüldü:
+
+| Köşe | web / port | Edge (canlıdaki YZ) |
+|---|---|---|
+| 0, 1, 2 | 7 taş "ABARTMA" 35 puan | aynı |
+| **3 (sağ-alt)** | 7 taş "ABARTMA" **35 puan** | 4 taş "ABAT" **6 puan** |
+
+Yani kök `CLAUDE.md`'de yazılı 29 puanlık açılış handikabı web'de ve portta
+kapatıldı, **sunucuda duruyor**. 2 kişilik oyunda YZ HER ZAMAN köşe 3'te
+(`cornersFor`), yani YZ'li her 2 kişilik Canlı oyunda tekrarlanıyor.
+
+**23b — Bölge kuralı (24 Ağustos 2026 "iletken hücre" değişikliği eksik).**
+Edge kopyasındaki `computeConqueredChain` tek geçişli eski sürüm; `supported`
+parametresi ve iletken-hücre dalı hiç yok. Portun kendi parite fixture'ı
+(`territory.json`) Edge kopyasına da soruldu — 5 vakanın 1'i ayrışıyor,
+ve ayrışan tam da kuralın POZİTİF dalı:
+
+| Vaka | fixture | web | Edge |
+|---|---|---|---|
+| `desteksiz_rakip_tasi_iletken` | [16, 18] | [16, 18] ✓ | **[16, 16]** ⚠ |
+| öteki 4 vaka | — | ✓ | = |
+
+**Fark PUANA dönüşüyor.** `computeInvasionSplit` fonksiyonunun kendisi iki
+kopyada birebir aynı, ama `computeAllTerritories`'i çağırdığından sonuç
+ayrışıyor. Aynı tahtada, (7,12) hücresine 30 ham puanlık bir hamle:
+
+| | oynayana kalan | bölge sahibine giden |
+|---|---|---|
+| web / port | 20 | **10** |
+| Edge (canlıdaki YZ) | **30** | **0** |
+
+Yani YZ bazı hamlelerde bölge vergisini EKSİK ödüyor ve o skor
+`submit_move` ile veritabanına, oradan k-lig puanına yazılıyor. (`submit_move`
+bölgeyi SQL'de yeniden hesaplamıyor — bkz. #18 — dolayısıyla reddetmiyor.)
+
+**Kök sebep bir kural boşluğu.** "`src/` değişirse `_game/` da elle
+güncellenmeli" kuralı YAZILI ama yalnızca
+`docs/decisions/online-game-screen.md`'de; kök `CLAUDE.md`'nin "İş
+bittiğinde" senkron tablosunda satırı YOKTU (`src/game/`+`src/utils/`
+satırı yalnızca golden vector + Dart testlerini söylüyor). Bu geçişte o
+satır eklendi. Derleyici de göremez: iki kopya ayrı `tsconfig`/deploy
+paketinde.
+
+**Düzeltmenin şekli (yapılmadı — bilerek):** iki dosyayı `src/`'den yeniden
+kopyala, `play-ai-turn`'ü yeniden deploy et (⚠ `verify_jwt: true` — deploy
+öncesi `list_edge_functions` ile OKU ve AYNI değeri açıkça geçir, bkz.
+`## Supabase`), ve aynı PR'da bir `npm run verify-edge-engine-parity`
+kapısı ekle — deponun öteki 15 `verify-*` betiğiyle aynı desen; kural
+ancak ölçülürse tutuyor. Betiği düzeltmeden ÖNCE eklemek anlamsız
+(ilk koşuşta kırmızı). **Bu bir SUNUCU değişikliği: `main`'e merge
+beklemez, kapalı testteki paketi de anında etkiler.**
