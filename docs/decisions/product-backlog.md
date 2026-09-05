@@ -60,23 +60,39 @@ bölümün kendi tarihli notuna taşınır.
      yorumun kendisi "view'larla aynı formül" diyor. Seviyeye göre puan
      vermek üçünü birden değiştirmek demek, yani bir migration da gerekir.
 
-  **KAPSAM DARALTILDI (5 Eylül 2026, kullanıcı kararı):** *"Seviyeye göre
-  puan kazanma sadece 2 kişilik oyunlarda geçerli olmalı. 4 oyuncuda default
-  normal olacak. Yani puan komplikasyonuna gerek yok."* Yani seviye seçimi
-  YALNIZCA yerel 2 kişilik oyunu etkiler; 4 kişilikte YZ'ler her zaman
-  Normal ve puan formülü BUGÜNKÜ hâlinde kalır.
+  **KAPSAM (5 Eylül 2026, kullanıcı kararı — aynı turda bir kez düzeltildi):**
 
-  Ölçüldü, kapsam tutarlı: yerel oyunların **758'inin 758'inde** YZ var
-  (649 iki kişilik + 109 dört kişilik; saf-insan yerel oyun SIFIR). Canlı
-  oyun da etkilenmiyor — 2 kişilik Canlı masaya YZ konamıyor, 4 kişilikte
-  ise yalnızca 4. koltuk YZ ve o da Normal kalacak. Yani seviye terimi
-  formülde TEK bir dala giriyor: yerel, `player_count = 2`.
+  | Oyun türü | Seviye seçimi | Puan |
+  |---|---|---|
+  | **Yerel YZ oyunu, 2 kişilik** | VAR | seviyeye göre |
+  | **Yerel YZ oyunu, 4 kişilik** | VAR | seviyeye göre |
+  | **Canlı oyun, 4 kişilik (4. koltuk YZ)** | YOK — her zaman Normal | bugünkü formül |
+  | **Canlı oyun, 2 kişilik** | — (masaya YZ konamıyor) | bugünkü formül |
 
-  ⚠ Bu daraltma migration'ı KALDIRMIYOR, küçültüyor: view'lar o oyunun
-  seviyesini bilmek zorunda, yani `games`e bir seviye alanı + 2 kişilik
-  dalda bir `case` gerekiyor. Normal = bugünkü +2 olduğundan yalnızca Kolay
-  (1) ve Zor (3) sapıyor; geçmiş satırlar seviyesiz olduğundan Normal
-  sayılmalı (geriye dönük veri bozulmaz).
+  ⚠ İlk ifade *"sadece 2 kişilik"* idi; kullanıcı düzeltti: *"4 kişilik
+  oyunda default normal olacak dedim ama CANLI oyunları kastettim. YZ oyun
+  açmada 2 veya 4 farketmez seviye seçimi olacak ve aynı puan mantığı
+  geçerli olacak."* Yani ayrım oyuncu sayısında DEĞİL, **yerel ↔ Canlı**
+  ayrımında. Sebebi de doğal: Canlı oyundaki YZ hamlesi sunucuda
+  (`play-ai-turn`) hesaplanıyor, orada oyuncunun seçtiği bir seviye kavramı
+  yok.
+
+  Ölçüldü, kapsam tutarlı: yerel oyunların **758'inin 758'inde** YZ var ve
+  kadro istisnasız — 2 kişilikte 1 insan + **1 YZ** (649 oyun), 4 kişilikte
+  1 insan + **3 YZ** (109 oyun); saf-insan yerel oyun SIFIR. Yani 4
+  kişilikte seçilen seviye ÜÇ YZ'ye birden uygulanır.
+
+  ⚠ Migration gerekiyor: view'lar o oyunun seviyesini bilmek zorunda, yani
+  `games`e bir seviye alanı + puan dalında bir `case`. Normal = bugünkü
+  değer olduğundan yalnızca Kolay ve Zor sapıyor; geçmiş satırlar seviyesiz
+  olduğundan Normal sayılmalı (geriye dönük veri bozulmaz). Canlı oyunlar
+  alanı hiç doldurmaz → otomatik olarak Normal dalına düşer.
+
+  ⚠ **Açık kalan alt soru — uygulayan karar vermeli:** bugünkü formülde 4
+  kişilikte 2. sıra da +1 alıyor (2 kişilikte almıyor). Kolay/Normal/Zor =
+  1/2/3 BİRİNCİLİK puanını ölçeklerken bu +1'e ne olacağı konuşulmadı:
+  sabit +1 mi kalsın, yoksa o da mı ölçeklensin (0/1/2 gibi)? Kullanıcıya
+  sorulmadan seçilmemeli.
 
   ⚠ **Sorgu tuzağı — bu maddeyi uygulayan mutlaka okusun:** `games.players`
   jsonb'si KOLTUK sırasına değil **SIRALAMAYA (rank) göre** saklanıyor.
