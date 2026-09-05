@@ -1135,14 +1135,33 @@ export function OnlineGameScreen({ game, myUserId, onBack }: OnlineGameScreenPro
       const invalidWords: string[] = [];
       let serverOk = true;
       try {
-        for (const w of words) {
-          const result = await isValidWordRemote(trLower(w));
-          if (result === false) invalidWords.push(w);
-          else if (result === null) {
-            serverOk = false;
-            break;
-          }
-        }
+        // PARALEL — `App.tsx`'teki eşiyle aynı desen (5 Eylül 2026,
+        // incelemenin performans geçişi). Burası `for…await` ile SIRALI
+        // soruyordu, yani bir hamle kaç kelime kuruyorsa o kadar gidiş-dönüş
+        // ARKA ARKAYA bekleniyordu. Ölçüldü (`pg_stat_statements`, 69 gün):
+        // `is_valid_word` 21.106 çağrı ↔ `submit_move` 1.558 çağrı, yani
+        // hamle başına ~13 sorgu — mobil ağda (RTT ~150 ms) saniyelerce
+        // "Oynanıyor…". Kelimeler birbirinden bağımsız doğrulandığından
+        // sıra hiçbir şeye yaramıyordu.
+        //
+        // Eski kod ilk `null`da döngüyü KIRIYORDU (çevrimdışıyken kalan
+        // istekleri atmamak için). Paralelde kırılacak bir döngü yok; N
+        // istek birden düşer, ama sonuç aynı: bir tanesi bile `null`sa
+        // `serverOk=false` ve yerel sözlüğe düşülüyor. N ≤ kelime sayısı
+        // (pratikte ≤ 8) olduğundan bunun bir bedeli yok.
+        //
+        // `catch` de `App.tsx`ten geldi ve GERÇEK bir açığı kapatıyor:
+        // `isValidWordRemote` normalde hatayı yutup `null` döner, ama
+        // beklenmedik bir throw (tam ağ kopukluğu) burada yakalanmazsa
+        // hamle hiçbir mesaj/dispatch olmadan askıda kalırdı.
+        const results = await Promise.all(words.map((w) => isValidWordRemote(trLower(w))));
+        results.forEach((result, i) => {
+          if (result === false) invalidWords.push(words[i]);
+          else if (result === null) serverOk = false;
+        });
+      } catch (err) {
+        console.error('[Kelimeki] Sunucu kelime doğrulaması başarısız:', err);
+        serverOk = false;
       } finally {
         setValidating(false);
       }

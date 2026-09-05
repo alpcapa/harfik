@@ -21,6 +21,8 @@
 
 | Ne | Kapanış |
 |---|---|
+| Hata avı geçişi (incelemenin 2. geçişi) | 5 Eylül 2026 |
+| Performans geçişi (incelemenin 3. geçişi) | 5 Eylül 2026 |
 | Madde 1 — `kelimeki://` deep link kanalı | 30 Ağustos 2026 (Faz 3'te ölçüldü) |
 | Madde 6 — taranabilir `/nasil-oynanir/` sayfası | 31 Ağustos 2026 |
 | Madde 10 — hata raporlama hız sınırı zamana bağlandı | 31 Ağustos 2026 |
@@ -1786,3 +1788,220 @@ kapısı ekle — deponun öteki 15 `verify-*` betiğiyle aynı desen; kural
 ancak ölçülürse tutuyor. Betiği düzeltmeden ÖNCE eklemek anlamsız
 (ilk koşuşta kırmızı). **Bu bir SUNUCU değişikliği: `main`'e merge
 beklemez, kapalı testteki paketi de anında etkiler.**
+
+## Hata avı geçişi — KAPANDI (5 Eylül 2026)
+
+İncelemenin 2. geçişi (yukarıdaki tabloda ⬜ idi). Kapsam ROADMAP'in kendi
+tarifi: reducer/validator değişmezleri, web↔port paritesi, eşzamanlı yazım
+yarışları, hook sırası.
+
+**Yöntem — parite testlerinin GÖREMEDİĞİ yer.** Golden vector'lar web ile
+Dart'ı karşılaştırır; İKİSİNDE DE olan bir hatayı hiçbir zaman göremezler.
+Bu yüzden geçiş iki ayaklı koşuldu: (1) rastgele tam oyunlar + rastgele
+EYLEM dizileriyle motorun değişmezlerini doğrudan sınayan bir koşum,
+(2) aynı kaynaktan kopyalanmış dosyaların birbirinden ayrışıp ayrışmadığının
+ölçülmesi. Üç bulgunun üçünü de bu iki ayak buldu; mevcut testlerin hiçbiri
+kırmızıya dönmüyordu.
+
+**Üçü de KAPANDI** (5 Eylül 2026, aynı gün). #24 (`CONFIRM_SWAP` taslak
+taşları yok ediyordu) ve #25 (taş değiştirme seçimi indekse bağlıydı) web+port
+birlikte düzeltilip iki yeni golden fixture + `npm run verify-swap-invariants`
+kapısıyla; #23 (Edge Function'daki bayat motor kopyası) `src/`den taşınıp
+`play-ai-turn` yeniden deploy edilerek ve `npm run verify-edge-engine-parity`
+kapısı eklenerek. Üçünün de anlatısı `docs/decisions/roadmap-arsiv.md`'de.
+
+✅ **SAHADA DOĞRULANDI (5 Eylül 2026).** Deploy'un tek açık kalemi
+"çalışma zamanı açılışı ölçülemedi" idi; kullanıcı gerçek bir 4 kişilik
+Canlı oyun kurup (iki test hesabı + 4. koltuk YZ) YZ'nin oynamasını
+bekledi. Ölçüm `online_game_moves`tan:
+
+| | |
+|---|---|
+| Hamle | `KAKTÜS` — 6 taş, 7 puan |
+| Hücreler | **(12,7) → (12,12)** |
+
+**Bu tek satır düzeltmeyi kanıtlıyor.** Köşe 3'ün ev karesi (12,12);
+kelimenin SON harfi onun üstünde, yani kelime evden SOLA uzuyor ve 7.
+sütundan başlıyor. `cornerBounds(3)` = satır/sütun 9-12, ve eski kod
+başlangıç hücresini yalnızca o bloğun içinden seçip sağa/aşağı uzatıyordu —
+7. sütundan başlamayı hiç DENEMİYORDU, blok içinden başlayan 6 harflik bir
+kelime de 14. sütuna taşıp eleniyordu. Yani bu hamle eski kodla yapısal
+olarak imkânsızdı (o köşeden tavan 4 taştı). Aynı hamle paketin AÇILDIĞINI
+da kanıtlıyor: sözlük yüklendi, `findAIMove` koştu, `submit_move`a gitti.
+
+⚠ **Beklenen bir log satırı — hata DEĞİL:** aynı saniyede
+`[play-ai-turn] submit_move hatası: Sıra sende değil.` göründü. Sebebi
+tasarım: oyun ekranı açık olan HER katılımcının istemcisi `triggerAiTurn`
+çağırıyor (`OnlineGameScreen.tsx`), üç kişi ekrandayken iki istemci yarıştı,
+ikincisi 158 ms geç kalıp sıra kontrolüne takıldı. `online_game_moves`ta o
+tur için TEK satır var — çifte hamle yok, hakem çalıştı. Ama bu satır
+YZ'li her turda tekrarlanacak ve `function_edge_logs`ta gerçek hataları
+gölgeliyor; istenirse ayrı bir temizlik konusu (göndermeden önce sırayı
+yeniden oku, ya da bu reddi `error` yerine bilgi olarak logla).
+
+⚠ **`supabase.co` bu ortamdan TAMAMEN erişilemez** — #22'de "POST atamıyor"
+yazıyordu, ölçüldü: GET/OPTIONS/POST üçü de `000` dönüyor. Yani Edge
+Function'ları ajan tetikleyemez; bu sınıf doğrulama her zaman gerçek bir
+istemciden gelmek zorunda.
+
+⚠ **Geçişin en büyük dersi:** bu kod tabanında motorun ÜÇ kopyası var
+(web `src/`, port `mobile/kelimeki_core/`, Edge Function
+`supabase/functions/_game/`) ama otomatik parite kanıtı yalnızca İLK
+İKİSİ arasında. Üçüncüsü iki kez sessizce geriye kaldı ve ikisi de
+CANLIDA. Bir sonraki tur "üç kopya" cümlesini varsayım olarak alsın.
+
+### Zemin sağlam — bir sonraki tur bunları YENİDEN ölçmesin
+
+Aşağıdakiler bu geçişte ölçüldü ve temiz çıktı:
+
+- **Motor değişmezleri.** 60 rastgele tam YZ oyunu (2 ve 4 kişilik) + 80
+  rastgele EYLEM dizisi oyunu boyunca her adımda sınandı: taş korunumu
+  (bag+raf+tahta+placed = 100), negatif skor yok, raf hiç 7'yi aşmıyor,
+  **iki oyuncunun bölgesi hiç çakışmıyor** (`CLAUDE.md`'de yazılı değişmez),
+  sıra hiçbir zaman teslim olmuş oyuncuya düşmüyor, `moveHistory`'de negatif
+  puan yok. Tek ihlal #24 idi (düzeltildi; koşum artık UI kısıtı taklit
+  edilmeden de temiz).
+- **Türkçe dil kuralı.** `src/`'de Türkçe metne uygulanmış tek bir native
+  `toUpperCase`/`toLowerCase` YOK (bulunan kullanımlar e-posta başlığı, UTM,
+  ISO tarih gibi ASCII); isme göre sıralayan altı yerin altısı da `trCompare`.
+- **`JSON.parse`.** Yedi çağrı yerinin yedisi de `try/catch` içinde ve bozuk
+  localStorage'da "boş" sayıyor — bozuk kayıt açılışta çökertmiyor.
+- **Hook sırası.** `npm run verify-hook-order` temiz; ayrıca betiğin bilerek
+  görmediği sınıf da arandı — `src/` altında koşullu ya da döngü içinde
+  çağrılan hook YOK.
+- **`submit_move` eşzamanlılığı.** `online_games` satırında `for update`
+  kilidi + `p_move_id` ile idempotent yeniden deneme var. Web'in `p_move_id`
+  göndermemesi bir bulgu DEĞİL: portun kendi yorumunda (`online_api.dart:42`)
+  bilinçli bir mobil dayanıklılık kararı olarak yazılı. (Yine de ucuz bir
+  kalem: web telefonda da koşuyor ve tek satırlık bir UUID, yanıtı kaybolan
+  bir hamlenin ikinci denemesinde sahte "Sıra sende değil."i yapısal olarak
+  imkânsız kılardı.)
+- **Mevcut kapıların tamamı yeşil:** `tsc --noEmit`, 15 `verify-*` betiği,
+  `check-doc-size`, golden vector'lar TAZE (yeniden üretildi, sıfır fark),
+  6842 Dart parite kontrolü, 774 Flutter testi.
+
+## Performans geçişi — KAPANDI (5 Eylül 2026)
+
+İncelemenin 3. geçişi (yukarıdaki tabloda ⬜ idi). Kapsam ROADMAP'in kendi
+tarifi: bundle, sıcak sorguların index kapsamı, liste render'ı, N+1 RPC.
+
+**Yöntem — tahmin değil, iki ölçüm kaynağı.** (1) `pg_stat_statements`'ın
+69 günlük penceresi (2026-06-28'den beri hiç sıfırlanmamış), yani "hangi
+sorgu gerçekten pahalı" sorusunun cevabı canlı veriden okundu; (2) `npm run
+build` çıktısı ve `explain (analyze, buffers)`. Kod okuyarak "burası yavaş
+olabilir" denmedi.
+
+⚠ **Bu geçişin en büyük dersi — ÖLÇÜMÜN KENDİSİ yanlış kurulabilir.**
+`list_my_online_games`i iyileştirirken ilk karşılaştırma eski gövdeyi
+`authenticated` rolüyle (RLS uygulanarak), yenisini `postgres` ile (RLS'siz)
+ölçtü ve "12,1 → 6,0 ms, %50 hızlanma" gibi göründü. Oysa fonksiyonun sahibi
+`postgres` ve BYPASSRLS taşıyor — yani `security definer` gövdesinde RLS
+zaten hiç uygulanmıyordu, iki ölçüm farklı dünyalardaydı. Aynı koşulda
+tekrarlandığında gerçek sonuç **süre değişmedi** (4,75 → 4,84 ms) çıktı.
+İkinci tuzak aynı turda: eski gövde `select count(*) from (...)` ile
+ölçüldüğünde 0,23 ms verdi, çünkü planlayıcı `count(*)`ın okumadığı skaler
+alt sorguların TAMAMINI eliyor. **Kural: bir "önce/sonra" ölçümünde rol,
+RLS ve çıktının gerçekten tüketilip tüketilmediği ÜÇÜ de eşitlenmeden sayı
+yazma.** (Güvenlik geçişinin dersi "bulguyu ölçmeden yazma"ydı; bunun
+devamı: ölçümün kendisini de doğrula.)
+
+### Bulgular — dördü düzeltildi
+
+| # | Bulgu | Ölçüm | Durum |
+|---|---|---|---|
+| 26 | Admin paneli (3.227 satır) + `html-to-image` HER kullanıcıya iniyordu | App paketi 359 → **266 KB** (gzip 99,4 → **72,9**, %27 az) | ✅ |
+| 27 | `subscribeMyOnlineGames` çağıran başına AYRI kanal → kullanıcı başına 9 Realtime aboneliği | Realtime `apply_rls` DB yürütme süresinin **%75,8'i** (3,38 M çağrı / 18.327 s) — abonelik doğrudan çarpan; 9 → **3** | ✅ |
+| 28 | Canlı oyunda kelime doğrulaması SIRALI RPC (`for…await`) | `is_valid_word` 21.106 çağrı ↔ `submit_move` 1.558 → hamle başına **~13 ardışık gidiş-dönüş**; paralelleştirildi (1 tur) | ✅ |
+| 29 | `list_my_online_games` slot başına aynı satırı iki kez okuyor (N+1) | tampon 1.240 → **706** (%43 az); **süre değişmedi** | ✅ |
+
+**#26 — paket.** `UserMenu` `AdminDashboard`ı statik import ediyordu, yani
+yalnızca adminlerin açabildiği 80 KB'lık panel herkesin App paketindeydi;
+`shareBoardImage` de `html-to-image`i (13,7 KB) aynı şekilde taşıyordu.
+İkisi de `lazy`/dinamik import'a çevrildi. ⚠ Servis çalışanının PRECACHE
+toplamı DEĞİŞMEDİ (2018 → 2019 KiB) — kod yer değiştirdi, silinmedi; kazanç
+ilk boyamada ayrıştırılan/çalıştırılan JS'te ve PWA kurulmadan önceki ilk
+ziyarette.
+
+**#27 — kanal çoğaltması.** Üç çağıran (`Setup` rozeti, `LiveGamesTab`
+listesi, `useAppIconBadge`) aynı anda canlı olabiliyor ve her biri kendi
+kanalını açıyordu (3 kanal × 3 tablo). Sunucuda WAL'daki her satır
+değişikliği HER abonelik için ayrı RLS'ten geçtiğinden abonelik sayısı
+doğrudan maliyeti çarpıyor. `api.ts` içinde referans sayımlı tek kanala
+indirildi — **çağıranların hiçbiri değişmedi**, imza ve iptal fonksiyonu
+aynı. `onResubscribe` semantiği korundu ve kanal başına işliyor: kanal
+zaten bağlıyken katılan bir dinleyici sinyal ALMAZ (kendi ilk yüklemesini
+mount'ta zaten yaptı), soket gerçekten kopup döndüğünde O ANDAKİ tüm
+dinleyiciler alır. Yeni kapı: **`npm run verify-shared-realtime`** (CI'da
+koşuyor) — negatif eşle sınandı, paylaşım kaldırılınca gerçekten düşüyor.
+
+**#28 — sıralı doğrulama.** `OnlineGameScreen.handlePlay` kurulan her
+kelimeyi sırayla soruyordu; `App.tsx`'in aynı yeri `Promise.all` ile
+ZATEN paraleldi ve gerekçesi de orada yazılıydı — yani iki ekranın
+paylaştığı desenlerden biri sessizce ayrışmıştı (kök `CLAUDE.md`'nin
+"App.tsx ↔ OnlineGameScreen" satırının tam olarak uyardığı sınıf).
+Paralelleştirmeyle birlikte `App.tsx`'teki `catch` de taşındı: eski kodda
+beklenmedik bir `throw` (tam ağ kopukluğu) yakalanmıyor, hamle hiçbir
+mesaj/dispatch olmadan askıda kalıyordu.
+
+**#29 — N+1.** `name` ve `avatar_url` slot başına İKİ ayrı `profiles`
+araması, `my_invite_status` ve `my_invite_id` ise BİREBİR aynı sorgu, iki
+kez. LATERAL birleştirmeye çevrildi. **Çıktının bit bit aynı kaldığı
+kanıtlandı:** 51 kullanıcının hepsi için eski/yeni gövde yan yana koşulup
+karşılaştırıldı, sıfır fark; karşılaştırmanın kör olmadığı üç negatif eşle
+gösterildi (`name`, slot `invite_status`, `my_invite_id` tek tek
+bozulduğunda 21/21/20 kullanıcıda fark). ⚠ **Bir dal ölçülemedi:**
+`pending_outgoing`/`pending_incoming` mevcut veride HİÇ oluşmuyor (o dalı
+bilerek ters çevirdiğimizde karşılaştırma sıfır fark verdi), eşdeğerlik
+orada gövdeden kanıtlandı — gerekçe migration dosyasının başında.
+
+### Ölçüldü, DÜZELTİLMEDİ — bilinçli
+
+- **Aynı Realtime olayında `list_my_online_games` ÜÇ KEZ çekiliyor**
+  (Setup, LiveGamesTab, useAppIconBadge; üçü de 300 ms debounce'la aynı
+  anda). Uçuştaki isteği paylaştırmak (in-flight coalescing) ilk akla gelen
+  çözüm ama **RİSKLİ**: `LiveGamesTab`'ın `loadGames` fonksiyonu
+  `check_turn_timeout`/`check_invite_expiry` YAZDIKTAN sonra bilerek taze
+  bir okuma yapıyor (`rows2`); o çağrı, yazmadan ÖNCE başlamış bir isteğe
+  yapışırsa bayat veri alır. Doğru çözüm tüketicilerin veriyi paylaşması
+  (tek kaynak + fan-out), yani bir bileşen ameliyatı — performans geçişinin
+  değil kendi turunun işi. Bugünkü bedeli: bu RPC DB yürütme süresinin
+  %3,8'i, yani 69 günde 914 s.
+- **`list_my_online_games` SAYFALAMASIZ.** En aktif kullanıcıda 69 oyun ve
+  liste sonsuza dek büyüyor; her Realtime olayında TAMAMI çekiliyor. Bugün
+  sorun değil (12 ms), ama bu maliyet kullanıcı başına oyun sayısıyla
+  doğrusal artıyor ve "eski bitmiş oyunlar" hiç düşmüyor. Eşik: kullanıcı
+  başına birkaç yüz oyun.
+- **`fetchIncomingFriendRequests` yalnızca `.length` için tüm satırları
+  çekiyor** (`UserMenu` ve `useAppIconBadge`; 27.541 çağrı / 148 s). Bir
+  sayı RPC'si yeterdi. Küçük kalem, ama ikisi de rozet besliyor.
+- **`local_game_saves` upsert'i 106.305 çağrı / 267 s** — her otomatik
+  kayıt bir yazma. Tasarım gereği (bkz. `docs/decisions/local-game-persistence.md`);
+  bugün en pahalı YAZMA yolu, ama davranışı değiştirmeden kısılamaz.
+- **PostgREST şema önbelleği 2.915 kez yeniden yüklenmiş** — tek başına
+  `pg_timezone_names` 1.770 s (%7,3) ve yanındaki katalog sorgularıyla
+  birlikte toplam ~%8,5. Uygulama kodu DEĞİL (migration/`NOTIFY pgrst` ya da
+  yeniden başlatma kaynaklı); Supabase tarafında bir ayar konusu.
+- **Advisor INFO kalemleri:** iki indekssiz FK (`online_game_clients.user_id`,
+  `support_inbox.seen_by`) ve 8 hiç kullanılmamış indeks. İkisi de küçük
+  tablolar; indeks eklemek/silmek ölçülebilir bir kazanç vermez, bu yüzden
+  dokunulmadı. ✅ Tek **WARN** kalemi (`league_rewards` RLS initplan)
+  kapatıldı — kazanç ölçülemez (26 satırlık tablo), gerekçe advisor
+  listesini temiz tutmak.
+
+### Zemin sağlam — bir sonraki tur bunları YENİDEN ölçmesin
+
+- **`Board.tsx` zaten doğru memoize edilmiş:** bölge hesabı, bölge sahibi
+  haritası, dış hatlar ve hamle rozeti `useMemo` arkasında ve bağımlılıkları
+  dar. Liste render'ında bulunacak bir şey çıkmadı.
+- **`meanings.json` (6,5 MB) bilinçli olarak precache DIŞINDA** ve tembel
+  yükleniyor; `words` (747 KB) ayrı chunk ve tembel. İkisi de kayıtlı karar,
+  bulgu değil.
+- **Edge Function'ın sözlük yükleyicisi (`_game/wordSet.ts`) zaten
+  optimize:** sayfalar `Promise.all` ile paralel ve isolate başına
+  önbellekli. 69 günde 2.626 sayfa isteği ≈ 41 soğuk başlangıç.
+- **Bağımlılıklar yalın:** üretim bağımlılığı 7 paket (React, supabase-js,
+  fontsource, html-to-image). Kaldırılacak ölü bağımlılık yok.
+- **Mobil portta aynı kanal çoğaltması VAR ama daha küçük** (iki tüketici:
+  `setup_screen` rozeti + `live_games_tab`). Aynı düzeltme oraya
+  taşınabilir; sunucu maliyetini düşürür, kullanıcıya görünen davranışı
+  değiştirmez. Port turuna bırakıldı — bu geçiş web'i kapsıyordu.

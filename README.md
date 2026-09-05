@@ -37,6 +37,7 @@ npm run test     # Playwright testleri (tests/*.spec.ts — duman + yazı ölçe
 npm run verify-cloud-save-mirror # bulut kaydının çevrimdışı karar mantığı
 npm run verify-fetch-my-games    # oyun geçmişi: ağ hatası ↔ boş liste ayrımı
 npm run verify-live-games-load    # canlı oyun listesi: düşen istek sessizce tekrarlanır
+npm run verify-shared-realtime    # canlı oyun aboneliği: üç çağıran → tek Realtime kanalı
 npm run verify-demo-board        # karşılama katmanındaki tanıtım tahtası sözlüğe karşı doğrulanır
 npm run verify-remaining-tiles   # "Kalan Taşlar" dökümü ↔ oyun sonu raf düşümü
 npm run verify-swap-invariants   # taş değiştirme: taslak taşlar yok olmuyor + senkron seçimi düşürüyor

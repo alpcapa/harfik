@@ -143,6 +143,14 @@ jobs:
       # sunucusunda Supabase yapılandırılmadığından tarayıcıda ulaşılamıyor.
       - run: npm run verify-live-games-load
 
+      # `subscribeMyOnlineGames` PAYLAŞILAN kanal değişmezi (5 Eylül 2026,
+      # incelemenin performans geçişi): üç çağıran → TEK Realtime aboneliği.
+      # Derleyici de duman testi de göremez — kanal başına ayrılırsa
+      # uygulama çalışmaya devam eder, yalnızca sunucudaki `apply_rls`
+      # maliyeti sessizce üçe katlanır (o kalem DB yürütme süresinin
+      # %75,8'i).
+      - run: npm run verify-shared-realtime
+
       # Girişte hangi sekmenin açılacağı kuralı web'de TS, portta Dart —
       # iki elle senkron kopya. Dart tarafı bir golden tabloya karşı
       # sınanıyor (`mobile/app/test/initial_main_view_parity_test.dart`).
