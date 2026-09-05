@@ -297,17 +297,54 @@ kirletilebilmesi**.
 `user_id IS NULL` şartıyla daraltılmış. Yeni bir mekanizma icat etme,
 `feedback_rate_limit_check` desenini kopyala.
 
-### 20. `CRON_SECRET` fail-open — **KULLANICI KONTROLÜ, kod işi değil**
+### 20. `CRON_SECRET` fail-open — **ÖLÇÜLDÜ: DÜŞÜK, kabul edilebilir**
 
-Beş Edge Function'da kapı `if (CRON_SECRET && ...)` biçiminde: **secret
-tanımlı değilse kontrol sessizce yok sayılıyor.** Dashboard'daki secret'lar
-ajandan görünmüyor, yani bu **ölçülemedi**.
+**Durum (5 Eylül 2026): `CRON_SECRET` Dashboard'da TANIMLI DEĞİL** (kullanıcı
+ekran görüntüsüyle doğruladı — Custom secrets'ta yalnızca `BREVO_API_KEY` ve
+`FCM_SERVICE_ACCOUNT` var). Yani `if (CRON_SECRET && ...)` kapısı fiilen
+açık ve **üç** fonksiyon (beş değil — ilk sayım yanlıştı) internetten
+çağrılabiliyor: `notify-deadline-warnings`,
+`notify-friend-request-reminders`, `sweep-unconfirmed-accounts`.
 
-**Yapılacak:** Supabase Dashboard → Edge Functions → Secrets'ta `CRON_SECRET`
-var mı bak. Yoksa `sweep-unconfirmed-accounts` dahil beş fonksiyon internete
-açık demek. Desen ne olursa olsun ters — yokluğunda kapanmalı, açılmamalı;
-secret varsa bile koşulu `if (!CRON_SECRET || header !== ...)` yönüne
-çevirmek doğru olur.
+**Ama etkisi ölçüldü ve düşük** — üçünde de atomik "iddia" koruması var
+(`.is(alan, null)` filtreli UPDATE), yani `notify-turn-timeout-surrender`
+ile aynı desen:
+
+| Fonksiyon | Dışarıdan tekrar çağrılırsa |
+|---|---|
+| `notify-deadline-warnings` | `deadline_warning_sent_at` → satır başına tek mail |
+| `notify-friend-request-reminders` | `reminder_sent_at` → aynısı |
+| `sweep-unconfirmed-accounts` | Yaş ölçütünü kendi uyguluyor → erken silme YOK |
+
+Saldırgan zaten gönderilmeyecek tek bir mail bile göndertemiyor; kalan etki
+yalnızca boşa çağrı maliyeti. **Bu yüzden acil değil.**
+
+⚠ **Düzeltmenin bedeli faydasından büyük olabilir — üç parça aynı anda
+değişmek zorunda.** Ölçüldü: `cron.job`taki üç komut da **hiçbir
+`Authorization` başlığı göndermiyor** (`headers` yalnızca `Content-Type`).
+Yani secret'ı tek başına tanımlamak üç özelliği birden 401'e düşürür ve
+arıza SESSİZ olur (mailler durur, hata veren bir yüzey yok). Sıra şu
+olmalı: secret + cron komutları + kodun fail-closed'a çevrilmesi, hepsi
+tek turda.
+
+**İki seçenek:**
+
+- **(a) Vault ile, Dashboard adımı OLMADAN:** sır `supabase_vault`'ta
+  (0.3.1 kurulu), cron komutu onu okuyup `Authorization` başlığına koyar,
+  Edge Function beklenen değeri kendi `service_role` istemcisiyle DB'den
+  okur. Depoda ve sohbette sır geçmez, tamamen ajandan doğrulanabilir.
+  Bedeli: çağrı başına bir DB okuması (15 dk/saatlik/günlük iş için
+  önemsiz) ve koddaki `Deno.env.get('CRON_SECRET')` deseninden sapma.
+- **(b) Kabul et ve YAZ:** bugünkü fiili durum bu; ölçüm yukarıda. Bu
+  seçilirse koddaki `if (CRON_SECRET && ...)` satırlarına "secret bilerek
+  tanımlı değil, koruma iddia sütunlarından geliyor" notu düşülmeli —
+  aksi halde bir sonraki okuyan onu çalışan bir kapı sanır.
+
+⚠ **`inbound-email` bu maddeye DAHİL DEĞİL.** O fail-closed yazılmış
+(`INBOUND_EMAIL_SECRET` yoksa 503) ve sırrının tanımsız olması BİLİNÇLİ:
+Brevo Inbound webhook'u ücretli plana bloke, bkz.
+`docs/decisions/support-email.md` → "GELEN ZİNCİRİ DURDURULDU". Boş
+`support_inbox` (0 satır) beklenen durum, arıza değil.
 
 ### 21. Advisor gürültüsü + Auth ayarları — **TEMİZLİK**
 
