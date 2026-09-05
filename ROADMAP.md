@@ -245,6 +245,192 @@ git log --oneline 711eaaa..origin/main -- mobile/app mobile/kelimeki_core
    `mobile/docs/test-ortamlari.md`), yani iOS'ta eski derlemeyi test etmek
    kolay bir hata.
 
+## Güvenlik geçişi — açık kalan maddeler (5 Eylül 2026)
+
+Play Store öncesi kapsamlı incelemenin ilk geçişi. **Kapatılan madde
+(oturumsuz kimlik sızıntısı) burada DEĞİL** — uygulandı ve
+`docs/decisions/supabase-ops.md` → "Play Store öncesi güvenlik geçişi"ne
+yazıldı. Aşağıdakiler hâlâ açık.
+
+Zeminin sağlam olduğunu da kayda geçir, çünkü bir sonraki tur bunu yeniden
+ölçmesin: 28 tablonun 28'inde RLS açık, 71 `SECURITY DEFINER` fonksiyonun
+71'inde `search_path` sabitlenmiş, yazma politikalarında istisnasız
+`auth.uid() = user_id` var, Edge Function `verify_jwt` envanteri kök
+`CLAUDE.md`'deki 8'lik listeyle birebir tutuyor, repoda gömülü sır yok.
+`notify-turn-timeout-surrender` / `notify-welcome` / `notify-your-turn`
+herkese açık POST hedefi olmalarına rağmen doğru yazılmış (atomik iddia,
+taze pencere, hedefi gövdeden değil canlı durumdan alma) — bulgu değiller.
+
+### 18. `submit_move` puana değil yalnızca taşa hakem — **KARAR GEREKİYOR**
+
+**Model: Opus 5** (ürün kararı + motor bilgisi). Ölçüldü: fonksiyon oturum,
+sıra sahipliği, katılımcılık, hücre geçerliliği, dolu hücre, **rafta
+gerçekten olan taş**, vergi hedefi/tutarı ve verginin puanı aşamamasını
+sunucuda doğruluyor — ama şunları HİÇ yapmıyor:
+
+- `words` tablosuna bakmıyor → kelime sözlükte olmak zorunda değil
+- harf puanlarını yeniden hesaplamıyor → `p_base_points` istemciden geldiği
+  gibi işleniyor
+- puan tavanı yok (tek kontrol `p_base_points < 0`)
+
+Yani bir oyunun **meşru katılımcısı**, kendi sırasında, uygulamayı atlayıp
+doğrudan RPC çağırarak tek hamlede istediği puanı yazabilir. Etki veri
+sızıntısı değil **k-lig ve `league_rewards` bütünlüğü**.
+
+**Karar şıkları:** (a) skoru sunucuda yeniden hesapla — motorun puanlama
+kısmının SQL'e ya da bir Edge Function'a taşınması gerekir, ucuz değil;
+(b) makul bir tavan koy (ör. tek hamlede teorik maksimum) — ucuz, tam
+çözmez; (c) "istemci-otoriter skor" olarak bilinçli kabul et ve YAZ.
+Bugün (c) fiilen geçerli ama hiçbir yerde yazılı değil — en azından bu
+düzeltilmeli.
+
+### 19. `anon` için sınırsız telemetri yazımı — **ÖLÇÜLDÜ: KABUL EDİLDİ**
+
+`client_errors`, `device_visits`, `guest_visits`, `game_starts` — dördünde
+de INSERT politikası `with_check: true`, yani oturumsuz sınırsız satır
+eklenebiliyor. **İlk yazımda "feedback_rate_limit desenini kopyala" deniyordu;
+o tavsiye ÖLÇÜMDEN ÖNCEYDİ ve GERİ ALINDI.** Ölçünce üç şey çıktı:
+
+**1. İddia edilen zarar büyük ölçüde YOK — tüketici zaten dayanıklı.**
+Dokuz admin RPC'sinin sekizi `count(distinct ...)` kullanıyor.
+`admin_source_funnel`ın "Ziyaretçi" adımı YALNIZCA
+`count(distinct gv.anon_id)`; `game_starts`/`game_finishes` adımları ham `n`
+ile `uniq`i YAN YANA döndürüyor (ham sayı meşru olarak ham: "toplam
+başlangıç"). `admin_activation_stats` bu tabloların hiçbirine dokunmuyor.
+Yani bir sel `uniq` sütunlarını oynatamaz.
+
+**2. Bugün kötüye kullanım yok ve hacim küçük** (5 Eylül 2026):
+
+| Tablo | Toplam | Farklı cihaz | Son 7 gün |
+|---|---|---|---|
+| `client_errors` | 40 | 27 | 12 |
+| `device_visits` | 877 | 731 | 184 |
+| `guest_visits` | 2.316 | 2.032 | 128 |
+| `game_starts` | 931 | 181 | 346 |
+
+**3. IP'ye anahtarlanan bir limitin İKİ yan etkisi, faydasından büyük:**
+- **CGNAT.** Türk mobil operatörleri operatör düzeyinde NAT kullanıyor;
+  gerçek kullanıcılar tek çıkış IP'sini paylaşıyor. Ziyaret/oyun başına
+  yazan bir tabloda IP limiti gerçek satırları SESSİZCE düşürür (istemci
+  hatayı yutuyor — ölçüldü, iki tarafta da fire-and-forget) ve huni EKSİK
+  sayar. Bu, önlemeye çalıştığımız zararın aynı sınıfı, ters yönü.
+- **`client_errors`'ta olayı gizler.** Tek cihazdan gelen hata seli tam da
+  görmek istediğin şeydir; limit gerçek bir çökme olayında kanıtı kısar.
+  Üstelik #10 ile istemci tarafında zaten hız sınırı var.
+
+**Karar: bugün bir şey yapma.** Yeniden açılma tetikleyicisi: telemetri
+tablolarından birinde `count(*)` ile `count(distinct anon_id)` arasında
+açıklanamayan bir uçurum görülmesi, ya da satır sayısının maliyet yaratacak
+mertebeye çıkması.
+
+⚠ Limit ileride gerekirse **IP'ye DEĞİL `anon_id`'ye anahtarla** — CGNAT
+komşularını vurmaz. Saldırgan `anon_id`yi de döndürebilir (yani naif seli
+durdurur, kararlıyı durdurmaz), ama dürüst kullanıcıya maliyeti sıfırdır.
+
+### 20. `CRON_SECRET` fail-open — **ÖLÇÜLDÜ: DÜŞÜK, kabul edilebilir**
+
+**Durum (5 Eylül 2026): `CRON_SECRET` Dashboard'da TANIMLI DEĞİL** (kullanıcı
+ekran görüntüsüyle doğruladı — Custom secrets'ta yalnızca `BREVO_API_KEY` ve
+`FCM_SERVICE_ACCOUNT` var). Yani `if (CRON_SECRET && ...)` kapısı fiilen
+açık ve **üç** fonksiyon (beş değil — ilk sayım yanlıştı) internetten
+çağrılabiliyor: `notify-deadline-warnings`,
+`notify-friend-request-reminders`, `sweep-unconfirmed-accounts`.
+
+**Ama etkisi ölçüldü ve düşük** — üçünde de atomik "iddia" koruması var
+(`.is(alan, null)` filtreli UPDATE), yani `notify-turn-timeout-surrender`
+ile aynı desen:
+
+| Fonksiyon | Dışarıdan tekrar çağrılırsa |
+|---|---|
+| `notify-deadline-warnings` | `deadline_warning_sent_at` → satır başına tek mail |
+| `notify-friend-request-reminders` | `reminder_sent_at` → aynısı |
+| `sweep-unconfirmed-accounts` | Yaş ölçütünü kendi uyguluyor → erken silme YOK |
+
+Saldırgan zaten gönderilmeyecek tek bir mail bile göndertemiyor; kalan etki
+yalnızca boşa çağrı maliyeti. **Bu yüzden acil değil.**
+
+⚠ **Düzeltmenin bedeli faydasından büyük olabilir — üç parça aynı anda
+değişmek zorunda.** Ölçüldü: `cron.job`taki üç komut da **hiçbir
+`Authorization` başlığı göndermiyor** (`headers` yalnızca `Content-Type`).
+Yani secret'ı tek başına tanımlamak üç özelliği birden 401'e düşürür ve
+arıza SESSİZ olur (mailler durur, hata veren bir yüzey yok). Sıra şu
+olmalı: secret + cron komutları + kodun fail-closed'a çevrilmesi, hepsi
+tek turda.
+
+**İki seçenek:**
+
+- **(a) Vault ile, Dashboard adımı OLMADAN:** sır `supabase_vault`'ta
+  (0.3.1 kurulu), cron komutu onu okuyup `Authorization` başlığına koyar,
+  Edge Function beklenen değeri kendi `service_role` istemcisiyle DB'den
+  okur. Depoda ve sohbette sır geçmez, tamamen ajandan doğrulanabilir.
+  Bedeli: çağrı başına bir DB okuması (15 dk/saatlik/günlük iş için
+  önemsiz) ve koddaki `Deno.env.get('CRON_SECRET')` deseninden sapma.
+- **(b) Kabul et ve YAZ:** bugünkü fiili durum bu; ölçüm yukarıda. Bu
+  seçilirse koddaki `if (CRON_SECRET && ...)` satırlarına "secret bilerek
+  tanımlı değil, koruma iddia sütunlarından geliyor" notu düşülmeli —
+  aksi halde bir sonraki okuyan onu çalışan bir kapı sanır.
+
+⚠ **`inbound-email` bu maddeye DAHİL DEĞİL.** O fail-closed yazılmış
+(`INBOUND_EMAIL_SECRET` yoksa 503) ve sırrının tanımsız olması BİLİNÇLİ:
+Brevo Inbound webhook'u ücretli plana bloke, bkz.
+`docs/decisions/support-email.md` → "GELEN ZİNCİRİ DURDURULDU". Boş
+`support_inbox` (0 satır) beklenen durum, arıza değil.
+
+### 21. Advisor gürültüsü + Auth ayarları — **KISMEN YAPILDI**
+
+**✅ Trigger fonksiyonlarının REST erişimi KAPATILDI** (5 Eylül 2026,
+migration `20260905055111_revoke_trigger_function_execute`, canlıya
+uygulandı). Dört fonksiyon (`trg_award_league_rewards`,
+`handle_friend_request_insert`, `keep_signup_utm_source`,
+`_game_finishes_strip_anon_id`) `anon`+`authenticated`e açıktı; ötekiler
+zaten yalnızca `service_role`'du, yani sekizin dördü kuruluştaki örtük
+grant'i temizlemeyi atlamıştı. Sonra sondalandı: sekiz trigger
+fonksiyonunun sekizinde de `anon`/`authenticated` kapalı, `service_role`
+açık, her biri bir trigger'a bağlı. Advisor'ın dört uyarısı kapandı.
+
+⚠ Sömürülebilir oldukları GÖSTERİLMEDİ (Postgres trigger fonksiyonunun
+doğrudan çağrılmasını reddeder); bu derinlemesine savunmaydı. Trigger'ların
+bozulmayacağı ise ölçüldü: aynı işlem `feedback_rate_limit_check` için
+22 Temmuz 2026'da yapılmış ve o tarihten sonra `feedback`e 18 satır girmiş
+— her biri o BEFORE INSERT trigger'ından geçerek. **EXECUTE izni
+`create trigger` anında kontrol edilir, trigger ateşlenirken değil.**
+
+**⬜ Kalan iki kalem — ikisi de Dashboard, kod işi değil:**
+
+- **Authentication → OTP süresi uzun** ve **sızmış-parola koruması kapalı**
+  (advisor WARN). İkisi de tek tık.
+- **`pg_net` public şemada** (advisor WARN). ⚠ **YAPILMASI ÖNERİLMİYOR:**
+  şema taşımak çalışan cron zincirine (`net.http_post` çağıran üç iş)
+  dokunur ve kazancı bir uyarı satırını silmekten ibaret. Advisor'ın
+  kırmızısını temizlemek için çalışan bir zinciri riske atma.
+
+### 22. `feedback` hız sınırı XFF ile atlanabilir — **AÇIK, ölçülmedi**
+
+#19'u incelerken çıktı ve ondan bağımsız: bu, CANLIDA çalışan bir kontrol.
+`feedback_rate_limit_check` kimliği şöyle alıyor:
+
+```sql
+split_part(current_setting('request.headers')::json ->> 'x-forwarded-for', ',', 1)
+```
+
+Yani `X-Forwarded-For`un **en soldaki** değeri. Vekiller gerçek IP'yi zincirin
+**sağına ekler**; en soldaki değer istemcinin kendi gönderdiğidir. Doğruysa
+sonuç ters: saldırgan her istekte sahte bir ilk XFF yazıp limiti tamamen
+atlar, kendi XFF'i olmayan gerçek kullanıcı ise gerçek IP'siyle sayılıp
+limite takılır — yani kontrol yalnızca DÜRÜST trafiği kısıtlıyor olur.
+
+⚠ **ÖLÇÜLMEDİ.** Bu ortam `supabase.co`ya POST atamıyor (ajan vekili
+engelliyor), yani Supabase ağ geçidinin XFF'i nasıl birleştirdiği
+doğrulanamadı. **İlk iş bunu ölçmek:** `inbound-email` ya da herhangi bir
+uçtan `request.headers`ı bir yere yazdırıp, kendi XFF'ini gönderen bir
+istekle göndermeyen bir isteğin ne ürettiğini karşılaştır. Ağ geçidi
+istemcinin XFF'ini TAMAMEN yok sayıyorsa bulgu düşer.
+
+Doğrulanırsa düzeltme: en soldaki değil **sağdan** sayılan (vekil sayısı
+kadar içeriden) değeri al, ya da Supabase'in kendi güvenilir istemci-IP
+başlığını kullan. `feedback` limiti dışında bu deseni kopyalayan başka yer
+YOK (arandı) — yani düzeltme tek noktada.
+
 ## Modeller — hangi iş için hangisi
 
 Ölçüt maliyet değil **hata bedeli** ve **ufuk uzunluğu**:
