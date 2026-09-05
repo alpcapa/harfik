@@ -620,14 +620,21 @@ class GameEngine {
     if (state.phase != GamePhase.play || state.isGameOver || !state.swapMode) {
       return state;
     }
-    final me = state.players[state.current];
     if (state.swapSelection.isEmpty) {
       return state.copyWith(
         message: 'En az bir taş seçmelisin.',
         messageType: MessageKind.err,
       );
     }
-    final selected = state.swapSelection.toSet();
+    // Taş korunumu REDUCER'ın sorumluluğu — bkz. gameReducer.ts'teki aynı
+    // yerdeki uzun not (5 Eylül 2026 hata avı geçişi). Kısaca:
+    // `ToggleSwapModeAction` swap moduna GİRERKEN `_recallAll` çağırıyordu,
+    // `_confirmSwap` çıkarken çağırmayıp yalnızca `placed: {}` yazıyordu —
+    // tahtadaki taslak taşlar rafa da torbaya da dönmeden siliniyordu.
+    // Seçim kontrolü bilerek recall'ın ÜSTÜNDE (hata dalında taslağı toplama).
+    final base = _recallAll(state);
+    final me = base.players[base.current];
+    final selected = base.swapSelection.toSet();
     final returned = <Tile>[];
     final kept = <Tile>[];
     for (var i = 0; i < me.rack.length; i++) {
@@ -638,25 +645,25 @@ class GameEngine {
         kept.add(t);
       }
     }
-    final bag = shuffleList([...state.bag, ...returned], rng);
+    final bag = shuffleList([...base.bag, ...returned], rng);
     final drawn = drawTiles(bag, returned.length);
     final rack = [...kept, ...drawn];
 
     // Taş değiştirmek de pas gibi puansız bir turdur (bkz. TS yorumu).
-    final consecutivePasses = state.consecutivePasses + 1;
-    final moved = state.copyWith(
+    final consecutivePasses = base.consecutivePasses + 1;
+    final moved = base.copyWith(
       bag: bag,
-      players: _withRack(state, rack),
+      players: _withRack(base, rack),
       placed: {},
       selectedTile: null,
       swapMode: false,
       swapSelection: const [],
       consecutivePasses: consecutivePasses,
       moveHistory: [
-        ...state.moveHistory,
+        ...base.moveHistory,
         HistoryEntry(
-          turn: state.turnCount,
-          player: state.current,
+          turn: base.turnCount,
+          player: base.current,
           words: const [],
           points: 0,
           action: 'exchange',
@@ -666,7 +673,7 @@ class GameEngine {
       message: '${me.name} ${returned.length} taş değiştirdi ve sırasını kullandı.',
       messageType: MessageKind.warn,
     );
-    if (consecutivePasses >= _activePlayerCount(state.players) * maxPassRounds) {
+    if (consecutivePasses >= _activePlayerCount(base.players) * maxPassRounds) {
       return _endGame(moved);
     }
     return _advanceTurn(moved);
@@ -824,6 +831,22 @@ class GameEngine {
     final pub = action.publicState;
     final turnAdvanced = pub.turnCount != state.turnCount;
     final placed = turnAdvanced ? <String, Tile>{} : state.placed;
+    final myRack = turnAdvanced
+        ? action.myRack
+        : _subtractPlacedFromRack(action.myRack, placed);
+    // `swapSelection` raf İNDEKSLERİ tutuyor — bkz. gameReducer.ts'teki aynı
+    // yerdeki not (5 Eylül 2026 hata avı geçişi). Turn ilerlemediyse seçim
+    // bilerek korunuyor, ama raf sunucu sırasına geri yazıldığından
+    // "Karıştır"dan sonra aynı indeks BAŞKA bir taşı gösterir. Raf
+    // değiştiyse seçimi düşürüyoruz: yanlış taşı göndermektense kullanıcı
+    // güncel rafta yeniden seçsin.
+    String rackSignature(List<Tile> r) =>
+        r.map((t) => '${t.letter}:${t.pts}').join('|');
+    final prevRack = action.mySlotIndex >= 0 &&
+            action.mySlotIndex < state.players.length
+        ? state.players[action.mySlotIndex].rack
+        : const <Tile>[];
+    final rackChanged = rackSignature(prevRack) != rackSignature(myRack);
     final players = <Player>[];
     for (var i = 0; i < pub.players.length; i++) {
       final p = pub.players[i];
@@ -834,9 +857,7 @@ class GameEngine {
         isAI: p.isAI,
         surrendered: p.surrendered,
         rack: i == action.mySlotIndex
-            ? (turnAdvanced
-                ? action.myRack
-                : _subtractPlacedFromRack(action.myRack, placed))
+            ? myRack
             : List<Tile>.filled(p.rackCount, const Tile(letter: 'A', pts: 1)),
         score: p.score,
         bestMoveScore: p.bestMoveScore,
@@ -860,7 +881,8 @@ class GameEngine {
       current: pub.current,
       selectedTile: turnAdvanced ? null : state.selectedTile,
       swapMode: turnAdvanced ? false : state.swapMode,
-      swapSelection: turnAdvanced ? const [] : state.swapSelection,
+      swapSelection:
+          turnAdvanced || rackChanged ? const [] : state.swapSelection,
       turnCount: pub.turnCount,
       consecutivePasses: pub.consecutivePasses,
       isGameOver: pub.isGameOver,

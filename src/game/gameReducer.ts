@@ -612,7 +612,6 @@ export function gameReducer(state: GameState, action: Action): GameState {
       if (state.phase !== 'play' || state.isGameOver || !state.swapMode) {
         return state;
       }
-      const me = state.players[state.current];
       if (state.swapSelection.length === 0) {
         return {
           ...state,
@@ -620,8 +619,27 @@ export function gameReducer(state: GameState, action: Action): GameState {
           messageType: 'err',
         };
       }
+      // Taş korunumu REDUCER'ın kendi sorumluluğu olmalı (5 Eylül 2026, hata
+      // avı geçişi #24 — bkz. docs/decisions/roadmap-arsiv.md).
+      // `TOGGLE_SWAP_MODE` swap moduna GİRERKEN `recallAll` çağırıyordu ama
+      // `CONFIRM_SWAP` çıkarken çağırmıyor, yalnızca `placed: {}` yazıyordu —
+      // yani swap modunda tahtada taslak taş bulunursa o taşlar rafa da
+      // torbaya da dönmeden oyundan tamamen SİLİNİYORDU. Rastgele eylem
+      // koşumu bunu 100 taşlık torbayı 93'e düşürerek gösterdi.
+      //
+      // Bu durumun bugün oluşmamasının tek sebebi dört ayrı ekrandaki dört
+      // ayrı `if` (App.tsx + OnlineGameScreen.tsx + portun game_screen.dart /
+      // online_game_screen.dart'ı) — yani bir değişmez, onu hiç bilmeyen UI
+      // koduna emanetti. Beşinci bir yüzey ya da o guard'lardan birindeki bir
+      // gerileme taşları sessizce yok ederdi. Erişilebilir senaryolarda
+      // davranış DEĞİŞMİYOR: golden vector'lar yeniden üretildi, sıfır fark.
+      //
+      // Seçim kontrolü bilerek recall'ın ÜSTÜNDE: hata dalında (seçim yokken)
+      // kullanıcının taslağını sebepsiz toplamayalım.
+      const base = recallAll(state);
+      const me = base.players[base.current];
       // Seçilen taşları torbaya geri koy, yerine yeni taş çek.
-      const selected = new Set(state.swapSelection);
+      const selected = new Set(base.swapSelection);
       const returned: Tile[] = [];
       const kept: Tile[] = [];
       me.rack.forEach((t, i) => {
@@ -631,7 +649,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
           kept.push(t);
         }
       });
-      const bag = shuffle([...state.bag, ...returned]);
+      const bag = shuffle([...base.bag, ...returned]);
       const drawn = drawTiles(bag, returned.length);
       const rack = [...kept, ...drawn];
 
@@ -639,21 +657,21 @@ export function gameReducer(state: GameState, action: Action): GameState {
       // taşları azaltmaz — bu yüzden YZ'nin zorunlu değişimiyle aynı şekilde
       // art-arda-pas sayacına dahil edilir (bkz. AI_PLAY). Aksi halde
       // oyuncular sürekli taş değiştirerek oyunu hiç bitirmeyebilirdi.
-      const consecutivePasses = state.consecutivePasses + 1;
+      const consecutivePasses = base.consecutivePasses + 1;
       const moved: GameState = {
-        ...state,
+        ...base,
         bag,
-        players: withRack(state, rack),
+        players: withRack(base, rack),
         placed: {},
         selectedTile: null,
         swapMode: false,
         swapSelection: [],
         consecutivePasses,
         moveHistory: [
-          ...state.moveHistory,
+          ...base.moveHistory,
           {
-            turn: state.turnCount,
-            player: state.current,
+            turn: base.turnCount,
+            player: base.current,
             words: [],
             points: 0,
             action: 'exchange',
@@ -663,7 +681,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         message: `${me.name} ${returned.length} taş değiştirdi ve sırasını kullandı.`,
         messageType: 'warn',
       };
-      if (consecutivePasses >= activePlayerCount(state.players) * MAX_PASS_ROUNDS) {
+      if (consecutivePasses >= activePlayerCount(base.players) * MAX_PASS_ROUNDS) {
         return endGame(moved);
       }
       return advanceTurn(moved);
@@ -889,6 +907,22 @@ export function gameReducer(state: GameState, action: Action): GameState {
     case 'SYNC_ONLINE_STATE': {
       const turnAdvanced = action.publicState.turn_count !== state.turnCount;
       const placed = turnAdvanced ? {} : state.placed;
+      const myRack = turnAdvanced
+        ? action.myRack
+        : subtractPlacedFromRack(action.myRack, placed);
+      // `swapSelection` raf İNDEKSLERİ tutuyor, taş kimliği değil. Aşağıda
+      // turn ilerlemediyse seçim bilerek KORUNUYOR (arka plandan dönen sekme
+      // kullanıcının seçimini silmesin) — ama raf sunucudaki sıraya geri
+      // yazıldığından, kullanıcı o turda "Karıştır"a basmışsa iki sıra artık
+      // farklıdır ve aynı indeks BAŞKA bir taşı gösterir. Ölçüldü (5 Eylül
+      // 2026, hata avı geçişi): "N" seçilmişken senkron sonrası indeks 0 "L"
+      // oluyordu, yani kullanıcı tutmak istediği taşı değiştiriyordu.
+      // Raf değiştiyse seçimi DÜŞÜRÜYORUZ — yanlış taşı göndermektense
+      // kullanıcı güncel rafta yeniden seçsin (portun `_handleConfirmSwap`'i
+      // sınır dışı indekste zaten aynı kararı veriyor: gönderimi iptal et).
+      const rackSignature = (r: Tile[]) => r.map((t) => `${t.letter}:${t.pts}`).join('|');
+      const rackChanged =
+        rackSignature(state.players[action.mySlotIndex]?.rack ?? []) !== rackSignature(myRack);
       const players: Player[] = action.publicState.players.map((p, i) => ({
         name: p.name,
         corners: p.corners,
@@ -897,9 +931,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         surrendered: p.surrendered,
         rack:
           i === action.mySlotIndex
-            ? turnAdvanced
-              ? action.myRack
-              : subtractPlacedFromRack(action.myRack, placed)
+            ? myRack
             : new Array(p.rackCount).fill({ letter: 'A', pts: 1 }),
         score: p.score,
         bestMoveScore: p.bestMoveScore,
@@ -925,7 +957,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         // döndüğünde tetiklenen bir senkron) kullanıcının "Değiştir"e basıp
         // seçtiği taşlar sebepsiz sıfırlanmamalı.
         swapMode: turnAdvanced ? false : state.swapMode,
-        swapSelection: turnAdvanced ? [] : state.swapSelection,
+        swapSelection: turnAdvanced || rackChanged ? [] : state.swapSelection,
         turnCount: action.publicState.turn_count,
         consecutivePasses: action.publicState.consecutive_passes,
         isGameOver: action.publicState.is_game_over,

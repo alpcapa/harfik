@@ -304,6 +304,7 @@ void main() {
     'reducer_crafted_finish',
     'reducer_crafted_bingo',
     'reducer_crafted_ai_exchange',
+    'reducer_crafted_swap_draft',
     'reducer_sync',
   ]) {
     testReducerScenario(name);
