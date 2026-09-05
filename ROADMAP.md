@@ -203,8 +203,17 @@ otomatik yol YOK (gönderim elle).
 | `f75a12c` (#441) | arka plandan dönüş artık "ekrana giriş" sayılıyor — `away_return.dart` yeni, `setup_screen.dart` + `live_games_tab.dart` bağlandı |
 | `19e17fe` (#443) | Hızlı Başlangıç'ın oyun sonu cümlesi tek cümleye indi ve kazananı söylüyor — `help_modal.dart` + `help_modal_test.dart` |
 | `7312eb8` (#447) | Skor kartındaki kafa kafaya çubuğunun yazıları bara yaklaştı (10 → 2 px) ve "TÜM OYUNLAR" butonu barın hizasına oturdu — `player_score_card_modal.dart` |
+| `b1b9daf` (#452) | Taş değiştirmede taslak taşlar yok olmuyor + senkron rafı yeniden sıralarsa seçim düşüyor — `kelimeki_core/engine/reducer.dart` (motor düzeltmesi, iki yeni golden) |
+| `91325d5` (#457) | Temizlik: erişilemez `INIT` action'ı kaldırıldı — `kelimeki_core/actions.dart` + `reducer.dart` (davranış değişmedi) |
+| `028a805` · `8796c6b` (#460) | Hesap menüsündeki k-lig puanı oturum boyunca donuyordu (kullanıcı bildirdi: "puanım 200 ama menüde 198") — `account_button.dart`; `Navigator.push` Setup'ı canlı tuttuğundan `initState` bir daha koşmuyor, o yüzden portta web'den ÇOK daha görünür |
 
-Sıradaki sürümün şu anki içeriği bu ikisi; yeni işler geldikçe tablo büyür.
+Yeni işler geldikçe tablo büyür.
+
+⚠ **5 Eylül 2026 — tablo YİNE eksikti ve aşağıdaki komut yakaladı.** Satır
+"bu ikisi" diyip üç commit listeliyordu; ölçünce porta dokunan beş commit
+çıktı — `#452` ve `#457` hiç eklenmemişti (ikisi de `kelimeki_core`
+motoruna dokunuyor, biri gerçek bir hata düzeltmesi). Yani bölümün kendi
+uyarısı iki kez doğrulandı: **listeye bakma, komutu koş.**
 
 ⚠ **Bu tabloyu kendi PR'ın için de güncelle — bölüm ilk yazıldığında
 KENDİ değişikliğini atlamıştı.** 4 Eylül 2026'da bir sonraki oturum fark
