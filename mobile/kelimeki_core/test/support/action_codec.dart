@@ -6,8 +6,6 @@ import 'package:kelimeki_core/kelimeki_core.dart';
 GameAction decodeAction(Map<String, Object?> j) {
   final type = j['type'] as String;
   switch (type) {
-    case 'INIT':
-      return const InitAction();
     case 'ABANDON':
       return const AbandonAction();
     case 'START':

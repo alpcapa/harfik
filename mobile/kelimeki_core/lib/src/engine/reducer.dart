@@ -360,7 +360,6 @@ class GameEngine {
 
   GameState reduce(GameState state, GameAction action) {
     switch (action) {
-      case InitAction():
       case AbandonAction():
         return createInitialState();
 

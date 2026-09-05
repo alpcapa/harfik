@@ -1360,11 +1360,6 @@ export default function App() {
   // asla gösterilmez, bunun yerine ilk insan oyuncuya düşülür.
   const rackPlayer = me.isAI ? (state.players.find((p) => !p.isAI) ?? me) : me;
   const rackColor = PLAYER_COLORS[rackPlayer.colorIndex];
-  // Hesap sahibi teslim olduysa artık hiçbir kontrolü yok — oyun bitene
-  // kadar (isGameOver) rafı/aksiyon butonlarını göstermek yerine sade bir
-  // "izliyorsun" bandı gösterilir. Oyun gerçekten bitince (isGameOver) normal
-  // "Yeni Oyun Aç" akışına düşülür.
-  const spectating = rackPlayer.surrendered && !state.isGameOver;
 
   // Raftan bir taş ya da tahtaya bu tur konmuş bir taş sürüklenmeye başlanır.
   const beginDrag = (source: DragSource, e: React.PointerEvent) => {
@@ -1763,11 +1758,7 @@ export default function App() {
 
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center overflow-x-hidden">
-      <GameHeader
-        state={state}
-        onLogoClick={handleLogoClick}
-        exitDisabled={spectating}
-      />
+      <GameHeader state={state} onLogoClick={handleLogoClick} />
 
       <main className="w-full flex flex-col items-center">
       <Board
@@ -1816,120 +1807,104 @@ export default function App() {
           {liveMessage}
         </div>
 
-        {spectating ? (
-          <div className="shadow-raised flex items-center justify-between gap-2 rounded-md border border-border bg-panel px-4 py-3">
-            <span className="font-mono text-[11px] font-bold uppercase tracking-[1px] text-muted">
-              Teslim oldun — oyunu izliyorsun
-            </span>
+        <div className="flex gap-1.5 items-stretch">
+          <div className="flex-1 min-w-0">
+            <Rack
+              tiles={rackPlayer.rack}
+              selectedTile={state.selectedTile}
+              onSelect={(i) => {
+                if (me.isAI) return;
+                if (state.swapMode) dispatch({ type: 'TOGGLE_SWAP_TILE', index: i });
+                else dispatch({ type: 'SELECT_TILE', index: i });
+              }}
+              title={rackPlayer.name}
+              color={rackColor}
+              swapMode={state.swapMode}
+              swapSelection={state.swapSelection}
+              draggable={canAct}
+              dragHiddenIndex={dragHiddenIndex}
+              onTilePointerDown={(i, e) =>
+                beginDrag({ kind: 'rack', index: i, tile: rackPlayer.rack[i] }, e)
+              }
+              onTilePointerMove={moveDrag}
+              onTilePointerUp={endDrag}
+              onTilePointerCancel={cancelDrag}
+            />
+          </div>
+          {!state.swapMode && (
+            state.isGameOver ? (
+              <button
+                onClick={() => setShowRematchConfirm(true)}
+                className="btn-raised shrink-0 px-5 rounded-lg font-sans text-[15px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97]"
+              >
+                Tekrar Oyna
+              </button>
+            ) : (
+              <button
+                disabled={!canAct || validating || !wordsReady}
+                onClick={() => { void handlePlay(); }}
+                className="btn-raised shrink-0 px-5 rounded-lg font-sans text-[12px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97] disabled:opacity-35 disabled:cursor-not-allowed"
+              >
+                {!wordsReady ? 'Yükleniyor…' : validating ? 'Kontrol…' : 'Oyna'}
+              </button>
+            )
+          )}
+        </div>
+
+        {state.swapMode ? (
+          <div className="flex gap-1.5">
+            <button
+              disabled={!canAct || state.swapSelection.length === 0}
+              onClick={() => dispatch({ type: 'CONFIRM_SWAP' })}
+              className="btn-raised-gold flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-gold text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Değiştir{state.swapSelection.length > 0 ? ` (${state.swapSelection.length})` : ''}
+            </button>
+            <button
+              disabled={!canAct}
+              onClick={() => dispatch({ type: 'TOGGLE_SWAP_MODE' })}
+              className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-muted border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Vazgeç
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-1.5">
+            <button
+              disabled={!canAct}
+              onClick={handlePass}
+              className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Pas Geç
+            </button>
+            <button
+              disabled={!canAct || state.bag.length === 0}
+              onClick={() => dispatch({ type: 'TOGGLE_SWAP_MODE' })}
+              className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Değiştir
+            </button>
+            <button
+              disabled={!canAct}
+              onClick={() => dispatch({ type: 'SHUFFLE_RACK' })}
+              className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Karıştır
+            </button>
+            <button
+              disabled={!canAct}
+              onClick={() => dispatch({ type: 'RECALL_ALL' })}
+              className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
+            >
+              Geri Al
+            </button>
             <button
               onClick={() => setShowTiles(true)}
-              className="btn-raised-neutral shrink-0 py-1.5 px-3 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform"
+              className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform"
             >
               Torba <span className="text-[13px] text-accent">{state.bag.length}</span>
             </button>
           </div>
-        ) : (
-          <>
-            <div className="flex gap-1.5 items-stretch">
-              <div className="flex-1 min-w-0">
-                <Rack
-                  tiles={rackPlayer.rack}
-                  selectedTile={state.selectedTile}
-                  onSelect={(i) => {
-                    if (me.isAI) return;
-                    if (state.swapMode) dispatch({ type: 'TOGGLE_SWAP_TILE', index: i });
-                    else dispatch({ type: 'SELECT_TILE', index: i });
-                  }}
-                  title={rackPlayer.name}
-                  color={rackColor}
-                  swapMode={state.swapMode}
-                  swapSelection={state.swapSelection}
-                  draggable={canAct}
-                  dragHiddenIndex={dragHiddenIndex}
-                  onTilePointerDown={(i, e) =>
-                    beginDrag({ kind: 'rack', index: i, tile: rackPlayer.rack[i] }, e)
-                  }
-                  onTilePointerMove={moveDrag}
-                  onTilePointerUp={endDrag}
-                  onTilePointerCancel={cancelDrag}
-                />
-              </div>
-              {!state.swapMode && (
-                state.isGameOver ? (
-                  <button
-                    onClick={() => setShowRematchConfirm(true)}
-                    className="btn-raised shrink-0 px-5 rounded-lg font-sans text-[15px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97]"
-                  >
-                    Tekrar Oyna
-                  </button>
-                ) : (
-                  <button
-                    disabled={!canAct || validating || !wordsReady}
-                    onClick={() => { void handlePlay(); }}
-                    className="btn-raised shrink-0 px-5 rounded-lg font-sans text-[12px] font-bold uppercase tracking-[1.2px] bg-accent text-white active:scale-[0.97] disabled:opacity-35 disabled:cursor-not-allowed"
-                  >
-                    {!wordsReady ? 'Yükleniyor…' : validating ? 'Kontrol…' : 'Oyna'}
-                  </button>
-                )
-              )}
-            </div>
-
-            {state.swapMode ? (
-              <div className="flex gap-1.5">
-                <button
-                  disabled={!canAct || state.swapSelection.length === 0}
-                  onClick={() => dispatch({ type: 'CONFIRM_SWAP' })}
-                  className="btn-raised-gold flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-gold text-white active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-                >
-                  Değiştir{state.swapSelection.length > 0 ? ` (${state.swapSelection.length})` : ''}
-                </button>
-                <button
-                  disabled={!canAct}
-                  onClick={() => dispatch({ type: 'TOGGLE_SWAP_MODE' })}
-                  className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-muted border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-                >
-                  Vazgeç
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-1.5">
-                <button
-                  disabled={!canAct}
-                  onClick={handlePass}
-                  className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-                >
-                  Pas Geç
-                </button>
-                <button
-                  disabled={!canAct || state.bag.length === 0}
-                  onClick={() => dispatch({ type: 'TOGGLE_SWAP_MODE' })}
-                  className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-                >
-                  Değiştir
-                </button>
-                <button
-                  disabled={!canAct}
-                  onClick={() => dispatch({ type: 'SHUFFLE_RACK' })}
-                  className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-                >
-                  Karıştır
-                </button>
-                <button
-                  disabled={!canAct}
-                  onClick={() => dispatch({ type: 'RECALL_ALL' })}
-                  className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform disabled:opacity-35 disabled:cursor-not-allowed"
-                >
-                  Geri Al
-                </button>
-                <button
-                  onClick={() => setShowTiles(true)}
-                  className="btn-raised-neutral flex-1 py-2.5 px-1.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[1.2px] bg-panel text-text border border-border active:scale-[0.97] transition-transform"
-                >
-                  Torba <span className="text-[13px] text-accent">{state.bag.length}</span>
-                </button>
-              </div>
-            )}
-          </>
         )}
       </div>
       </main>

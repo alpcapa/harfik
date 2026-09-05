@@ -130,6 +130,21 @@ Mobil portun kendi (daha ayrıntılı, Dart'a özgü) sürümü: `mobile/CLAUDE.
 "Etki Analizi" ve "Parça Bitirme Kontrol Listesi" bölümleri — orada tek
 komutluk bir grep taraması da var.
 
+## Bağımlılık Sınıfı — `dependencies` = TARAYICIYA GİDEN
+
+Yeni bir paket eklerken sınıfı "kim import ediyor" sorusuyla seç: `src/`
+altındaki bir dosya import ediyorsa `dependencies`, yalnızca `scripts/` /
+`tests/` / build yapılandırması kullanıyorsa `devDependencies`. **Bir
+scriptin çağırdığı CLI de bir bağımlılıktır** — transitif olarak "zaten var"
+olması onu bildirmemek için gerekçe değil.
+
+Temizlik geçişinde (5 Eylül 2026) iki yönde de ihlal bulundu ve düzeltildi:
+üç `@fontsource/*` paketi `dependencies`'teydi ama `src/`'de hiç import
+edilmiyordu (fontlar repoda duruyor, bkz. "Font Yükleme Stratejisi";
+paketlere yalnızca derleme-zamanı görsel üreticileri erişiyor), buna karşılık
+14 npm script'in çağırdığı `esbuild` hiç bildirilmemişti. Ölçümler:
+`docs/decisions/roadmap-arsiv.md` → "Temizlik geçişi".
+
 ## Git / Branch Kuralı
 
 - Branch adı: `claude/<kısa-açıklama>` formatı
@@ -487,7 +502,7 @@ src/
     constants.ts    # Tahta sabitleri, köşe hesapları, bonus konumları
     gameReducer.ts  # useReducer tabanlı oyun state makinesi
     types.ts        # GameState, Player, Tile tipleri
-  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, shareBoardImage, pendingLiveGames, errorReporting, ghostClick, draftRescue, boardZoom, gameListOrder, recentGameAvatars, headToHead, rematchSlots, awayReturn...)
+  utils/        # Saf fonksiyonlar (validator, board, boardSnapshot, ai, bag, gameStorage, cloudSaveMirror, gameRecord, gameSync, feedbackSync, visitTracking, ranking, leaguePoints, leagueRank, onboarding, csvExport, friendInvite, profileFields, platform, offlineNotice, shareLink, shareBoardImage, pendingLiveGames, errorReporting, ghostClick, draftRescue, boardZoom, gameListOrder, recentGameAvatars, headToHead, rematchSlots, awayReturn, outline...)
   data/         # Kelime listesi (~63k), harf dağılımı, kelime anlamları, wordSetLoader (lazy chunk)
   lib/          # Supabase istemcisi ve API sarmalayıcısı
   fonts/        # @font-face tanımları (main.tsx import eder) + files/*.woff2 — bunlardan
@@ -613,7 +628,19 @@ mobile/         # Flutter portu — kelimeki_core (saf Dart motor) + üretilmiş
   GERÇEKTEN düşüyor.
 - **Torba:** Oyuncu sayısından bağımsız olarak sabit 100 taş (Türkçe dağılım, `src/data/tiles.ts`). Not: bir ara tüm modlarda 186'ya çıkarılmıştı, ama simülasyon torbanın gerçek bitirişini (rafını torba boşken tamamen bitirme + rakip puanlarını kapma) neredeyse imkânsız kıldığını gösterdi (4 oyunculuda 0/10), bu yüzden 100'e geri dönüldü. Bölge artık statik 5×5 değil dinamik/genişleyen olduğundan (bkz. yukarı), 4 oyunculu oyunlarda köşe sınırıyla etkileşim için torbayı büyütmeye (eski `BAG_SCALE_BY_PLAYER_COUNT` denemesi) gerek kalmadı; kaldırıldı.
 - **Teslim olma (kademeli):** Bir oyuncu teslim olduğunda (`Player.surrendered`, `SURRENDER` action, `src/game/gameReducer.ts`) oyun tümüyle bitmez — o oyuncu sırayı devretmeden çekilir, kalan oyuncular (YZ ve/veya diğer hotseat oyuncuları) oynamaya devam eder; sıra rotasyonu ve pas-turu sayacı yalnızca teslim olmamış oyuncuları sayar (`nextActiveIndex`/`activePlayerCount`). Teslim olan oyuncunun puanı dondurulmaz, **sıfırlanır** (`score: 0`) ve rafında kalan kullanılmamış taşlar torbaya geri karıştırılır (`shuffle`) — böylece o taşlar kalan oyuncular için tamamen kaybolmaz. Oyun yalnızca teslim sonrası aktif oyuncu sayısı 1'e düşünce biter: 2 kişilik oyunda tek teslim bunu anında tetikler; 4 kişilikte sırasıyla 3 → 2 → (üçüncü teslimde) 1 aktif oyuncuya iner ve o son kalan oyuncu kazanır — sıralama, teslim olanları puanlarından bağımsız olarak her zaman en sona koyan `rankPlayers` (`src/utils/ranking.ts`) ile hesaplanır ve hem `GameOver` hem `buildGameRecord`'un (`App.tsx`) skor kaydı bunu kullanır. **29 Temmuz 2026'da logo davranışı değişti — artık manuel/anlık bir teslim yolu yok:** Öncesinde logoya tıklamak bir "Çık" onay modalı açıyor, sırası gelen hâlâ oyundaki insan oyuncuyu (hotseat'te herkes kendi sırasında teslim olabilsin diye) ya da yoksa hesap sahibini (1. oyuncu) hedefleyip `SURRENDER` dispatch ediyordu — Canlı oyundaki 48 saatlik zaman aşımı modeli (bkz. "Canlı Oyun — Faz 3.6") YZ tarafına da uygulanınca (kullanıcı isteği) bu modal tamamen kaldırıldı: logo artık HER DURUMDA (onay sorulmadan, kimin sırası olduğuna bakılmadan) doğrudan Setup'a döner (`handleLogoClick`, `App.tsx`, bkz. aşağıdaki "Devam eden oyunun kalıcılığı"). Setup'taki Yapay Zeka sekmesinde çalışan mevcut kurulumda zaten yalnızca 1. oyuncu (hesap sahibi) insan olabildiğinden (diğerleri her zaman YZ), bu modalın hotseat dalı ("başka bir insan oyuncuyu teslim et, diğerleri devam etsin") pratikte hiç tetiklenmiyordu — kaybı yok. `SURRENDER` action'ının kendisi (`gameReducer.ts`) ve yukarıda anlatılan kademeli teslim mekaniği (puan sıfırlama, raf→torba, `rankPlayers` sıralaması) hâlâ duruyor, ama artık local oyunda hesap sahibi için bunu tetikleyen TEK yol aşağıdaki 7 günlük terk edilme kuralı (`takePendingAbandonedGame`, gecikmeli -2 ceza) — anlık bir "Çık" kararı artık mümkün değil. `games.players` jsonb'sindeki her satırda hâlâ `surrendered` alanı var; `GameHistoryModal` yalnızca teslim olan oyuncunun kendi satırında (genel/üst köşede değil) "Teslim Oldu" rozeti gösterir.
-- **Teslim sonrası izleme (4 kişilik) — 29 Temmuz 2026'dan beri UI'dan tetiklenemiyor:** Bu bölüm, hesap sahibinin logo üzerinden anlık teslim olabildiği eski tasarımı anlatıyordu (`spectating = rackPlayer.surrendered && !state.isGameOver`, `App.tsx` — dolduğunda rafı/Oyna/Pas Geç/Değiştir/Karıştır/Geri Al butonları yerine "Teslim oldun — oyunu izliyorsun" bandı gösterilip `GameHeader`'ın `exitDisabled` prop'uyla çıkış da kilitleniyordu). Yukarıdaki değişiklikle (logo artık her zaman onaysız Setup'a dönüyor) hesap sahibi için `SURRENDER`'ı UI'dan tetikleyen tek yol kalktığından, bu `spectating` dalı artık pratikte hiç ulaşılamıyor — kod (JSX/`exitDisabled` dahil) bilinçli olarak silinmedi (reducer'ın `SURRENDER` yeteneği hâlâ geçerli bir kavram, ileride başka bir tetikleyici eklenebilir) ama şu an local akışta kimse bu bandı göremez. 2 kişilik oyunda zaten hiç yaşanmıyordu (tek teslim `activePlayerCount<=1`'i tetikleyip oyunu anında bitirdiğinden, `endGame`).
+- **Teslim sonrası izleme (4 kişilik) — 5 Eylül 2026'da SİLİNDİ:** `App.tsx`
+  bir `spectating = rackPlayer.surrendered && !state.isGameOver` dalı
+  taşıyordu (raf/aksiyon butonları yerine "Teslim oldun — oyunu izliyorsun"
+  bandı + `GameHeader`'ın `exitDisabled` prop'uyla kilitli çıkış). 29 Temmuz
+  2026'da logo onaysız Setup'a dönmeye başlayınca `SURRENDER`'ı UI'dan
+  tetikleyen tek yol kalkmış, dal ERİŞİLEMEZ olmuş ama "ileride lazım olur"
+  diye bırakılmıştı. Temizlik geçişinde ölçüldü: `SURRENDER` `src/` içinde
+  hiçbir yerden dispatch edilmiyor ve **Flutter portu bu bandı hiç
+  portlamamış** — yani kod ölü OLMAKLA KALMIYOR, web↔port paritesini de
+  bozuyordu. Dal kaldırıldı (geri gerekirse git geçmişinde). Reducer'ın
+  `SURRENDER` case'i DURUYOR: kavram geçerli, port da taşıyor ve
+  `buildGameRecord`'un `surrendered`/`surrenderingIndex` yolu 7 günlük
+  terk-edilme akışında CANLI kullanılıyor — kaldırılan yalnızca ona bağlı UI.
 - **Teslim olanın bölgesi doğal alana döner:** Bir oyuncu teslim olduğunda bölgesi (`computeAllTerritories`, `src/utils/validator.ts`) — hem kendi köşesi hem daha önce fethettiği hücreler dahil — o oyuncu için boş `Set` olarak hesaplanır: kimseye ait olmayan, sahipsiz/"doğal" alana döner. Sonuç: Board'daki kalın dış hat çizgisi kalkar (`buildOutline`, `src/components/Board.tsx` aynı fonksiyonu tüketir), ve o bölgeye giren/sınırına değen kimse artık bölge vergisi ödemez (`computeInvasionSplit` de aynı `computeAllTerritories`'i kullandığından otomatik yansır). YZ'nin hamle değerlendirmesi de (`src/utils/ai.ts`) aynı fonksiyonu çağırdığından, YZ'ler teslim olmuş oyuncunun eski bölgesini serbestçe (paylaşımsız) kullanır.
 - **Devam eden oyunun kalıcılığı, 7 günlük terk-edilme cezası ve offline
   kuyruğu:** kendi dosyasına taşındı —
@@ -698,16 +725,19 @@ Kullanıcı iPad'den çalışıyor; bunu tetikleyecek bir CLI/CI erişimi yok.
 2. **`verify_jwt` sessizce sıfırlanır:** parametre geçilmezse araç `true`
    varsayar ve önceki değeri KORUMAZ. **Her deploy'dan ÖNCE
    `list_edge_functions` ile mevcut değeri oku ve AYNI değeri açıkça geçir.**
-   `false` olması gereken SEKİZ fonksiyon (30 Ağustos 2026'da canlıdan
-   sayıldı — Faz 4'le `notify-your-turn` eklendi):
+   `false` olması gereken YEDİ fonksiyon (5 Eylül 2026'da canlıdan sayıldı):
    `notify-deadline-warnings`, `notify-friend-request-reminders`,
    `notify-turn-timeout-surrender`, `notify-welcome`,
-   `sweep-unconfirmed-accounts`, `inbound-email`, `push-selftest`,
-   `notify-your-turn`.
-   Sonuncusu bir TEŞHİS fonksiyonu (FCM kimlik zinciri kontrolü) ve
-   `verify_jwt: false` olması zararsız — yalnızca iki boolean döndürüyor,
-   hiçbir sır yazmıyor; ayrıntı `supabase/functions/push-selftest/index.ts`
-   başlığında. Silinebilir.
+   `sweep-unconfirmed-accounts`, `inbound-email`, `notify-your-turn`.
+   Yedisi de bir cron/webhook hedefi, yani gerçekten herkese açık bir POST
+   ucu olmak zorunda; güvenlik geçişi (5 Eylül 2026) üçünü ayrıca okuyup
+   doğru yazıldıklarını (atomik iddia, taze pencere, hedefi gövdeden değil
+   canlı durumdan alma) kayda geçirdi.
+   ⚠ Liste 30 Ağustos'ta SEKİZDİ; sekizinci `push-selftest` teşhis
+   fonksiyonuydu ve temizlik geçişinde canlıdan silindi (aşağı bkz.).
+   **Yeni bir fonksiyon `verify_jwt: false` alacaksa buraya YAZ** — bu liste
+   deploy öncesi okunan tek envanter, eksik kalırsa bir sonraki deploy onu
+   sessizce `true`ya çevirir.
 
 
 

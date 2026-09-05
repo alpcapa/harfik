@@ -1705,6 +1705,10 @@
          yani sır/JWT/OAuth zincirinin tamamı sağlam. Sonuç ölçüldü:
          `{"yapilandirildi":true,"kimlikZinciriSaglam":true}`. Teşhis
          fonksiyonu; silinebilir.
+         **5 Eylül 2026'da SİLİNDİ** (temizlik geçişi): işini görmüştü,
+         çağıranı yoktu ve `verify_jwt: false` ile herkese açık bir POST
+         ucuydu. Kimlik zinciri yeniden ölçülmek istenirse fonksiyon git
+         geçmişinde (`supabase/functions/push-selftest/index.ts`).
        - Yeniden dağıtımda `verify_jwt: false` AÇIKÇA geçildi (araç parametre
          verilmezse `true` varsayıyor ve öncekini KORUMUYOR) — liste kök
          `CLAUDE.md`'de altıdan yediye çıktı. Aynı dağıtım, repoda duran ama

@@ -252,7 +252,7 @@ Play Store öncesi kapsamlı incelemenin ilk geçişi. **Kapatılan madde
 `docs/decisions/supabase-ops.md` → "Play Store öncesi güvenlik geçişi"ne
 yazıldı. Aşağıdakiler hâlâ açık.
 
-**İncelemenin dört geçişi var; üçü bitti, biri duruyor** (kullanıcı isteği,
+**İncelemenin dört geçişi de BİTTİ** (kullanıcı isteği,
 5 Eylül 2026: *"Play Store öncesi kapsamlı bir code review... Buglar,
 temizlik, güvenlik, performans"*). Sıra ve gerekçe:
 
@@ -261,7 +261,7 @@ temizlik, güvenlik, performans"*). Sıra ve gerekçe:
 | 1 | **Güvenlik** — RLS, grant'ler, RPC yetkileri, Edge Function kapıları | ✅ **BİTTİ** (5 Eylül 2026) |
 | 2 | **Hata avı** — reducer/validator değişmezleri, web↔port paritesi, eşzamanlı yazım yarışları, hook sırası | ✅ **BİTTİ** (5 Eylül 2026) |
 | 3 | **Performans** — bundle, sıcak sorguların index kapsamı (advisor'ın kendi listesi var), liste render'ı, N+1 RPC | ✅ **BİTTİ** (5 Eylül 2026) |
-| 4 | **Temizlik** — ölü kod (bilinen örnek: `App.tsx`'teki `spectating` dalı), erişilemez şubeler, kullanılmayan bağımlılıklar, bayat doküman atıfları | ⬜ |
+| 4 | **Temizlik** — ölü kod, erişilemez şubeler, kullanılmayan bağımlılıklar, bayat doküman atıfları | ✅ **BİTTİ** (5 Eylül 2026) |
 
 ⚠ **Her geçiş KENDİ oturumunda koşulmalı.** Ölçüldü: web `src/` 38.6K +
 port 68.3K + Edge Function 4.1K satır, yani 111 bin satır uygulama kodu tek
@@ -461,12 +461,13 @@ YOK (arandı) — yani düzeltme tek noktada.
 
 ## İncelemenin KAPANMIŞ geçişleri → arşivde
 
-2. geçişin (**hata avı**) ve 3. geçişin (**performans**) tam anlatıları —
-bulgular, ölçümler, "zemin sağlam" listeleri ve dersleri —
-`docs/decisions/roadmap-arsiv.md`'ye taşındı; başlıklar ("Hata avı geçişi —
-KAPANDI", "Performans geçişi — KAPANDI") değiştirilmedi. Yukarıdaki geçiş
-tablosu canlı indeks olarak burada kaldı. Açık kalan tek geçiş 4. (temizlik)
-ve güvenlik geçişinin hâlâ açık maddeleri yukarıda duruyor.
+2. geçişin (**hata avı**), 3. geçişin (**performans**) ve 4. geçişin
+(**temizlik**) tam anlatıları — bulgular, ölçümler, "zemin sağlam"
+listeleri ve dersleri — `docs/decisions/roadmap-arsiv.md`'ye taşındı;
+başlıklar ("Hata avı geçişi — KAPANDI", "Performans geçişi — KAPANDI",
+"Temizlik geçişi — KAPANDI") değiştirilmedi. Yukarıdaki geçiş tablosu canlı
+indeks olarak burada kaldı. **Dört geçiş de kapandı**; incelemeden açık
+kalan tek şey güvenlik geçişinin yukarıda duran maddeleri (18-21).
 
 ## Modeller — hangi iş için hangisi
 

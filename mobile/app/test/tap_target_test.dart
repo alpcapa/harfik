@@ -202,8 +202,11 @@ void main() {
       for (final m in RegExp(r'\b(GestureDetector|InkWell)\(').allMatches(src)) {
         final seg = src.substring(
             m.start, m.start + 700 > src.length ? src.length : m.start + 700);
-        if (!seg.substring(0, seg.length < 200 ? seg.length : 200)
-            .contains('onTap')) continue;
+        if (!seg
+            .substring(0, seg.length < 200 ? seg.length : 200)
+            .contains('onTap')) {
+          continue;
+        }
         if (olcuVeren.hasMatch(seg)) continue;
         if (_olcusuzIstisnalar.containsKey(rel)) continue;
         bulunan.add('$rel:${'\n'.allMatches(src.substring(0, m.start)).length + 1}');
