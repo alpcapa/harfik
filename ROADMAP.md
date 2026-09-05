@@ -252,14 +252,14 @@ Play Store öncesi kapsamlı incelemenin ilk geçişi. **Kapatılan madde
 `docs/decisions/supabase-ops.md` → "Play Store öncesi güvenlik geçişi"ne
 yazıldı. Aşağıdakiler hâlâ açık.
 
-**İncelemenin dört geçişi var; biri bitti, üçü duruyor** (kullanıcı isteği,
+**İncelemenin dört geçişi var; ikisi bitti, ikisi duruyor** (kullanıcı isteği,
 5 Eylül 2026: *"Play Store öncesi kapsamlı bir code review... Buglar,
 temizlik, güvenlik, performans"*). Sıra ve gerekçe:
 
 | # | Geçiş | Durum |
 |---|---|---|
 | 1 | **Güvenlik** — RLS, grant'ler, RPC yetkileri, Edge Function kapıları | ✅ **BİTTİ** (5 Eylül 2026) |
-| 2 | **Hata avı** — reducer/validator değişmezleri, web↔port paritesi, eşzamanlı yazım yarışları, hook sırası | ⬜ |
+| 2 | **Hata avı** — reducer/validator değişmezleri, web↔port paritesi, eşzamanlı yazım yarışları, hook sırası | ✅ **BİTTİ** (5 Eylül 2026) |
 | 3 | **Performans** — bundle, sıcak sorguların index kapsamı (advisor'ın kendi listesi var), liste render'ı, N+1 RPC | ⬜ |
 | 4 | **Temizlik** — ölü kod (bilinen örnek: `App.tsx`'teki `spectating` dalı), erişilemez şubeler, kullanılmayan bağımlılıklar, bayat doküman atıfları | ⬜ |
 
@@ -458,6 +458,182 @@ Doğrulanırsa düzeltme: en soldaki değil **sağdan** sayılan (vekil sayısı
 kadar içeriden) değeri al, ya da Supabase'in kendi güvenilir istemci-IP
 başlığını kullan. `feedback` limiti dışında bu deseni kopyalayan başka yer
 YOK (arandı) — yani düzeltme tek noktada.
+
+## Hata avı geçişi — açık kalan maddeler (5 Eylül 2026)
+
+İncelemenin 2. geçişi (yukarıdaki tabloda ⬜ idi). Kapsam ROADMAP'in kendi
+tarifi: reducer/validator değişmezleri, web↔port paritesi, eşzamanlı yazım
+yarışları, hook sırası.
+
+**Yöntem — parite testlerinin GÖREMEDİĞİ yer.** Golden vector'lar web ile
+Dart'ı karşılaştırır; İKİSİNDE DE olan bir hatayı hiçbir zaman göremezler.
+Bu yüzden geçiş iki ayaklı koşuldu: (1) rastgele tam oyunlar + rastgele
+EYLEM dizileriyle motorun değişmezlerini doğrudan sınayan bir koşum,
+(2) aynı kaynaktan kopyalanmış dosyaların birbirinden ayrışıp ayrışmadığının
+ölçülmesi. Üç bulgunun üçünü de bu iki ayak buldu; mevcut testlerin hiçbiri
+kırmızıya dönmüyor.
+
+⚠ **Geçişin en büyük dersi:** bu kod tabanında motorun ÜÇ kopyası var
+(web `src/`, port `mobile/kelimeki_core/`, Edge Function
+`supabase/functions/_game/`) ama otomatik parite kanıtı yalnızca İLK
+İKİSİ arasında. Üçüncüsü iki kez sessizce geriye kaldı ve ikisi de
+CANLIDA. Bir sonraki tur "üç kopya" cümlesini varsayım olarak alsın.
+
+### 23. Edge Function'daki motor kopyası BAYAT — **CANLIDA, ölçüldü**
+
+`supabase/functions/_game/` (`ai.ts`, `validator.ts`, …) `src/`'nin elle
+tutulan kopyası ve `play-ai-turn` onu kullanıyor — yani **Canlı oyunlardaki
+YZ koltuğu bu kodla oynuyor.** İki ayrı motor değişikliği bu kopyaya hiç
+işlenmemiş. `list_edge_functions`: `play-ai-turn` ACTIVE, sürüm 6, son
+güncelleme **1 Ağustos 2026** — iki değişiklikten de ÖNCE.
+
+**23a — YZ'nin köşe açılışı (17 Ağustos 2026 düzeltmesi eksik).** Edge
+kopyasındaki `tryCornerStart` hâlâ eski hâlinde: başlangıç hücresini
+yalnızca 4×4 blok içinde arıyor ve kelimeyi yalnızca sağa/aşağı uzatıyor.
+Aynı sözlükle, aynı rafla (`A B A R T M A`), boş tahtada ölçüldü:
+
+| Köşe | web / port | Edge (canlıdaki YZ) |
+|---|---|---|
+| 0, 1, 2 | 7 taş "ABARTMA" 35 puan | aynı |
+| **3 (sağ-alt)** | 7 taş "ABARTMA" **35 puan** | 4 taş "ABAT" **6 puan** |
+
+Yani kök `CLAUDE.md`'de yazılı 29 puanlık açılış handikabı web'de ve portta
+kapatıldı, **sunucuda duruyor**. 2 kişilik oyunda YZ HER ZAMAN köşe 3'te
+(`cornersFor`), yani YZ'li her 2 kişilik Canlı oyunda tekrarlanıyor.
+
+**23b — Bölge kuralı (24 Ağustos 2026 "iletken hücre" değişikliği eksik).**
+Edge kopyasındaki `computeConqueredChain` tek geçişli eski sürüm; `supported`
+parametresi ve iletken-hücre dalı hiç yok. Portun kendi parite fixture'ı
+(`territory.json`) Edge kopyasına da soruldu — 5 vakanın 1'i ayrışıyor,
+ve ayrışan tam da kuralın POZİTİF dalı:
+
+| Vaka | fixture | web | Edge |
+|---|---|---|---|
+| `desteksiz_rakip_tasi_iletken` | [16, 18] | [16, 18] ✓ | **[16, 16]** ⚠ |
+| öteki 4 vaka | — | ✓ | = |
+
+**Fark PUANA dönüşüyor.** `computeInvasionSplit` fonksiyonunun kendisi iki
+kopyada birebir aynı, ama `computeAllTerritories`'i çağırdığından sonuç
+ayrışıyor. Aynı tahtada, (7,12) hücresine 30 ham puanlık bir hamle:
+
+| | oynayana kalan | bölge sahibine giden |
+|---|---|---|
+| web / port | 20 | **10** |
+| Edge (canlıdaki YZ) | **30** | **0** |
+
+Yani YZ bazı hamlelerde bölge vergisini EKSİK ödüyor ve o skor
+`submit_move` ile veritabanına, oradan k-lig puanına yazılıyor. (`submit_move`
+bölgeyi SQL'de yeniden hesaplamıyor — bkz. #18 — dolayısıyla reddetmiyor.)
+
+**Kök sebep bir kural boşluğu.** "`src/` değişirse `_game/` da elle
+güncellenmeli" kuralı YAZILI ama yalnızca
+`docs/decisions/online-game-screen.md`'de; kök `CLAUDE.md`'nin "İş
+bittiğinde" senkron tablosunda satırı YOKTU (`src/game/`+`src/utils/`
+satırı yalnızca golden vector + Dart testlerini söylüyor). Bu geçişte o
+satır eklendi. Derleyici de göremez: iki kopya ayrı `tsconfig`/deploy
+paketinde.
+
+**Düzeltmenin şekli (yapılmadı — bilerek):** iki dosyayı `src/`'den yeniden
+kopyala, `play-ai-turn`'ü yeniden deploy et (⚠ `verify_jwt: true` — deploy
+öncesi `list_edge_functions` ile OKU ve AYNI değeri açıkça geçir, bkz.
+`## Supabase`), ve aynı PR'da bir `npm run verify-edge-engine-parity`
+kapısı ekle — deponun öteki 15 `verify-*` betiğiyle aynı desen; kural
+ancak ölçülürse tutuyor. Betiği düzeltmeden ÖNCE eklemek anlamsız
+(ilk koşuşta kırmızı). **Bu bir SUNUCU değişikliği: `main`'e merge
+beklemez, kapalı testteki paketi de anında etkiler.**
+
+### 24. `CONFIRM_SWAP` tahtadaki taslak taşları YOK EDİYOR — **GİZİL, ölçüldü**
+
+Rastgele eylem koşumu 100 taşlık torbanın **93'e düştüğü** bir dizi buldu.
+Sebep tek satır: `CONFIRM_SWAP` (`gameReducer.ts`) `placed: {}` yazıyor ama
+o taşları rafa GERİ ALMIYOR. `TOGGLE_SWAP_MODE` girişte `recallAll` çağırıyor,
+`CONFIRM_SWAP` çıkışta çağırmıyor — asimetri burada.
+
+```
+adım 33 CONFIRM_SWAP: 100 → 93 taş
+  önce:  swapMode=true  swapSelection=[0]  placed=7  raf=0
+```
+
+**Bugün UI'dan ERİŞİLEMEZ, ölçüldü** — dört ekranın dördü de taş koymayı
+`swapMode`'da engelliyor (`App.tsx:1371,1626` · `OnlineGameScreen.tsx:715,937`
+· `game_screen.dart:464` · `online_game_screen.dart:1165`) ve swap modunda
+"Karıştır"/raf sürüklemesi hiç gösterilmiyor. Yani bulgu bir arıza değil,
+**bir borç**: taş korunumu gibi bir değişmez, reducer'ın kendisinde değil,
+dört ayrı ekrandaki dört ayrı `if`te tutuluyor. Beşinci bir yüzey (ya da bu
+dördünden birinde bir gerileme) onu sessizce düşürür.
+
+⚠ **Port da BİREBİR aynı** (`reducer.dart` `_confirmSwap` → `placed: {}`) —
+yani parite KORUNMUŞ durumda ve golden vector'lar bu yüzden bunu asla
+göremez. Bu, "parite yeşil = doğru" varsayımının bu geçişteki en net
+karşı örneği.
+
+Düzeltme tek satır ve İKİ tarafta birden: `CONFIRM_SWAP`, `TOGGLE_SWAP_MODE`
+gibi önce `recallAll` çağırsın (ya da `placed` doluyken hiç çalışmasın).
+Motor dosyası değiştiğinden golden vector'lar yeniden üretilmeli.
+
+### 25. Taş değiştirme seçimi İNDEKSE bağlı, senkron rafı yeniden sıralıyor — **CANLIDA, dar**
+
+`swapSelection` raf İNDEKSLERİ tutuyor. `SYNC_ONLINE_STATE`, turn ilerlemediyse
+`swapMode`/`swapSelection`'ı bilerek koruyor (doğru karar — arka plandan dönen
+sekme seçimi silmesin) **ama rafı sunucudaki sıraya geri yazıyor.** Kullanıcı o
+turda "Karıştır"a bastıysa iki sıra farklıdır. Ölçüldü:
+
+```
+sunucu rafı  : L E L V N K S
+karıştırılan : N L K V S E L     ← kullanıcı "Karıştır"a bastı
+seçim: indeks 0 → "N"
+senkron sonrası: L E L V N K S   ← swapMode=true, swapSelection=[0] korundu
+indeks 0 artık → "L"             ⚠ "N" seçilmişti, "L" değişecek
+```
+
+Tetikleyici zinciri dar: aynı turda Karıştır → Değiştir → taş seç → araya bir
+senkron girmesi (10 dakikalık periyodik yenileme ya da uygulamaya geri dönüş).
+Seçim vurgusu gözle görülür biçimde başka taşa atlar, yani dikkatli kullanıcı
+fark eder — ama vurguya baktıktan SONRA gelen senkron sessizdir. Web ve port
+aynı davranışta.
+
+⚠ **Yan kalem — portta olan bir koruma web'de YOK.** `online_game_screen.dart`
+göndermeden önce `swapSelection.any((i) => i < 0 || i >= me.rack.length)` ile
+sınır dışı indekste gönderimi İPTAL ediyor; web'in `handleConfirmSwap`'i
+(`OnlineGameScreen.tsx:1254`) doğrudan `me.rack[i].letter` okuyor ve bu satır
+`try` bloğunun DIŞINDA — sınır dışı bir indeks `TypeError` fırlatır.
+**Bugün erişilemez, ölçüldü:** rafı turn ilerlemeden kısaltan tek sunucu yolu
+zaman aşımı teslimi ve o yol `is_game_over=true` yazıyor, `canAct` de bunu
+eliyor. Yine de web bu korumayı portla eşitlemeli — sınır kontrolü, kuralın
+kendisinden bağımsız olarak doğru olan taraf.
+
+Kalıcı düzeltme ikisini birden kapatır: seçimi indeksle değil taş KİMLİĞİYLE
+tut, ya da `SYNC_ONLINE_STATE` gelen raf mevcut raftan farklıysa
+`swapSelection`'ı temizlesin.
+
+### Zemin sağlam — bir sonraki tur bunları YENİDEN ölçmesin
+
+Aşağıdakiler bu geçişte ölçüldü ve temiz çıktı:
+
+- **Motor değişmezleri.** 60 rastgele tam YZ oyunu (2 ve 4 kişilik) + 80
+  rastgele EYLEM dizisi oyunu boyunca her adımda sınandı: taş korunumu
+  (bag+raf+tahta+placed = 100), negatif skor yok, raf hiç 7'yi aşmıyor,
+  **iki oyuncunun bölgesi hiç çakışmıyor** (`CLAUDE.md`'de yazılı değişmez),
+  sıra hiçbir zaman teslim olmuş oyuncuya düşmüyor, `moveHistory`'de negatif
+  puan yok. Tek ihlal #24; UI kısıtı taklit edilince koşum tamamen temiz.
+- **Türkçe dil kuralı.** `src/`'de Türkçe metne uygulanmış tek bir native
+  `toUpperCase`/`toLowerCase` YOK (bulunan kullanımlar e-posta başlığı, UTM,
+  ISO tarih gibi ASCII); isme göre sıralayan altı yerin altısı da `trCompare`.
+- **`JSON.parse`.** Yedi çağrı yerinin yedisi de `try/catch` içinde ve bozuk
+  localStorage'da "boş" sayıyor — bozuk kayıt açılışta çökertmiyor.
+- **Hook sırası.** `npm run verify-hook-order` temiz; ayrıca betiğin bilerek
+  görmediği sınıf da arandı — `src/` altında koşullu ya da döngü içinde
+  çağrılan hook YOK.
+- **`submit_move` eşzamanlılığı.** `online_games` satırında `for update`
+  kilidi + `p_move_id` ile idempotent yeniden deneme var. Web'in `p_move_id`
+  göndermemesi bir bulgu DEĞİL: portun kendi yorumunda (`online_api.dart:42`)
+  bilinçli bir mobil dayanıklılık kararı olarak yazılı. (Yine de ucuz bir
+  kalem: web telefonda da koşuyor ve tek satırlık bir UUID, yanıtı kaybolan
+  bir hamlenin ikinci denemesinde sahte "Sıra sende değil."i yapısal olarak
+  imkânsız kılardı.)
+- **Mevcut kapıların tamamı yeşil:** `tsc --noEmit`, 15 `verify-*` betiği,
+  `check-doc-size`, golden vector'lar TAZE (yeniden üretildi, sıfır fark),
+  6842 Dart parite kontrolü, 774 Flutter testi.
 
 ## Modeller — hangi iş için hangisi
 

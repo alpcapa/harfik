@@ -107,6 +107,7 @@ koptu" (bkz. "Belgeleri Güncel Tutma").
 |---|---|
 | Yeni dosya/component/hook, klasör yapısı, somut rakamlar | `CLAUDE.md` + `README.md` ("Belgeleri Güncel Tutma") |
 | `src/game/`, `src/utils/` motor dosyaları | `npm run generate-golden-vectors` + Dart core testleri |
+| Motorun **ÜÇÜNCÜ** kopyası: `supabase/functions/_game/` (`ai.ts`/`validator.ts`/`board.ts`/`constants.ts`/`types.ts`/`turkish.ts`/`tiles.ts`) | `src/`'deki eşi değişirse ELLE kopyala **ve** `play-ai-turn`'ü yeniden deploy et. Golden vector'lar bunu GÖRMEZ (yalnızca web↔port'u kanıtlar), derleyici de görmez (ayrı paket). 5 Eylül 2026'da ölçüldü: iki motor değişikliği (YZ köşe açılışı · bölge "iletken hücre" kuralı) buraya hiç işlenmemiş ve CANLIDA — bkz. `ROADMAP.md` → "Hata avı geçişi" #23 |
 | `src/data/meanings.json` | `npm run generate-meanings-db` |
 | `LogoMark`/`KLigMark` | `npm run generate-logo-paths` / `generate-klig-paths` (ikisi de web+Dart yazar) |
 | Canlı oyun / mesajlaşma / e-posta özelliği | `TESTING.md` (elle koşulan liste) |
