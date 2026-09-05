@@ -284,18 +284,48 @@ kısmının SQL'e ya da bir Edge Function'a taşınması gerekir, ucuz değil;
 Bugün (c) fiilen geçerli ama hiçbir yerde yazılı değil — en azından bu
 düzeltilmeli.
 
-### 19. `anon` için sınırsız telemetri yazımı — **DÜŞÜK, ucuz**
+### 19. `anon` için sınırsız telemetri yazımı — **ÖLÇÜLDÜ: KABUL EDİLDİ**
 
-**Model: Sonnet 5, efor `low`.** `client_errors`, `device_visits`,
-`guest_visits`, `game_starts` — dördünde de INSERT politikası
-`with_check: true`, yani oturumsuz sınırsız satır eklenebiliyor. Etkisi
-sızıntı değil maliyet + **admin panelindeki huni/büyüme sayılarının
-kirletilebilmesi**.
+`client_errors`, `device_visits`, `guest_visits`, `game_starts` — dördünde
+de INSERT politikası `with_check: true`, yani oturumsuz sınırsız satır
+eklenebiliyor. **İlk yazımda "feedback_rate_limit desenini kopyala" deniyordu;
+o tavsiye ÖLÇÜMDEN ÖNCEYDİ ve GERİ ALINDI.** Ölçünce üç şey çıktı:
 
-⚠ Desen zaten projede VAR, bu dört tabloya uygulanmamış: `feedback`
-`feedback_rate_limit` tablosu + trigger'ıyla korunuyor, `game_finishes` ise
-`user_id IS NULL` şartıyla daraltılmış. Yeni bir mekanizma icat etme,
-`feedback_rate_limit_check` desenini kopyala.
+**1. İddia edilen zarar büyük ölçüde YOK — tüketici zaten dayanıklı.**
+Dokuz admin RPC'sinin sekizi `count(distinct ...)` kullanıyor.
+`admin_source_funnel`ın "Ziyaretçi" adımı YALNIZCA
+`count(distinct gv.anon_id)`; `game_starts`/`game_finishes` adımları ham `n`
+ile `uniq`i YAN YANA döndürüyor (ham sayı meşru olarak ham: "toplam
+başlangıç"). `admin_activation_stats` bu tabloların hiçbirine dokunmuyor.
+Yani bir sel `uniq` sütunlarını oynatamaz.
+
+**2. Bugün kötüye kullanım yok ve hacim küçük** (5 Eylül 2026):
+
+| Tablo | Toplam | Farklı cihaz | Son 7 gün |
+|---|---|---|---|
+| `client_errors` | 40 | 27 | 12 |
+| `device_visits` | 877 | 731 | 184 |
+| `guest_visits` | 2.316 | 2.032 | 128 |
+| `game_starts` | 931 | 181 | 346 |
+
+**3. IP'ye anahtarlanan bir limitin İKİ yan etkisi, faydasından büyük:**
+- **CGNAT.** Türk mobil operatörleri operatör düzeyinde NAT kullanıyor;
+  gerçek kullanıcılar tek çıkış IP'sini paylaşıyor. Ziyaret/oyun başına
+  yazan bir tabloda IP limiti gerçek satırları SESSİZCE düşürür (istemci
+  hatayı yutuyor — ölçüldü, iki tarafta da fire-and-forget) ve huni EKSİK
+  sayar. Bu, önlemeye çalıştığımız zararın aynı sınıfı, ters yönü.
+- **`client_errors`'ta olayı gizler.** Tek cihazdan gelen hata seli tam da
+  görmek istediğin şeydir; limit gerçek bir çökme olayında kanıtı kısar.
+  Üstelik #10 ile istemci tarafında zaten hız sınırı var.
+
+**Karar: bugün bir şey yapma.** Yeniden açılma tetikleyicisi: telemetri
+tablolarından birinde `count(*)` ile `count(distinct anon_id)` arasında
+açıklanamayan bir uçurum görülmesi, ya da satır sayısının maliyet yaratacak
+mertebeye çıkması.
+
+⚠ Limit ileride gerekirse **IP'ye DEĞİL `anon_id`'ye anahtarla** — CGNAT
+komşularını vurmaz. Saldırgan `anon_id`yi de döndürebilir (yani naif seli
+durdurur, kararlıyı durdurmaz), ama dürüst kullanıcıya maliyeti sıfırdır.
 
 ### 20. `CRON_SECRET` fail-open — **ÖLÇÜLDÜ: DÜŞÜK, kabul edilebilir**
 
@@ -361,6 +391,33 @@ Brevo Inbound webhook'u ücretli plana bloke, bkz.
 - `pg_net` public şemada (advisor WARN).
 - Dashboard → Authentication: OTP süresi uzun + sızmış-parola koruması
   kapalı. İkisi de tek tık, kodla ilgisi yok.
+
+### 22. `feedback` hız sınırı XFF ile atlanabilir — **AÇIK, ölçülmedi**
+
+#19'u incelerken çıktı ve ondan bağımsız: bu, CANLIDA çalışan bir kontrol.
+`feedback_rate_limit_check` kimliği şöyle alıyor:
+
+```sql
+split_part(current_setting('request.headers')::json ->> 'x-forwarded-for', ',', 1)
+```
+
+Yani `X-Forwarded-For`un **en soldaki** değeri. Vekiller gerçek IP'yi zincirin
+**sağına ekler**; en soldaki değer istemcinin kendi gönderdiğidir. Doğruysa
+sonuç ters: saldırgan her istekte sahte bir ilk XFF yazıp limiti tamamen
+atlar, kendi XFF'i olmayan gerçek kullanıcı ise gerçek IP'siyle sayılıp
+limite takılır — yani kontrol yalnızca DÜRÜST trafiği kısıtlıyor olur.
+
+⚠ **ÖLÇÜLMEDİ.** Bu ortam `supabase.co`ya POST atamıyor (ajan vekili
+engelliyor), yani Supabase ağ geçidinin XFF'i nasıl birleştirdiği
+doğrulanamadı. **İlk iş bunu ölçmek:** `inbound-email` ya da herhangi bir
+uçtan `request.headers`ı bir yere yazdırıp, kendi XFF'ini gönderen bir
+istekle göndermeyen bir isteğin ne ürettiğini karşılaştır. Ağ geçidi
+istemcinin XFF'ini TAMAMEN yok sayıyorsa bulgu düşer.
+
+Doğrulanırsa düzeltme: en soldaki değil **sağdan** sayılan (vekil sayısı
+kadar içeriden) değeri al, ya da Supabase'in kendi güvenilir istemci-IP
+başlığını kullan. `feedback` limiti dışında bu deseni kopyalayan başka yer
+YOK (arandı) — yani düzeltme tek noktada.
 
 ## Modeller — hangi iş için hangisi
 
