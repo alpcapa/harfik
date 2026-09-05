@@ -15,10 +15,6 @@ sealed class GameAction {
   const GameAction();
 }
 
-class InitAction extends GameAction {
-  const InitAction();
-}
-
 class AbandonAction extends GameAction {
   const AbandonAction();
 }

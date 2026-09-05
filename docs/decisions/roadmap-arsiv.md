@@ -23,6 +23,7 @@
 |---|---|
 | Hata avı geçişi (incelemenin 2. geçişi) | 5 Eylül 2026 |
 | Performans geçişi (incelemenin 3. geçişi) | 5 Eylül 2026 |
+| Temizlik geçişi (incelemenin 4. geçişi) | 5 Eylül 2026 |
 | Madde 1 — `kelimeki://` deep link kanalı | 30 Ağustos 2026 (Faz 3'te ölçüldü) |
 | Madde 6 — taranabilir `/nasil-oynanir/` sayfası | 31 Ağustos 2026 |
 | Madde 10 — hata raporlama hız sınırı zamana bağlandı | 31 Ağustos 2026 |
@@ -2005,3 +2006,99 @@ orada gövdeden kanıtlandı — gerekçe migration dosyasının başında.
   `setup_screen` rozeti + `live_games_tab`). Aynı düzeltme oraya
   taşınabilir; sunucu maliyetini düşürür, kullanıcıya görünen davranışı
   değiştirmez. Port turuna bırakıldı — bu geçiş web'i kapsıyordu.
+
+## Temizlik geçişi — KAPANDI (5 Eylül 2026)
+
+İncelemenin 4. ve son geçişi (yukarıdaki tabloda ⬜ idi). Kapsam ROADMAP'in
+kendi tarifi: ölü kod, erişilemez şubeler, kullanılmayan bağımlılıklar,
+bayat doküman atıfları.
+
+**Yöntem — tarama otomatik, karar elle.** Üç makine taraması koşuldu:
+(1) her `export`'un `src/` + `scripts/` + `tests/` + `supabase/` + `mobile/`
+içinde metinsel bir tüketicisi var mı; (2) her `src/` modülünün bir import
+edeni var mı; (3) her `.md`'de geçen dosya yolu ve `npm run` adı gerçekten
+var mı. Sonra her aday ELLE okundu — çünkü bu depoda ölü görünen kodun
+çoğu **bilerek** duruyor ve gerekçesi dosyanın kendi başlığında yazılı.
+
+⚠ **Bu geçişin en büyük dersi — "kullanılmıyor" bir bulgu DEĞİL, bir soru.**
+Tarama 80 aday çıkardı; elle okunduğunda çoğu üç meşru sınıftan birine
+düştü: (a) **kayıtlı bilinçli karar** (`fetchAdminGuestDeviceBreakdown` ve
+`fetchAdminGuestStandaloneBreakdown` — ikisinin de JSDoc'unda neden
+çağrılmadığı ve neden silinmediği yazılı; dokunulmadı), (b) **portun/Edge
+kopyasının tükettiği** (`TileInfo`, `FormedWord`, `BOARD_CENTER`,
+`AvatarSlot`… — web'de "kullanılmıyor" görünüyorlar çünkü tüketici Dart ya
+da Deno), (c) **golden vector'ların tükettiği** (`setRandomSource`,
+`SET_MESSAGE` — üretimden çağrılmıyorlar ama parite kanıtı onlara dayanıyor).
+Gerçekten kaldırılan yalnızca hiçbir sınıfa girmeyen ikisi oldu.
+
+### Kaldırılanlar
+
+1. **`spectating` dalı (`App.tsx` + `GameHeader`'ın `exitDisabled` prop'u)**
+   — ROADMAP'in bilinen örneği. Ölçüm: `SURRENDER` `src/` içinde HİÇBİR
+   yerden dispatch edilmiyor (29 Temmuz 2026'da logo onaysız Setup'a dönmeye
+   başlayınca tek tetikleyici kalkmıştı), ve **Flutter portu bu bandı hiç
+   portlamamış** — yani kod ölü olmakla kalmıyor, web↔port paritesini de
+   bozuyordu. Reducer'ın `SURRENDER` case'i DURUYOR (port taşıyor,
+   `buildGameRecord`'un `surrendered` yolu terk-edilme akışında canlı).
+   Ayrıntı: kök `CLAUDE.md` → "Teslim sonrası izleme".
+2. **`INIT` action'ı (web + port)** — `ABANDON`'un birebir kopyasıydı
+   (ikisi de `createInitialState()` döner), hiçbir yerden dispatch
+   edilmiyordu ve golden vector üreticisi bile onu hiç kullanmıyordu.
+   Dört dosyadan birlikte kaldırıldı: `gameReducer.ts` (tip + case),
+   `actions.dart`, `reducer.dart`, `action_codec.dart`. **Golden vector'lar
+   yeniden üretildi ve SIFIR fark çıktı** — davranışın değişmediğinin kanıtı.
+
+### Onarılanlar
+
+3. **`npm run generate-reel` KIRIKTI** (ölü kod değil, kopmuş zincir).
+   `scripts/reel/build.mjs` sahneyi `node_modules/.cache/kelimeki/reel-state.json`'dan
+   okuyordu ama o dosyayı üreten adım (`scripts/reel/emit-state.ts`) hiçbir
+   yerden — ne `package.json`'dan, ne CI'dan, ne başka bir script'ten —
+   çağrılmıyordu; komut taze bir klonda ENOENT ile düşerdi. Ara JSON tamamen
+   kaldırıldı: `build.mjs` artık `state.ts`'i, kapanış kartı için ZATEN
+   kullandığı esbuild + dinamik import kalıbıyla kendisi koşuyor
+   (`emit-state.ts` silindi). Doğrulandı: sahne kuruluyor (torba 34, 2
+   oyuncu, 6 sürükleme adımı, raf ARKADAŞ).
+4. **`package.json` bağımlılık sınıfları** — iki yönde de yanlıştı. Üç
+   `@fontsource/*` paketi `dependencies`'teydi ama `src/` içinde hiç import
+   edilmiyor (fontlar `src/fonts/files/` ve `public/fonts/` altında repoda;
+   paketlere yalnızca `generate-og-image.mjs`/`generate-icons.mjs`/
+   `generate-logo*.mjs` `node_modules/@fontsource/...` yolundan erişiyor) →
+   `devDependencies`. Ters yönde: **`esbuild` 14 npm script'in çağırdığı bir
+   CLI olmasına rağmen hiç bildirilmemişti**, yalnızca `vite`'ın transitif
+   bağımlılığı olarak vardı. Açıkça eklendi (0.21.5 — lock dosyasında yeni
+   paket İNMEDİ, yalnızca `dev` bayrakları değişti). Kural kök `CLAUDE.md` →
+   "Bağımlılık Sınıfı".
+   ⚠ **Bu, 3. geçişin (performans) bir tespitini düzeltiyor:** orada
+   *"Bağımlılıklar yalın: üretim bağımlılığı 7 paket… Kaldırılacak ölü
+   bağımlılık yok"* yazılmıştı. Sayı doğruydu, SINIF yanlıştı — o yedinin
+   üçü hiçbir zaman tarayıcıya gitmiyordu. Ders: "ölü mü" sorusu
+   "doğru yerde mi" sorusunu kapsamıyor.
+5. **`flutter analyze` tek uyarısı** (`tap_target_test.dart:206`,
+   `curly_braces_in_flow_control_structures`) temizlendi — port artık
+   `flutter analyze` ve `dart analyze`de sıfır uyarı veriyor.
+
+### Zemin sağlam — bir sonraki tur bunları YENİDEN ölçmesin
+
+- **`noUnusedLocals` + `noUnusedParameters` ZATEN açık** (`tsconfig.json`),
+  yani `src/` altında kullanılmayan import/yerel değişken DERLEME HATASI.
+  Bu sınıfı aramaya gerek yok; derleyici kapıyı zaten tutuyor.
+- **Yetim modül yok:** `src/` altındaki 123 `.ts`/`.tsx` dosyasının hepsinin
+  bir import edeni var (font CSS'leri `main.tsx`'ten geliyor).
+- **Doküman atıfları temiz:** her `.md`'de geçen dosya yolu ve `npm run`
+  adı tarandı; kırık atıf ÇIKMADI. `docs/decisions/live-game-and-friends.md`
+  gibi görünen tek "eksik dosya" bölünmenin kendisini anlatan tarihsel bir
+  cümle, bayat bir atıf değil. `docs/decisions/` indeks tablosu da
+  gerçek dosya listesiyle birebir tutuyor.
+- **Edge Function envanteri kapalı:** repodaki 17 fonksiyondan 16'sının
+  çağıranı var (`src/`, `mobile/`, migration cron'ları). Tek istisna
+  `push-selftest` — kök `CLAUDE.md`'de zaten "silinebilir" diye kayıtlı bir
+  teşhis fonksiyonu. **Silinmedi:** ajanın Supabase MCP'sinde Edge Function
+  SİLEN bir araç yok, yalnız repo kopyasını silmek canlıda kaynaksız bir
+  uç bırakırdı (daha kötü). Kullanıcının adımı: Supabase Dashboard → Edge
+  Functions → `push-selftest` → Delete; sonra `supabase/functions/push-selftest/`
+  klasörü de silinebilir.
+- **`scripts/generate-klig-logo.mjs`** hiçbir npm script'ten ya da dokümandan
+  çağrılmıyor ama ÖLÜ DEĞİL — `generate-logo.mjs` gibi elle koşulan bir
+  pazarlama üreticisi. Silmek yerine `docs/decisions/marketing-assets.md`'nin
+  komut listesine yazıldı.

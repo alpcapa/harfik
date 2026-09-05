@@ -77,9 +77,6 @@ const BACK_GAP = 3;
 interface GameHeaderProps {
   state: GameState;
   onLogoClick?: () => void;
-  /** true iken çıkış devre dışı — ör. teslim olup YZ'leri izlerken oyundan
-   *  çıkılamaz, oyunun bitmesi beklenmek zorunda. */
-  exitDisabled?: boolean;
   /**
    * Verilirse skor kutuları tıklanabilir olur ve o koltuğun indeksiyle
    * çağrılır — Canlı oyunda rakibin skor kartını açmak için
@@ -92,14 +89,13 @@ interface GameHeaderProps {
   onPlayerClick?: (index: number) => void;
 }
 
-export function GameHeader({ state, onLogoClick, exitDisabled, onPlayerClick }: GameHeaderProps) {
+export function GameHeader({ state, onLogoClick, onPlayerClick }: GameHeaderProps) {
   const { players, current } = state;
   return (
     <header className="w-full max-w-[680px] flex items-center justify-between gap-2 px-3 py-2.5">
       <button
         onClick={onLogoClick}
-        disabled={exitDisabled}
-        className="relative shrink-0 flex flex-col items-center leading-none active:opacity-70 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed disabled:active:opacity-40"
+        className="relative shrink-0 flex flex-col items-center leading-none active:opacity-70 transition-opacity"
         aria-label="Oyundan çık">
         <LogoMark height={LOGO_HEIGHT} />
         {/* Etiket AKIŞIN DIŞINDA (absolute): header'ın yüksekliğine hiç
@@ -112,10 +108,7 @@ export function GameHeader({ state, onLogoClick, exitDisabled, onPlayerClick }: 
             `px-3`ü, yani etiket tahtanın sol kenarıyla BİREBİR hizalı
             (kullanıcı isteği). Ortalanmış bir etiket logonun genişliğine
             göre kayardı. ⚠ Board'un yatay dolgusu değişirse bu hiza
-            sessizce bozulur — ikisi birlikte değişmeli.
-
-            `exitDisabled` iken ayrı bir stil GEREKMİYOR: etiket butonun
-            İÇİNDE olduğundan butonun `disabled:opacity-40`ı onu da soluyor. */}
+            sessizce bozulur — ikisi birlikte değişmeli. */}
         <span
           className="absolute top-full left-0 whitespace-nowrap font-mono leading-none text-text"
           style={{ fontSize: BACK_FONT_SIZE, marginTop: BACK_GAP }}

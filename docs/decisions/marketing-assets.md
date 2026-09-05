@@ -14,7 +14,14 @@ hashtag setleri, reklam kurulum notları).
 npm run build                          # derlenmiş CSS ŞART (aşağı bkz.)
 node scripts/sponsored-post/build.mjs  # 5 PNG'yi yeniden yazar
 npm run generate-reel                  # kelimeki-reel.mp4 (bkz. aşağıdaki reel notu)
+node scripts/generate-klig-logo.mjs    # "k-lig" wordmark'ının tek başına SVG/PNG/JPG hâli
 ```
+
+⚠ Sondaki iki komut `package.json`'da BİLEREK yok (mağaza/vitrin işleri gibi
+yılda birkaç kez koşuluyor) — yani `npm run` listesinde aramayın. Özellikle
+`generate-klig-logo.mjs`, `KLigMark.tsx`'ten ALREADY-TRACED path verisini
+okuyup `sharp` ile rasterize eder; font/tarayıcı gerektirmez, `LogoMark`
+tarafının `generate-logo.mjs`'iyle aynı rolü oynar.
 
 - **Görseller çizim DEĞİL, üretim bileşenlerinin sunucuda render'ı** —
   tahtalar `GameBoardPreview`→`Board` (`compact={false}`, `demoBoard.ts`),
@@ -152,6 +159,15 @@ cevabını veriyor.
   kaydı "bitmiş" sayıp null dönüyor ve App ilk effect'te localStorage'ı
   SİLİYOR — ölçüldü: 4215 bayt yazılıyor, ~1 sn sonra null, Setup'ta
   "Devam Eden Oyun" satırı hiç çıkmıyor.
+- **Sahne ARA BİR DOSYAYA yazılmıyor** (5 Eylül 2026'da onarıldı). Önceden
+  `build.mjs` sahneyi `node_modules/.cache/kelimeki/reel-state.json`'dan
+  OKUYORDU ama o dosyayı üreten `scripts/reel/emit-state.ts` hiçbir yerden
+  çağrılmıyordu — ne `package.json`'dan ne CI'dan; komut taze bir klonda
+  ENOENT ile düşerdi. `build.mjs` artık `state.ts`'i, kapanış kartı için
+  ZATEN kullandığı esbuild + dinamik import kalıbıyla kendisi koşuyor;
+  `emit-state.ts` silindi. **Ders:** bir "üretici → tüketici" zinciri kurarken
+  üreticinin ÇAĞRILDIĞI yeri de aynı PR'da göster — üretilmiş dosya
+  geliştiricinin `node_modules`'ünde durduğu sürece kopukluk görünmez.
 - **⚠ Kapanış kartı AYRI BİR CONTEXT'te render edilmeli.** Uygulamayı açan
   bağlamda PWA service worker'ı kayıtlı ve `navigateFallback` bilinmeyen her
   navigasyona `index.html` döndürüyor; ilk sürümde videonun son 2 saniyesi

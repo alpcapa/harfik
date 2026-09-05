@@ -374,8 +374,8 @@ League points (`src/utils/leaguePoints.ts`): `surrendered → -2`; `rank===1 →
 | `react`, `react-dom` | UI framework |
 | `@supabase/supabase-js` | Postgres/auth/realtime/storage client (only loaded/used if env vars present) |
 | `html-to-image` | DOM node → PNG capture for shared game-board images |
-| `@fontsource/nunito` | Self-hosted tile-letter font |
-| `@fontsource/space-grotesk`, `@fontsource/space-mono` | Self-hosted UI fonts (also mirrored as raw `.woff2` in `public/fonts/` for `<link rel="preload">`) |
+| `@fontsource/nunito` (dev) | Tile-letter font. ⚠ The **package** is build-time only: the shipped `.woff2` files live in `src/fonts/files/`, and only the asset generators read `node_modules/@fontsource/…` |
+| `@fontsource/space-grotesk`, `@fontsource/space-mono` (dev) | UI fonts, same story — the shipped copies are raw `.woff2` in `public/fonts/` (for `<link rel="preload">`) and `src/fonts/files/` |
 | `vite`, `@vitejs/plugin-react` | Build tool / React JSX transform |
 | `vite-plugin-pwa` | Service worker generation + manifest |
 | `typescript` | Type checking (`tsc -b` is the entire "lint" step — no separate ESLint) |
@@ -384,6 +384,7 @@ League points (`src/utils/leaguePoints.ts`): `surrendered → -2`; `rank===1 →
 | `@fontsource/caveat` (dev) | Used only by build-time scripts (`generate-logo.mjs` etc.) to rasterize the logo into static SVG paths; never shipped to the browser |
 | `opentype.js` (dev) | Parses Caveat font to extract glyph outlines for the static logo/K-lig SVG path generators |
 | `sharp` (dev) | Image generation for icons/OG image at build time |
+| `esbuild` (dev) | CLI used by 14 npm scripts (golden vectors, every `verify-*` wrapper, the reel builder) to bundle a TS entry into a runnable `.mjs` |
 
 No state-management library (plain `useReducer`/`useContext`), no router (manual `window.location.pathname` switch in `main.tsx`), no CSS-in-JS, no test-mocking framework.
 

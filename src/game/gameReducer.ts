@@ -34,7 +34,6 @@ export interface PlayerSetup {
 }
 
 export type Action =
-  | { type: 'INIT' }
   | { type: 'ABANDON' }
   | { type: 'START'; players: PlayerSetup[] }
   | { type: 'SELECT_TILE'; index: number }
@@ -438,9 +437,6 @@ function applyPlacement(
 
 export function gameReducer(state: GameState, action: Action): GameState {
   switch (action.type) {
-    case 'INIT':
-      return createInitialState();
-
     case 'ABANDON':
       // Oyundan çıkış: teslim kaydı (varsa 2 puan ceza) App.tsx'te bu action
       // dispatch edilmeden önce saveGame ile kaydedilir; burada yalnızca

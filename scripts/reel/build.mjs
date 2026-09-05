@@ -15,7 +15,7 @@
 // (DRAG_LIFT). İmleci doğrudan hücrenin üstüne götüren bir betik taşı bir
 // satır yukarı bırakır — bu tuzak CLAUDE.md'de kayıtlı, burada +30 ile
 // telafi ediliyor.
-import { createReadStream, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createReadStream, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { stat } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
@@ -28,7 +28,6 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const DIST = path.join(ROOT, 'dist');
 const FRAMES = path.join(ROOT, 'node_modules', '.cache', 'kelimeki', 'reel-frames');
 const OUT = path.join(ROOT, 'marketing', 'sponsored-2026-08', 'kelimeki-reel.mp4');
-const STATE = path.join(ROOT, 'node_modules', '.cache', 'kelimeki', 'reel-state.json');
 
 const W = 540;
 /** Uygulama içeriği 540 px genişlikte 819 px sürüyor (ölçüldü) — viewport'u
@@ -62,7 +61,20 @@ async function bekle(page, sn) {
 async function main() {
   rmSync(FRAMES, { recursive: true, force: true });
   mkdirSync(FRAMES, { recursive: true });
-  const { payload, HAMLE } = JSON.parse(readFileSync(STATE, 'utf8'));
+  // Sahne (tahta durumu + sürükleme adımları) TypeScript'te yaşıyor
+  // (`state.ts`, üretim motorunu import ediyor) — kapanış kartıyla aynı
+  // esbuild + dinamik import kalıbıyla buradan koşuluyor. ⚠ Bu adım bir
+  // ara JSON dosyasına yazılmıyor: önceden `node_modules/.cache`teki bir
+  // `reel-state.json` OKUNUYORDU ama onu üreten adım hiçbir yerden
+  // çağrılmıyordu, yani komut taze bir klonda ENOENT ile düşüyordu.
+  const stateMjs = path.join(ROOT, 'node_modules', '.cache', 'kelimeki', 'reel-state.mjs');
+  await esbuild({
+    entryPoints: [path.join(ROOT, 'scripts', 'reel', 'state.ts')],
+    bundle: true, platform: 'node', format: 'esm',
+    outfile: stateMjs, logLevel: 'error',
+  });
+  const { sahne, HAMLE } = await import(`file://${stateMjs}?t=${Date.now()}`);
+  const payload = { version: 1, state: sahne(), savedAt: Date.now() };
 
   // Kapanış kartını `dist`e üret (poster boru hattının aynı esbuild kalıbı).
   const cssFile = (await import('node:fs')).readdirSync(path.join(DIST, 'assets'))
