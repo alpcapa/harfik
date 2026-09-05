@@ -40,6 +40,7 @@ npm run verify-live-games-load    # canlı oyun listesi: düşen istek sessizce 
 npm run verify-demo-board        # karşılama katmanındaki tanıtım tahtası sözlüğe karşı doğrulanır
 npm run verify-remaining-tiles   # "Kalan Taşlar" dökümü ↔ oyun sonu raf düşümü
 npm run verify-swap-invariants   # taş değiştirme: taslak taşlar yok olmuyor + senkron seçimi düşürüyor
+npm run verify-edge-engine-parity # motorun üçüncü kopyası (Edge Function) src/'den ayrışmadı mı
 npm run verify-error-reporting   # istemci hata telemetrisi: ne kaydedilir/kaydedilmez, tekrar bastırma, hız sınırı
 npm run verify-away-return       # "uzun aradan sonra öne dönüş = ekrana yeniden giriş" eşiği
 

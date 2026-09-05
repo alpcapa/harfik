@@ -42,17 +42,62 @@ export function freshCorners(board: Board, ownCorners: number[], owner: number):
   });
 }
 
-function computeConqueredChain(board: Board, ownCorners: number[], owner: number): Set<string> {
+/**
+ * Bir oyuncunun köşesinden başlayıp yalnızca KENDİ taşları üzerinden
+ * ortogonal olarak bağlı hücreleri döner — gerçek "fetih" zinciri. Seed,
+ * köşe sınırları içindeki hücrelerin TAMAMIDIR — ister `owner`a ait bir taş
+ * taşısın ister boş olsun; sadece BAŞKA bir oyuncuya ait bir taş taşıyan
+ * köşe hücreleri seed'in dışında kalır (bir kale fethi tarafından ele
+ * geçirilmiş olabilirler, bkz. `computeAllTerritories`). Böylece 4×4 köşe
+ * bloğunun henüz kimse tarafından ele geçirilmemiş kısmı baştan itibaren
+ * "geçit" gibi davranır: bloğun herhangi bir kenarına bitişik yeni bir taş,
+ * o taş `owner`a aitse zincire hemen dahil olur — köşenin tam ucundaki
+ * başlangıç hücresinden fiilen taş taş ilerlemiş olmaya gerek yoktur.
+ * Bloğun DIŞINDAKİ genişleme ise hâlâ yalnızca gerçek, bağlı `owner` taşları
+ * üzerinden ilerler — boş bir dış hücre zinciri taşımaz, sadece genişlemeyi
+ * kesmez.
+ */
+function computeConqueredChain(
+  board: Board,
+  ownCorners: number[],
+  owner: number,
+  supported?: Set<string>[],
+): Set<string> {
+  // `chain` = zincire ÜYE hücreler. `visited` = gezilen hücreler. İkisi
+  // AYRI olmak zorunda: aşağıdaki "iletken" hücreler gezilir ama üye
+  // OLMAZ — üye olsalardı aynı hücre hem taşın sahibinin hem blok
+  // sahibinin zincirine girip "iki oyuncunun bölgesi asla çakışmaz"
+  // değişmezini kırabilirdi (ölçüldü: taşın sahibi o hücreye kendi
+  // taşlarıyla ulaşabildiği bir tahtada gerçekten çakışıyor).
   const chain = new Set<string>();
+  const visited = new Set<string>();
   const stack: [number, number][] = [];
   for (const corner of ownCorners) {
     const b = cornerBounds(corner);
     for (let r = b.r0; r <= b.r1; r++) {
       for (let c = b.c0; c <= b.c1; c++) {
         const cell = board[r][c];
-        if (cell && cell.owner !== owner) continue;
         const k = key(r, c);
-        if (!chain.has(k)) {
+        if (cell && cell.owner !== owner) {
+          // Kendi bloğunun içindeki RAKİP taşı. `supported` verilmediyse
+          // (ön geçiş) eski davranış: zinciri keser. Verildiyse yalnızca o
+          // taş RAKİBİN KENDİ zincirine bağlıysa keser — bağlı değilse
+          // (izole bir akıncı) hücre İLETKEN olur: üzerinden geçilir.
+          // Gerekçe: o hücre zaten senin bölgen sayılıyor (taban iddia,
+          // aşağıda) ve rakip oraya bitişik oynarsa SANA vergi ödüyor;
+          // kira toplanan ama üzerinden yürünemeyen bir hücre tutarsızdı.
+          // `owner` opsiyonel: sahipsiz bir taş (ya da ön geçiş) için
+          // karşılaştıracak zincir YOK — eski davranış, zinciri keser.
+          const foeChain = cell.owner === undefined ? undefined : supported?.[cell.owner];
+          if (!foeChain || foeChain.has(k)) continue;
+          if (!visited.has(k)) {
+            visited.add(k);
+            stack.push([r, c]);
+          }
+          continue;
+        }
+        if (!visited.has(k)) {
+          visited.add(k);
           chain.add(k);
           stack.push([r, c]);
         }
@@ -70,8 +115,9 @@ function computeConqueredChain(board: Board, ownCorners: number[], owner: number
     for (const [nr, nc] of neighbors) {
       if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) continue;
       const k = key(nr, nc);
-      if (chain.has(k)) continue;
+      if (visited.has(k)) continue;
       if (board[nr][nc]?.owner === owner) {
+        visited.add(k);
         chain.add(k);
         stack.push([nr, nc]);
       }
@@ -81,9 +127,35 @@ function computeConqueredChain(board: Board, ownCorners: number[], owner: number
 }
 
 /** Tüm oyuncuların bölgelerini (indekslerine göre) hesaplar. */
+/**
+ * Tüm oyuncuların bölgelerini (indekslerine göre) hesaplar. Önce her
+ * oyuncunun gerçek fetih zinciri ayrı ayrı hesaplanır; bir hücre bir
+ * zincirde olabilir en fazla TEK bir oyuncuya ait olduğundan (bir hücrede
+ * aynı anda tek taş durur) zincirler asla çakışmaz. Köşe bloklarındaki taban
+ * iddia da yalnızca başka HİÇBİR oyuncunun zincirine girmemiş hücreler için
+ * uygulanır — böylece bir rakibin köşenin içine kadar uzanan zinciri, o
+ * hücreleri asıl sahibinin bölgesinden gerçekten düşürür.
+ */
 export function computeAllTerritories(board: Board, players: Player[]): Set<string>[] {
-  const chains = players.map((p, i) =>
+  // Teslim olmuş bir oyuncunun zinciri boş sayılır — hem kendi bölgesi
+  // (aşağıda erken dönüş) hem de daha önce başkasından fethettiği hücreler
+  // artık kimseyi "yakalamıyor", bu yüzden o hücreler orijinal sahibinin
+  // taban iddiasına geri döner. Sonuç: teslim olan oyuncunun tüm bölgesi
+  // (kendi köşesi dahil) doğal/sahipsiz alana dönüşür — kimse ona bölge
+  // vergisi ödemez, dış hat çizgisi de kalkar (bkz. Board.tsx).
+  // İKİ GEÇİŞ, ve sırası önemli. Ön geçiş her oyuncunun SAF zincirini
+  // (yalnızca kendi taşları) hesaplar; ikinci geçiş "bu rakip taşı gerçekten
+  // rakibin bölgesine bağlı mı" sorusunu O saf zincire sorar. Kapıyı ikinci
+  // geçişin kendi sonucuna sormak dairesel olurdu (A'nın zinciri B'ninkine,
+  // B'ninki A'nınkine bağlı). Saf zincir kullanmak hem döngüyü kırıyor hem
+  // de doğru soruyu soruyor: "rakip oraya bölgesini KENDİ taşlarıyla taşımış
+  // mı?" — taşımışsa hücre onundur, zinciri keser ve sen oraya oynarsan
+  // vergi ödersin; taşımamışsa izole bir akıncıdır ve seni durduramaz.
+  const supported = players.map((p, i) =>
     p.surrendered ? new Set<string>() : computeConqueredChain(board, p.corners, i),
+  );
+  const chains = players.map((p, i) =>
+    p.surrendered ? new Set<string>() : computeConqueredChain(board, p.corners, i, supported),
   );
   return players.map((p, i) => {
     if (p.surrendered) return new Set<string>();

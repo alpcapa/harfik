@@ -26,6 +26,7 @@ npm run generate-demo-board-dart # Karşılama tahtası → portun intro ekranı
 npm run verify-cloud-save-mirror # Bulut kaydı offline karar mantığı (saf fonksiyon kontrolleri)
 npm run verify-draft-rescue      # Iskalanan dokunuşun en yakın taslak taşına yönlendirilmesi
 npm run verify-swap-invariants   # Taş değiştirme: taslak taşlar yok olmuyor + senkron rafı yeniden sıralarsa seçim düşüyor
+npm run verify-edge-engine-parity # Motorun ÜÇÜNCÜ kopyası (supabase/functions/_game/) src/'den ayrışmadı mı — play-ai-turn onu kullanıyor
 npm run verify-game-list-order   # Liste sıralaması: "sıra bende" artan ↔ "sıra rakipte" azalan, null en sona
 npm run verify-recent-game-avatars # "Son Oynananlar" avatar çözümü: eşleme OYUNLA sınırlı mı (yanlış yüz koruması)
 npm run verify-rematch-slots     # Rövanş kadrosu: ilk koltuk çağıran, YZ'ler sonda (create_online_game kısıtları)
@@ -108,7 +109,7 @@ koptu" (bkz. "Belgeleri Güncel Tutma").
 |---|---|
 | Yeni dosya/component/hook, klasör yapısı, somut rakamlar | `CLAUDE.md` + `README.md` ("Belgeleri Güncel Tutma") |
 | `src/game/`, `src/utils/` motor dosyaları | `npm run generate-golden-vectors` + Dart core testleri |
-| Motorun **ÜÇÜNCÜ** kopyası: `supabase/functions/_game/` (`ai.ts`/`validator.ts`/`board.ts`/`constants.ts`/`types.ts`/`turkish.ts`/`tiles.ts`) | `src/`'deki eşi değişirse ELLE kopyala **ve** `play-ai-turn`'ü yeniden deploy et. Golden vector'lar bunu GÖRMEZ (yalnızca web↔port'u kanıtlar), derleyici de görmez (ayrı paket). 5 Eylül 2026'da ölçüldü: iki motor değişikliği (YZ köşe açılışı · bölge "iletken hücre" kuralı) buraya hiç işlenmemiş ve CANLIDA — bkz. `ROADMAP.md` → "Hata avı geçişi" #23 |
+| Motorun **ÜÇÜNCÜ** kopyası: `supabase/functions/_game/` (`ai.ts`/`validator.ts`/`board.ts`/`constants.ts`/`types.ts`/`turkish.ts`/`tiles.ts`) | `src/`'deki eşi değişirse ELLE kopyala **ve** `play-ai-turn`'ü yeniden deploy et. **`npm run verify-edge-engine-parity` bu ayrışmayı yakalar** (CI'da koşuyor) — golden vector'lar GÖREMEZ (yalnızca web↔port'u kanıtlar), derleyici de göremez (`tsconfig.json` yalnızca `src`'i içeriyor). Kapı 5 Eylül 2026'da, iki motor değişikliği (YZ köşe açılışı · bölge "iletken hücre" kuralı) buraya hiç işlenmediği ve aylarca CANLIDA kaldığı için eklendi |
 | `src/data/meanings.json` | `npm run generate-meanings-db` |
 | `LogoMark`/`KLigMark` | `npm run generate-logo-paths` / `generate-klig-paths` (ikisi de web+Dart yazar) |
 | Canlı oyun / mesajlaşma / e-posta özelliği | `TESTING.md` (elle koşulan liste) |

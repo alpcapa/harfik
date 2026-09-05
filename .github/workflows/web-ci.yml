@@ -59,6 +59,7 @@ on:
       - 'src/**'
       - 'scripts/**'
       - 'supabase/migrations/**'
+      - 'supabase/functions/**'
       - 'tests/**'
       - 'public/**'
       - 'index.html'
@@ -74,6 +75,7 @@ on:
       - 'src/**'
       - 'scripts/**'
       - 'supabase/migrations/**'
+      - 'supabase/functions/**'
       - 'tests/**'
       - 'public/**'
       - 'index.html'
@@ -118,6 +120,16 @@ jobs:
       # ikisinde de aynı olan bir hatayı değil (ikisi de aynı biçimde
       # yanlıştı). Bu adım DOĞRULUĞU sınıyor.
       - run: npm run verify-swap-invariants
+
+      # Motorun ÜÇÜNCÜ kopyası (`supabase/functions/_game/`) `src/`den
+      # ayrışmasın (5 Eylül 2026 hata avı geçişi #23). O kopyayı
+      # `play-ai-turn` kullanıyor, yani fark CANLI oyunlardaki YZ demek —
+      # ve HİÇBİR kapıdan geçmiyordu: golden vector'lar yalnızca web↔port'u
+      # kanıtlıyor, `tsconfig.json` da yalnızca `src`'i içeriyor. İki motor
+      # değişikliği bu yüzden aylarca canlıda bayat kaldı.
+      # ⚠ `paths` listesine `supabase/functions/**` bu adım için eklendi:
+      # yalnızca Edge kopyası değişen bir PR'da bu iş hiç koşmazdı.
+      - run: npm run verify-edge-engine-parity
 
       # İstemci hata telemetrisinin karar mantığı (ROADMAP #3): tekrar
       # bastırma, hız sınırı, "beklenen durumu kaydetme" filtresi. Duman
