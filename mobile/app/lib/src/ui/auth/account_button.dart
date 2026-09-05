@@ -4,12 +4,21 @@
 //   kimlik yükleniyor → "…" dairesi (dokunulamaz)
 //   oturum yok       → GİRİŞ (btn-raised accent) → giriş penceresi
 //   oturum var       → avatar → açılır menü
-// Menü YALNIZCA gerçekten çalışan maddeleri taşıyor: isim başlığı, k-lig
-// satırı (rank+puan, sıralamayı açar), Skor Kartı, Arkadaşlar (7 Ağustos
-// 2026 — bekleyen istek sayısı CountBadge'le, avatarda web'in `dot`
-// noktası), "Nasıl Oynanır?", "Hesap Ayarları" (7 Ağustos 2026 —
+// Menü YALNIZCA gerçekten çalışan maddeleri taşıyor. SIRA web'le BİREBİR
+// aynı (`UserMenu.tsx`), emojiler dahil: isim başlığı, k-lig satırı
+// (rank+puan, sıralamayı açar), 👥 Arkadaşlar (7 Ağustos 2026 — bekleyen
+// istek sayısı CountBadge'le, avatarda web'in `dot` noktası), 📊 Skor Kartı,
+// ❓ "Nasıl Oynanır?", ⚙️ "Hesap Ayarları" (7 Ağustos 2026 —
 // AccountSettingsModal, web sırasındaki gibi Çıkış Yap'ın hemen üstünde)
-// ve "Çıkış Yap". k-lig/Skor Kartı `stats`, Arkadaşlar `friends` verildiğinde
+// ve 🚪 "Çıkış Yap".
+//
+// ⚠ Bu satır 5 Eylül 2026'ya kadar sırayı "Skor Kartı, Arkadaşlar" diye
+// YANLIŞ yazıyordu (`itemBuilder` baştan beri Arkadaşlar'ı önce çiziyor).
+// Zararsız görünen bir tutarsızlık değildi: bir oturum, kullanıcının
+// ekran görüntüsünün web mi port mu olduğunu ayırt etmek için bu yorumu
+// KANIT olarak kullandı ve yanlış yüzeye teşhis koydu. İki menü sırayla da
+// emojiyle de ayırt EDİLEMEZ — hangi yüzey olduğu koddan çıkarılamaz,
+// sorulur. k-lig/Skor Kartı `stats`, Arkadaşlar `friends` verildiğinde
 // (Supabase yapılandırılmışsa) görünür. Bekleyen istek sayısı web
 // UserMenu'yle aynı anlarda tazelenir: mount + FriendsModal kapanınca
 // (içeride yanıtlanmış olabilir); Realtime aboneliği web'de de bilinçli
