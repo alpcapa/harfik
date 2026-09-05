@@ -4,12 +4,21 @@
 //   kimlik yükleniyor → "…" dairesi (dokunulamaz)
 //   oturum yok       → GİRİŞ (btn-raised accent) → giriş penceresi
 //   oturum var       → avatar → açılır menü
-// Menü YALNIZCA gerçekten çalışan maddeleri taşıyor: isim başlığı, k-lig
-// satırı (rank+puan, sıralamayı açar), Skor Kartı, Arkadaşlar (7 Ağustos
-// 2026 — bekleyen istek sayısı CountBadge'le, avatarda web'in `dot`
-// noktası), "Nasıl Oynanır?", "Hesap Ayarları" (7 Ağustos 2026 —
+// Menü YALNIZCA gerçekten çalışan maddeleri taşıyor. SIRA web'le BİREBİR
+// aynı (`UserMenu.tsx`), emojiler dahil: isim başlığı, k-lig satırı
+// (rank+puan, sıralamayı açar), 👥 Arkadaşlar (7 Ağustos 2026 — bekleyen
+// istek sayısı CountBadge'le, avatarda web'in `dot` noktası), 📊 Skor Kartı,
+// ❓ "Nasıl Oynanır?", ⚙️ "Hesap Ayarları" (7 Ağustos 2026 —
 // AccountSettingsModal, web sırasındaki gibi Çıkış Yap'ın hemen üstünde)
-// ve "Çıkış Yap". k-lig/Skor Kartı `stats`, Arkadaşlar `friends` verildiğinde
+// ve 🚪 "Çıkış Yap".
+//
+// ⚠ Bu satır 5 Eylül 2026'ya kadar sırayı "Skor Kartı, Arkadaşlar" diye
+// YANLIŞ yazıyordu (`itemBuilder` baştan beri Arkadaşlar'ı önce çiziyor).
+// Zararsız görünen bir tutarsızlık değildi: bir oturum, kullanıcının
+// ekran görüntüsünün web mi port mu olduğunu ayırt etmek için bu yorumu
+// KANIT olarak kullandı ve yanlış yüzeye teşhis koydu. İki menü sırayla da
+// emojiyle de ayırt EDİLEMEZ — hangi yüzey olduğu koddan çıkarılamaz,
+// sorulur. k-lig/Skor Kartı `stats`, Arkadaşlar `friends` verildiğinde
 // (Supabase yapılandırılmışsa) görünür. Bekleyen istek sayısı web
 // UserMenu'yle aynı anlarda tazelenir: mount + FriendsModal kapanınca
 // (içeride yanıtlanmış olabilir); Realtime aboneliği web'de de bilinçli
@@ -102,9 +111,9 @@ class _AccountButtonState extends State<AccountButton> {
   String? _lastUserId;
 
   /// Menü başlığındaki (isim satırının altındaki) tıklanabilir k-lig
-  /// satırı için — web `UserMenu`'nün `myRank` state'iyle aynı: `useEffect`
-  /// yalnızca `user` değişince tetiklenir (`fetchMyLeaderboardRank`),
-  /// burada da `_onAuthEvent`'in aynı hesap-değişimi kilidiyle tazeleniyor.
+  /// satırı için — web `UserMenu`'nün `myRank` state'iyle aynı: hesap
+  /// değişiminde (`_onAuthEvent` ↔ web'in `user` bağımlılığı) ve MENÜ HER
+  /// AÇILDIĞINDA (`onOpened` ↔ web'in `open` bağımlılığı) tazeleniyor.
   ///
   /// **`setState` DEĞİL `ValueNotifier` — ve bu bir tercih değil, düzeltme
   /// (26 Ağustos 2026, kullanıcı bildirdi: "avatar menüdeki isim altındaki
@@ -154,10 +163,11 @@ class _AccountButtonState extends State<AccountButton> {
     });
   }
 
-  /// Tek atışlık — ama artık TEK ŞANS değil: sonuç null kalırsa menü her
-  /// açılışta yeniden deniyor (`onOpened`). Öncesinde başarısız tek bir
-  /// istek k-lig satırını sayfa yenilenene kadar yok ediyordu ve hata
-  /// `StatsRepo.myRank` içinde yutulduğundan hiçbir yere de düşmüyordu.
+  /// Menü HER açılışta çağırıyor (`onOpened`), iki ayrı sebeple: (1) ilk
+  /// istek düşmüşse k-lig satırı sayfa yenilenene kadar yok olmasın —
+  /// hata `StatsRepo.myRank` içinde yutulduğundan hiçbir yere düşmüyor
+  /// (26 Ağustos 2026); (2) puan oyun/ödül/başka cihaz yüzünden değişmiş
+  /// olabilir, bayat değer gösterilmesin (5 Eylül 2026).
   void _refreshMyRank() {
     final stats = widget.stats;
     final userId = auth.user?.id;
@@ -291,13 +301,23 @@ class _AccountButtonState extends State<AccountButton> {
 
   Widget _avatarMenu(BuildContext context) {
     return PopupMenuButton<String>(
-      // Puan hâlâ elde değilse menü her açılışta yeniden istiyor —
-      // açılıştaki tek istek düşmüşse kullanıcı sayfayı yenilemek zorunda
-      // kalmasın (26 Ağustos 2026). İstek yalnızca EKSİKKEN gidiyor, yani
-      // normal durumda menü açmak ağa çıkmıyor.
-      onOpened: () {
-        if (_myRank.value == null) _refreshMyRank();
-      },
+      // Menü HER açılışta puanı tazeliyor.
+      //
+      // ⚠ Koşul 5 Eylül 2026'da KALDIRILDI (kullanıcı bildirdi: "k-lig puanım
+      // 200 ama menüde 198 gözüküyor"). Önceki hâli `if (_myRank.value ==
+      // null)` idi: yalnızca EKSİK değeri tamamlıyor, MEVCUT ama bayat değeri
+      // hiç sorgulamıyordu. Oysa puan oyun bitince, k-lig ödülü düşünce ya da
+      // başka bir cihazda oynanınca değişiyor ve bu bileşene kimse haber
+      // vermiyor — yani ilk başarılı istekten sonra sayı oturum boyunca
+      // donuyordu. k-lig tablosu ile Skor Kartı açılışta taze çektiğinden
+      // AYNI ekranda üç farklı sayı görünebiliyordu (menü 198, tablo 200,
+      // kart 200).
+      //
+      // "Normal durumda menü açmak ağa çıkmasın" kaygısı bilerek terk edildi:
+      // menü açılışı seyrek bir kullanıcı eylemi ve istek tek satırlık bir
+      // RPC — donmuş bir puan göstermenin bedeli daha ağır. Web ikizi
+      // `UserMenu.tsx`'te aynı kararla `open` effect bağımlılığına eklendi.
+      onOpened: _refreshMyRank,
       // Uzun basınca çıkan ipucu kullanıcı isteğiyle kaldırıldı (9 Ağustos
       // 2026) — web'deki `title` attribute'u da aynı anda kaldırıldı.
       // Parametreyi tamamen SİLMEK yanlış olurdu: PopupMenuButton null

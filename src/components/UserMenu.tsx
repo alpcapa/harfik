@@ -50,8 +50,21 @@ export function UserMenu() {
   // Hızlı hesap değişiminde (ör. çıkış yapıp başka bir hesapla giriş) eski
   // kullanıcının isteği geç dönüp yeni kullanıcının verisini ezebilirdi —
   // useAppIconBadge'deki aynı "bu hâlâ güncel istek mi" kilidini kullanıyor.
+  //
+  // ⚠ `open` de BAĞIMLILIKTA (5 Eylül 2026, kullanıcı bildirdi: "k-lig
+  // puanım 200 ama menüde 198 gözüküyor"). Yalnızca `[user]`e bağlıyken bu
+  // istek oturum başına BİR KEZ atılıyordu; puan ise oyun bitince, k-lig
+  // ödülü düşünce ya da başka bir cihazda oynanınca değişiyor ve bu bileşene
+  // kimse haber vermiyor — yani sayı oturum boyunca donuyordu. k-lig tablosu
+  // ile Skor Kartı açılışta taze çektiği için AYNI ekranda üç farklı sayı
+  // görünebiliyordu (menü 198, tablo 200, kart 200).
+  //
+  // Tazeleme yeri "menü açılışı", çünkü `myRank` yalnızca `{open && …}`
+  // bloğunda render ediliyor (puan satırı + `RankSeal` rütbe mührü): kapalı
+  // menü için istek atmak boşa gider, açılışta atmak ise değişimin SEBEBİNDEN
+  // bağımsız olarak (oyun/ödül/başka cihaz) her zaman taze gösterir.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !open) return;
     let cancelled = false;
     fetchMyLeaderboardRank(user.id).then((r) => {
       if (!cancelled) setMyRank(r);
@@ -59,7 +72,7 @@ export function UserMenu() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, open]);
 
   const refreshIncomingRequestCount = () => {
     if (!user) return;

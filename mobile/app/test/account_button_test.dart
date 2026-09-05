@@ -72,6 +72,19 @@ class _GecikmeliStatsGateway extends _FakeStatsGateway {
   }
 }
 
+/// Puanı DEĞİŞEBİLEN uç — "menü her açılışta tazeliyor mu" sorusu ancak
+/// sunucudaki değer iki açılış arasında değişirse sınanabilir.
+class _DegisenStatsGateway extends _FakeStatsGateway {
+  int puan = 47;
+  int cagri = 0;
+
+  @override
+  Future<Map<String, Object?>?> myLeaderboardRank(String userId) async {
+    cagri++;
+    return {'rank': 1, 'total_score': puan};
+  }
+}
+
 class _FakeFriendsGateway implements FriendsGateway {
   @override
   String? get currentUserId => 'u-test';
@@ -176,6 +189,37 @@ void main() {
 
     expect(gw.cagri, greaterThan(1), reason: 'yeniden denenmeli');
     expect(find.textContaining('#3'), findsOneWidget);
+  });
+
+  // 5 Eylül 2026 — kullanıcı bildirdi: "k-lig puanım 200 ama menüde 198
+  // gözüküyor." Sebep: `onOpened` YALNIZCA `_myRank.value == null` iken
+  // istiyordu, yani EKSİK değeri tamamlıyor ama BAYAT değeri hiç
+  // sorgulamıyordu. İlk başarılı istekten sonra sayı oturum boyunca
+  // donuyordu; k-lig tablosu ve Skor Kartı açılışta taze çektiğinden aynı
+  // ekranda üç farklı sayı görünebiliyordu.
+  //
+  // Negatif eş: `onOpened: _refreshMyRank` yerine eski `if (_myRank.value
+  // == null)` koşulu geri konursa ikinci açılış 47'de kalır ve test düşer.
+  testWidgets('menü her açılışta puanı TAZELER (bayat değer göstermez)',
+      (tester) async {
+    final gw = _DegisenStatsGateway();
+    await pumpMenu(tester, stats: StatsRepo(gw));
+    expect(find.textContaining('47'), findsOneWidget);
+    final ilkCagri = gw.cagri;
+
+    // Menüyü kapat, sunucudaki puan değişsin (oyun bitti / ödül düştü),
+    // tekrar aç.
+    await tester.tapAt(const Offset(10, 500));
+    await tester.pumpAndSettle();
+    gw.puan = 49;
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+
+    expect(gw.cagri, greaterThan(ilkCagri),
+        reason: 'menü açılışı puanı yeniden istemeli');
+    expect(find.textContaining('49'), findsOneWidget);
+    expect(find.textContaining('47'), findsNothing,
+        reason: 'bayat puan hâlâ ekranda');
   });
 
   testWidgets(
