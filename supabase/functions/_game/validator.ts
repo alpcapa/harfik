@@ -126,7 +126,6 @@ function computeConqueredChain(
   return chain;
 }
 
-/** Tüm oyuncuların bölgelerini (indekslerine göre) hesaplar. */
 /**
  * Tüm oyuncuların bölgelerini (indekslerine göre) hesaplar. Önce her
  * oyuncunun gerçek fetih zinciri ayrı ayrı hesaplanır; bir hücre bir
