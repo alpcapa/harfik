@@ -60,6 +60,31 @@ bölümün kendi tarihli notuna taşınır.
      yorumun kendisi "view'larla aynı formül" diyor. Seviyeye göre puan
      vermek üçünü birden değiştirmek demek, yani bir migration da gerekir.
 
+  **KAPSAM DARALTILDI (5 Eylül 2026, kullanıcı kararı):** *"Seviyeye göre
+  puan kazanma sadece 2 kişilik oyunlarda geçerli olmalı. 4 oyuncuda default
+  normal olacak. Yani puan komplikasyonuna gerek yok."* Yani seviye seçimi
+  YALNIZCA yerel 2 kişilik oyunu etkiler; 4 kişilikte YZ'ler her zaman
+  Normal ve puan formülü BUGÜNKÜ hâlinde kalır.
+
+  Ölçüldü, kapsam tutarlı: yerel oyunların **758'inin 758'inde** YZ var
+  (649 iki kişilik + 109 dört kişilik; saf-insan yerel oyun SIFIR). Canlı
+  oyun da etkilenmiyor — 2 kişilik Canlı masaya YZ konamıyor, 4 kişilikte
+  ise yalnızca 4. koltuk YZ ve o da Normal kalacak. Yani seviye terimi
+  formülde TEK bir dala giriyor: yerel, `player_count = 2`.
+
+  ⚠ Bu daraltma migration'ı KALDIRMIYOR, küçültüyor: view'lar o oyunun
+  seviyesini bilmek zorunda, yani `games`e bir seviye alanı + 2 kişilik
+  dalda bir `case` gerekiyor. Normal = bugünkü +2 olduğundan yalnızca Kolay
+  (1) ve Zor (3) sapıyor; geçmiş satırlar seviyesiz olduğundan Normal
+  sayılmalı (geriye dönük veri bozulmaz).
+
+  ⚠ **Sorgu tuzağı — bu maddeyi uygulayan mutlaka okusun:** `games.players`
+  jsonb'si KOLTUK sırasına değil **SIRALAMAYA (rank) göre** saklanıyor.
+  "Rakip YZ mi?" diye 2. elemana bakan bir analiz sorgusu yanlış sonuç
+  verir (5 Eylül 2026'da tam olarak bu oldu: yerel oyunların yarısı
+  "insan rakip" gibi göründü). Doğrusu dizinin TAMAMINA bakmak:
+  `players @> '[{"is_ai": true}]'`.
+
   ⚠ **Ürün tarafında bir kırılma:** yerel oyun skorları k-lig puanına
   akıyor. YZ zayıflarsa bundan sonraki skorlar geçmişle kıyaslanabilir
   olmaktan çıkar — lider tablosunda eski/yeni dönem karışır. Ya bilerek
