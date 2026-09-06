@@ -1763,20 +1763,21 @@ class _SetupScreenState extends State<SetupScreen>
             ],
           ],
         ),
-        if (_level == AiLevel.kolay) ...[
-          const SizedBox(height: 8),
-          // Web `text-[11px] text-muted font-mono leading-relaxed` — misafir
-          // formundaki "7 gün saklanır" paragrafıyla aynı stil.
-          const Text(
-            kolayAciklamasi,
-            style: TextStyle(
-              fontFamily: 'SpaceMono',
-              fontSize: 11,
-              height: 1.5,
-              color: _muted,
-            ),
+        const SizedBox(height: 8),
+        // Her seviyenin altında kullanıcıya hitap eden açıklama + o seviyenin
+        // k-lig puanı (4 kişilikte ikincilik de). Metin `aiLevelDescription`
+        // (core `leaguePoints`ten türetilir), web ikizi aynı şablon. Stil:
+        // web `text-[11px] text-muted font-mono leading-relaxed` — misafir
+        // formundaki "7 gün saklanır" paragrafıyla aynı.
+        Text(
+          aiLevelDescription(_level, _count),
+          style: const TextStyle(
+            fontFamily: 'SpaceMono',
+            fontSize: 11,
+            height: 1.5,
+            color: _muted,
           ),
-        ],
+        ),
         const SizedBox(height: 20),
         const _SectionLabel('OYUNCULAR'),
         const SizedBox(height: 8),

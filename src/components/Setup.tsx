@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { GUEST_PLAYER_NAME, PLAYER_COLORS } from "../game/constants";
 import type { PlayerSetup } from "../game/gameReducer";
 import type { AiLevel } from "../game/types";
-import { AI_LEVEL_LABEL, SELECTABLE_AI_LEVELS } from "../utils/aiLevel";
+import { AI_LEVEL_LABEL, SELECTABLE_AI_LEVELS, aiLevelDescription } from "../utils/aiLevel";
 import { AiLevelBadge } from "./AiLevelBadge";
 import { useAuth } from "../hooks/useAuth";
 import { useModalA11y } from "../hooks/useModalA11y";
@@ -1022,13 +1022,13 @@ export function Setup({
                   </button>
                 ))}
               </div>
-              {level === "kolay" && (
-                <p className="text-[11px] text-muted font-mono leading-relaxed">
-                  Kolay'da Yapay Zeka en iyi hamleyi değil, en iyi birkaç
-                  hamleden birini oynar. k-lig puanı da yarıya iner: birinci
-                  +1, 4 kişilikte ikinci 0.
-                </p>
-              )}
+              {/* Her seviyenin altında kullanıcıya hitap eden bir açıklama +
+                o seviyenin k-lig puanı; 4 kişilikte ikincilik de yazılır.
+                Metin `aiLevelDescription`ta (leaguePoints'ten türetilir),
+                port ikizi aynı şablon. */}
+              <p className="text-[11px] text-muted font-mono leading-relaxed">
+                {aiLevelDescription(level, count)}
+              </p>
             </div>
 
             <div className="flex flex-col gap-2.5">

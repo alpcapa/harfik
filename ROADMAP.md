@@ -228,9 +228,10 @@ mobile/kelimeki_core/lib`, üç commit, tek konu):
 | `fb5eb51` (#469) — ROADMAP #23 Faz 2 | `kelimeki_core` motoru: `findAIMoves` + `pickTopMove` + `aiLevelTopN`, `GameState.aiLevel` codec'i | Motorun Dart kopyası değişti. Normal bayt-eş (golden sıfır fark), kullanıcı fark görmez — ama pakete GİRDİ. ⚠ Önceki tablo bu satırı SAYMIYORDU (yalnızca Faz 3-4 vardı); 6 Eylül akşamı komut koşulunca çıktı — "listeye güvenme" kuralının bir örneği daha |
 | `a47c3d2` (#470) — ROADMAP #23 Faz 3 | `league_points.dart` imzasına `aiLevel` | k-lig formülü üç kopya; port yarısı web ile aynı PR'da değişti, çağıranlar Faz 4'e kaldı |
 | `42db22b` (#471) — ROADMAP #23 Faz 4 | ZORLUK seçici (Setup) · Kolay/Zor rozeti üç kart + devam eden kartı · `games.ai_level` yazma/okuma · rövanş seviyeyi taşır · yardım paragrafı | Faz 3'ün port ikizi; sahadaki 1.0.7 Kolay satırını +2 GÖSTERİYOR (sunucu doğru sayıyor) — bu sürüme binince düzelir |
+| Zorluk açıklama metinleri PR'ı (6 Eylül akşamı) | Seçicinin altındaki metin her seviyede, kullanıcıya hitapla + puan (4 kişilikte ikincilik) — `ai_level.dart` + `setup_screen.dart` | 1.0.8 henüz Play'e yüklenmediyse `mobile-latest` bu PR'la yeniden derlenir ve paket bunu da taşır (koşu no ve SHA-256 DEĞİŞİR — kütükteki 553/`a3dac1ee…` satırı o zaman bayatlar) |
 
 Kullanıcıya görünen tek şey: **Yapay Zeka oyununda Zorluk (Kolay · Normal),
-Kolay rozeti ve yarıya inen k-lig puanı.** Sürüm notu taslağı (367/500
+Kolay rozeti ve yarıya inen k-lig puanı.** Sürüm notu taslağı (376/500
 karakter) kütükte, 1.0.8 bölümünde.
 
 `main` ile mağazadaki paket bilerek ayrışabilir; bu bölüm o farkı görünür
@@ -271,7 +272,7 @@ bildirim (bkz. "Sayaç" bölümü).
    `github.run_number`ı basıyor, yani her koşu Play için yeni ve artan.
 2. **Cihaz turu — bu sürümün tek konusu:** `mobile/TESTING.md` §13'teki
    **"Seviyeye göre puan — Kolay"** maddesi (ZORLUK satırı `KOLAY · NORMAL`,
-   `ZOR` GÖRÜNMEMELİ; Kolay açıklaması; devam eden kartında altın `Kolay`
+   `ZOR` GÖRÜNMEMELİ; seçili seviyenin açıklaması + puanı; devam eden kartında altın `Kolay`
    rozeti; oyun sonunda `Kolay` rozeti + k-lig **+1**; Son Oynadıklarım / Tüm
    Oyunlarım / Favoriler'de aynı). Ardından #23.5'in Faz 4 kanıtı: **aynı
    hesap, iki cihaz** — portta Kolay seçilip bitirilen oyun web'de aynı
@@ -1356,10 +1357,14 @@ değişti; portun üç kart çağıranı (`game_over_modal` · `game_history_mod
 · `recent_games_section`) henüz `aiLevel` GEÇİRMİYOR → Faz 4 geçirir
 (`games_api.dart` `_listCols`a `ai_level`, `GameHistoryEntry` Dart eşine
 alan). (3) Web yüzeyi metinleri Faz 4'ün parite testleri için: Setup
-başlığı `Zorluk`, butonlar `Kolay`/`Normal` (`AI_LEVEL_LABEL`), Kolay
-açıklaması *"Kolay'da Yapay Zeka en iyi hamleyi değil, en iyi birkaç
-hamleden birini oynar. k-lig puanı da yarıya iner: birinci +1, 4 kişilikte
-ikinci 0."*, rozet metni `Kolay`/`Zor` (altın, Normal'de YOK), HelpModal'a
+başlığı `Zorluk`, butonlar `Kolay`/`Normal` (`AI_LEVEL_LABEL`), seviye
+açıklaması (**6 Eylül akşamı DEĞİŞTİ**, kullanıcı: *"bilimsel iş
+yapmıyoruz"* — YZ'nin nasıl zayıflatıldığı metne girmez; her seviyenin
+altında kullanıcıya hitap eden bir cümle + `leaguePoints`ten türetilen
+puan cümlesi, 4 kişilikte ikincilik dahil: `AI_LEVEL_PITCH` +
+`aiLevelDescription`, port `aiLevelPitch` + `aiLevelDescription`, parite
+testi altı bileşimi tam metinle kilitler), rozet metni `Kolay`/`Zor`
+(altın, Normal'de YOK), HelpModal'a
 eklenen zorluk paragrafı (`/nasil-oynanir/` kendiliğinden). (4)
 `list_liked_games` artık `ai_level` döndürüyor (`20260906130756`) —
 port Favoriler sekmesi aynı RPC'yi okuyor, kolon oradan da gelir.
@@ -1496,7 +1501,10 @@ motor" kararı (23.2 B) sessizce bozulur.
    `App.startLocalGame` ve portun `StartAction`ı `'zor'` yazar, Normal yine
    yazılmaz (23.3 Faz 4 mirası 2).
 6. Kural metni üç kopya (`HelpModal.tsx` ↔ `help_modal.dart` ↔ `Landing.tsx`):
-   "henüz seçilemiyor" ibaresi kalkar, parite testi cümleyi kilitler.
+   "henüz seçilemiyor" ibaresi kalkar, parite testi cümleyi kilitler. Zor'un
+   seçici altı açıklaması (*"Çok iyi oyuncuyum, genelde %80+ kazanırım…
+   Bol şans!"*) `AI_LEVEL_PITCH`/`aiLevelPitch`te bugünden hazır — Zor
+   listeye girince kendiliğinden görünür, metin işi yok.
 7. Web + port aynı sürüm haftasında; port için sürüm turu (bu bölümün
    "Sıradaki sürüme binecekler" düzeni).
 

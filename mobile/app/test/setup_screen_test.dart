@@ -165,7 +165,7 @@ void main() {
 
   testWidgets(
       'ZORLUK (ROADMAP #23 Faz 4): OYUNCU SAYISI\'nın altında Kolay/Normal, '
-      'varsayılan Normal, Zor YOK, Kolay seçilince açıklama çıkar',
+      'varsayılan Normal, Zor YOK, seçili seviyenin açıklaması ve puanı',
       (tester) async {
     await setPhoneViewSize(tester, const Size(420, 950));
     await pumpSetup(tester, services());
@@ -182,14 +182,25 @@ void main() {
     expect(yZorluk, greaterThan(ySayi));
     expect(yOyuncular, greaterThan(yZorluk));
 
-    // Varsayılan Normal: açıklama yok.
-    expect(find.textContaining('en iyi birkaç hamleden'), findsNothing);
+    // Her seviyenin altında açıklama var; varsayılan Normal, 2 kişilik →
+    // yalnızca birincilik puanı. Tam metinler `ai_level_parity_test`te.
+    expect(find.textContaining('Orta-iyi seviye'), findsOneWidget);
+    expect(find.textContaining('birincilik 2 puan kazandırır.'), findsOneWidget);
+    expect(find.textContaining('ikincilik'), findsNothing);
     await tester.tap(find.text('KOLAY'));
     await tester.pump();
-    expect(find.textContaining('en iyi birkaç hamleden'), findsOneWidget);
+    expect(find.textContaining('Çok iyi değilim'), findsOneWidget);
+    expect(find.textContaining('birincilik 1 puan kazandırır.'), findsOneWidget);
+    expect(find.textContaining('Orta-iyi seviye'), findsNothing);
+    // 4 kişilik → ikincilik de yazılır (Kolay'da 0 → "puan kazandırmaz").
+    await tester.tap(find.text('4 OYUNCULU'));
+    await tester.pump();
+    expect(find.textContaining('ikincilik puan kazandırmaz'), findsOneWidget);
     await tester.tap(find.text('NORMAL'));
     await tester.pump();
-    expect(find.textContaining('en iyi birkaç hamleden'), findsNothing);
+    expect(find.textContaining('birincilik 2, ikincilik 1 puan kazandırır.'),
+        findsOneWidget);
+    expect(find.textContaining('Çok iyi değilim'), findsNothing);
   });
 
   testWidgets(
@@ -361,6 +372,10 @@ void main() {
         tester.getTopLeft(find.text('Neden Ücretsiz Üye Olmalıyım?')).dy;
     expect(boxTop - buttonBottom, greaterThan(15));
 
+    // Zorluk açıklaması her seviyede göründüğünden (6 Eylül 2026) kutu 900
+    // px'lik ekranın altına taşıyor; görünmeyen düğmeye dokunuş ulaşmaz.
+    await tester.ensureVisible(find.text('GİRİŞ YAP / KAYIT OL'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('GİRİŞ YAP / KAYIT OL'));
     await tester.pumpAndSettle();
     expect(find.byType(AuthModal), findsOneWidget);

@@ -6,7 +6,8 @@
 // Terminoloji tek: **Zorluk: Kolay · Normal · Zor** (ROADMAP 23.4 — "kolay
 // mod", "seviye" gibi üçüncü bir ifade ÜRETME; web Setup/HelpModal ↔ port
 // aynı sözcükleri taşır). `ai_level_parity_test.dart` bu dosyayı web
-// kaynağıyla karşılaştırıyor: etiketler, seçilebilir liste, Kolay açıklaması.
+// kaynağıyla karşılaştırıyor: etiketler, seçilebilir liste, hitap cümleleri
+// ve altı açıklama bileşimi.
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 /// Kullanıcıya görünen etiket — rozetler, seçici, kart satırları
@@ -25,12 +26,52 @@ const Map<AiLevel, String> aiLevelLabel = {
 /// web ile AYNI PR'da buraya `AiLevel.zor` eklenir, başka bir şey değişmez.
 const List<AiLevel> selectableAiLevels = [AiLevel.kolay, AiLevel.normal];
 
-/// Kolay seçilince seçicinin altında çıkan tek cümlelik açıklama — web
-/// `Setup.tsx` ile BİREBİR aynı metin (parite testi karşılaştırıyor).
-const String kolayAciklamasi =
-    "Kolay'da Yapay Zeka en iyi hamleyi değil, en iyi birkaç hamleden "
-    'birini oynar. k-lig puanı da yarıya iner: birinci +1, 4 kişilikte '
-    'ikinci 0.';
+/// Seçicinin altındaki açıklamanın İLK cümlesi — seviye kime göre,
+/// kullanıcıya hitapla (web `AI_LEVEL_PITCH`, parite testi birebir
+/// karşılaştırıyor). Kullanıcı kararı (6 Eylül 2026): YZ'nin nasıl
+/// zayıflatıldığı ürün metnine GİRMEZ. Zor'un metni Faz 5'e kadar
+/// gösterilmez ama hazır durur.
+const Map<AiLevel, String> aiLevelPitch = {
+  AiLevel.kolay:
+      'Çok iyi değilim, daha yeni yeni alışıyorum, karşımda o kadar zor bir '
+          'rakip istemiyorum diyorsanız doğru yerdesiniz.',
+  AiLevel.normal:
+      'Orta-iyi seviye bir oyuncuyum, sıradan oyunculardan biraz daha iyiyim '
+          'diyorsanız burası size göre.',
+  AiLevel.zor:
+      'Çok iyi oyuncuyum, genelde %80+ kazanırım diyorsanız bunu '
+          'denemelisiniz.',
+};
+
+/// Puan cümlesinin fiili — kullanıcının verdiği metinde Zor'unki farklı
+/// (web `AI_LEVEL_VERB`).
+const Map<AiLevel, String> _aiLevelVerb = {
+  AiLevel.kolay: 'kazandırır',
+  AiLevel.normal: 'kazandırır',
+  AiLevel.zor: 'kazandırıyor',
+};
+
+/// Setup'ta seçili seviyenin altında çıkan açıklama: hitap cümlesi + o
+/// seviyenin k-lig puanı. Sayılar core'un `leaguePoints`inden türetilir
+/// (tablo TEK kaynak). 2 kişilikte yalnızca birincilik, 4 kişilikte
+/// ikincilik de yazılır (ikincilik 0 ise "puan kazandırmaz"). Web
+/// `aiLevelDescription` ile aynı şablon; parite testi altı bileşimi tam
+/// metinle kilitler.
+String aiLevelDescription(AiLevel level, int playerCount) {
+  final birinci = leaguePoints(1, playerCount, aiLevel: level);
+  final ikinci = leaguePoints(2, playerCount, aiLevel: level);
+  final fiil = _aiLevelVerb[level]!;
+  final String puan;
+  if (playerCount == 2) {
+    puan = 'birincilik $birinci puan $fiil';
+  } else if (ikinci == 0) {
+    puan = 'birincilik $birinci puan $fiil, ikincilik puan kazandırmaz';
+  } else {
+    puan = 'birincilik $birinci, ikincilik $ikinci puan $fiil';
+  }
+  final sans = level == AiLevel.zor ? ' Bol şans!' : '';
+  return '${aiLevelPitch[level]} Bu seviyede $puan.$sans';
+}
 
 /// Kartlarda rozet metni — Normal'de (ve null'da) `null`: rozet YOK, bugüne
 /// kadarki her kart aynen kalır, seviye yalnızca bugünkünden SAPINCA

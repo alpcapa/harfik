@@ -126,17 +126,27 @@ rozeti ve yarıya inen k-lig puanı (+1). Sahadaki 1.0.7'nin web'de başlatılan
 Kolay oyunu +2 gösterme tutarsızlığı bu sürümle kapanır (sunucu zaten doğru
 sayıyordu).
 
-**Sürüm notları — TASLAK (`tr-TR`, 367/500 karakter):**
+**Sürüm notları — TASLAK (`tr-TR`, 376/500 karakter):**
 
 ```
 Yenilikler
-• Yapay Zeka oyununda zorluk seçimi: Kolay veya Normal. Kolay'da YZ en iyi hamleyi değil, en iyi birkaç hamleden birini oynar.
+• Yapay Zeka oyununda zorluk seçimi: Kolay veya Normal. Yeni başlıyorsanız ya da daha rahat bir rakip istiyorsanız Kolay tam size göre.
 • Kolay oyunun k-lig puanı yarıya iner (birinci +1); oyun sonu, geçmiş ve son oynananlar kartlarında "Kolay" rozeti.
 • Rövanş seçilen zorluğu korur.
 
 Düzeltmeler
 • Web'de başlatılan Kolay oyunun puanı geçmişte doğru (+1) görünür.
 ```
+
+⚠ **Zorluk açıklama metinleri PR'ı (6 Eyl akşamı) da bu pakete biner** —
+1.0.8 Play'e yüklenmeden merge edilirse `mobile-latest` yeniden derlenir;
+koşu numarası ve SHA-256 değişir, aşağıdaki "Derlenen paket" satırını
+yükleme anındaki değerlerle yaz.
+
+**Derlenen paket (ilk derleme, sürüm PR'ı merge'i):** koşu **553**,
+`5a540cb`, `.aab` 63.239.362 bayt, SHA-256
+`a3dac1ee0628151c9a7e9c23a24ccb7f60df71036b1de1df039e182d9b59c586`
+(6 Eyl 18:51 UTC; manifest `versionName 1.0.8`).
 
 **Yüklemeden önce:** cihaz turu (`mobile/TESTING.md` §13 "Seviyeye göre
 puan — Kolay" + aynı hesapla iki cihazda +1 eşleşmesi) ve kullanıcı kuralı

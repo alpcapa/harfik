@@ -305,8 +305,11 @@ mobile/
                              # öteki kalırsa test paketi düşer
       util/ai_level.dart     # YZ zorluğunun ÜRÜN yüzü (web `aiLevel.ts` ikizi):
                              # etiketler, Setup'ta seçilebilir liste (Zor Faz 5'e
-                             # kadar YOK), Kolay açıklaması, rozet metni (Normal →
-                             # null) — `ai_level_parity_test` web kaynağıyla kilitler
+                             # kadar YOK), seviye açıklamaları (`aiLevelPitch` +
+                             # `aiLevelDescription`; puan cümlesi `leaguePoints`ten
+                             # türetilir, 4 kişilikte ikincilik dahil), rozet metni
+                             # (Normal → null) — `ai_level_parity_test` web
+                             # kaynağıyla kilitler
       util/platform.dart      # bu istemcinin platformu (ios/android/app-web) —
                              # telemetri; web `src/utils/platform.ts` karşılığı,
                              # değer kümesi sunucu kısıtıyla ELLE senkron
