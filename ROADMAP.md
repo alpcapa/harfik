@@ -91,7 +91,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); **1.0.5'in tamamı 2 Eylül'de onaylandı** (zoom turu, çevrimdışı şerit, filigranlar, balon, yazı ölçeği, mesaj etiketi) — kalan iki kalem bu ikisi |
 | **Karar verilmiş, yapılmamış** | — | ✅ Kova BOŞ: **#3** hatırlatma, **#8** iPad paylaşımı (3 Eylül cihazda doğrulandı) ve **#16** kart düzeni kapandı; üçü de arşivde |
 | **Ertelendi** | #2 zorunlu güncelleme | ✅ **KAPANDI/ARŞİVDE** (2 Eylül 2026, kullanıcı: *"Artık app'de güncelleme çıkıyor, bunu görünce zaten yapar"*). ⚠ Sürüm kapısı DURUYOR ve artık KULLANILABİLİR — acil fren olarak `app_config.mobile_min_supported_version` |
-| **Seviyeli YZ** | **#23** Kolay/Normal/Zor + seviyeye göre k-lig puanı — 5 faz (sunucu → motor → web → port → Zor motoru) | ⬜ **PLAN YAZILDI, KARAR BEKLİYOR** (6 Eylül 2026): hangi seviye = hangi motor (#23.2, öneri B) |
+| **Seviyeli YZ** | **#23** Kolay/Normal/Zor + seviyeye göre k-lig puanı — 5 faz (sunucu → motor → web → port → Zor motoru) | ⬜ **PLAN HAZIR, Faz 0 sırada** (6 Eylül 2026): karar verildi — Normal bugünkü motor, Kolay YZ ~%30, Zor YZ ~%70 (#23.0) |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
 | **Play Store'a girdikten sonra** | **#17 Google ile giriş** — sunucu → web → mobil; migration BLOKER (OAuth bugün `handle_new_user`'da patlar) | ⏳ ERTELENDİ — acelesi yok, çalışan kimlik akışına şimdi dokunulmuyor (2 Eylül, kullanıcı). ⚠ Sayaçla İLİŞKİSİ YOK; o bağ aynı gün koptu, gerekçe #17'de |
@@ -1184,7 +1184,7 @@ döner — o an kaydedilmezse bir daha alınamaz.
 
 ---
 
-## 23. Seviyeli YZ (Kolay / Normal / Zor) + seviyeye göre k-lig puanı — **PLAN, karar bekliyor** (6 Eylül 2026)
+## 23. Seviyeli YZ (Kolay / Normal / Zor) + seviyeye göre k-lig puanı — **PLAN, karar verildi, Faz 0 sırada** (6 Eylül 2026)
 
 Kaynak: `docs/decisions/product-backlog.md` → "YZ zorluk seviyesi" (5 Eylül
 2026; kadran ölçümü, kapsam ve KESİN puan tablosu orada — burada
@@ -1207,6 +1207,19 @@ verilen yerler ölçüm, "tahmin" yazanlar tahmin).
   istenirse ayrıca sorulur").
 - Seviye seçimi yalnızca yerel YZ oyununda (2 ve 4 kişilik), 4 kişilikte
   ÜÇ YZ'ye birden uygulanır. Canlı'ya dokunulmaz.
+- **HEDEF ORANLAR (6 Eylül 2026, kullanıcı kararı — 23.2'yi kapattı):**
+  *"Normal bugünkü gibi kalacak. Kolay daha kolay olacak (%30 gibi), zor
+  daha zor olacak (%70 gibi)."* Sayılar **YZ'nin insana karşı kazanma
+  oranı** olarak okundu — Normal bugün ~%51 (insan %48,7), yani ölçek
+  tutarlı:
+
+  | Seviye | Motor | YZ kazanma hedefi (insana karşı) | Nasıl ölçülür |
+  |---|---|---|---|
+  | Kolay | bugünkü motor, en iyi N'den rastgele | **~%30** | `admin_ai_balance` seviye kırılımı (Faz 1'de geliyor) |
+  | Normal | bugünkü motor, N=1 — DEĞİŞMEZ | ~%51 (bugünkü, 429 oyun) | aynı — sıfır çizgisi |
+  | Zor | YENİ, daha güçlü motor (Faz 5) | **~%70** | aynı |
+
+  Hedef bir SAHA ölçümü; YZ↔YZ koşumu yalnızca ön eleme (aşağı, Faz 0).
 - **Bu planın eklediği kural:** seviye oyun BAŞINDA kilitlenir, oyun içinde
   değiştirilemez (aksi hâlde Kolay'da başlayıp son hamlede Zor'a geçmek +4
   eder — puan oyunu). `GameState`'e bir kez yazılır, değiştiren action YOK.
@@ -1245,7 +1258,11 @@ seviye kolonu oyun düzeyinde (`games.ai_level`) tutulacak, oyuncu satırına
 DEĞİL; hem tuzağı baştan eler hem "4 kişilikte üç YZ'ye birden uygulanır"
 kuralıyla örtüşür.
 
-### 23.2 KARAR NOKTASI — hangi seviye hangi motor? (kod yazılmadan önce)
+### 23.2 KARAR NOKTASI — hangi seviye hangi motor? → **KAPANDI: B** (6 Eylül 2026)
+
+**Kullanıcı B'yi seçti:** Normal = bugünkü motor, dokunulmuyor. Kolay ve
+Zor'un hedefleri 23.0'daki tabloda. Aşağıdaki A/B karşılaştırması kararın
+gerekçesi olarak duruyor, yeniden tartışılmasın.
 
 Backlog'un ölçüm tablosu (YZ↔YZ, N = "en iyi N'den biri") bir başlangıç
 eşlemesi öneriyor: *Zor=1, Normal=3, Kolay=10*. Kadranı okurken şu iki
@@ -1283,10 +1300,19 @@ koşumuyla ve sonra sahada `admin_ai_balance` kırılımıyla ölçülür:
    BÜYÜTECEK hücreleri bloke etmiyor; `computeAllTerritories` zaten
    önbellekte, fark hesaplanabilir.
 
-Kolay için N'in kendisi de B'de yeniden seçilir: N=3 YZ↔YZ'de %25'e
-düşürüyor; insana karşı oran **tahmin** ~%65-75 (ölçülmedi — Faz 0'ın işi).
-N=10 (%8) muhtemelen "çok kolay"; çocuk/yeni oyuncu hedefiyse o da
-savunulabilir. Faz 0 bunu sayıya bağlar.
+**Kolay için N — hedef YZ ~%30:** insan bugünkü motorla (N=1) başa baş
+olduğuna göre YZ↔YZ tablosu kaba bir vekil olarak kullanılabilir: N=3, N=1'e
+karşı **%25** kazanıyor → insana karşı **tahmin ~%25-30**, yani hedefin
+tam üstünde. **Başlangıç adayı N=3;** sahada %30'un belirgin altına düşerse
+N=2 (ölçülmedi, Faz 0 koşumu tabloya eklesin), üstüne çıkarsa N=5 (%21).
+N=10 (%8) hedefin çok altında — aday DEĞİL.
+
+**Zor için hedef YZ ~%70 — planın en zor yarısı:** bugünkü motor "en yüksek
+puanlı hamle" tavanında ve insan onu %49 yeniyor; %70'e çıkmak için motor
+GERÇEKTEN güçlenmeli, zayıflatmanın tersi tek bir kadran değil. Yukarıdaki
+dört aday tek tek YZ↔YZ'de ölçülür; Normal'i (N=1) **≥%70** yenen bir
+bileşim bulunana kadar Zor seçici AÇILMAZ. Sahada %70 tutmazsa kadran
+yeniden ayarlanır — hedef bir sürüm değil, bir ölçüm döngüsü.
 
 ### 23.3 Fazlar — paketlenebilirliğe göre (bu dosyanın kendi kuralı)
 
@@ -1295,14 +1321,18 @@ göre kesildi. **Her faz tek başına geriye uyumlu** — Faz 1'den sonra hiçbi
 kullanıcı için tek bir puan değişmez, Faz 2'den sonra hiçbir YZ farklı
 oynamaz (seviye seçilemediği için hep Normal), görünür değişiklik Faz 3'te.
 
-**Faz 0 — Karar + ölçüm (kod ürüne girmez).** Model: Opus 5, efor `medium`.
-- Kullanıcı A/B'yi seçer (23.2). B ise Zor'un adayları Faz 5'e kalır.
+**Faz 0 — Ölçüm aleti (kod ürüne girmez).** Model: Opus 5, efor `medium`.
+Karar verildi (23.2: B); bu faz artık yalnızca alet + ön eleme.
 - Backlog'daki YZ↔YZ koşumu **repoya girer**: `scripts/simulate-ai-levels.ts`
-  (24 oyun × N ∈ {1,3,5,10}; tohumlu, `setRandomSource` ile) — "uygulayan
-  yeniden ölçmesin" doğru, ama Faz 5'te YENİ motor için aynı alet gerekecek
-  ve bugün repoda YOK (`scripts/` tarandı).
-- Çıktı: Kolay için N, Zor için motor kararı. Tek sayfalık not backlog
-  maddesine eklenir.
+  (oyun sayısı ve N kümesi parametre; tohumlu, `setRandomSource` ile;
+  çıktı: kazanma oranı, ortalama skor, ortalama hamle puanı — backlog
+  tablosuyla aynı kolonlar ki eski ölçümle kıyaslanabilsin). "Uygulayan
+  yeniden ölçmesin" doğru, ama Faz 5'te YENİ motor için aynı alet
+  gerekecek ve bugün repoda YOK (`scripts/` tarandı).
+- İlk koşum: N ∈ {1, 2, 3, 5} — N=2 backlog tablosunda yok, Kolay'ın olası
+  ikinci adayı. Oyun sayısı 24 yerine ≥100 (24 oyunda %25 ile %30 ayrılamaz;
+  ±%9 güven aralığı — tahmin, koşum kesinleştirir).
+- Çıktı: Kolay için N (başlangıç N=3, 23.2). Not backlog maddesine eklenir.
 
 **Faz 1 — Sunucu (migration; anında canlı, sıfır davranış değişikliği).**
 Model: Opus 5, efor `medium`. Tek migration:
@@ -1366,7 +1396,7 @@ efor `high` — parite işi.
 - `Setup.tsx` "+ Yeni Yapay Zeka Oyunu" formu: `OYUNCU SAYISI`'nın altına
   `ZORLUK` — üç seçenek, varsayılan Normal, misafirde de var (misafir de
   YZ'ye karşı oynuyor; kaydı yok, puanı yok, seçim yine anlamlı). Zor, Faz
-  5 bitene kadar **gösterilmez** (B'de).
+  5 bitene kadar **gösterilmez**.
 - `buildGameRecord` → `ai_level`; `leaguePoints(rank, count, surrendered, level)`
   + dört çağıran; kartlarda rozet (`KOLAY`/`ZOR`, Normal'de yok — bugünkü
   kart aynen); Setup "devam eden oyun" kartına küçük etiket (aynı düzeni
@@ -1397,14 +1427,19 @@ kullanıcıda.
 - Parite testleri: kart metinleri web ile aynı (`icon_parity`/`layout_parity`
   deseni).
 
-**Faz 5 — Zor motoru (yalnızca B; kendi PR'ı, ertelenebilir).** Model:
-Opus 5, efor `high`.
-- 23.2'deki dört adaydan biri/birkaçı, Faz 0'ın aletiyle YZ↔YZ ölçülür
-  (hedef: bugünkü motora karşı ≥%65 kazanma — sayı tahmin, Faz 0 kesinleştirir);
-  sonra Faz 2'nin parite zinciri aynen (üç kopya, golden, edge parity).
-- Zor seçici web + portta aynı sürümde açılır.
-- Saha ölçümü: `admin_ai_balance` seviye kırılımı 2 hafta — Kolay'da insan
-  kazanma > Normal'inki, Zor'da < Normal'inki değilse kadran yanlış.
+**Faz 5 — Zor motoru (kendi PR'ı; Kolay/Normal'den bağımsız çıkar).**
+Model: Opus 5, efor `high`.
+- 23.2'deki dört aday Faz 0'ın aletiyle TEK TEK, sonra bileşim hâlinde
+  YZ↔YZ ölçülür; **kapı: Normal'i (N=1) ≥%70 yenen bir bileşim.** Hiçbiri
+  yetmiyorsa bir sonraki kademe tek katlı ileri bakış (rakibin en iyi cevabını
+  düşerek puanlama) — maliyeti "düşünme süresi", ölçülmeden vaat edilmez.
+- Sonra Faz 2'nin parite zinciri aynen: üç kopya (web, port, Edge kopyası —
+  Canlı YZ Normal kaldığından Edge yalnızca kopyayı eşitler), golden'lara
+  `reducer_ai2_zor` fixture'ı, `verify-edge-engine-parity`.
+- Zor seçici web + portta aynı sürüm haftasında açılır.
+- Saha ölçümü: `admin_ai_balance` seviye kırılımı 2 hafta, hedef 23.0
+  tablosu (Kolay YZ ~%30, Normal ~%51, Zor ~%70). Sapma varsa kadran
+  (Kolay: N; Zor: sezgisel ağırlıkları) ayarlanır, motor yeniden yazılmaz.
 
 ### 23.4 Tuzaklar — bu depoya özgü, planı uygulayan okusun
 
@@ -1435,9 +1470,9 @@ Opus 5, efor `high`.
 
 | Faz | "Bitti" kanıtı |
 |---|---|
-| 0 | A/B kararı yazılı + `simulate-ai-levels` repoda + Kolay N'i seçilmiş |
+| 0 | `simulate-ai-levels` repoda, ≥100 oyunluk koşum tablosu backlog notunda, Kolay N'i seçilmiş (başlangıç 3) |
 | 1 | migration canlıda, `player_stats_overall.total_score` öncesi/sonrası bayt-eş, `verify-league-points` CI'da yeşil |
 | 2 | golden sıfır fark (N=1) + `reducer_ai2_kolay` Dart'ta yeşil + `verify-edge-engine-parity` yeşil + `play-ai-turn` deploy edildi (verify_jwt korunarak) |
 | 3 | `curl kelimeki.com \| grep kelimeki-build` = `main` başı; Kolay'da biten oyunun kartı +1 gösteriyor ve `k_lig_siralama` aynı sayıyı veriyor |
 | 4 | cihazda: portta Kolay seçilip bitirilen oyun web'de aynı puanla görünüyor ve tersi (aynı hesap, iki cihaz) |
-| 5 | Zor motoru YZ↔YZ'de Normal'i ≥ hedef oranla yeniyor + sahada iki hafta kırılım |
+| 5 | Zor motoru YZ↔YZ'de Normal'i ≥%70 yeniyor + sahada iki hafta: Kolay ~%30 / Zor ~%70 YZ kazanma bandında |
