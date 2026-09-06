@@ -43,7 +43,8 @@
     "verify-demo-board": "esbuild scripts/verify-demo-board.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/verify-demo-board.mjs --log-level=error && node node_modules/.cache/kelimeki/verify-demo-board.mjs",
     "generate-initial-main-view-golden": "node scripts/run-generate-initial-main-view-golden.mjs",
     "verify-league-tiers": "node scripts/verify-league-tiers.mjs",
-    "verify-sql-engine-parity": "node scripts/verify-sql-engine-parity.mjs"
+    "verify-sql-engine-parity": "node scripts/verify-sql-engine-parity.mjs",
+    "simulate-ai-levels": "esbuild scripts/simulate-ai-levels.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/kelimeki/simulate-ai-levels.mjs --log-level=error && node node_modules/.cache/kelimeki/simulate-ai-levels.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
