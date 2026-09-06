@@ -91,7 +91,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); **1.0.5'in tamamı 2 Eylül'de onaylandı** (zoom turu, çevrimdışı şerit, filigranlar, balon, yazı ölçeği, mesaj etiketi) — kalan iki kalem bu ikisi |
 | **Karar verilmiş, yapılmamış** | — | ✅ Kova BOŞ: **#3** hatırlatma, **#8** iPad paylaşımı (3 Eylül cihazda doğrulandı) ve **#16** kart düzeni kapandı; üçü de arşivde |
 | **Ertelendi** | #2 zorunlu güncelleme | ✅ **KAPANDI/ARŞİVDE** (2 Eylül 2026, kullanıcı: *"Artık app'de güncelleme çıkıyor, bunu görünce zaten yapar"*). ⚠ Sürüm kapısı DURUYOR ve artık KULLANILABİLİR — acil fren olarak `app_config.mobile_min_supported_version` |
-| **Seviyeli YZ** | **#23** Kolay/Normal/Zor + seviyeye göre k-lig puanı — 5 faz (sunucu → motor → web → port → Zor motoru) | ⬜ **Faz 0 ✅ (6 Eylül 2026), Faz 1 sırada**: karar verildi — Normal bugünkü motor, Kolay YZ ~%30, Zor YZ ~%70 (#23.0). Faz 0 ölçtü: **Kolay = N=4** (200 oyun/N; N=3 %36, N=4 %33, N=5 %22 — backlog notu) |
+| **Seviyeli YZ** | **#23** Kolay/Normal/Zor + seviyeye göre k-lig puanı — 5 faz (sunucu → motor → web → port → Zor motoru) | ⬜ **Faz 0 ✅ (6 Eylül 2026), Faz 1 sırada**: karar verildi — Normal bugünkü motor, Kolay YZ ~%30, Zor YZ ~%70 (#23.0). Faz 0 ölçtü, kullanıcı onayladı: **Kolay = N=3** (%36; 200 oyun/N; N=4 %33, N=5 %22 — backlog notu) |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
 | **Play Store'a girdikten sonra** | **#17 Google ile giriş** — sunucu → web → mobil; migration BLOKER (OAuth bugün `handle_new_user`'da patlar) | ⏳ ERTELENDİ — acelesi yok, çalışan kimlik akışına şimdi dokunulmuyor (2 Eylül, kullanıcı). ⚠ Sayaçla İLİŞKİSİ YOK; o bağ aynı gün koptu, gerekçe #17'de |
@@ -1145,7 +1145,7 @@ verilen yerler ölçüm, "tahmin" yazanlar tahmin).
 
   | Seviye | Motor | YZ kazanma hedefi (insana karşı) | Nasıl ölçülür |
   |---|---|---|---|
-  | Kolay | bugünkü motor, en iyi N'den rastgele — **N=4** (Faz 0 ölçtü, 6 Eylül) | **~%30** | `admin_ai_balance` seviye kırılımı (Faz 1'de geliyor) |
+  | Kolay | bugünkü motor, en iyi N'den rastgele — **N=3** (Faz 0 ölçtü %36, kullanıcı 6 Eylül: *"36 ok"*) | **~%30** | `admin_ai_balance` seviye kırılımı (Faz 1'de geliyor) |
   | Normal | bugünkü motor, N=1 — DEĞİŞMEZ | ~%51 (bugünkü, 429 oyun) | aynı — sıfır çizgisi |
   | Zor | YENİ, daha güçlü motor (Faz 5) | **~%70** | aynı |
 
@@ -1237,10 +1237,10 @@ tam üstünde. **Başlangıç adayı N=3;** sahada %30'un belirgin altına düş
 N=2 (ölçülmedi, Faz 0 koşumu tabloya eklesin), üstüne çıkarsa N=5 (%21).
 N=10 (%8) hedefin çok altında — aday DEĞİL.
 **→ Faz 0 ÖLÇTÜ (6 Eylül 2026, 200 oyun/N, koltuk değişimli): yukarıdaki
-%25 24 oyunun gürültüsüydü; N=3 aslında %36, N=4 %33, N=5 %22. Kolay'ın
-başlangıcı N=3 DEĞİL N=4** — tablo ve gerekçe backlog notunda; Faz 2
-`AI_LEVEL_TOP_N.kolay = 4` yazar. Saha ayarı: belirgin üstündeyse N=5,
-altındaysa N=3.
+%25 24 oyunun gürültüsüydü; N=3 aslında %36, N=4 %33, N=5 %22.
+Kullanıcı %36'yı KABUL ETTİ (*"36 ok"*): Kolay'ın başlangıcı N=3 kalır** —
+tablo backlog notunda; Faz 2 `AI_LEVEL_TOP_N.kolay = 3` yazar. Saha ayarı:
+belirgin üstündeyse N=4, çok üstündeyse N=5 (N=2 %44 ile aday değil).
 
 **Zor için hedef YZ ~%70 — planın en zor yarısı:** bugünkü motor "en yüksek
 puanlı hamle" tavanında ve insan onu %49 yeniyor; %70'e çıkmak için motor
@@ -1258,7 +1258,7 @@ oynamaz (seviye seçilemediği için hep Normal), görünür değişiklik Faz 3'
 
 **Faz 0 — Ölçüm aleti · ✅ YAPILDI (6 Eylül 2026).** Alet
 `scripts/simulate-ai-levels.ts` (`npm run simulate-ai-levels`), koşum 200
-oyun/N, sonuç **Kolay = N=4**. Faz metni ve ölçüm ayrıntısı arşivde:
+oyun/N, sonuç **Kolay = N=3** (%36, kullanıcı onayı). Faz metni ve ölçüm ayrıntısı arşivde:
 `docs/decisions/roadmap-arsiv.md` → "23 · Faz 0"; tablo backlog notunda.
 ⚠ Faz 2'ye iki miras: (1) alet motorun arama döngüsünün KOPYASINI taşıyor
 ve CI her PR'da kopyayı üretimle karşılaştırıyor (`web-ci.yml`, 2 oyun) —
@@ -1401,7 +1401,7 @@ Model: Opus 5, efor `high`.
 
 | Faz | "Bitti" kanıtı |
 |---|---|
-| 0 | ✅ `simulate-ai-levels` repoda, 200 oyunluk koşum tablosu backlog notunda, Kolay **N=4** seçildi (6 Eylül 2026) |
+| 0 | ✅ `simulate-ai-levels` repoda, 200 oyunluk koşum tablosu backlog notunda, Kolay **N=3** seçildi — %36, kullanıcı onayı (6 Eylül 2026) |
 | 1 | migration canlıda, `player_stats_overall.total_score` öncesi/sonrası bayt-eş, `verify-league-points` CI'da yeşil |
 | 2 | golden sıfır fark (N=1) + `reducer_ai2_kolay` Dart'ta yeşil + `verify-edge-engine-parity` yeşil + `play-ai-turn` deploy edildi (verify_jwt korunarak) |
 | 3 | `curl kelimeki.com \| grep kelimeki-build` = `main` başı; Kolay'da biten oyunun kartı +1 gösteriyor ve `k_lig_siralama` aynı sayıyı veriyor |

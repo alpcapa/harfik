@@ -21,7 +21,7 @@
 
 | Ne | Kapanış |
 |---|---|
-| Madde 23 · Faz 0 — YZ seviye kadranının ölçüm aleti (`simulate-ai-levels`), Kolay N=4 | 6 Eylül 2026 |
+| Madde 23 · Faz 0 — YZ seviye kadranının ölçüm aleti (`simulate-ai-levels`), Kolay N=3 | 6 Eylül 2026 |
 | Hata avı geçişi (incelemenin 2. geçişi) | 5 Eylül 2026 |
 | Performans geçişi (incelemenin 3. geçişi) | 5 Eylül 2026 |
 | Temizlik geçişi (incelemenin 4. geçişi) | 5 Eylül 2026 |
@@ -2209,9 +2209,10 @@ Karar verildi (23.2: B); bu faz artık yalnızca alet + ön eleme.
   yolu bayt-eş kalır" sözleşmesi burada da aynen uygulandı.
 - Süre: 200 oyun ≈ 3 dk (tek çekirdek). Beş N paralel koşuldu.
 
-**Sonuç:** Kolay için **N=4** (%33; hedef ~%30). Planın N=3 tahmini 24
-oyunluk eski tablonun gürültüsüne dayanıyordu (%25 sanılan değer 200
-oyunda %36 çıktı). Ayrıca ilk koltuk avantajı ölçüldü (~12 puan; iki aynı
+**Sonuç:** Kolay için **N=3** (%36; hedef ~%30). Ölçüm sayısal olarak
+N=4'ü (%33) daha yakın gösterdi ve ajan onu önerdi; kullanıcı %36'yı kabul
+etti (*"36 ok"*), planın özgün adayı kaldı. Planın %25 varsayımı 24
+oyunluk eski tablonun gürültüsüydü (200 oyunda %36). Ayrıca ilk koltuk avantajı ölçüldü (~12 puan; iki aynı
 motor: 1. koltuk 64/100, 2. koltuk 39/100) — insanın yerel 2 kişilik oyunda
 her zaman 1. koltukta olduğu düşünülürse sahadaki %48,7 bu avantajı zaten
 içeriyor. Tablo ve gerekçe backlog notunda.
