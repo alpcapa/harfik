@@ -87,7 +87,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Console (elle)** | — | ✅ **KAPANDI** (bu satır 31 Ağustos'a kadar bayat kaldı; ayrıntı aşağıda) |
 | **1.0.4'e binecek kod** | Faz 6 istemci yarısı (rozet sıfırlama + sürüm damgası) · Faz 7 (iki çökme) · **+ #10 hata hız sınırı** (1 Eylül'de eklendi) | ✅ **1.0.4 (467) Play'e YÜKLENDİ, incelemede** (1 Eylül 2026) |
 | **1.0.5'e binen kod** | Tahta zoom'u (+2 APK turu) · zoom tanıtım balonu · yazı ölçeği (sınıf 3+2) · mesaj kutusu etiketi · **cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar)** | ✅ **TUR KAPANDI** — `1.0.5 (501) — 4a0a29b` kapalı testte yayında (~15:03) ve üç işin cihaz doğrulaması da alındı (2 Eylül, kullanıcı). Ayrıntı: arşiv → "1.0.5 SÜRÜM TURU" |
-| **1.0.6'ya binen kod** | Biten Canlı oyunun haberi (`OYUN BİTTİ`/`TESLİM OLDUN` + `YENİ` rozeti + sekme sayacı) · skor kartında kafa kafaya oran çubuğu · `Tüm Oyunlar` etiketinin tekleşmesi · **oyun geçmişine "Tekrar Oyna" (rövanş)** | ⏳ **`1.0.6 (525) — 711eaaa` kapalı testte YAYINDA** (4 Eylül, Submission 12; inceleme ≤29 dk). Kullanıcı kuralı sağlandı: APK önce cihazda koşuldu (§0-§4'ün koşulabilir maddeleri geçti). **TUR HENÜZ KAPANMADI.** Play imzalı paket 4 Eylül'de cihaza kuruldu ve §7'nin "güncelleme yokken pencere çıkmamalı" dalı geçti. §4.5 (davet linki uygulamayı açıyor) da geçti ve App Links doğrulamasını kanıtladı. Kalanlar: §4.1 (kayıt onayı) + kabul akışının uygulama içi maddeleri — ikisi de **YENİ bir hesap** ister (Ironman ↔ T3 zaten arkadaş, T2 Play'in test hesabı) · §1.4 ("ŞİMDİ DEĞİL") de KAPANDI (4 Eylül, kullanıcı gözlemi) · §7'nin "güncelleme VARKEN" dalı — ancak 1.0.6 kuruluyken 1.0.7 yayınlanınca koşulabilir. Kanonik paket kütüğü: `mobile/docs/surumler.md` |
+| **1.0.6'ya binen kod** | Biten Canlı oyunun haberi (`OYUN BİTTİ`/`TESLİM OLDUN` + `YENİ` rozeti + sekme sayacı) · skor kartında kafa kafaya oran çubuğu · `Tüm Oyunlar` etiketinin tekleşmesi · **oyun geçmişine "Tekrar Oyna" (rövanş)** | ⏳ **`1.0.6 (525) — 711eaaa`** 4 Eylül'de kapalı teste çıktı (Submission 12; inceleme ≤29 dk), **6 Eylül'de `1.0.7 (545) — 78383eb` devraldı; 1.0.8 gönderilmeyi bekliyor** (kütük: `mobile/docs/surumler.md`). Kullanıcı kuralı sağlandı: APK önce cihazda koşuldu (§0-§4'ün koşulabilir maddeleri geçti). **TUR HENÜZ KAPANMADI.** Play imzalı paket 4 Eylül'de cihaza kuruldu ve §7'nin "güncelleme yokken pencere çıkmamalı" dalı geçti. §4.5 (davet linki uygulamayı açıyor) da geçti ve App Links doğrulamasını kanıtladı. Kalanlar: §4.1 (kayıt onayı) + kabul akışının uygulama içi maddeleri — ikisi de **YENİ bir hesap** ister (Ironman ↔ T3 zaten arkadaş, T2 Play'in test hesabı) · §1.4 ("ŞİMDİ DEĞİL") de KAPANDI (4 Eylül, kullanıcı gözlemi) · §7'nin "güncelleme VARKEN" dalı — ancak 1.0.6 kuruluyken 1.0.7 yayınlanınca koşulabilir. Kanonik paket kütüğü: `mobile/docs/surumler.md` |
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); **1.0.5'in tamamı 2 Eylül'de onaylandı** (zoom turu, çevrimdışı şerit, filigranlar, balon, yazı ölçeği, mesaj etiketi) — kalan iki kalem bu ikisi |
 | **Karar verilmiş, yapılmamış** | — | ✅ Kova BOŞ: **#3** hatırlatma, **#8** iPad paylaşımı (3 Eylül cihazda doğrulandı) ve **#16** kart düzeni kapandı; üçü de arşivde |
 | **Ertelendi** | #2 zorunlu güncelleme | ✅ **KAPANDI/ARŞİVDE** (2 Eylül 2026, kullanıcı: *"Artık app'de güncelleme çıkıyor, bunu görünce zaten yapar"*). ⚠ Sürüm kapısı DURUYOR ve artık KULLANILABİLİR — acil fren olarak `app_config.mobile_min_supported_version` |
@@ -201,24 +201,47 @@ Kaynak kayıt: `marketing/play-store/console-formlari.md` §7.
 
 ## Sıradaki sürüme binecekler — `main`'de var, MAĞAZADA yok
 
+⚠ **DURUM (6 Eylül 2026, akşam): sürüm 1.0.8 HAZIR, Play'e GÖNDERİLMEYİ
+BEKLİYOR.** Sürüm adı iki dosyada birden 1.0.7 → **1.0.8** yapıldı
+(`pubspec.yaml` + `env.dart`, `app_version_parity_test` ikisini kilitliyor);
+`versionCode`u CI `--build-number` ile basıyor, yani koşu numarası bu PR
+`main`'e girince belli olur. Paketi kullanıcı ELLE yükleyecek — bu satır
+"gönderildi" demek DEĞİL. Gönderim tamamlandığında sırayla: kütüğe satır
+(`mobile/docs/surumler.md` → "Bir sürüm yüklendiğinde ne yapılır"), aşağıdaki
+liste sıfırlanır, "Kapalı testteki paket" satırı 1.0.8 + koşu numarası +
+merge commit'i olur, tur arşive taşınır.
+
+⚠ **`mobile-latest` her mobil derlemede ÜZERİNE yazılır** — 1.0.8 adı Play'e
+yüklenene kadar `main`'e giren her mobil iş bu paketi de değiştirir (1.0.4/467
+dersi, arşivde). Yüklemeden önce indirdiğin `.aab`nin derleme sha'sını
+`main`'in başıyla karşılaştır.
+
 **Kapalı testteki paket:** 1.0.7 (545) = commit `78383eb` (#461),
 6 Eylül 2026'da yayınlandı.
 
-**O paketten beri porta dokunan işler:**
+**O paketten beri porta dokunan işler — 1.0.8'in içeriği** (komut koşuldu:
+`git log --first-parent 78383eb..origin/main -- mobile/app/lib
+mobile/kelimeki_core/lib`, üç commit, tek konu):
 
 | Commit / PR | Ne | Neden porta dokunuyor |
 |---|---|---|
-| ROADMAP #23 Faz 3 (web ürün yüzeyi PR'ı) | `league_points.dart` imzasına `aiLevel` | k-lig formülü üç kopya; port yarısı web ile aynı PR'da değişti, çağıranlar Faz 4'e kaldı |
-| ROADMAP #23 Faz 4 (bu PR) | ZORLUK seçici (Setup) · Kolay/Zor rozeti üç kart + devam eden kartı · `games.ai_level` yazma/okuma · rövanş seviyeyi taşır · yardım paragrafı | Faz 3'ün port ikizi; sahadaki 1.0.7 Kolay satırını +2 GÖSTERİYOR (sunucu doğru sayıyor) — bu sürüme binince düzelir |
+| `fb5eb51` (#469) — ROADMAP #23 Faz 2 | `kelimeki_core` motoru: `findAIMoves` + `pickTopMove` + `aiLevelTopN`, `GameState.aiLevel` codec'i | Motorun Dart kopyası değişti. Normal bayt-eş (golden sıfır fark), kullanıcı fark görmez — ama pakete GİRDİ. ⚠ Önceki tablo bu satırı SAYMIYORDU (yalnızca Faz 3-4 vardı); 6 Eylül akşamı komut koşulunca çıktı — "listeye güvenme" kuralının bir örneği daha |
+| `a47c3d2` (#470) — ROADMAP #23 Faz 3 | `league_points.dart` imzasına `aiLevel` | k-lig formülü üç kopya; port yarısı web ile aynı PR'da değişti, çağıranlar Faz 4'e kaldı |
+| `42db22b` (#471) — ROADMAP #23 Faz 4 | ZORLUK seçici (Setup) · Kolay/Zor rozeti üç kart + devam eden kartı · `games.ai_level` yazma/okuma · rövanş seviyeyi taşır · yardım paragrafı | Faz 3'ün port ikizi; sahadaki 1.0.7 Kolay satırını +2 GÖSTERİYOR (sunucu doğru sayıyor) — bu sürüme binince düzelir |
+
+Kullanıcıya görünen tek şey: **Yapay Zeka oyununda Zorluk (Kolay · Normal),
+Kolay rozeti ve yarıya inen k-lig puanı.** Sürüm notu taslağı (367/500
+karakter) kütükte, 1.0.8 bölümünde.
 
 `main` ile mağazadaki paket bilerek ayrışabilir; bu bölüm o farkı görünür
 tutuyor, çünkü fark tam da unutulmaya müsait yerde duruyor — `main` yeşil,
 web canlı, CI derlemesi hazır, ama Play'e giden hiçbir otomatik yol YOK
 (gönderim elle).
 
-⚠ **Listeye GÜVENME, komutu koş.** Bu tablo iki kez eksik yakalandı: bir kez
-bölümü yazan PR kendi diff'ini saymamıştı (4 Eylül), bir kez de porta dokunan
-iki commit hiç eklenmemişti (5 Eylül — `#452` ve `#457`). İkincisinin bedeli
+⚠ **Listeye GÜVENME, komutu koş.** Bu tablo ÜÇ kez eksik yakalandı: bir kez
+bölümü yazan PR kendi diff'ini saymamıştı (4 Eylül), bir kez porta dokunan
+iki commit hiç eklenmemişti (5 Eylül — `#452` ve `#457`), bir kez de Faz 2'nin
+motor commit'i (6 Eylül — yukarıdaki ilk satır). İkincisinin bedeli
 ölçüldü: eksik liste yüzünden sürüm bir gün gecikti, üstelik eksiklerden biri
 gerçek bir hata düzeltmesiydi. Refleks:
 
@@ -235,53 +258,33 @@ gerçekleşmesi imkânsız bir ayırt etme yöntemi). Kayıt:
 `docs/decisions/roadmap-arsiv.md` → "1.0.7 sürüm turu".
 
 **Test penceresi:** 6 Eylül itibarıyla **11. gün**, 14. gün ≈ 10 Eylül.
-
-**Kalan günler için kullanıcının niyeti (KARAR DEĞİL, tartışma açık):**
-seviyeli YZ oyununu kalan günlere koymak. Ajanın çekincesi: madde
-`docs/decisions/product-backlog.md`'de duruyor ve dördü de oradan çıkıyor —
-(1) zorluk algoritmasının kendisi kullanıcı kararıyla BİLEREK ertelenmiş
-(*"Zorluk algoritmasını yaptığımız zaman değerlendiririz"*), (2) migration
-ŞART (puan `leaderboard`/`player_stats` view'larında hesaplandığından
-`games`e seviye alanı gerekiyor), (3) YZ motorun ÜÇ kopyasında yaşıyor
-(`src/utils/ai.ts` · `_game/ai.ts` · `kelimeki_core/find_move.dart`) +
-golden vector'lar, (4) kaydın kendi uyarısı: yerel oyun skorları k-lig'e
-aktığından YZ'nin gücü değişince lider tablosunda eski/yeni dönem karışır ve
-bu *"bir sürüm sınırına denk getirilmeli"*. Ajanın önerisi: üretime çıkıştan
-sonraki İLK özellik yapmak, kalan günleri başvuruyu bekleyen iki işe ayırmak
-(`Preview questions` + tester'lardan YAZILI geri bildirim). **Kullanıcı bu
-öneriye henüz yanıt vermedi** — ama aynı gün #23'ün Faz 0-4'ü art arda
-yapıldı (dört çekincenin dördü de planla kapandı: algoritma kararı B,
-migration canlıda, üç kopya parite kapılarıyla, dönem karışması "Normal =
-bugünkü motor" seçimiyle yok); yani seviyeli YZ artık sıradaki sürüme
-BİNMEYE HAZIR bir iş, tartışılan bir fikir değil.
+"Kalan günlere ne konsun" tartışması KAPANDI: seviyeli YZ (#23 Faz 0-4) aynı
+gün bitti ve bu sürüme biniyor. Başvuru için hâlâ açık iki iş kod değil:
+`Preview questions`'ı okuyup cevap hazırlamak + tester'lardan YAZILI geri
+bildirim (bkz. "Sayaç" bölümü).
 
 **Göndermeden önce, sırayla:**
 
-1. **Sürüm adını elle artır — İKİ dosya birden:** `mobile/app/pubspec.yaml`
+1. ✅ **Sürüm adı artırıldı — İKİ dosya birden** (bu PR): `mobile/app/pubspec.yaml`
    (`version:`) **ve** `mobile/app/lib/src/config/env.dart` (`appVersion`).
-   İkisi parite testiyle zorunlu tutuluyor, biri unutulursa CI düşer.
    Derleme numarası (`versionCode`) ELLE VERİLMEZ — CI `--build-number` ile
    `github.run_number`ı basıyor, yani her koşu Play için yeni ve artan.
-2. **Cihaz turu:** `mobile/TESTING.md` bölüm 17'deki away-return maddeleri —
-   özellikle ÜÇ NEGATİF EŞ (kısa alt-tab sekmeyi değiştirmemeli, bekleyen
-   iş yokken dönüş yerinden etmemeli, açık oyun ekranında dönüş sekme
-   değiştirmemeli). Asıl risk pozitif dalda değil bunlarda: eşik yanlış
-   tarafa düşerse kullanıcı bilerek oturduğu sekmeden koparılır.
-   Ayrıca #443'ün yüzeyi: **Yardım → Hızlı Başlangıç** kartının 🏁 maddesi.
-   Metin web'le BİREBİR aynı olmalı (`HelpModal.tsx` ↔ `help_modal.dart`);
-   `help_modal_test.dart` cümlenin tamamını değil yalnızca "Yüksek puanı
-   olan kazanır" ibaresini görüyor, yani sapmayı CI yakalamaz.
-   Bir de #447'nin yüzeyi: **başkasının skor kartındaki** kafa kafaya
-   çubuğu — yüzdeler ve "N oyun" bara komşu mu, iki avatar hâlâ barla
-   aynı hizada mı, ve "TÜM OYUNLAR" butonu barla aynı yükseklikte mi
-   (satır artık `items-center` ↔ `CrossAxisAlignment.center`; hiza,
-   bloğun dikey SİMETRİSİNDEN geliyor — blok simetrisi bozulursa hiza da
-   bozulur).
+2. **Cihaz turu — bu sürümün tek konusu:** `mobile/TESTING.md` §13'teki
+   **"Seviyeye göre puan — Kolay"** maddesi (ZORLUK satırı `KOLAY · NORMAL`,
+   `ZOR` GÖRÜNMEMELİ; Kolay açıklaması; devam eden kartında altın `Kolay`
+   rozeti; oyun sonunda `Kolay` rozeti + k-lig **+1**; Son Oynadıklarım / Tüm
+   Oyunlarım / Favoriler'de aynı). Ardından #23.5'in Faz 4 kanıtı: **aynı
+   hesap, iki cihaz** — portta Kolay seçilip bitirilen oyun web'de aynı
+   puanla (+1) görünüyor ve tersi. Bir de `mobile/docs/testing-bildirimler.md`
+   §7'nin "güncelleme VARKEN" dalı: 1.0.7 kuruluyken 1.0.8 yayınlanınca Play
+   In-App Update penceresi çıkmalı — bu dal 1.0.6→1.0.7 geçişinde koşulmadı
+   (kayıt yok), bu tur ikinci fırsat.
 3. **Test ettiğin paketin TAZE olduğunu doğrula:** Setup'taki
-   `Derleme <sha>` satırı `main`'in başıyla aynı olmalı. Appetize'da
-   Android ve iOS AYRI zamanlarda tazeleniyor (bkz.
+   `Derleme <sha>` satırı `main`'in başıyla (bu PR'ın merge commit'i) aynı
+   olmalı. Appetize'da Android ve iOS AYRI zamanlarda tazeleniyor (bkz.
    `mobile/docs/test-ortamlari.md`), yani iOS'ta eski derlemeyi test etmek
-   kolay bir hata.
+   kolay bir hata. Kullanıcı kuralı: *"apk ile test edip sorunsuz olduğundan
+   emin olmadan aab yapılmayacak"* — APK turu geçmeden `.aab` yüklenmez.
 
 ## Güvenlik geçişi — açık kalan maddeler (5 Eylül 2026)
 
@@ -1433,3 +1436,70 @@ Model: Opus 5, efor `high`.
 | 3 | ✅ kod (6 Eylül 2026): Zorluk seçici + 4 kartta seviyeli puan/rozet, `list_liked_games` canlıda, `verify-league-points` 3 seviye yeşil, golden sıfır fark, smoke Kolay/Normal testleri. **Yayın kanıtı merge sonrası:** `curl kelimeki.com \| grep kelimeki-build` = `main` başı; Kolay'da biten oyunun kartı +1 gösteriyor ve `k_lig_siralama` aynı sayıyı veriyor |
 | 4 | ✅ kod (6 Eylül 2026): ZORLUK seçici + üç kartta seviyeli puan/rozet + devam eden kartı rozeti, `ai_level` kayıt/liste/Favoriler, `ai_level_parity_test` (web etiket/liste/açıklama/yardım paragrafı ↔ port), `flutter analyze` temiz. **Cihaz kanıtı sürüm turunda:** portta Kolay seçilip bitirilen oyun web'de aynı puanla görünüyor ve tersi (aynı hesap, iki cihaz) — `mobile/TESTING.md` §13 |
 | 5 | Zor motoru YZ↔YZ'de Normal'i ≥%70 yeniyor + sahada iki hafta: Kolay ~%30 / Zor ~%70 YZ kazanma bandında |
+
+
+### 23.6 Faz 5 başlangıç kiti — ölçüm + dikiş yerleri (6 Eylül 2026, kod YAZILMADI)
+
+Faz 4 sürüme binerken (1.0.8) Faz 5'in ilk turu için elde olan her şey
+burada; Faz 5'i açan oturum bunu okuyup doğrudan ölçüme başlasın. Her
+`dosya:satır` `main` başı `42db22b`'de ölçüldü.
+
+**Alet çalışıyor ve bütçesi belli.** `npm run simulate-ai-levels -- --oyun
+10 --n 1,4` `main`'de koştu: N başına **11 sn / 10 oyun ≈ 1,1 sn/oyun**, yani
+Faz 0'ın 200 oyunluk koşumu **≈ 4 dk / N**. 10 oyunun güven aralığı
+%31–%83 çıktı (N=1 bile "%60" göründü) — **200 oyunun altı karar için
+anlamsız**, Faz 0'ın 200 seçimi doğru; adayları tek tek + bileşim hâlinde
+ölçmek beş-altı koşum, yani yarım saatin altında.
+
+**Aletin boşluğu — Faz 5'in ilk kod işi:** `playOne` (`scripts/
+simulate-ai-levels.ts`) yalnızca `n` alıyor; "top-N koltuğu" üretimin
+`findAIMoves(..., n)` + `pickTopMove` çiftiyle sürülüyor, öteki koltuk
+reducer'ın `AI_PLAY`'i (Normal). Zor bir N değil bir MOTOR olduğundan alete
+bir `--motor <ad>` ekseni gerekir: koltuk seçici fonksiyonu (`state → AIMove
+| null`) alsın, `topN` bugünkü yol olsun, her aday kendi seçicisiyle
+kaydolsun. Normal koltuğu `AI_PLAY`'de KALIR — Normal'in bayt-eşliği aletle
+değil golden'larla kanıtlanır (23.4), alet yalnızca kazanma oranını ölçer.
+`AI_LEVEL_TOP_N.zor = 1` bugün "Zor = Normal" demek; Zor motoru gelince bu
+sabit tek başına yetmez, `findAIMove`'un `level` dalı N'in yanına motor
+seçimini de koymalı (üç kopyada).
+
+**Dört adayın dikiş yerleri (23.2) — üç kopya, aynı satırlar:**
+
+| Aday | Web `src/utils/ai.ts` | Dart `kelimeki_core/lib/src/ai/find_move.dart` | Edge `supabase/functions/_game/ai.ts` |
+|---|---|---|---|
+| 1. Havuz 8+ harf | `getWordPool` 24-32, filtre `length <= 7` satır 27 | satır 28 | satır 28 |
+| 2. Joker tasarrufu | `consumeRack` 37-55; jokeri İLK eksik harfte harcıyor (46-50) | 46-49 | aynı yapı |
+| 3. Raf-kalıntı değeri | `consider` 149-197: `score` 178'de hesaplanıyor, `rank` 181/196'da listeye giriyor — kalıntı puanı buraya eklenir | `consider` eşi | eşi |
+| 4. Bölge savunması | `territories` 147'de bir kez hesaplanıyor (`computeAllTerritories`); rakip bölgesini BÜYÜTECEK hücreleri bloke etme puanı `consider`'a girer | eşi | eşi |
+
+Aday 3 ve 4 `rank`'i değiştirir, aday 1 ve 2 aday KÜMESİNİ değiştirir —
+ikisi ayrı sınıf: küme değişikliği Normal'i de etkiler (havuz genişlerse
+Normal'in "en iyi hamlesi" değişir!), yani **aday 1/2 yalnızca `level ===
+'zor'` dalında açılmalı**, aksi hâlde golden'lar kırılır ve "Normal = bugünkü
+motor" kararı (23.2 B) sessizce bozulur.
+
+**Kapılar — Faz 5 PR'ı bunların hepsini geçmeden Zor seçici AÇILMAZ:**
+
+1. YZ↔YZ: Zor bileşimi Normal'i **≥%70** yeniyor (200 oyun, tohum 1, koltuk
+   değişimli — Faz 0 protokolü).
+2. Normal golden'ları **git diff boş** (bayt-eş); `reducer_ai2_kolay` yeşil.
+3. Yeni fixture `reducer_ai2_zor.json` + `ai_level.json`'a Zor satırı; Dart
+   `dart run test/run_all.dart` yeşil. Zor rastgele değer tüketiyorsa
+   `pickTopMove` sözleşmesiyle aynı disiplin (kaç çağrı, hangi sırayla —
+   Dart aynı sırayı izlemeli).
+4. `npm run verify-edge-engine-parity` yeşil (Edge kopyası eşitlenir; Canlı
+   YZ Normal kaldığından davranış değişmez) + `play-ai-turn` yeniden deploy
+   (`verify_jwt` mevcut değeriyle).
+5. Zor'u açmak: web `SELECTABLE_AI_LEVELS` (`src/utils/aiLevel.ts:23`) + port
+   `selectableAiLevels` (`mobile/app/lib/src/util/ai_level.dart:26`) AYNI
+   PR'da — `ai_level_parity_test` ayrışırsa düşer. "Zor" seçildiğinde web
+   `App.startLocalGame` ve portun `StartAction`ı `'zor'` yazar, Normal yine
+   yazılmaz (23.3 Faz 4 mirası 2).
+6. Kural metni üç kopya (`HelpModal.tsx` ↔ `help_modal.dart` ↔ `Landing.tsx`):
+   "henüz seçilemiyor" ibaresi kalkar, parite testi cümleyi kilitler.
+7. Web + port aynı sürüm haftasında; port için sürüm turu (bu bölümün
+   "Sıradaki sürüme binecekler" düzeni).
+
+**Saha ölçümü Faz 5'in parçası, sonrası değil:** `admin_ai_balance`
+seviye kırılımı iki hafta (Kolay ~%30 · Normal ~%51 · Zor ~%70 YZ kazanma);
+sapma varsa kadran ayarlanır, motor yeniden yazılmaz (23.3).
