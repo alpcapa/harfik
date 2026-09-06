@@ -189,14 +189,20 @@ yazılmasın. Kaynak kayıt: `marketing/play-store/console-formlari.md` §7.
 
 ## Sıradaki sürüme binecekler — `main`'de var, MAĞAZADA yok (4 Eylül 2026)
 
-⚠ **KARAR DEĞİŞTİ — 5 Eylül 2026 akşamı: sürüm YARIN (6 Eylül) gönderilecek.**
-Bekletme kararı 4 Eylül'de *"sürüme gönderme, daha üzerine yeni işler
-gelecek"* diyordu ve bugün de bir kez tekrarlandı (*"sürümü çıkartmaya
-değecek önemde değil bence, sürümü bekletelim"* — o an tablo üç satır
-görünüyordu). Tablo ÖLÇÜLÜP eksik iki satır eklenince kullanıcı kararı
-çevirdi: *"Aslında bayağı dolmuş. O zaman bunu yarın yeni sürüm ile
-gönderelim."* Yani karar tabloyu düzeltmenin doğrudan sonucu — bayat bir
-liste, bir sürümün gecikmesine mal oluyordu.
+⚠ **DURUM (6 Eylül 2026): sürüm 1.0.7 HAZIR, Play'e GÖNDERİLMEYİ BEKLİYOR.**
+Sürüm adı iki dosyada birden 1.0.6 → **1.0.7** yapıldı (`pubspec.yaml` +
+`env.dart`); `versionCode`u CI `--build-number` ile basıyor. Paketi
+kullanıcı ELLE yükleyecek — bu satır "gönderildi" demek DEĞİL. Gönderim
+tamamlandığında aşağıdaki liste sıfırlanmalı ve "Kapalı testteki paket"
+satırı 1.0.7 + yeni commit ile güncellenmeli.
+
+Karar 5 Eylül akşamı DEĞİŞTİ. Bekletme kararı 4 Eylül'de *"sürüme
+gönderme, daha üzerine yeni işler gelecek"* diyordu ve 5 Eylül'de bir kez
+tekrarlandı (*"sürümü çıkartmaya değecek önemde değil bence, sürümü
+bekletelim"* — o an tablo üç satır görünüyordu). Tablo ÖLÇÜLÜP eksik iki
+satır eklenince kullanıcı kararı çevirdi: *"Aslında bayağı dolmuş. O zaman
+bunu yarın yeni sürüm ile gönderelim."* Yani karar tabloyu düzeltmenin
+doğrudan sonucu — bayat bir liste, bir sürümün gecikmesine mal oluyordu.
 
 Aşağıdaki liste bu sürümün içeriğidir. Ağırlık merkezi hata düzeltmesi;
 en güçlü gerekçe **#452** (taş değiştirmede taslak taşların kaybolması,
