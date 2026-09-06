@@ -664,6 +664,61 @@ generate-meanings-db` → `README.md`'deki kelime sayısı.
 
 ---
 
+## 1.0.7 sürüm turu — ✅ **SAHADA** (6 Eylül 2026)
+
+Kapalı test (Alpha) kanalına gönderildi ve yayınlandı. **Kapalı testteki
+paket artık `1.0.7 (545)` = commit `78383eb`** (`versionCode` = CI koşu
+numarası; AAB sha256 `4df3928c…28837`, 6 Eylül 07:08:49 UTC).
+
+**Paketin içeriği** — 1.0.6 (`711eaaa`) paketinden beri porta dokunan işler:
+
+| Commit | Ne |
+|---|---|
+| `f75a12c` (#441) | arka plandan dönüş artık "ekrana giriş" sayılıyor — `away_return.dart` yeni, `setup_screen.dart` + `live_games_tab.dart` bağlandı |
+| `19e17fe` (#443) | Hızlı Başlangıç'ın oyun sonu cümlesi tek cümleye indi ve kazananı söylüyor — `help_modal.dart` + `help_modal_test.dart` |
+| `7312eb8` (#447) | Skor kartındaki kafa kafaya çubuğunun yazıları bara yaklaştı (10 → 2 px) ve "TÜM OYUNLAR" butonu barın hizasına oturdu — `player_score_card_modal.dart` |
+| `b1b9daf` (#452) | Taş değiştirmede taslak taşlar yok olmuyor + senkron rafı yeniden sıralarsa seçim düşüyor — `kelimeki_core/engine/reducer.dart` (motor düzeltmesi, iki yeni golden) |
+| `91325d5` (#457) | Temizlik: erişilemez `INIT` action'ı kaldırıldı (davranış değişmedi) |
+| `028a805` · `8796c6b` (#460) | Hesap menüsündeki k-lig puanı oturum boyunca donuyordu — `account_button.dart`; `Navigator.push` Setup'ı canlı tuttuğundan `initState` bir daha koşmuyor, o yüzden portta web'den ÇOK daha görünürdü |
+
+### Karar iki kez çevrildi ve sebebi BAYAT BİR LİSTEYDİ
+
+Bekletme kararı 4 Eylül'de verilmişti (*"sürüme gönderme, daha üzerine yeni
+işler gelecek"*) ve 5 Eylül akşamı tekrarlandı: *"sürümü çıkartmaya değecek
+önemde değil bence, sürümü bekletelim."* **O an tablo üç satır
+görünüyordu.** Tablo ölçülüp eksik iki satır (#452, #457) eklenince
+kullanıcı kararı çevirdi: *"Aslında bayağı dolmuş. O zaman bunu yarın yeni
+sürüm ile gönderelim."*
+
+Yani gecikmenin sebebi bir öncelik tercihi değil, **listenin kendisinin
+bayat olmasıydı** — ve eksik satırlardan biri (#452) gerçek bir veri kaybı
+hatasıydı. Bölümün "listeye bakma, komutu koş" uyarısının ölçülmüş bedeli
+bu turdur.
+
+### İki yanlış hüküm düzeltildi (ikisi de Console hakkında)
+
+Aynı turda ajan, Play Console'a erişimi olmadığı hâlde Console hakkında iki
+hüküm kurdu ve ikisi de yanlıştı:
+
+1. **"Yeni sürüm 14 gün sayacını sıfırlar mı?"** diye bir gönderim kapısı
+   uydurdu. Kullanıcı itiraz etti: *"14 gün sayacının yeni sürümle alakası
+   ne. Her gün neredeyse sürüm çıktık daha önce, bunu hiç sormadın?"* Cevap
+   zaten repodaydı — sayaç 27/28 Ağustos'ta başladı ve pencerenin içinde
+   ALTI sürüm çıktı (1.0.1 → 1.0.6, 29 Ağustos – 3 Eylül) ve kart saymaya
+   devam etti. Console'un **Submission activity** ekranı bunu bağımsız
+   olarak doğruladı: pencerede beş gönderim, hepsi `Published`.
+2. **"12 gerçek sayı mı, tavan mı"** açık sorusunda ayırt edici gözlem
+   olarak *"sayının 12'nin üstüne çıkması"* önerilmişti — o gözlem hiçbir
+   zaman gerçekleşemezdi. Kullanıcı kapattı: *"12 kişi Tavan, google daha
+   fazla olsa bile gerçek sayıyı göstermiyor."*
+
+**Kural (bu turdan çıktı):** Play Console hakkında bir şeyi kayda geçirmeden
+önce SOR. Erişimi olmayan taraf "bilinmiyor" ilan edemez — ya deponun kendi
+geçmişine bakar (`git log -p -- mobile/app/pubspec.yaml`), ya kullanıcıya
+sorar. İkisi de yapılmadığında biri gereksiz bir kapı, öteki kusurlu bir
+ölçüm yöntemi üretti.
+
+
 ## 1. `kelimeki://` deep link kanalı — **MAĞAZA BLOKERİ**
 
 *⚠ BU MADDE FİİLEN KAPANDI (30 Ağustos 2026, Faz 3'te ölçüldü) — aşağısı
