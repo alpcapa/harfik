@@ -2478,3 +2478,71 @@ SONRASI okunur — kod tarafı burada.
   zinciri, `logGameStart` telemetrisi (seviye kırılımı `admin_ai_balance`ta
   zaten var), `Landing.tsx` (k-lig bölümü sayı vermiyor, yeni terim
   gerekmedi).
+
+## 23 · Faz 4 — Port · ✅ YAPILDI (6 Eylül 2026)
+
+`ROADMAP.md` madde 23'ün (Seviyeli YZ) dördüncü fazı; madde AÇIK (Faz 5 Zor
+motoru), yalnızca bu faz kapandı. Faz metni buraya `ROADMAP.md` 23.3'ten
+taşındı. Cihaz kanıtı (23.5: aynı hesap iki cihaz, portta Kolay biten oyun
+web'de aynı puanla) kod bir Play sürümüne binince okunur — kod tarafı burada.
+
+**Faz 4 — Port (sürüm turu).** Model: Opus 5, efor `medium`; cihaz turu
+kullanıcıda.
+- `codec.dart` (`aiLevel` toleranslı parse), `game_controller`/reducer
+  `START` payload'ı, `setup_screen.dart` `_buildNewGameForm` seçici (web ile
+  aynı etiketler), `game_record.dart` `ai_level`, `games_api.dart`
+  `_listCols`, üç kart + `devam_eden_govde.dart`, `league_points.dart`
+  imzası + `text_wrap_test`/`layout_parity_test` etkisi (rozet genişliği
+  ölçülüyor mu, bak).
+- `mobile/TESTING.md` §13'e madde; `mobile/docs/surumler.md` paket kütüğü.
+- Parite testleri: kart metinleri web ile aynı (`icon_parity`/`layout_parity`
+  deseni).
+
+**Nasıl yapıldı (6 Eylül 2026):**
+- **Faz 2/3 zaten yarısını yapmıştı:** `codec.dart`ın toleranslı `aiLevel`
+  parse'ı, `StartAction(aiLevel:)`, reducer'ın `_startGame`i ve
+  `league_points.dart` imzası Faz 2/3 PR'larında gelmişti; Faz 4 yalnızca
+  ÜRÜN yüzeyini ve kayıt/liste yollarını bağladı. `devam_eden_govde.dart`a
+  DOKUNULMADI — rozet kartın SOL sütununa (`_SavedGameRow._solBlok`) girdi,
+  ortak gövde ve Canlı kartı aynen.
+- **Ürün sözlüğü tek dosyada — `util/ai_level.dart`** (web `aiLevel.ts`
+  ikizi): `aiLevelLabel`, `selectableAiLevels` (Zor YOK), `kolayAciklamasi`,
+  `aiLevelBadgeLabel` (Normal/null → null). **`ui/ai_level_badge.dart`**
+  (web `AiLevelBadge.tsx`): `game_history_modal`ın `_Badge` diliyle aynı,
+  altın, `xs`/`sm`; görünmezken `SizedBox.shrink()` döner ama çağıranlar
+  önündeki boşluğu `aiLevelBadgeLabel(...) != null` koşuluyla ekliyor —
+  Normal kartın ölçüleri bayt bayt aynı (web'de `null` dönen bileşen flex
+  `gap`i de açmıyor).
+- **Setup:** `OYUNCU SAYISI`nın altına `ZORLUK` (`_SectionLabel` +
+  `_ChoiceButton` ikizi, etiket `trUpper` ile `KOLAY`/`NORMAL`), Kolay
+  seçilince web ile birebir açıklama; `_startNewGame` →
+  `StartAction(..., aiLevel: _level == normal ? null : _level)` — **Normal
+  YAZILMAZ** (web `startLocalGame` sözleşmesi). `game_screen._handleRematch`
+  `state.aiLevel`i taşır. Devam eden kartı: avatarların altında rozet
+  (yalnızca Kolay/Zor'da `Column`a sarılır).
+- **Kayıt/liste:** `NewGameRecord.aiLevel` — `toJson` alanı YALNIZCA
+  doluysa yazar (`web_game_record.json` fikstürü seviyesiz, bayt-bayt
+  karşılaştırma bu sayede aynen geçiyor), `fromJson` toleranslı (eski kuyruk
+  satırı → null). `GameHistoryEntry.aiLevel` + `_listCols`a `ai_level`
+  (`list_liked_games` zaten döndürüyor, `fromJson` ortak). Üç kart
+  `leaguePoints(..., aiLevel:)` + rozet: GameOver (başlık altında `sm`),
+  Tüm Oyunlarım ("Yapay Zeka"nın sağında), Son Oynadıklarım (tarihin
+  yanında). `help_modal.dart`a zorluk paragrafı web ile birebir.
+- **Kapılar:** `test/ai_level_parity_test.dart` — web `aiLevel.ts`
+  etiketleri + `SELECTABLE_AI_LEVELS` ↔ Dart (Zor açılırken iki liste AYNI
+  PR'da), `Setup.tsx` Kolay açıklaması ↔ `kolayAciklamasi`, `HelpModal.tsx`
+  zorluk paragrafı ↔ `help_modal.dart` (işaretler atılıp düz metin
+  karşılaştırılıyor — `help_text_parity_test`in yakalamadığı "paragraf içi
+  cümle" sınıfı burada kapalı). `test/ai_level_test.dart` — üç kartta Kolay
+  golden'ıyla rozet + +1, Normal'de rozet yok + +2. `setup_screen_test` +3
+  (ZORLUK bloğu sırası/varsayılan/Zor yok/açıklama; Kolay → `state.aiLevel`
+  ve JSON'da `kolay`; Normal → anahtar YOK — ayrı test, aynı testte ikinci
+  `pumpSetup` ilk oyunun devam-eden kartını gösterip formu gizliyor). `game_record_test` +1 (Kolay
+  → `ai_level: kolay`, Normal → alan yok, kuyruk gidiş-dönüşü).
+  ⚠ `ai_level_parity_test` `mobile/` DIŞINDAN üç dosya okuyor (`src/utils/
+  aiLevel.ts`, `Setup.tsx`, `HelpModal.tsx`) — `web-ci.yml`in `paths`
+  listesinde `src/**` zaten var, ek satır gerekmedi.
+- **Dokunulmayan:** `kelimeki_core` (motor Faz 2'de bitti, golden'lar
+  aynen), `online_game_screen.dart`/`live_games_tab.dart` (Canlı'da seviye
+  yok), `cloud_save_repo.dart` (jsonb'yi codec olduğu gibi taşıyor),
+  `surumler.md` (paket yüklenmedi — kütük paketi tutar, tur ROADMAP'ta).

@@ -19,6 +19,8 @@ import 'modal_shell.dart';
 import 'player_badge.dart';
 import 'player_colors.dart';
 import '../tokens.dart';
+import '../ai_level_badge.dart';
+import '../../util/ai_level.dart';
 
 Future<void> showGameOverModal(BuildContext context, GameState state,
     {required VoidCallback onOpenHistory, VoidCallback? onFeedback}) {
@@ -81,6 +83,13 @@ class GameOverModal extends StatelessWidget {
               color: tie ? kGold : winColor.base,
             ),
           ),
+          // Zorluk rozeti (ROADMAP #23 Faz 4) — web `<AiLevelBadge size="sm">`:
+          // Normal'de HİÇ yok (`gap` bile açılmaz), Kolay/Zor'da başlığın
+          // hemen altında (k-lig sütununun neden +1/+4 gösterdiğini bu söylüyor).
+          if (aiLevelBadgeLabel(state.aiLevel) != null) ...[
+            const SizedBox(height: 18),
+            AiLevelBadge(level: state.aiLevel, size: AiLevelBadgeSize.sm),
+          ],
           const SizedBox(height: 18),
           Container(
             width: double.infinity,
@@ -107,7 +116,10 @@ class GameOverModal extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 for (final r in ranked) ...[
-                  _PlayerRow(entry: r, playerCount: state.players.length),
+                  _PlayerRow(
+                      entry: r,
+                      playerCount: state.players.length,
+                      aiLevel: state.aiLevel),
                   const SizedBox(height: 10),
                 ],
                 const Divider(height: 1, color: kBorder),
@@ -210,7 +222,11 @@ class _ColHeader extends StatelessWidget {
 class _PlayerRow extends StatelessWidget {
   final RankedPlayer entry;
   final int playerCount;
-  const _PlayerRow({required this.entry, required this.playerCount});
+
+  /// `GameState.aiLevel` — null = Normal (bugünkü tablo).
+  final AiLevel? aiLevel;
+  const _PlayerRow(
+      {required this.entry, required this.playerCount, this.aiLevel});
 
   @override
   Widget build(BuildContext context) {
@@ -224,8 +240,8 @@ class _PlayerRow extends StatelessWidget {
     // Kartı/k-lig listesi sessizce ayrışamaz. Buradaki "-2" TESLİM cezasıdır;
     // soldaki "Kalan" sütunundaki eksi ise raf taşı düşümü — iki farklı şey,
     // bu yüzden iki ayrı sütun ve iki ayrı başlık.
-    final points =
-        leaguePoints(entry.rank, playerCount, surrendered: p.surrendered);
+    final points = leaguePoints(entry.rank, playerCount,
+        surrendered: p.surrendered, aiLevel: aiLevel);
     return Row(
       children: [
         Expanded(

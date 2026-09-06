@@ -35,6 +35,8 @@ import '../game/player_badge.dart';
 import 'player_score_card_modal.dart';
 import 'score_box_row.dart';
 import '../tokens.dart';
+import '../ai_level_badge.dart';
+import '../../util/ai_level.dart';
 import '../loading_note.dart';
 import '../game/neo_box.dart';
 import 'icon_tap_rescue.dart';
@@ -986,6 +988,14 @@ class _EntryCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         const _Badge(text: 'Yapay Zeka', color: _accent),
                       ],
+                      // Zorluk rozeti (ROADMAP #23 Faz 4) — "Yapay Zeka"nın
+                      // hemen sağında, Normal'de YOK. `ai_level` iki
+                      // kaynaktan da geliyor (`_listCols` + `list_liked_games`),
+                      // eski satırlar null = Normal.
+                      if (aiLevelBadgeLabel(entry.aiLevel) != null) ...[
+                        const SizedBox(width: 6),
+                        AiLevelBadge(level: entry.aiLevel),
+                      ],
                       if (entry.messageCount > 0) ...[
                         const SizedBox(width: 6),
                         GestureDetector(
@@ -1115,7 +1125,8 @@ class _EntryCard extends StatelessWidget {
                           ? currentName!
                           : players[i].name,
                       points: leaguePoints(ranks[i], entry.playerCount,
-                          surrendered: players[i].surrendered),
+                          surrendered: players[i].surrendered,
+                          aiLevel: entry.aiLevel),
                     ),
                   if (unknownCount > 0)
                     Padding(

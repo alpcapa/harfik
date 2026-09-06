@@ -99,6 +99,16 @@ class NewGameRecord {
   /// platformu kuyruğa aynı şekilde yazıyor.
   final String? platform;
 
+  /// YZ zorluğu (ROADMAP #23 Faz 4 — web `gameRecord.ts` ile aynı sözleşme):
+  /// `GameState.aiLevel` Normal'de YOK (Faz 2: eski kayıt/golden/bulut hepsi
+  /// alansız = Normal); burada da aynen aktarılır ve `toJson` alanı YALNIZCA
+  /// doluysa yazar → sunucuda null = Normal (`league_points_for` ve
+  /// `admin_ai_balance` null'ı o dala düşürür). Yani Normal oyun eskisi gibi
+  /// alansız yazılır (`web_game_record.json` fikstürü bayt bayt aynı kalır),
+  /// yalnızca Kolay/Zor satırı gerçekten `kolay`/`zor` taşır. Kuyruğa da
+  /// aynı biçimde serileşir (`fromJson` toleranslı: eski kuyruk satırı → null).
+  final AiLevel? aiLevel;
+
   const NewGameRecord({
     required this.id,
     required this.createdAt,
@@ -118,6 +128,7 @@ class NewGameRecord {
     required this.boardSnapshot,
     required this.moves,
     required this.platform,
+    this.aiLevel,
   });
 
   /// PostgREST'e giden satır (sütun adları). `user_id` BURADA YOK — çağıran
@@ -141,6 +152,8 @@ class NewGameRecord {
         'board_snapshot': [for (final t in boardSnapshot) t.toJson()],
         'moves': [for (final m in moves) m.toJson()],
         'platform': platform,
+        // Web `...(state.aiLevel !== undefined ? { ai_level } : {})`.
+        if (aiLevel != null) 'ai_level': aiLevel!.json,
       };
 
   factory NewGameRecord.fromJson(Map<String, Object?> j) => NewGameRecord(
@@ -173,6 +186,7 @@ class NewGameRecord {
         // Bu alan eklenmeden ÖNCE kuyruğa girmiş kayıtlarda YOK — null kalır
         // (sütun nullable), kayıt yine gönderilir.
         platform: j['platform'] as String?,
+        aiLevel: AiLevelJson.parseOrNull(j['ai_level'] as String?),
       );
 }
 
@@ -338,5 +352,6 @@ NewGameRecord? buildGameRecord(
     boardSnapshot: serializeBoardSnapshot(state.board),
     moves: state.moveHistory,
     platform: currentPlatform,
+    aiLevel: state.aiLevel,
   );
 }

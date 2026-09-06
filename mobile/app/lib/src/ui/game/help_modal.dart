@@ -605,6 +605,16 @@ class _DetailedRules extends StatelessWidget {
               'ise sadece birinci **+2** puan alır; ikinci puan almaz. '
               'Beraberlikte aynı sırayı paylaşan oyuncuların hepsi o sıranın '
               'puanını alır.'),
+          // Zorluk (ROADMAP #23 Faz 4) — web HelpModal.tsx ile BİREBİR;
+          // `ai_level_parity_test.dart` cümlenin başını kilitliyor.
+          _P('Yapay Zeka\'ya karşı oynarken oyunun başında bir **zorluk** '
+              'seçersin: Kolay, Normal ya da Zor. Yukarıdaki puanlar Normal '
+              'içindir. Kolay\'da birinci **+1** alır, 4 kişilik oyunda ikinci '
+              'puan almaz; Zor\'da birinci **+4**, 4 kişilik oyunda ikinci '
+              '**+2** alır. Zorluk oyun boyunca değişmez ve 4 kişilik oyunda '
+              'üç Yapay Zeka\'ya birden uygulanır. Canlı oyunlarda zorluk '
+              'seçimi yoktur; oradaki Yapay Zeka Normal oynar ve puanlar '
+              'Normal tablosuna göre verilir.'),
           _P('Puan kaybettiğin tek durum var: bir oyunu **süresi içinde '
               'bitirmemek**. Canlı bir oyunda sıran sana geçtikten sonra 48 '
               'saat hamle yapmazsan, Yapay Zeka\'ya karşı devam eden bir '

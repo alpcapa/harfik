@@ -21,6 +21,7 @@ Map<String, Object?> gameRow({
   String? onlineGameId,
   List<Map<String, Object?>>? players,
   int messageCount = 0,
+  String? aiLevel,
 }) =>
     {
       'id': id,
@@ -34,6 +35,8 @@ Map<String, Object?> gameRow({
       'online_game_id': onlineGameId,
       'players': players,
       'message_count': messageCount,
+      // ROADMAP #23: `games.ai_level` — null = Normal (eski satırlar/Canlı).
+      'ai_level': aiLevel,
     };
 
 Map<String, Object?> snap(String name, int score,

@@ -136,6 +136,14 @@ class GameHistoryEntry {
   /// true olacak.
   final bool hasMoves;
 
+  /// YZ zorluğu (`games.ai_level`; ROADMAP #23 Faz 4). null = Normal:
+  /// seviyesiz eski kayıtlar, TÜM Canlı oyunlar, ve Normal seçilen oyunlar
+  /// (web/port Normal'i hiç yazmaz). Kartlar puanı
+  /// `leaguePoints(..., aiLevel:)` ile hesaplar ve rozeti yalnızca
+  /// Kolay/Zor'da çizer. İKİ kaynak da veriyor: `_listCols` ve
+  /// `list_liked_games` RPC'si (`20260906130756`).
+  final AiLevel? aiLevel;
+
   const GameHistoryEntry({
     required this.id,
     required this.userId,
@@ -151,6 +159,7 @@ class GameHistoryEntry {
     this.likedByMe = false,
     this.likeCount = 0,
     this.hasMoves = false,
+    this.aiLevel,
   });
 
   /// Beğeni durumunu değiştirilmiş bir kopya — hem `game_like_stats`
@@ -176,6 +185,7 @@ class GameHistoryEntry {
         likedByMe: likedByMe,
         likeCount: likeCount,
         hasMoves: hasMoves ?? this.hasMoves,
+        aiLevel: aiLevel,
       );
 
   /// Web `flipLike` — iyimser güncelleme; aynı çağrı geri almak için de
@@ -200,6 +210,8 @@ class GameHistoryEntry {
             GamePlayerSnapshot.fromJson((p as Map).cast<String, Object?>())
         ],
         messageCount: (j['message_count'] as num?)?.toInt() ?? 0,
+        // Toleranslı: kolon yok/null → Normal (sunucunun coalesce'i).
+        aiLevel: AiLevelJson.parseOrNull(j['ai_level'] as String?),
       );
 }
 
@@ -400,9 +412,11 @@ class SupabaseGamesGateway implements GamesGateway {
 
   /// Web ile AYNI sütun listesi (board_snapshot/messages yok — bkz.
   /// GameHistoryEntry).
+  /// `ai_level` 6 Eylül 2026'dan beri (ROADMAP #23; SELECT grant'i Faz 1
+  /// migration'ında) — kartlar puanı/rozeti bununla çizer.
   static const _listCols =
       'id, user_id, created_at, player_count, players, player_score, '
-      'ai_score, rank, surrendered, online_game_id';
+      'ai_score, rank, surrendered, online_game_id, ai_level';
 
   @override
   Future<List<Map<String, Object?>>> listGames({

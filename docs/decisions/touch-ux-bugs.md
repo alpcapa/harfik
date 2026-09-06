@@ -11,7 +11,9 @@ sorunlar olabilir mi?"* — jest yüzeylerinin tamamı iki platformda tarandı.
 
 ### Sınıf 1 — jestin İÇİNDE değişen ekran, o jestin click'ini yiyor
 
-Mekanizma ve joker vakası: "Joker (`?`)" bölümü. Mekanizma
+Mekanizma ve joker vakası: aşağıdaki "Joker düzenleme yolu — Sınıf 1'in
+ilk vakası" bölümü (6 Eylül 2026'da kök `CLAUDE.md`'nin "Joker" maddesinden
+buraya taşındı — doküman boyutu bütçesi, kural ↔ anlatı ayrımı). Mekanizma
 **`src/utils/ghostClick.ts`** (`swallowNextClick()`) — modül düzeyinde tek
 bayrak + tek capture dinleyicisi (aynı anda yalnızca BİR jest yaşar).
 Denetimde aynı sınıfın **iki örneği daha** bulundu ve düzeltildi:
@@ -1240,3 +1242,72 @@ Kullanıcı, oyun sonrası çıkan "Görüş Bildir" formuna (`FeedbackModal`) d
 **Gerçek düzeltme:** Aynı kurala `!important` eklendi (`input, textarea, select { font-size: 16px !important; }`) — specificity yarışını tamamen devre dışı bırakıyor, class'tan bağımsız her zaman kazanıyor. Derlenmiş CSS'te (`input,textarea,select{font-size:16px!important}`) doğrulandı.
 
 Bir sonraki form/modal eklendiğinde aynı deseni (küçük punto istense bile input/textarea/select elemanının kendisi hep ≥16px kalmalı) otomatik olarak miras alıyor — ayrı bir işlem gerekmiyor, kural elemente göre (class'tan bağımsız) uygulanıyor. **Ders:** Tailwind v3'te `@layer`/cascade-layer tabanlı bir öncelik varsayımı kurmadan önce derlenmiş CSS çıktısında gerçekten `@layer` üretilip üretilmediğini doğrula — sürüme göre değişebilir, varsayımla ilerlemek (ilk sürümde olduğu gibi) sessizce işe yaramayan bir düzeltmeye yol açabilir.
+
+## Joker düzenleme yolu — Sınıf 1'in ilk vakası (22 Ağustos 2026)
+
+Kök `CLAUDE.md` → "Oyun Mekaniği Özeti" → "Joker" maddesinden 6 Eylül
+2026'da satırları değiştirilmeden taşındı (dosya `auto` sınıfının uyarı
+bandına girmişti; orada yalnızca kural kaldı). Bağlam: tahtaya bu turda
+konmuş bir jokere tekrar dokunmak `WildcardModal`ı yeniden açar
+(`SET_WILD_LETTER`), taşı geri almaz.
+
+**BULUNAN HATA (22 Ağustos 2026, bir kullanıcı bildirdi — DOKUNMATİKTE bu
+düzenleme yolu baştan beri kırıktı):** *"Tahtaya joker koyup değiştirmek
+için üzerine tekrar tıkladığında tablo açılmadı ve önce konan A harfi
+C'ye döndü."* Kök sebep jokerde ya da reducer'da DEĞİL, olay sırasında:
+dokunmatik tarayıcılar bir jestin pointer olaylarından SONRA uyumluluk
+(compat) `mousedown`/`mouseup`/`click` üretir ve bu üçü hit-test'i
+**O ANDAKİ DOM** üzerinde yapar. Pencere `endDrag`in içinde, yani
+`pointerup` sırasında açıldığından (React ayrık olayı senkron flush eder),
+compat click artık hücrenin değil **YENİ RENDER EDİLMİŞ modalın** üstüne
+düşüyordu. Sonuç parmağın tahtadaki konumuna göre değişiyor — ikisi de
+kullanıcının tarifinde var: harf ızgarasındaki bir taşa denk gelirse joker
+sessizce başka bir harfe dönüyor, modalın zeminine denk gelirse pencere
+açıldığı anda kapanıyor ("tablo açılmadı").
+**ÖLÇÜLDÜ, tahmin edilmedi** (Chromium, `hasTouch`+`isMobile`, 390×844,
+jokerli bir kayıttan devam edilerek): olay zinciri `pointerdown → pointerup
+(hücre) → mousedown/mouseup/click (MODAL)`; tahtanın alt üç satırındaki
+hücreler harf ızgarasıyla örtüşüyor ve kullanıcının bildirdiği semptom
+birebir üretildi — (10,5)'te **A → C**, (11,5)'te A → Ğ, (12,7)'de A → H;
+üst satırlarda ise pencere zemine düşen click'le anında kapanıyordu.
+**Düzeltme yeni bir mekanizma DEĞİL, projenin kendi mekanizmasının doğru
+yere uygulanması:** iki ekranda da zaten bir sürükleme sonrası hayalet
+click'i yutan bir bayrak + belge düzeyinde capture dinleyicisi vardı;
+joker dalı da artık onu kuruyor. Mekanizma aynı gün **`src/utils/ghostClick.ts`**'e
+(`swallowNextClick()`) çıkarıldı — iki ekranın kopyaları tek kaynağa indi ve
+aynı sınıfın öteki iki örneği (aşağı bkz.) de oradan besleniyor. Bayrağın
+temizlenmesi `setTimeout(0)` yerine bir sonraki jestin `pointerdown`ına bağlandı —
+compat olayları AYNI jestin parçası ve kendileri pointerdown ÜRETMEZ
+(ölçüldü), yani temizleme olay sırasına bağlı; zamanlayıcı bu Chromium'da
+da işe yarıyor (ölçüldü) ama sıra hiçbir yerde garanti değil ve hatanın
+kendisi zaten tarayıcılar arası olay zamanlaması farkından doğuyor.
+Yutucu ayrıca `detail === 0` olan click'leri (klavyeyle tetiklenen
+Enter/Space) baştan dışarıda bırakıyor — onlar bir pointer jestinin
+parçası değil.
+**Yan fayda:** raftan SÜRÜKLENEREK konan bir joker de pencereyi aynı
+`pointerup` içinde açıyor; o dal da artık aynı korumayı taşıyor.
+**28 Ağustos 2026 — AYNI SINIFIN ÜÇÜNCÜ ÖRNEĞİ, yutmanın KAPSAMI dardı
+(bir kullanıcı bildirdi: *"tahtaya konan taşı geri almak için tıkladığında
+2 harf birden geri geliyor"*):** yutma yalnızca JOKER dalındaydı; sıradan
+taş geri alınınca compat click BOŞALMIŞ hücreye düşüyor ve "hiçbir şey
+yapmıyor" sayıldığı için yutulmuyordu. 27 Ağustos'ta eklenen boş-hücre
+kurtarması (`draftRescue.ts`) o varsayımı sessizce geçersiz kıldı: click
+artık komşudaki taslak taşı bulup ONU da geri alıyor. Ölçüldü (dokunmatik
+bağlam, iki komşu taslak): raf **5 → 7**, doğrusu 5 → 6. Yutmanın koşulu
+artık dalın türü DEĞİL jestin kaynağı — pointer akışından gelen dokunuş
+DOM'u her hâlükârda değiştiriyor. **Kural: Sınıf 1'de "bu click zaten
+hiçbir şey yapmıyor" gerekçesiyle yutmayı ATLAMA** — o bir davranış
+varsayımı ve başka bir PR onu haberin olmadan geçersiz kılabilir.
+Ayrıntı/ölçümler: `docs/decisions/touch-ux-bugs.md`.
+
+**Flutter portu ETKİLENMEDİ ve `mobile/` altında hiçbir değişiklik
+gerekmedi** — orada dokunuş Flutter'ın kendi hit-test'inden geçiyor,
+compat click diye bir şey yok (`game_screen.dart` → `_tapPlacedTile`).
+**Regresyon:** `tests/smoke.spec.ts` 22 → **23 test** (28 Ağustos'ta 38) — dokunmatik bir
+bağlamda (`test.use({ hasTouch, isMobile })`; masaüstü profilinde hata
+GÖRÜNMEZ, `tap()` bile çalışmaz) joker konup üzerine dokunuluyor: pencere
+açık kalmalı, harf değişmemeli, ve ardından GERÇEK bir harf seçimi hâlâ
+çalışmalı. Test, hücrenin harf ızgarasıyla gerçekten örtüştüğünü ayrıca
+ölçüyor — düzen değişip örtüşme kaybolursa testi sessizce geçirmek yerine
+düşürüyor. **Negatif eş:** joker dalındaki tek satır kaldırılınca test
+GERÇEKTEN düşüyor.

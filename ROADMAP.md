@@ -91,7 +91,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); **1.0.5'in tamamı 2 Eylül'de onaylandı** (zoom turu, çevrimdışı şerit, filigranlar, balon, yazı ölçeği, mesaj etiketi) — kalan iki kalem bu ikisi |
 | **Karar verilmiş, yapılmamış** | — | ✅ Kova BOŞ: **#3** hatırlatma, **#8** iPad paylaşımı (3 Eylül cihazda doğrulandı) ve **#16** kart düzeni kapandı; üçü de arşivde |
 | **Ertelendi** | #2 zorunlu güncelleme | ✅ **KAPANDI/ARŞİVDE** (2 Eylül 2026, kullanıcı: *"Artık app'de güncelleme çıkıyor, bunu görünce zaten yapar"*). ⚠ Sürüm kapısı DURUYOR ve artık KULLANILABİLİR — acil fren olarak `app_config.mobile_min_supported_version` |
-| **Seviyeli YZ** | **#23** Kolay/Normal/Zor + seviyeye göre k-lig puanı — 5 faz (sunucu → motor → web → port → Zor motoru) | ⬜ **Faz 0-3 ✅ (6 Eylül 2026; Faz 3 = web'de Zorluk seçici + seviyeli puan, merge'le yayına çıkar), Faz 4 (port) sırada**: karar verildi — Normal bugünkü motor, Kolay YZ ~%30, Zor YZ ~%70 (#23.0). Faz 0 ölçtü: **Kolay = N=4** (200 oyun/N; N=3 %36, N=4 %33, N=5 %22 — backlog notu) |
+| **Seviyeli YZ** | **#23** Kolay/Normal/Zor + seviyeye göre k-lig puanı — 5 faz (sunucu → motor → web → port → Zor motoru) | ⬜ **Faz 0-4 ✅ (6 Eylül 2026; Faz 3 = web'de Zorluk seçici + seviyeli puan, Faz 4 = portta aynısı — ikisi de merge/sürüm turuyla yayına çıkar), Faz 5 (Zor motoru) sırada**: karar verildi — Normal bugünkü motor, Kolay YZ ~%30, Zor YZ ~%70 (#23.0). Faz 0 ölçtü: **Kolay = N=4** (200 oyun/N; N=3 %36, N=4 %33, N=5 %22 — backlog notu) |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
 | **Play Store'a girdikten sonra** | **#17 Google ile giriş** — sunucu → web → mobil; migration BLOKER (OAuth bugün `handle_new_user`'da patlar) | ⏳ ERTELENDİ — acelesi yok, çalışan kimlik akışına şimdi dokunulmuyor (2 Eylül, kullanıcı). ⚠ Sayaçla İLİŞKİSİ YOK; o bağ aynı gün koptu, gerekçe #17'de |
@@ -204,7 +204,12 @@ Kaynak kayıt: `marketing/play-store/console-formlari.md` §7.
 **Kapalı testteki paket:** 1.0.7 (545) = commit `78383eb` (#461),
 6 Eylül 2026'da yayınlandı.
 
-**O paketten beri porta dokunan işler:** _(şu an YOK — liste boş)_
+**O paketten beri porta dokunan işler:**
+
+| Commit / PR | Ne | Neden porta dokunuyor |
+|---|---|---|
+| ROADMAP #23 Faz 3 (web ürün yüzeyi PR'ı) | `league_points.dart` imzasına `aiLevel` | k-lig formülü üç kopya; port yarısı web ile aynı PR'da değişti, çağıranlar Faz 4'e kaldı |
+| ROADMAP #23 Faz 4 (bu PR) | ZORLUK seçici (Setup) · Kolay/Zor rozeti üç kart + devam eden kartı · `games.ai_level` yazma/okuma · rövanş seviyeyi taşır · yardım paragrafı | Faz 3'ün port ikizi; sahadaki 1.0.7 Kolay satırını +2 GÖSTERİYOR (sunucu doğru sayıyor) — bu sürüme binince düzelir |
 
 `main` ile mağazadaki paket bilerek ayrışabilir; bu bölüm o farkı görünür
 tutuyor, çünkü fark tam da unutulmaya müsait yerde duruyor — `main` yeşil,
@@ -244,7 +249,11 @@ aktığından YZ'nin gücü değişince lider tablosunda eski/yeni dönem karı�
 bu *"bir sürüm sınırına denk getirilmeli"*. Ajanın önerisi: üretime çıkıştan
 sonraki İLK özellik yapmak, kalan günleri başvuruyu bekleyen iki işe ayırmak
 (`Preview questions` + tester'lardan YAZILI geri bildirim). **Kullanıcı bu
-öneriye henüz yanıt vermedi.**
+öneriye henüz yanıt vermedi** — ama aynı gün #23'ün Faz 0-4'ü art arda
+yapıldı (dört çekincenin dördü de planla kapandı: algoritma kararı B,
+migration canlıda, üç kopya parite kapılarıyla, dönem karışması "Normal =
+bugünkü motor" seçimiyle yok); yani seviyeli YZ artık sıradaki sürüme
+BİNMEYE HAZIR bir iş, tartışılan bir fikir değil.
 
 **Göndermeden önce, sırayla:**
 
@@ -1149,7 +1158,7 @@ döner — o an kaydedilmezse bir daha alınamaz.
 
 ---
 
-## 23. Seviyeli YZ (Kolay / Normal / Zor) + seviyeye göre k-lig puanı — **Faz 0-3 ✅ · Faz 4 sırada** (6 Eylül 2026)
+## 23. Seviyeli YZ (Kolay / Normal / Zor) + seviyeye göre k-lig puanı — **Faz 0-4 ✅ · Faz 5 sırada** (6 Eylül 2026)
 
 Kaynak: `docs/decisions/product-backlog.md` → "YZ zorluk seviyesi" (5 Eylül
 2026; kadran ölçümü, kapsam ve KESİN puan tablosu orada — burada
@@ -1356,17 +1365,24 @@ port Favoriler sekmesi aynı RPC'yi okuyor, kolon oradan da gelir.
   sayar), bulut kaydındaki `aiLevel`i yok sayıp YZ'yi N=1 oynatır. Pencere
   Faz 4 sürümüne kadar; kabul edildi.
 
-**Faz 4 — Port (sürüm turu).** Model: Opus 5, efor `medium`; cihaz turu
-kullanıcıda.
-- `codec.dart` (`aiLevel` toleranslı parse), `game_controller`/reducer
-  `START` payload'ı, `setup_screen.dart` `_buildNewGameForm` seçici (web ile
-  aynı etiketler), `game_record.dart` `ai_level`, `games_api.dart`
-  `_listCols`, üç kart + `devam_eden_govde.dart`, `league_points.dart`
-  imzası + `text_wrap_test`/`layout_parity_test` etkisi (rozet genişliği
-  ölçülüyor mu, bak).
-- `mobile/TESTING.md` §13'e madde; `mobile/docs/surumler.md` paket kütüğü.
-- Parite testleri: kart metinleri web ile aynı (`icon_parity`/`layout_parity`
-  deseni).
+**Faz 4 — Port · ✅ YAPILDI (6 Eylül 2026).** Kod `main`'e girince
+sıradaki sürüm turuna biner (Play'e gönderim elle — "Sıradaki sürüme
+binecekler" tablosuna yazıldı); 23.5'in cihaz kanıtı (aynı hesap, iki cihaz)
+o turda okunur. Faz metni ve nasıl yapıldığı arşivde:
+`docs/decisions/roadmap-arsiv.md` → "23 · Faz 4". Faz 5'e üç miras: (1)
+Zor'u açmak artık İKİ satırlık iş — web `SELECTABLE_AI_LEVELS` + port
+`selectableAiLevels` AYNI PR'da (`ai_level_parity_test` ayrışırsa CI'da
+düşer); rozet/puan/kayıt yolları `zor` değerini bugünden taşıyor. (2) Port
+da Normal'i HİÇ yazmıyor (`StartAction(aiLevel: null)`, `NewGameRecord`
+`ai_level` yalnızca doluysa) — Faz 5 bu sözleşmeyi bozmasın, `web_game_
+record.json` fikstürü ve golden'lar buna dayanıyor. (3) Kural metni ÜÇ
+kopya: `HelpModal.tsx` ↔ `help_modal.dart` (parite testi cümleyi kilitler)
+↔ `Landing.tsx` (k-lig bölümü sayı vermediğinden dokunulmadı) — Zor'un
+puanı metinde zaten var, Faz 5 yalnızca "henüz seçilemiyor"u kaldırır.
+- ⚠ **Sıra tuzağı KAPANDI:** Faz 3'ün "eski port sürümü Kolay satırını
+  Normal formülüyle gösterir" penceresi, bu kod bir Play sürümüne
+  bindiğinde biter — o güne kadar sahadaki 1.0.7 için hâlâ geçerli
+  (sunucu doğru sayar, yalnız gösterim +2).
 
 **Faz 5 — Zor motoru (kendi PR'ı; Kolay/Normal'den bağımsız çıkar).**
 Model: Opus 5, efor `high`.
@@ -1415,5 +1431,5 @@ Model: Opus 5, efor `high`.
 | 1 | ✅ migration canlıda (`20260906114252`), altı view/tablo karması öncesi/sonrası bayt-eş (953 oyun), `verify-league-points` CI'da yeşil (6 Eylül 2026) |
 | 2 | ✅ golden'lar yeni motorla yeniden üretildi → **git diff boş** (N=1 bayt-eş); `reducer_ai2_kolay` + `ai_level.json` Dart'ta yeşil (6871 kontrol); `verify-edge-engine-parity` `AI_LEVEL_TOP_N` kilidi + tohumlu Kolay adımıyla yeşil (32 pozisyon, 24'ünde Normal'den sapıyor); `play-ai-turn` deploy edildi, `verify_jwt=true` korundu (6 Eylül 2026) |
 | 3 | ✅ kod (6 Eylül 2026): Zorluk seçici + 4 kartta seviyeli puan/rozet, `list_liked_games` canlıda, `verify-league-points` 3 seviye yeşil, golden sıfır fark, smoke Kolay/Normal testleri. **Yayın kanıtı merge sonrası:** `curl kelimeki.com \| grep kelimeki-build` = `main` başı; Kolay'da biten oyunun kartı +1 gösteriyor ve `k_lig_siralama` aynı sayıyı veriyor |
-| 4 | cihazda: portta Kolay seçilip bitirilen oyun web'de aynı puanla görünüyor ve tersi (aynı hesap, iki cihaz) |
+| 4 | ✅ kod (6 Eylül 2026): ZORLUK seçici + üç kartta seviyeli puan/rozet + devam eden kartı rozeti, `ai_level` kayıt/liste/Favoriler, `ai_level_parity_test` (web etiket/liste/açıklama/yardım paragrafı ↔ port), `flutter analyze` temiz. **Cihaz kanıtı sürüm turunda:** portta Kolay seçilip bitirilen oyun web'de aynı puanla görünüyor ve tersi (aynı hesap, iki cihaz) — `mobile/TESTING.md` §13 |
 | 5 | Zor motoru YZ↔YZ'de Normal'i ≥%70 yeniyor + sahada iki hafta: Kolay ~%30 / Zor ~%70 YZ kazanma bandında |

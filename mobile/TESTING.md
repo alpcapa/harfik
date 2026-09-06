@@ -1272,6 +1272,27 @@ listesi kök `TESTING.md` bölüm 10.
 - [ ] **Uçak modu.** Ağ yokken banner çıkmamalı ve uygulama hiç
       takılmamalı; ağ dönüp uygulama öne alınınca (arka plandan dönüş)
       bekleyen kutlama kendiliğinden gösterilmeli.
+- [ ] **Seviyeye göre puan — Kolay (6 Eylül 2026, ROADMAP #23 Faz 4;
+      web'in aynı listesi kök `TESTING.md` §10).** Girişli hesapla Yapay
+      Zeka sekmesi → "+ Yeni" → `OYUNCU SAYISI`nın ALTINDA **ZORLUK**
+      satırı: `KOLAY` · `NORMAL`, Normal seçili; `ZOR` GÖRÜNMEMELİ (Faz
+      5'e kadar). KOLAY'a dokun: altında "k-lig puanı da yarıya iner"
+      açıklaması çıkmalı. Oyunu başlat, "← Geri" ile Setup'a dön: "DEVAM
+      EDEN OYUNLAR" kartında avatarların ALTINDA küçük altın `Kolay` rozeti
+      (Normal oyun kartında rozet YOK, bugünkü gibi). Oyunu birinci bitir:
+      oyun sonu penceresinde başlığın altında `Kolay` rozeti ve k-lig
+      sütununda **+1** (Normal'de +2). "Son Oynadıklarım"da tarihin yanında
+      rozet ve +1; "Tüm Oyunlarım"da "Yapay Zeka" rozetinin sağında `Kolay`
+      ve +1; kartı beğenip **Favoriler**'de de aç (ayrı RPC,
+      `list_liked_games`) — orada da +1. Skor Kartı/k-lig listesindeki
+      toplam da +1 artmalı (sunucu `league_points_for` ile aynı sayı; kart
+      +1 gösterirken liste +2 artıyorsa iki kopya ayrışmış demektir). Oyun
+      sonu "TEKRAR OYNA" → yeni oyun da Kolay (devam eden kartında rozet).
+      **Web ↔ port (ROADMAP 23.5 kapanış ölçütü):** portta Kolay bitirilen
+      oyun web'de aynı puan ve rozetle görünmeli, tersi de (aynı hesap, iki
+      cihaz); portta Kolay başlatılıp bulut kaydına düşen oyun web'de devam
+      ettirilince YZ Kolay oynamalı (Setup kartında rozet) ve tersi. Canlı
+      oyun kartlarında rozet HİÇBİR koşulda çıkmaz.
 - [ ] **Web ↔ mobil aynı toplam.** Aynı hesabın "Genel" lig puanı iki
       platformda BİREBİR aynı olmalı ("Genel = 2 kişilik + 4 kişilik +
       eşik ödülü" — mod bazlı sekmelerin toplamı ödül kadar EKSİK olur,

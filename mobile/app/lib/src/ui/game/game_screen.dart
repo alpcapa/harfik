@@ -605,9 +605,16 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     );
     if (!ok || !mounted) return;
     final playerCount = state.players.length;
-    controller.dispatch(StartAction([
-      for (final p in state.players) PlayerSetup(name: p.name, isAI: p.isAI),
-    ]));
+    controller.dispatch(StartAction(
+      [
+        for (final p in state.players)
+          PlayerSetup(name: p.name, isAI: p.isAI),
+      ],
+      // Aynı ZORLUK da (ROADMAP #23 Faz 4, web `App.tsx` rövanşıyla aynı):
+      // rövanş biten oyunun seviyesini taşır, Setup'a dönmeden Kolay'dan
+      // Normal'e geçilemez. Normal'de alan zaten null, yine yazılmaz.
+      aiLevel: state.aiLevel,
+    ));
     setState(() => _gameOverShown = false);
     _zoom.reset();
     // Anonim başlangıç sayacı — Setup'taki "Oyunu Başlat" ile AYNI olay
