@@ -108,6 +108,11 @@ bölümün kendi tarihli notuna taşınır.
   -2 ve revizyonda konuşulmadı. Varsayılan davranış "-2 olarak kalsın"
   olmalı; seviyeye göre ölçeklenmesi istenirse ayrıca sorulmalı.
 
+  **➜ Fazlı uygulama planı ve etki haritası: `ROADMAP.md` → madde 23 (6 Eylül
+  2026).** Oradaki 23.2 karar noktası (bugünkü motor Zor mu, Normal mi)
+  kod yazılmadan önce kullanıcıya soruluyor; bu madde plan kapanana kadar
+  burada kalır.
+
   **Zorluk algoritmasının kendisi (hangi seviye = hangi N) BİLEREK
   ertelendi** — kullanıcı: *"Zorluk algoritmasını yaptığımız zaman
   değerlendiririz."* Yukarıdaki ölçüm tablosu o değerlendirmenin girdisi.
