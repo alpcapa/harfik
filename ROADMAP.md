@@ -169,23 +169,34 @@ sekmesi — ⚠ oradaki sayı opt-in DEĞİL, **izin listesi**; indirme adedi i�
 ve tester'lardan **yazılı geri bildirim** toplamak (başvuru "testi nasıl
 yürüttün" diye soruyor).
 
-#### ⚠ "12" gerçek sayı mı, tavan mı — AÇIK SORU (2 Eylül 2026)
+#### ✅ "12" TAVAN — kapandı (6 Eylül 2026, kullanıcı tespiti)
 
-Burada *"Sayı tam 12 — pay yok"* yazıyordu ve bu bir ÖLÇÜM gibi
-okunuyordu. Kullanıcı 2 Eylül'de itiraz etti: *"12'den fazla katılım
-olduğunu düşünüyorum, çünkü dashboard'da sadece limit olan 12 kişi opt-in
-oldu diyormuş."* Kayıt bugün şunu söylüyor ve fazlasını söylemiyor:
+Kullanıcı, Console'a bakarak kapattı: *"12 kişi Tavan, google daha fazla
+olsa bile gerçek sayıyı göstermiyor."* Yani kart `min(gerçek, 12)`
+gösteriyor; 2 Eylül'deki sezgisi (*"12'den fazla katılım olduğunu
+düşünüyorum"*) doğruymuş.
 
-| Kanıt | Hangi tezi destekliyor |
+Eski kayıt iki tezi yan yana tutuyordu ve ayırt edici gözlem olarak
+*"sayının 12'nin ÜSTÜNE çıktığının bir kez görülmesi"*ni işaret ediyordu.
+**O gözlem hiçbir zaman gerçekleşemezdi** — tavan tam da onu engelliyor.
+Ayırt etme yöntemi olarak yanlış seçilmişti; doğru kaynak baştan beri
+Console'un kendisiydi ve ona yalnızca kullanıcı bakabiliyor (bu oturumların
+Play Console erişimi YOK).
+
+**Pratik sonucu — kartın sayısı bir kapasite ölçüsü DEĞİL:**
+
+| Soru | Kart cevaplıyor mu |
 |---|---|
-| Kart 26 Ağustos'ta **10** yazdı (eşiğin ALTINDA gerçek sayıyı gösterdi) | sayı GERÇEK |
-| Kart 28 Ağustos'tan beri **12** yazıyor ve şart tam 12 | `min(gerçek, 12)` bir tavan da aynı görünürdü |
+| Şart sağlanıyor mu (≥12)? | ✅ evet, 12 yazıyorsa sağlanıyor |
+| Kaç kişi var, payımız ne kadar? | ❌ hayır, 12'de sabitleniyor |
+| Biri düşerse eşiğin altına iner miyiz? | ❌ karttan ANLAŞILMAZ |
 
-İkisi de aynı verilere uyuyor; **bu oturumdan ölçülemez** (Play Console
-erişimi yok). Ayırt eden tek gözlem: sayının 12'nin ÜSTÜNE çıktığının bir
-kez görülmesi — o an tez biter. Görülene kadar planlama **12'yi taban**
-kabul etsin, ama *"biri düşerse sayaç sıfırlanır"* iddiası KESİN
-yazılmasın. Kaynak kayıt: `marketing/play-store/console-formlari.md` §7.
+Son satır önemli: *"biri düşerse sayaç sıfırlanır"* endişesi kartla
+yanıtlanamaz, çünkü kart payı gizliyor. Gerçek katılım için **Test →
+Closed testing → (track) → Testers** (izin listesi) ve **Statistics**
+(indirme) sekmelerine bakılmalı — ikisi de yukarıda tarif edildi.
+
+Kaynak kayıt: `marketing/play-store/console-formlari.md` §7.
 
 ## Sıradaki sürüme binecekler — `main`'de var, MAĞAZADA yok (4 Eylül 2026)
 

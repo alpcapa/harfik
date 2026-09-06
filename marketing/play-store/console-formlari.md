@@ -696,23 +696,28 @@ dolmadan okunabiliyor, cevaplar bu pencerede hazırlanmalı.
 
 **Kartın yazdığı sayı: 12.** İzin listesinde **56 adres** var.
 
-⚠ **DÜZELTME (2 Eylül 2026) — burada *"Ölçülen kritik gerçek: sayı TAM 12,
-yani pay YOK"* yazıyordu; bu bir ÖLÇÜM DEĞİL, bir OKUMAYDI.** Kullanıcı
-itiraz etti: *"12'den fazla katılım olduğunu düşünüyorum, çünkü dashboard'da
-sadece limit olan 12 kişi opt-in oldu diyormuş."* Kartın gösterdiği sayının
-gerçek opt-in adedi mi yoksa şartın tavanı mı (`min(gerçek, 12)`) olduğu
-**ölçülmedi** ve bu oturumdan ölçülemez.
+✅ **KAPANDI (6 Eylül 2026) — 12 bir TAVAN.** Kullanıcı Console'a bakarak
+kapattı: *"12 kişi Tavan, google daha fazla olsa bile gerçek sayıyı
+göstermiyor."* Yani kart `min(gerçek, 12)` gösteriyor.
 
-| Kanıt | Hangi tezi destekliyor |
-|---|---|
-| Aynı kart 26 Ağustos'ta **10** yazdı — eşiğin ALTINDA gerçek sayıyı gösteriyor | sayı GERÇEK |
-| 28 Ağustos'tan beri **12** ve şart tam 12 | tavan da aynı görünürdü |
+Bu bölüm iki kez yanlış yazıldı, iki farklı yönde — ikisi de aynı kök
+hatadan, **Console'a bakmadan Console hakkında hüküm kurmaktan**:
 
-**Ayırt eden tek gözlem:** sayının 12'nin ÜSTÜNE çıktığının bir kez
-görülmesi. Görülene kadar planlama 12'yi **taban** kabul etsin, ama
-*"biri düşerse sayaç sıfırlanır"* **KESİN yazılmasın** — o iddia yalnızca
-gerçek sayı tam 12 ise doğru. §7'nin "15-20 kişi topla, 12 tabandır"
-tavsiyesi her iki tezde de geçerli kalıyor (ucuz sigorta).
+1. Önce *"Ölçülen kritik gerçek: sayı TAM 12, yani pay YOK"* yazıyordu; bu
+   bir ölçüm değil bir OKUMAYDI. Kullanıcı 2 Eylül'de itiraz etti
+   (*"12'den fazla katılım olduğunu düşünüyorum"*) ve haklı çıktı.
+2. Sonra iki tez yan yana bırakıldı ve ayırt edici gözlem olarak *"sayının
+   12'nin ÜSTÜNE çıktığının bir kez görülmesi"* işaret edildi. **O gözlem
+   hiçbir zaman gerçekleşemezdi** — tavan tam da onu engelliyor. Yöntem
+   baştan kusurluydu.
+
+**Pratik sonucu — kartın sayısı bir kapasite ölçüsü DEĞİL:** şartın
+sağlandığını (≥12) söyler, ama kaç kişi olduğunu ve payın ne kadar
+olduğunu söyleMEZ. Dolayısıyla *"biri düşerse eşiğin altına iner miyiz"*
+sorusu **kartla yanıtlanamaz**; gerçek katılım için Test → Closed testing →
+(track) → **Testers** (izin listesi) ve **Statistics** (indirme)
+sekmelerine bakılmalı. §7'nin "15-20 kişi topla, 12 tabandır" tavsiyesi
+aynen geçerli — pay artık görünmediği için daha da değerli.
 
 **Sayaç 27/28 Ağustos'ta başladı, 14. gün ~10 Eylül 2026.** (Console'un günü
 tam olarak nasıl saydığı — opt-in anı mı, gün sonu mu — ölçülmedi; ±1 gün
