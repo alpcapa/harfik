@@ -132,8 +132,8 @@ bölümün kendi tarihli notuna taşınır.
   |---|---|---|---|---|---|
   | 1 (bugünkü) | %52 | %45–%59 | 224 | 216 | 12,1 |
   | 2 | %44 | %37–%51 | 229 | 207 | 11,3 |
-  | **3** | **%36** | %29–%42 | 233 | 196 | 10,8 |
-  | 4 | %33 | %27–%40 | 233 | 190 | 10,4 |
+  | 3 | %36 | %29–%42 | 233 | 196 | 10,8 |
+  | **4** | **%33** | %27–%40 | 233 | 190 | 10,4 |
   | 5 | %22 | %17–%28 | 244 | 178 | 9,7 |
 
   (N=1'de 2 berabere, kazanma oranı beraberlik dışı.) İki bulgu:
@@ -142,13 +142,13 @@ bölümün kendi tarihli notuna taşınır.
      **%36** (GA %29-42). 24 oyunun güven aralığı ±%17'ydi, yani fark
      gürültü — ama "N=3 hedefin tam üstünde" hükmü buna dayanıyordu ve
      YANLIŞTI. Hedef YZ ~%30 için (bugünkü motor sahada ~%51 → YZ↔YZ
-     sıfır çizgisi %52 ile ÇAKIŞIYOR, vekil doğrudan okunabilir) sayısal
-     olarak en yakın değer N=4 (%33); N=3 %36 ile hedefin biraz üstünde,
-     N=5 (%22) altında. Ajan N=4 önerdi; **kullanıcı %36'yı kabul etti
-     (6 Eylül 2026: *"36 ok"*) → Kolay için başlangıç N=3**, planın özgün
-     adayı. N=3 ile N=4'ün aralıkları zaten örtüşüyor — son sözü saha
-     (`admin_ai_balance` seviye kırılımı) söyler: Kolay'da YZ %30'un
-     belirgin üstünde kalırsa N=4, çok üstündeyse N=5.
+     sıfır çizgisi %52 ile ÇAKIŞIYOR, vekil doğrudan okunabilir) tabloda en
+     yakın değer **N=4 (%33)**; N=3 (%36) üstünde, N=5 (%22) altında.
+     **Kolay için başlangıç N=4** (kullanıcı 6 Eylül 2026, önce *"36 ok"*
+     deyip N=3'e döndü, sonra *"Senin önerin 4 daha mantıklı"* — nihai
+     karar N=4). N=3 ile N=4'ün aralıkları örtüşüyor —
+     son sözü saha (`admin_ai_balance` seviye kırılımı) söyler: Kolay'da YZ
+     %30'un belirgin üstünde kalırsa N=5, altına düşerse N=3.
   2. **İlk koltuk avantajı ÖLÇÜLDÜ ve büyük:** N=1'de (iki aynı motor) ilk
      koltuk **64/100**, ikinci koltuk **39/100** kazandı — ~12 puanlık fark,
      dört N'in hepsinde aynı yönde. Yerel 2 kişilik oyunda insan HER ZAMAN
