@@ -110,9 +110,13 @@ void main() {
     expect(p, w);
   });
 
-  test('rozet etiketi: Normal ve null → yok; Kolay/Zor → etiket', () {
+  test('rozet seviyesi: YZ oyununda her seviye (null = Normal), Canlı\'da yok', () {
+    expect(aiLevelForBadge(null, isAiGame: true), AiLevel.normal);
+    expect(aiLevelForBadge(AiLevel.kolay, isAiGame: true), AiLevel.kolay);
+    expect(aiLevelForBadge(AiLevel.kolay, isAiGame: false), isNull);
+    expect(aiLevelForBadge(null, isAiGame: false), isNull);
     expect(aiLevelBadgeLabel(null), isNull);
-    expect(aiLevelBadgeLabel(AiLevel.normal), isNull);
+    expect(aiLevelBadgeLabel(AiLevel.normal), 'Normal');
     expect(aiLevelBadgeLabel(AiLevel.kolay), 'Kolay');
     expect(aiLevelBadgeLabel(AiLevel.zor), 'Zor');
   });

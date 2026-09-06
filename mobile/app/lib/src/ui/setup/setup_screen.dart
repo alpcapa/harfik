@@ -1720,6 +1720,40 @@ class _SetupScreenState extends State<SetupScreen>
     );
   }
 
+  /// Zorluk seçici butonu — `_localSubTabBtn` ile AYNI kutu/punto/gölge
+  /// (rozetsiz); iki yer birlikte değişir. Web ikizi `Setup.tsx` ZORLUK
+  /// radyogrubu (`LiveGamesTab` alt-sekme sınıfı).
+  Widget _zorlukBtn(AiLevel lv) {
+    final active = _level == lv;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _level = lv),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: ShapeDecorationWithCssShadows(
+            color: active ? _accent : _panel,
+            borderColor: active ? _accent : _border,
+            radius: 6,
+            shadows: active ? kRaisedAccentShadows : kRaisedShadows,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            // Web `uppercase` — buton etiketi büyük, rozet küçük harf.
+            trUpper(aiLevelLabel[lv]!),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.5,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+              color: active ? Colors.white : _text,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildNewGameForm(SetWordSource? words, {bool showCancel = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1742,9 +1776,12 @@ class _SetupScreenState extends State<SetupScreen>
         ),
         const SizedBox(height: 20),
         // ZORLUK (ROADMAP #23 Faz 4, web Faz 3'ün ikizi) — `OYUNCU SAYISI`
-        // bloğunun İKİZİ: aynı başlık, aynı `_ChoiceButton` deseni, aynı
-        // sıra. Terminoloji TEK: "Zorluk: Kolay · Normal · Zor" (23.4).
-        // Zor Faz 5'e kadar gösterilmez — iki buton da `Expanded`, üçüncüsü
+        // bloğunun altında, aynı sıra. Buton stili büyük `_ChoiceButton`
+        // DEĞİL, Arkadaşınla sekmesinin alt-sekme pilleri (`_localSubTabBtn`
+        // / `LiveGamesTab._subTabBtn`: 11px, dikey 10 dolgu) — kullanıcı
+        // kararı (6 Eylül 2026 gece), web `Setup.tsx` aynı sınıf dizesine
+        // geçti. Terminoloji TEK: "Zorluk: Kolay · Normal · Zor" (23.4).
+        // Zor Faz 5'e kadar gösterilmez — her buton `Expanded`, üçüncüsü
         // gelince yerleşim kendiliğinden üçe bölünür (web `flex-1`).
         const _SectionLabel('ZORLUK'),
         const SizedBox(height: 8),
@@ -1752,14 +1789,7 @@ class _SetupScreenState extends State<SetupScreen>
           children: [
             for (final lv in selectableAiLevels) ...[
               if (lv != selectableAiLevels.first) const SizedBox(width: 8),
-              Expanded(
-                child: _ChoiceButton(
-                  // Web `uppercase` — buton etiketi büyük, rozet küçük harf.
-                  label: trUpper(aiLevelLabel[lv]!),
-                  selected: _level == lv,
-                  onTap: () => setState(() => _level = lv),
-                ),
-              ),
+              _zorlukBtn(lv),
             ],
           ],
         ),
@@ -2097,12 +2127,11 @@ class _SavedGameRow extends StatelessWidget {
     return (text: text, urgent: days < 1);
   }
 
-  /// Sol sütun: avatar şeridi; Kolay/Zor oyunda altında zorluk rozeti
-  /// (ROADMAP #23 Faz 4 — web `SavedGameRow`ın `flex-col gap-0.5` bloğu).
-  /// Normal'de YALNIZCA `PlayerAvatarRow` döner — `Column`a sarmak bile
-  /// yok ki bugünkü kartın ölçüleri (ve `kDevamEdenSolKey` testinin
-  /// ölçtüğü sol alan) bayt bayt aynı kalsın. ⚠ Aynı gövdeyi paylaşan
-  /// Canlı oyun kartı (`live_games_tab.dart`) ETKİLENMEZ — orada seviye yok.
+  /// Sol sütun: avatar şeridi + altında zorluk rozeti (ROADMAP #23 Faz 4 —
+  /// web `SavedGameRow`ın `flex-col gap-0.5` bloğu). Yerel kayıt her zaman
+  /// YZ oyunu → rozet her seviyede (6 Eylül 2026: Normal turuncu da çizilir).
+  /// ⚠ Aynı gövdeyi paylaşan Canlı oyun kartı (`live_games_tab.dart`)
+  /// ETKİLENMEZ — orada seviye yok.
   Widget _solBlok() {
     final avatarlar = PlayerAvatarRow(players: [
       for (final p in state.players)
@@ -2115,14 +2144,13 @@ class _SavedGameRow extends StatelessWidget {
           avatarUrl: p.isAI ? null : accountAvatarUrl,
         ),
     ]);
-    if (aiLevelBadgeLabel(state.aiLevel) == null) return avatarlar;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         avatarlar,
         const SizedBox(height: 2), // web gap-0.5
-        AiLevelBadge(level: state.aiLevel),
+        AiLevelBadge(level: aiLevelForBadge(state.aiLevel, isAiGame: true)),
       ],
     );
   }

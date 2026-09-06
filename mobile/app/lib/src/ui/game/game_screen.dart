@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
 import '../../data/auth_service.dart';
+import '../../util/ai_level.dart';
 import '../../storage/app_storage.dart';
 import '../../data/chat_api.dart';
 import '../../data/feedback_api.dart';
@@ -1100,7 +1101,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 // Yerel oyunda hamle geçmişi reducer'ın kendi state'inde —
                 // tahta altındaki "Hamleler" linkiyle AYNI kaynak.
                 onOpenHistory: () => showMoveHistoryModal(context, state),
-                onFeedback: auth == null ? null : openFeedback);
+                onFeedback: auth == null ? null : openFeedback,
+                // Yerel oyun = YZ oyunu → rozet her seviyede; Canlı ekran
+                // bu parametreyi hiç geçirmez.
+                aiLevel: aiLevelForBadge(state.aiLevel, isAiGame: true));
             if (!mounted || auth == null) return;
             openFeedback();
           });
@@ -1267,6 +1271,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                                         onBoardPointerCancel: _endBoardPan,
                                         onOpenHistory: () =>
                                             showMoveHistoryModal(context, state),
+                                        // Zorluk rozeti alt şeritte — yerel
+                                        // oyun her zaman YZ oyunu (her seviye).
+                                        aiLevel: aiLevelForBadge(state.aiLevel,
+                                            isAiGame: true),
                                         onOpenHelp: () => showHelpModal(context),
                                         onlineStatus: widget.onlineStatus,
                                         dragHiddenKey: _hiddenSource

@@ -2546,3 +2546,14 @@ kullanıcıda.
   aynen), `online_game_screen.dart`/`live_games_tab.dart` (Canlı'da seviye
   yok), `cloud_save_repo.dart` (jsonb'yi codec olduğu gibi taşıyor),
   `surumler.md` (paket yüklenmedi — kütük paketi tutar, tur ROADMAP'ta).
+
+**Aynı gece, cihaz turundan çıkan üç istek (6 Eylül 2026, web + port aynı
+PR):** (1) rozet renkleri **Kolay yeşil · Normal turuncu · Zor kırmızı** —
+yani Normal artık da çizilir; "rozet yalnızca sapınca" kuralı kalktı, yerine
+"YZ oyununda her seviyede, Canlı'da hiç" geldi (`aiLevelForBadge(raw,
+isAiGame)` iki tarafta; Canlı kartlar `online_game_id`, GameOver'da Canlı
+ekran seviyeyi hiç geçirmiyor). (2) Rozet tahtanın alt şeridinde de,
+"Hamleler"in yanında — Canlı'daki "· Mesajlaşma"nın yerinde; dokunulamaz,
+şeridin 48px/`TapTarget` sayımına girmez. (3) Zorluk seçici butonları
+Arkadaşınla sekmesinin alt-sekme pilleriyle aynı (11px, `py-2.5`), büyük
+"Oyuncu sayısı" butonu gibi değil. Port: Parça 191.

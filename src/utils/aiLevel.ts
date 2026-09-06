@@ -76,10 +76,29 @@ export function aiLevelOf(raw: unknown): AiLevel {
 }
 
 /**
- * Kartlarda rozet metni — Normal'de `null` (rozet YOK: bugüne kadarki her
- * kart aynen kalır, seviye yalnızca bugünkünden SAPINCA görünür — 23.3).
+ * Rozette gösterilecek seviye (6 Eylül 2026, kullanıcı kararı — "Kolay
+ * yeşil, Normal turuncu, Zor kırmızı"): YZ oyunuysa ham değer, `null` =
+ * Normal (seviyesiz eski kayıtlar dahil); Canlı oyunsa `null` → rozet YOK
+ * (Canlı'da seviye kavramı yok). Çağıran "YZ oyunu mu" kararını verir:
+ * kartlarda `online_game_id` boşluğu, paylaşım sayfasında kadroda YZ olması,
+ * oyun ekranında App.tsx (OnlineGameScreen hiç geçirmez).
  */
-export function aiLevelBadgeLabel(raw: unknown): string | null {
-  const level = aiLevelOf(raw);
-  return level === 'normal' ? null : AI_LEVEL_LABEL[level];
+export function aiLevelForBadge(raw: unknown, isAiGame: boolean): AiLevel | null {
+  return isAiGame ? aiLevelOf(raw) : null;
 }
+
+/** Rozet metni — `null`/`undefined` seviye (Canlı oyun) → rozet yok. */
+export function aiLevelBadgeLabel(level: AiLevel | null | undefined): string | null {
+  return level ? AI_LEVEL_LABEL[level] : null;
+}
+
+/**
+ * Rozet renk sınıfları — Tailwind JIT tam dizeleri görsün diye burada
+ * birleştirilmeden yazılı (`tailwind.config.js` renkleri: green/orange/red).
+ * Port ikizi `ai_level_badge.dart` → `_aiLevelBadgeColor` (kGreen/kOrange/kRed).
+ */
+export const AI_LEVEL_BADGE_CLASS: Record<AiLevel, string> = {
+  kolay: 'text-green border-green/40 bg-green/10',
+  normal: 'text-orange border-orange/40 bg-orange/10',
+  zor: 'text-red border-red/40 bg-red/10',
+};

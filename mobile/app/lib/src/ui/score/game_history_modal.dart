@@ -989,12 +989,15 @@ class _EntryCard extends StatelessWidget {
                         const _Badge(text: 'Yapay Zeka', color: _accent),
                       ],
                       // Zorluk rozeti (ROADMAP #23 Faz 4) — "Yapay Zeka"nın
-                      // hemen sağında, Normal'de YOK. `ai_level` iki
-                      // kaynaktan da geliyor (`_listCols` + `list_liked_games`),
-                      // eski satırlar null = Normal.
-                      if (aiLevelBadgeLabel(entry.aiLevel) != null) ...[
+                      // hemen sağında, YZ oyununda her seviyede (Normal
+                      // turuncu); Canlı'da YOK. `ai_level` iki kaynaktan da
+                      // geliyor (`_listCols` + `list_liked_games`), eski
+                      // satırlar null = Normal.
+                      if (!isOnline) ...[
                         const SizedBox(width: 6),
-                        AiLevelBadge(level: entry.aiLevel),
+                        AiLevelBadge(
+                            level: aiLevelForBadge(entry.aiLevel,
+                                isAiGame: true)),
                       ],
                       if (entry.messageCount > 0) ...[
                         const SizedBox(width: 6),

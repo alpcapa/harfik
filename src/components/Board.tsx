@@ -11,7 +11,7 @@ import {
   inBonusZone,
   type PlayerColor,
 } from '../game/constants';
-import type { GameState, MoveStatus } from '../game/types';
+import type { AiLevel, GameState, MoveStatus } from '../game/types';
 import { key } from '../utils/board';
 import { buildRoundedOutlinePath } from '../utils/outline';
 import {
@@ -22,6 +22,7 @@ import {
 } from '../utils/boardZoom';
 import { computeAllTerritories } from '../utils/validator';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { AiLevelBadge } from './AiLevelBadge';
 import { CountBadge } from './CountBadge';
 import { Tile } from './Tile';
 
@@ -41,6 +42,13 @@ interface BoardProps {
   moveStatus: MoveStatus | null;
   /** "Hamleler" linkine tıklanınca çağrılır. */
   onOpenHistory: () => void;
+  /**
+   * Alt şeritte "Hamleler"in yanındaki zorluk rozeti (6 Eylül 2026, kullanıcı
+   * isteği: rozet "Mesajlaşma"nın olduğu yerde de dursun). Yalnızca YZ oyunu
+   * geçirir (App.tsx, her seviyede); Canlı ekran geçirmez → rozet yok.
+   * Tıklanamaz, 48px asgarisini TAŞIMAZ — şeridin "beş öğe" sayımına girmez.
+   */
+  aiLevel?: AiLevel | null;
   /**
    * "Mesajlaşma" butonuna tıklanınca çağrılır — yalnızca Canlı (online
    * multiplayer) oyun ekranı (`OnlineGameScreen.tsx`) geçirir; verilmezse
@@ -169,6 +177,7 @@ export function Board({
   onCellClick,
   moveStatus,
   onOpenHistory,
+  aiLevel,
   onOpenHelp,
   onOpenMessaging,
   unreadMessageCount = 0,
@@ -903,6 +912,17 @@ export function Board({
               <DocumentIcon />
               Hamleler
             </button>
+            {/* Zorluk rozeti — YZ oyununda (App.tsx) "Hamleler"in sağında, Canlı'daki
+                "· Mesajlaşma"nın yerinde; ayraç aynı görünümde. Rozet ve ayracı
+                DOKUNULAMAZ, bu yüzden 48px asgarisi taşımazlar (şeridin "beş öğe"
+                sayımı `layout_parity_test`te kilitli); satır yüksekliğini
+                "Hamleler" veriyor, `items-center` ortalıyor. */}
+            {aiLevel && (
+              <>
+                <span className="text-muted text-[11px] leading-none shrink-0">·</span>
+                <AiLevelBadge level={aiLevel} size="sm" />
+              </>
+            )}
             {onOpenMessaging && (
               <>
                 <span className="text-muted text-[11px] flex items-center min-h-[48px] shrink-0">·</span>

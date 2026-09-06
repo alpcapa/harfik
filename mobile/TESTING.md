@@ -1282,10 +1282,16 @@ listesi kök `TESTING.md` bölüm 10.
       kazandırır."; 4 OYUNCULU'ya geçince cümleye ikincilik eklenir (Kolay:
       "ikincilik puan kazandırmaz", Normal: "birincilik 2, ikincilik 1 puan
       kazandırır"). Oyunu başlat, "← Geri" ile Setup'a dön: "DEVAM
-      EDEN OYUNLAR" kartında avatarların ALTINDA küçük altın `Kolay` rozeti
-      (Normal oyun kartında rozet YOK, bugünkü gibi). Oyunu birinci bitir:
-      oyun sonu penceresinde başlığın altında `Kolay` rozeti ve k-lig
-      sütununda **+1** (Normal'de +2). "Son Oynadıklarım"da tarihin yanında
+      EDEN OYUNLAR" kartında avatarların ALTINDA küçük YEŞİL `Kolay` rozeti
+      (Normal oyun kartında TURUNCU `Normal`; kural: Kolay yeşil · Normal
+      turuncu · Zor kırmızı, YZ oyununda her seviyede; Canlı kartında HİÇ
+      rozet yok — web ile aynı). ZORLUK butonları Arkadaşınla sekmesinin
+      DEVAM EDENLER / OYUN DAVETLERİ / SON OYNANANLAR pilleriyle AYNI boy ve
+      puntoda, OYUNCU SAYISI'nın büyük butonu gibi DEĞİL. Oyun içinde
+      tahtanın altındaki şeritte "Hamleler · Kolay" (Canlı oyunda orada
+      "· Mesajlaşma" var, rozet yok; şerit tek satırda kalmalı). Oyunu
+      birinci bitir: oyun sonu penceresinde başlığın altında `Kolay` rozeti
+      ve k-lig sütununda **+1** (Normal'de turuncu rozet, +2). "Son Oynadıklarım"da tarihin yanında
       rozet ve +1; "Tüm Oyunlarım"da "Yapay Zeka" rozetinin sağında `Kolay`
       ve +1; kartı beğenip **Favoriler**'de de aç (ayrı RPC,
       `list_liked_games`) — orada da +1. Skor Kartı/k-lig listesindeki

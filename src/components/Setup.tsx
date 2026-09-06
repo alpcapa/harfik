@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { GUEST_PLAYER_NAME, PLAYER_COLORS } from "../game/constants";
 import type { PlayerSetup } from "../game/gameReducer";
 import type { AiLevel } from "../game/types";
-import { AI_LEVEL_LABEL, SELECTABLE_AI_LEVELS, aiLevelDescription } from "../utils/aiLevel";
+import { AI_LEVEL_LABEL, SELECTABLE_AI_LEVELS, aiLevelDescription, aiLevelOf } from "../utils/aiLevel";
 import { AiLevelBadge } from "./AiLevelBadge";
 import { useAuth } from "../hooks/useAuth";
 import { useModalA11y } from "../hooks/useModalA11y";
@@ -179,8 +179,8 @@ function SavedGameRow({
   players: AvatarRowPlayer[];
   savedAtMs: number;
   willSurrender: boolean;
-  /** `GameState.aiLevel` — yoksa Normal, etiket çıkmaz (ROADMAP #23 Faz 3). */
-  aiLevel?: AiLevel;
+  /** `aiLevelOf(GameState.aiLevel)` — yerel kayıt her zaman YZ oyunu, rozet her seviyede (Normal turuncu). */
+  aiLevel: AiLevel;
   onClick: () => void;
 }) {
   const remaining = remainingTime(savedAtMs, willSurrender);
@@ -213,10 +213,10 @@ function SavedGameRow({
             `gap-0.5` bilerek duruyor, çünkü iki kartın sol tarafı aynı
             kaptan çıkıyor. */}
           <PlayerAvatarRow players={players} />
-          {/* Zorluk etiketi (ROADMAP #23 Faz 3) — Normal'de `null`, yani
-            bugünkü kart aynen; Kolay/Zor'da avatarların altında küçük bir
-            rozet. ⚠ Aynı düzeni paylaşan `LiveGamesTab` kartı ETKİLENMEZ —
-            o Canlı, orada seviye yok (kartın "X açtı" satırı bu yerde). */}
+          {/* Zorluk rozeti (ROADMAP #23 Faz 3; 6 Eylül 2026'dan beri Normal
+            de çizilir, turuncu) — avatarların altında. ⚠ Aynı düzeni
+            paylaşan `LiveGamesTab` kartı ETKİLENMEZ — o Canlı, orada seviye
+            yok (kartın "X açtı" satırı bu yerde). */}
           <AiLevelBadge level={aiLevel} />
         </span>
         {/* Metin ve punto `LiveGamesTab`'ın aktif oyun kartıyla BİREBİR
@@ -855,7 +855,7 @@ export function Setup({
               players={savedGameAvatars(savedGame.state.players, null, true)}
               savedAtMs={savedGame.savedAt}
               willSurrender={false}
-              aiLevel={savedGame.state.aiLevel}
+              aiLevel={aiLevelOf(savedGame.state.aiLevel)}
               onClick={onResumeGame}
             />
             <p className="text-[11px] text-muted font-mono leading-relaxed">
@@ -954,7 +954,7 @@ export function Setup({
                       )}
                       savedAtMs={Date.parse(save.updated_at)}
                       willSurrender={save.state.turnCount >= 2}
-                      aiLevel={save.state.aiLevel}
+                      aiLevel={aiLevelOf(save.state.aiLevel)}
                       onClick={() => onResumeCloudSave(save)}
                     />
                   ))}
@@ -993,9 +993,12 @@ export function Setup({
             </div>
 
             {/* ZORLUK (ROADMAP #23 Faz 3, 6 Eylül 2026) — "Oyuncu sayısı"
-              bloğunun İKİZİ: aynı başlık puntosu, aynı buton deseni, aynı
-              seçili/seçili-değil sınıfları; port `_buildNewGameForm`de
-              `OYUNCU SAYISI` bloğunun altına aynı sırayla gelir (Faz 4).
+              bloğunun altında; port `_buildNewGameForm`de aynı sırada (Faz 4).
+              Buton stili "Oyuncu sayısı"nın BÜYÜK butonu DEĞİL, Arkadaşınla
+              sekmesinin alt-sekme pilleri (`LiveGamesTab` → Devam Edenler /
+              Oyun Davetleri / Son Oynananlar: `py-2.5 text-[11px]
+              tracking-[0.5px]`) — kullanıcı kararı (6 Eylül 2026 gece);
+              sınıf dizesi oradakiyle BİREBİR, biri değişirse öteki de.
               Terminoloji TEK: "Zorluk: Kolay · Normal · Zor" (23.4). Seviye
               oyun BAŞINDA kilitlenir; 4 kişilikte üç YZ'ye birden uygulanır.
               Zor Faz 5'e kadar gösterilmez — iki buton da `flex-1`, üçüncüsü
@@ -1012,7 +1015,7 @@ export function Setup({
                     aria-checked={level === lv}
                     onClick={() => setLevel(lv)}
                     className={[
-                      "flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97]",
+                      "relative flex-1 py-2.5 rounded-md font-sans text-[11px] font-bold uppercase tracking-[0.5px] border transition-transform active:scale-[0.97] flex items-center justify-center",
                       level === lv
                         ? "btn-raised bg-accent text-white border-accent"
                         : "btn-raised-neutral bg-panel text-text border-border",

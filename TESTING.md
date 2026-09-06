@@ -812,10 +812,16 @@ gerekiyor).
       değilim… birincilik 1 puan kazandırır."; 4 Oyunculu'ya geçince cümleye
       ikincilik eklenir (Kolay: "ikincilik puan kazandırmaz", Normal:
       "birincilik 2, ikincilik 1 puan kazandırır"). Oyunu başlat, Setup'a
-      dönüp "Devam Edenler"e bak: kartta avatarların ALTINDA küçük altın
-      `Kolay` rozeti (Normal oyun kartında rozet YOK, bugünkü gibi). Oyunu
-      birinci bitir: oyun sonu ekranında başlığın altında `Kolay` rozeti ve
-      k-lig sütununda **+1** (Normal'de +2). "Son Oynadıklarım"da tarihin
+      dönüp "Devam Edenler"e bak: kartta avatarların ALTINDA küçük YEŞİL
+      `Kolay` rozeti (Normal oyun kartında TURUNCU `Normal`; 6 Eylül gece
+      kuralı: Kolay yeşil · Normal turuncu · Zor kırmızı, YZ oyununda her
+      seviyede; Canlı kartında HİÇ rozet yok). Zorluk butonları Arkadaşınla
+      sekmesinin Devam Edenler / Oyun Davetleri / Son Oynananlar pilleriyle
+      AYNI boy ve puntoda (küçük), "Oyuncu sayısı"nın büyük butonu gibi
+      DEĞİL. Oyun içinde tahtanın altındaki şeritte "Hamleler · Kolay"
+      (Canlı oyunda burada "· Mesajlaşma" var, rozet yok). Oyunu birinci
+      bitir: oyun sonu ekranında başlığın altında `Kolay` rozeti ve k-lig
+      sütununda **+1** (Normal'de turuncu rozet, +2). "Son Oynadıklarım"da tarihin
       yanında rozet ve +1; "Tüm Oyunlarım"da "Yapay Zeka" rozetinin sağında
       `Kolay` ve +1; aynı kartı beğenip **Favoriler** sekmesinde de aç —
       orada da +1 (bu sekme ayrı bir RPC'den okuyor, `list_liked_games`).

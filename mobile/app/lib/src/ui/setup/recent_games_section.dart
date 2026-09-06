@@ -409,12 +409,14 @@ class _RecentRow extends StatelessWidget {
                             fontFamily: 'SpaceMono',
                             fontSize: 9,
                             color: _muted)),
-                    // Zorluk rozeti (ROADMAP #23 Faz 4): tarihin yanında,
-                    // Normal'de YOK — bugünkü kart aynen. Canlı kartlarda
-                    // `ai_level` her zaman null, yani orada hiç çıkmaz.
-                    if (aiLevelBadgeLabel(entry.aiLevel) != null) ...[
+                    // Zorluk rozeti (ROADMAP #23 Faz 4): tarihin yanında, YZ
+                    // oyununda her seviyede (Normal turuncu); Canlı kartlarda
+                    // hiç çıkmaz.
+                    if (entry.onlineGameId == null) ...[
                       const SizedBox(width: 6), // web gap-1.5
-                      AiLevelBadge(level: entry.aiLevel),
+                      AiLevelBadge(
+                          level: aiLevelForBadge(entry.aiLevel,
+                              isAiGame: true)),
                     ],
                   ]),
                 ],

@@ -19,6 +19,7 @@ import 'neo_box.dart';
 import 'outline.dart';
 import 'player_colors.dart';
 import 'tile_widget.dart';
+import '../ai_level_badge.dart';
 import '../tap_target.dart';
 import '../tokens.dart';
 import '../../util/online_status.dart';
@@ -213,6 +214,13 @@ class BoardWidget extends StatelessWidget {
   final void Function(PointerUpEvent e)? onBoardPointerUp;
   final VoidCallback? onBoardPointerCancel;
 
+  /// Alt şeritte "Hamleler"in yanındaki zorluk rozeti (6 Eylül 2026, kullanıcı
+  /// isteği: rozet "Mesajlaşma"nın olduğu yerde de dursun). Yalnızca YZ
+  /// ekranı geçirir (her seviyede); Canlı ekran geçirmez → rozet yok.
+  /// Dokunulamaz — `TapTarget` DEĞİL, şeridin "üç TapTarget" sayımına
+  /// (`layout_parity_test`) girmez; 48 px satırda kendiliğinden ortalanır.
+  final AiLevel? aiLevel;
+
   /// Alt bilgi şeridindeki "Hamleler" linki — verilmezse link çizilmez
   /// (web'de zorunlu prop; burada ileride salt-okunur önizleme için
   /// opsiyonel).
@@ -400,6 +408,7 @@ class BoardWidget extends StatelessWidget {
     this.onBoardPointerUp,
     this.onBoardPointerCancel,
     this.onOpenHistory,
+    this.aiLevel,
     this.onOpenMessaging,
     this.unreadMessageCount = 0,
     this.onOpenHelp,
@@ -883,6 +892,17 @@ class BoardWidget extends StatelessWidget {
                     ],
                   ),
                 ),
+              // Zorluk rozeti — YZ oyununda "Hamleler"in sağında, Canlı'daki
+              // "· Mesajlaşma"nın yerinde; ayraç aynı görünümde (web
+              // `Board.tsx` ikizi).
+              if (aiLevel != null) ...[
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6),
+                  child:
+                      Text('·', style: TextStyle(fontSize: 11, color: kMuted)),
+                ),
+                AiLevelBadge(level: aiLevel, size: AiLevelBadgeSize.sm),
+              ],
               if (onOpenMessaging != null) ...[
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 6),

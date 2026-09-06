@@ -15,6 +15,7 @@ import { leaguePoints, formatLeaguePoints } from '../utils/leaguePoints';
 import { GameHistoryModal } from './GameHistoryModal';
 import { PlayerAvatarRow } from './PlayerAvatarRow';
 import { AiLevelBadge } from './AiLevelBadge';
+import { aiLevelForBadge } from '../utils/aiLevel';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('tr-TR');
@@ -257,10 +258,10 @@ export function RecentGamesSection({
                 )}
                 <span className="flex items-center gap-1.5 min-w-0">
                   <span className="text-[9px] font-mono text-muted truncate">{formatDate(g.created_at)}</span>
-                  {/* Zorluk rozeti (ROADMAP #23 Faz 3): tarihin yanında,
-                      Normal'de YOK — bugünkü kart aynen. Canlı kartlarda
-                      `ai_level` her zaman null, yani orada hiç çıkmaz. */}
-                  <AiLevelBadge level={g.ai_level} />
+                  {/* Zorluk rozeti (ROADMAP #23 Faz 3): tarihin yanında, YZ
+                      oyununda her seviyede (Normal turuncu); Canlı kartlarda
+                      hiç çıkmaz. */}
+                  <AiLevelBadge level={aiLevelForBadge(g.ai_level, !g.online_game_id)} />
                 </span>
               </span>
               {/* "Oyun Bitti" — 3 Eylül 2026, kullanıcı isteği.

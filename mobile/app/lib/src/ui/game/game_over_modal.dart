@@ -20,14 +20,18 @@ import 'player_badge.dart';
 import 'player_colors.dart';
 import '../tokens.dart';
 import '../ai_level_badge.dart';
-import '../../util/ai_level.dart';
 
 Future<void> showGameOverModal(BuildContext context, GameState state,
-    {required VoidCallback onOpenHistory, VoidCallback? onFeedback}) {
+    {required VoidCallback onOpenHistory,
+    VoidCallback? onFeedback,
+    AiLevel? aiLevel}) {
   return showDialog<void>(
     context: context,
     builder: (context) => GameOverModal(
-        state: state, onOpenHistory: onOpenHistory, onFeedback: onFeedback),
+        state: state,
+        onOpenHistory: onOpenHistory,
+        onFeedback: onFeedback,
+        aiLevel: aiLevel),
   );
 }
 
@@ -51,11 +55,17 @@ class GameOverModal extends StatelessWidget {
   /// "Görüş Bildir" linki — web GameOver `onOpenFeedback`.
   final VoidCallback? onFeedback;
 
+  /// Zorluk rozeti/puanı — YZ ekranı `aiLevelForBadge(state.aiLevel,
+  /// isAiGame: true)` geçirir (her seviyede, Normal turuncu); Canlı ekran
+  /// GEÇİRMEZ → rozet yok, puan Normal (web `GameOver.aiLevel` aynı).
+  final AiLevel? aiLevel;
+
   const GameOverModal(
       {super.key,
       required this.state,
       required this.onOpenHistory,
-      this.onFeedback});
+      this.onFeedback,
+      this.aiLevel});
 
   @override
   Widget build(BuildContext context) {
@@ -84,11 +94,11 @@ class GameOverModal extends StatelessWidget {
             ),
           ),
           // Zorluk rozeti (ROADMAP #23 Faz 4) — web `<AiLevelBadge size="sm">`:
-          // Normal'de HİÇ yok (`gap` bile açılmaz), Kolay/Zor'da başlığın
-          // hemen altında (k-lig sütununun neden +1/+4 gösterdiğini bu söylüyor).
-          if (aiLevelBadgeLabel(state.aiLevel) != null) ...[
+          // YZ oyununda her seviyede başlığın hemen altında; Canlı'da `aiLevel`
+          // null → yok (`gap` bile açılmaz).
+          if (aiLevel != null) ...[
             const SizedBox(height: 18),
-            AiLevelBadge(level: state.aiLevel, size: AiLevelBadgeSize.sm),
+            AiLevelBadge(level: aiLevel, size: AiLevelBadgeSize.sm),
           ],
           const SizedBox(height: 18),
           Container(
@@ -119,7 +129,7 @@ class GameOverModal extends StatelessWidget {
                   _PlayerRow(
                       entry: r,
                       playerCount: state.players.length,
-                      aiLevel: state.aiLevel),
+                      aiLevel: aiLevel),
                   const SizedBox(height: 10),
                 ],
                 const Divider(height: 1, color: kBorder),

@@ -47,6 +47,7 @@ import { useBoardZoom } from './hooks/useBoardZoom';
 import { getFormedWords, getFullWordAt, key } from './utils/board';
 import { nearbyDraftCell } from './utils/draftRescue';
 import type { AiLevel, GameState, Tile as TileModel } from './game/types';
+import { aiLevelOf } from './utils/aiLevel';
 import { Tile } from './components/Tile';
 import { trLower } from './utils/turkish';
 import { PLAYER_COLORS, SIZE } from './game/constants';
@@ -1771,6 +1772,10 @@ export default function App() {
         onCellClick={handleCellClick}
         moveStatus={moveStatus}
         onOpenHistory={() => setShowHistory(true)}
+        // Zorluk rozeti alt şeritte, "Hamleler"in yanında (6 Eylül 2026,
+        // kullanıcı isteği). Yerel oyun her zaman YZ oyunu → her seviyede
+        // (Normal dahil); OnlineGameScreen bu prop'u GEÇİRMEZ.
+        aiLevel={aiLevelOf(state.aiLevel)}
         // Aynı HelpModal'ı Tutorial da kullanıyor; kapanışta
         // `markQuickStartSeen()` çağrıldığından elle açmak da "görüldü"
         // sayılır — Setup'ın "Nasıl oynanır?" linkiyle aynı kural.
@@ -2091,7 +2096,7 @@ export default function App() {
         show={state.isGameOver && !gameOverDismissed}
         players={state.players}
         turnCount={state.turnCount}
-        aiLevel={state.aiLevel}
+        aiLevel={aiLevelOf(state.aiLevel)}
         onOpenHistory={() => setShowHistory(true)}
         onOpenFeedback={() => setShowFeedback(true)}
         onClose={() => {

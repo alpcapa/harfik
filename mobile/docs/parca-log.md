@@ -20,6 +20,33 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 191 — zorluk rozeti üç renk + tahta şeridinde + seçici
+     alt-sekme stilinde (6 Eylül 2026 gece, kullanıcı isteği; web + port
+     aynı PR):** *"kolay rozeti yeşil, normal turuncu, zor kırmızı olsun;
+     rozetleri boardun altındaki mesajlaşmanın olduğu yere de koyalım;
+     zorluk butonlarını Arkadaşınla alt-sekme buton stiliyle aynı yapalım."*
+     - **Kural değişti:** rozet artık YZ oyununda HER seviyede (Normal
+       turuncu da çizilir), yalnızca Canlı oyunda yok. "YZ oyunu mu" kararı
+       çağıranda: `aiLevelForBadge(raw, isAiGame:)` (web aynı ad) —
+       kartlarda `onlineGameId == null`, GameOver'da YZ ekranı geçirir /
+       Canlı ekran geçirmez (`showGameOverModal(aiLevel:)`), tahta şeridinde
+       `BoardWidget.aiLevel` yalnız `game_screen` verir. Renk
+       `aiLevelBadgeColor` (kGreen/kOrange/kRed) ↔ web `AI_LEVEL_BADGE_CLASS`.
+     - **Şerit:** rozet "Hamleler"in sağında, Canlı'daki "· Mesajlaşma"nın
+       yerinde, ayraç aynı; `TapTarget` DEĞİL — `layout_parity_test`in "üç
+       TapTarget / beş `min-h-[48px]`" sayımı bilerek korundu (web'de ayraç
+       ve rozet 48px sınıfı taşımıyor).
+     - **Seçici:** `_zorlukBtn` = `_localSubTabBtn`in rozetsiz ikizi (11px,
+       dikey 10 dolgu, aynı gölgeler); web `Setup.tsx` `LiveGamesTab`
+       alt-sekme sınıf dizesine geçti. `_SavedGameRow._solBlok` artık her
+       zaman `Column` (Normal'de de rozet var).
+     - **Doğrulama:** `flutter analyze` temiz; `ai_level_test` (Kolay
+       yeşil/+1, Normal turuncu/+2, Canlı rozetsiz — GameOver · Tüm Oyunlarım
+       · Son Oynadıklarım), `ai_level_parity_test` (`aiLevelForBadge` dört
+       dalı), setup/layout/text_scale/tap_target/game_screen takımları
+       yeşil; web `tsc` + smoke Kolay/Normal yeşil. **Sınır:** cihazda
+       renklerin ve şeridin tek satırda kaldığı görülmedi — §13 maddesi.
+
    - ✅ **Parça 190 — Zorluk seçicisinin açıklama metni: her seviyede,
      kullanıcıya hitapla, puanı `leaguePoints`ten (6 Eylül 2026 akşamı, web +
      port AYNI PR):** kullanıcı Kolay'ın altındaki *"en iyi birkaç hamleden
