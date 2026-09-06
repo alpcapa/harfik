@@ -65,6 +65,8 @@ import '../game/player_avatar_row.dart';
 import '../game/player_colors.dart';
 import '../../util/game_list_order.dart';
 import '../devam_eden_govde.dart';
+import '../ai_level_badge.dart';
+import '../../util/ai_level.dart';
 import '../live/live_games_tab.dart';
 import '../rank/league_rewards_host.dart';
 import '../auth/account_button.dart';
@@ -112,6 +114,14 @@ enum _LocalSubTab { active, recent }
 class _SetupScreenState extends State<SetupScreen>
     with WidgetsBindingObserver, RouteAware {
   int _count = 2;
+
+  /// ZORLUK (ROADMAP #23 Faz 4 — web `Setup.tsx`in `level` state'i): varsayılan
+  /// Normal (bugünkü motor), her yeni oyun formu açılışında Normal'e döner;
+  /// misafirde de var (misafir de YZ'ye karşı oynuyor: kaydı/puanı yok ama
+  /// seçim yine anlamlı). Zor, Faz 5'e kadar seçenek listesinde YOK
+  /// (`selectableAiLevels`). Oyun BAŞINDA kilitlenir, 4 kişilikte üç YZ'ye
+  /// birden uygulanır.
+  AiLevel _level = AiLevel.normal;
 
   /// Web `mainView` ('local' | 'live') — OYUN TİPİ sekmeleri. Canlı sekme
   /// yalnızca görünümü değiştirir; YZ tarafının state'i (kayıtlar/form)
@@ -979,11 +989,19 @@ class _SetupScreenState extends State<SetupScreen>
     // açıksa hesap sahibi (accountName), değilse misafir; diğerleri
     // "Yapay Zeka N" adıyla YZ.
     final me = widget.services.auth.accountName ?? guestPlayerName;
-    controller.dispatch(StartAction([
-      PlayerSetup(name: me, isAI: false),
-      for (var i = 1; i < _count; i++)
-        PlayerSetup(name: 'Yapay Zeka ${i + 1}', isAI: true),
-    ]));
+    controller.dispatch(StartAction(
+      [
+        PlayerSetup(name: me, isAI: false),
+        for (var i = 1; i < _count; i++)
+          PlayerSetup(name: 'Yapay Zeka ${i + 1}', isAI: true),
+      ],
+      // Zorluk (ROADMAP #23 Faz 4): Normal payload'a GİRMEZ — web
+      // `App.startLocalGame` ile aynı sözleşme ("alan yok = Normal": eski
+      // kayıtlar, golden'lar, bulut kaydı, `games.ai_level` null). `normal`
+      // yazmak aynı şeyi ikinci bir biçimde söylemek olurdu. Yalnızca
+      // Kolay/Zor state'e yazılır; oyun boyunca değişmez.
+      aiLevel: _level == AiLevel.normal ? null : _level,
+    ));
     // Anonim başlangıç sayacı (web `logGameStart` paritesi, ROADMAP #9).
     // Fire-and-forget ve AWAIT EDİLMEZ: telemetri oyunun açılmasını
     // geciktiremez, hatası da `logStart`ın içinde yutuluyor.
@@ -1723,6 +1741,43 @@ class _SetupScreenState extends State<SetupScreen>
           ],
         ),
         const SizedBox(height: 20),
+        // ZORLUK (ROADMAP #23 Faz 4, web Faz 3'ün ikizi) — `OYUNCU SAYISI`
+        // bloğunun İKİZİ: aynı başlık, aynı `_ChoiceButton` deseni, aynı
+        // sıra. Terminoloji TEK: "Zorluk: Kolay · Normal · Zor" (23.4).
+        // Zor Faz 5'e kadar gösterilmez — iki buton da `Expanded`, üçüncüsü
+        // gelince yerleşim kendiliğinden üçe bölünür (web `flex-1`).
+        const _SectionLabel('ZORLUK'),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            for (final lv in selectableAiLevels) ...[
+              if (lv != selectableAiLevels.first) const SizedBox(width: 8),
+              Expanded(
+                child: _ChoiceButton(
+                  // Web `uppercase` — buton etiketi büyük, rozet küçük harf.
+                  label: trUpper(aiLevelLabel[lv]!),
+                  selected: _level == lv,
+                  onTap: () => setState(() => _level = lv),
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (_level == AiLevel.kolay) ...[
+          const SizedBox(height: 8),
+          // Web `text-[11px] text-muted font-mono leading-relaxed` — misafir
+          // formundaki "7 gün saklanır" paragrafıyla aynı stil.
+          const Text(
+            kolayAciklamasi,
+            style: TextStyle(
+              fontFamily: 'SpaceMono',
+              fontSize: 11,
+              height: 1.5,
+              color: _muted,
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
         const _SectionLabel('OYUNCULAR'),
         const SizedBox(height: 8),
         for (var i = 0; i < _count; i++) ...[
@@ -2041,6 +2096,36 @@ class _SavedGameRow extends StatelessWidget {
     return (text: text, urgent: days < 1);
   }
 
+  /// Sol sütun: avatar şeridi; Kolay/Zor oyunda altında zorluk rozeti
+  /// (ROADMAP #23 Faz 4 — web `SavedGameRow`ın `flex-col gap-0.5` bloğu).
+  /// Normal'de YALNIZCA `PlayerAvatarRow` döner — `Column`a sarmak bile
+  /// yok ki bugünkü kartın ölçüleri (ve `kDevamEdenSolKey` testinin
+  /// ölçtüğü sol alan) bayt bayt aynı kalsın. ⚠ Aynı gövdeyi paylaşan
+  /// Canlı oyun kartı (`live_games_tab.dart`) ETKİLENMEZ — orada seviye yok.
+  Widget _solBlok() {
+    final avatarlar = PlayerAvatarRow(players: [
+      for (final p in state.players)
+        AvatarRowPlayer(
+          name: p.name,
+          isAi: p.isAI,
+          // Yerel oyunda insan koltuk HER ZAMAN bu cihazdaki kişi;
+          // misafirse profil/ad yok → "?" yedeği.
+          isGuest: !p.isAI && isGuest,
+          avatarUrl: p.isAI ? null : accountAvatarUrl,
+        ),
+    ]);
+    if (aiLevelBadgeLabel(state.aiLevel) == null) return avatarlar;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        avatarlar,
+        const SizedBox(height: 2), // web gap-0.5
+        AiLevelBadge(level: state.aiLevel),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final remaining = _remaining();
@@ -2056,17 +2141,7 @@ class _SavedGameRow extends StatelessWidget {
         // (`devam_eden_govde.dart`) — Canlı oyun kartı da aynı dosyadan
         // besleniyor, açıklamanın tek kopyası orada.
         child: DevamEdenGovde(
-          sol: PlayerAvatarRow(players: [
-            for (final p in state.players)
-              AvatarRowPlayer(
-                name: p.name,
-                isAi: p.isAI,
-                // Yerel oyunda insan koltuk HER ZAMAN bu cihazdaki kişi;
-                // misafirse profil/ad yok → "?" yedeği.
-                isGuest: !p.isAI && isGuest,
-                avatarUrl: p.isAI ? null : accountAvatarUrl,
-              ),
-          ]),
+          sol: _solBlok(),
           // Koşul YOK: yerel kayıt her zaman hesap sahibinin sırasında
           // duruyor (Canlı kartının aksine, orası "SIRA RAKİPTE" de olabilir).
           durum: Text.rich(

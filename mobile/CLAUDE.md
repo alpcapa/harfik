@@ -524,7 +524,7 @@ mobile/
       util/                # saf yardımcılar: deep_link, push_rules, semver,
                            # share_board + web ikizleri (game_list_order,
                            # recent_game_avatars, head_to_head, platform,
-                           # away_return)
+                           # away_return, ai_level)
     test/                  # util + controller (golden replay) + widget testleri
                            # + support/ (paylaşılan test altyapısı)
     android/ ios/          # flutter create çıktısı + elle değişiklikler
@@ -534,7 +534,10 @@ mobile/
     test/run_all.dart      # `dart run test/run_all.dart` + goldens/*.json
 ```
 
-**Ağaçtan çıkan, her zaman geçerli İKİ kural:**
+**Ağaçtan çıkan, her zaman geçerli İKİ kural** (+ bir sözleşme: YZ zorluğunda
+**Normal HİÇ YAZILMAZ** — `StartAction(aiLevel: null)`, `NewGameRecord`
+`ai_level`i yalnızca doluysa; "alan yok = Normal" web/golden/bulut kaydı/
+sunucu `coalesce` ile ortak, bkz. ROADMAP #23):
 
 1. **ÜRETİLMİŞ dosyalar elle düzenlenmez** — kaynağı değiştir, üreticiyi koş:
    `assets/icon/*` (`mobile/scripts/generate-app-icon-masters.mjs`) ·
@@ -551,7 +554,9 @@ mobile/
    SESSİZ arızadır. Çoğunun bir kapısı var (`app/test/*_parity_test.dart`:
    özellik ikonları, ilişki ikonları, MethodChannel/bildirim kanalı adları,
    k-lig kademeleri, `platform.dart`in değer kümesi ↔ sunucu kısıtı, yardım
-   metni, giriş sekmesi kuralı, `appVersion` ↔ `pubspec`) — **yeni bir
+   metni, giriş sekmesi kuralı, `appVersion` ↔ `pubspec`, YZ zorluğunun
+   etiket/seçilebilir liste/Kolay açıklaması/yardım paragrafı —
+   `ai_level_parity_test`, 6 Eylül 2026) — **yeni bir
    elle-senkron çift eklerken testini de yaz**, desen hazır (web kaynağını/
    migration'ı okuyup karşılaştır). Bugün kapısı OLMAYAN iki çift:
    `intro_screen.dart` metinleri ↔ `Landing.tsx`, ve k-lig kademe

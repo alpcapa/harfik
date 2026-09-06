@@ -6,7 +6,8 @@
 // GameHistoryModal · RecentGamesSection · SharedGamePage; Setup'ın "devam
 // eden oyun" satırı da. Görsel dil `GameHistoryModal`ın "Yapay Zeka"
 // rozetiyle aynı (kenarlıklı, %10 zemin, 7px mono) — yan yana duruyorlar.
-// Port ikizi Faz 4'te gelir; metin `AI_LEVEL_LABEL`den, iki tarafta aynı.
+// Port ikizi `mobile/app/lib/src/ui/ai_level_badge.dart` (Faz 4); metin
+// `AI_LEVEL_LABEL`den, iki tarafta aynı (`ai_level_parity_test.dart`).
 import { aiLevelBadgeLabel } from '../utils/aiLevel';
 
 interface AiLevelBadgeProps {

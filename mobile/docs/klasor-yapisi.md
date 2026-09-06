@@ -76,7 +76,9 @@ mobile/
                              # "hafif süpürme" + Realtime aboneliği + kova
                              # filtreleri/süre etiketleri (saf fonksiyonlar)
       data/cloud_save_repo.dart   # local_game_saves senkronu (girişli YZ oyunları)
-      data/game_record.dart  # buildGameRecord portu (`games` satırı)
+      data/game_record.dart  # buildGameRecord portu (`games` satırı) — `ai_level`
+                             # YALNIZCA doluysa yazılır (Normal = alan yok; fikstür
+                             # `web_game_record.json` bayt-bayt buna dayanır)
       data/games_api.dart    # games/game_finishes + dayanıklı kuyruk/flush +
                              # beğeni (toggle/stats/likers/list_liked_games) +
                              # dondurulmuş sohbet (messages/chat_flags)
@@ -301,6 +303,10 @@ mobile/
                              # ile ELLE senkron — `away_return_test.dart` eşiği
                              # WEB DOSYASINI OKUYARAK kilitliyor, biri değişip
                              # öteki kalırsa test paketi düşer
+      util/ai_level.dart     # YZ zorluğunun ÜRÜN yüzü (web `aiLevel.ts` ikizi):
+                             # etiketler, Setup'ta seçilebilir liste (Zor Faz 5'e
+                             # kadar YOK), Kolay açıklaması, rozet metni (Normal →
+                             # null) — `ai_level_parity_test` web kaynağıyla kilitler
       util/platform.dart      # bu istemcinin platformu (ios/android/app-web) —
                              # telemetri; web `src/utils/platform.ts` karşılığı,
                              # değer kümesi sunucu kısıtıyla ELLE senkron

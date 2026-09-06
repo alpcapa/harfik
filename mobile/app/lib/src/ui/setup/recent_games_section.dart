@@ -12,6 +12,8 @@ import '../../data/games_api.dart';
 import '../../data/stats_api.dart';
 import '../../util/recent_game_avatars.dart';
 import '../game/player_avatar_row.dart';
+import '../ai_level_badge.dart';
+import '../../util/ai_level.dart';
 import '../text_scale.dart';
 import '../score/game_history_modal.dart';
 import '../tap_target.dart';
@@ -317,7 +319,7 @@ class _RecentRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final points = leaguePoints(_rankFor(entry), entry.playerCount,
-        surrendered: entry.surrendered);
+        surrendered: entry.surrendered, aiLevel: entry.aiLevel);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -401,9 +403,20 @@ class _RecentRow extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: _text)),
                   const SizedBox(height: 2),
-                  Text(_formatDate(entry.createdAt),
-                      style: const TextStyle(
-                          fontFamily: 'SpaceMono', fontSize: 9, color: _muted)),
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(_formatDate(entry.createdAt),
+                        style: const TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 9,
+                            color: _muted)),
+                    // Zorluk rozeti (ROADMAP #23 Faz 4): tarihin yanında,
+                    // Normal'de YOK — bugünkü kart aynen. Canlı kartlarda
+                    // `ai_level` her zaman null, yani orada hiç çıkmaz.
+                    if (aiLevelBadgeLabel(entry.aiLevel) != null) ...[
+                      const SizedBox(width: 6), // web gap-1.5
+                      AiLevelBadge(level: entry.aiLevel),
+                    ],
+                  ]),
                 ],
               ),
             ),

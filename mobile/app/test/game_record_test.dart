@@ -123,6 +123,30 @@ void main() {
       expect(record.rank, 4);
     });
 
+    test('ai_level (ROADMAP #23 Faz 4): Kolay state → satırda `kolay`; '
+        'Normal/eski state → anahtar HİÇ yok (web gameRecord.ts sözleşmesi)',
+        () {
+      final (state, expected) = scenario('finishedNormal');
+      // Fikstür seviyesiz — web de Normal'de alanı yazmıyor; yukarıdaki
+      // bayt-bayt karşılaştırma bunu zaten kilitliyor, burada açıkça:
+      expect(expected.containsKey('ai_level'), isFalse);
+      final normal = buildGameRecord(state,
+          surrendered: false, newId: () => fixedId, now: () => fixedNow)!;
+      expect(normal.toJson().containsKey('ai_level'), isFalse);
+
+      final kolay = buildGameRecord(state.copyWith(aiLevel: AiLevel.kolay),
+          surrendered: false, newId: () => fixedId, now: () => fixedNow)!;
+      final json = kolay.toJson();
+      expect(json['ai_level'], 'kolay');
+      // Kuyruk gidiş-dönüşü (misafir → giriş sonrası flush) seviyeyi korur.
+      expect(NewGameRecord.fromJson(json).aiLevel, AiLevel.kolay);
+      expect(NewGameRecord.fromJson(normal.toJson()).aiLevel, isNull);
+      // Seviye dışında satır AYNI — seviye puanı sunucuda/kartta hesaplanır,
+      // kayda başka hiçbir şey eklemez.
+      expect(jsonEncode({...json}..remove('ai_level')),
+          jsonEncode(normal.toJson()));
+    });
+
     test('1. koltuk YZ ise kayıt üretilmez (motor testi/geçersiz kadro)', () {
       final (state, _) = scenario('finishedNormal');
       final aiFirst = state.copyWith(players: [

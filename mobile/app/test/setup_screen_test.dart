@@ -164,6 +164,71 @@ void main() {
   });
 
   testWidgets(
+      'ZORLUK (ROADMAP #23 Faz 4): OYUNCU SAYISI\'nın altında Kolay/Normal, '
+      'varsayılan Normal, Zor YOK, Kolay seçilince açıklama çıkar',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 950));
+    await pumpSetup(tester, services());
+
+    expect(find.text('ZORLUK'), findsOneWidget);
+    expect(find.text('KOLAY'), findsOneWidget);
+    expect(find.text('NORMAL'), findsOneWidget);
+    // Zor Faz 5'e kadar seçici DIŞINDA (web `SELECTABLE_AI_LEVELS`).
+    expect(find.text('ZOR'), findsNothing);
+    // Sıra web ile aynı: başlıklar OYUNCU SAYISI → ZORLUK → OYUNCULAR.
+    final ySayi = tester.getTopLeft(find.text('OYUNCU SAYISI')).dy;
+    final yZorluk = tester.getTopLeft(find.text('ZORLUK')).dy;
+    final yOyuncular = tester.getTopLeft(find.text('OYUNCULAR')).dy;
+    expect(yZorluk, greaterThan(ySayi));
+    expect(yOyuncular, greaterThan(yZorluk));
+
+    // Varsayılan Normal: açıklama yok.
+    expect(find.textContaining('en iyi birkaç hamleden'), findsNothing);
+    await tester.tap(find.text('KOLAY'));
+    await tester.pump();
+    expect(find.textContaining('en iyi birkaç hamleden'), findsOneWidget);
+    await tester.tap(find.text('NORMAL'));
+    await tester.pump();
+    expect(find.textContaining('en iyi birkaç hamleden'), findsNothing);
+  });
+
+  testWidgets(
+      'ZORLUK: Kolay seçilip OYUNU BAŞLAT → state.aiLevel = kolay ve JSON\'da '
+      'yazılı (bulut kaydı/web okuyacak)',
+      (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 950));
+    await pumpSetup(tester, services(auth: AuthService.fake(user: fakeUser('me'))));
+
+    await tester.tap(find.text('KOLAY'));
+    await tester.pump();
+    await tester.tap(find.text('OYUNU BAŞLAT'));
+    await tester.pumpAndSettle();
+    expect(find.byType(GameScreen), findsOneWidget);
+    final screen = tester.widget<GameScreen>(find.byType(GameScreen));
+    expect(screen.controller.state.aiLevel, AiLevel.kolay);
+    // JSON'da da yazılı — bulut kaydı/web bunu okuyacak.
+    expect(gameStateToJson(screen.controller.state)['aiLevel'], 'kolay');
+
+  });
+
+  // Negatif eş — AYRI test: aynı testte ikinci bir pumpSetup, ilk oyunun
+  // "devam eden oyun" kartını gösterip formu gizliyor (OYUNU BAŞLAT yok).
+  testWidgets(
+      'ZORLUK: Normal (varsayılan) ile başlayan oyunda aiLevel alanı HİÇ '
+      'yazılmaz — `normal` değeri de değil', (tester) async {
+    await setPhoneViewSize(tester, const Size(420, 950));
+    await pumpSetup(tester, services());
+    await tester.tap(find.text('OYUNU BAŞLAT'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OYNA')); // misafir uyarısı
+    await tester.pumpAndSettle();
+    final screen = tester.widget<GameScreen>(find.byType(GameScreen));
+    expect(screen.controller.state.aiLevel, isNull);
+    expect(gameStateToJson(screen.controller.state).containsKey('aiLevel'),
+        isFalse);
+  });
+
+  testWidgets(
       'regresyon (Parça 29): içerik sütunu web\'in max-w-[460px]\'iyle AYNI '
       'genişlikte sınırlı — GameHeader/Board\'un 680\'iyle KARIŞTIRILMAMALI',
       (tester) async {

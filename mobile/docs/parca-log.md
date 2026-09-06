@@ -20,6 +20,26 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 189 — YZ zorluğu portta: ZORLUK seçici + seviyeli k-lig
+     puanı/rozet üç kartta (6 Eylül 2026, ROADMAP #23 Faz 4 — web Faz 3'ün
+     ikizi):** kaynak `Setup.tsx` / `AiLevelBadge.tsx` / `aiLevel.ts` /
+     `gameRecord.ts` / `HelpModal.tsx` (Faz 3 PR'ı). Ne yapıldı ve neden:
+     `docs/decisions/roadmap-arsiv.md` → "23 · Faz 4" (tek kopya orada).
+     - **Bilinçli eksik YOK; dokunulmayanlar:** `kelimeki_core` (motor Faz
+       2'de bitti — golden'lar aynen), Canlı ekranlar/kartlar (seviye yok),
+       `devam_eden_govde.dart` (rozet sol sütuna girdi, ortak gövde aynen),
+       `surumler.md` (paket yüklenmedi).
+     - **Ders:** rozet gibi "yokken hiç çizilmeyen" bir öğeyi porta
+       taşırken web'in `null` dönüşünün flex `gap`i de kapattığını hesaba
+       kat — `SizedBox.shrink()` tek başına yetmez, ÖNÜNDEKİ boşluk da
+       koşullu olmalı; aksi hâlde Normal kart 6 px kayar ve hiçbir test
+       (piksel testleri Normal veriyle koşuyor) bunu görmez.
+     - **Doğrulama:** `flutter analyze` temiz; `flutter test` tam takım
+       yeşil (yeni: `ai_level_parity_test` 5 · `ai_level_test` 4 ·
+       `setup_screen_test` +3 · `game_record_test` +1). **Sınır:** cihaz
+       kanıtı (web ↔ port aynı puan, aynı hesap iki cihaz) sürüm turunda —
+       `mobile/TESTING.md` §13'e madde yazıldı.
+
    - ✅ **Parça 124 — arka plandan dönüş artık "ekrana giriş" sayılıyor
      (21 Ağustos 2026 yazıldı, **4 Eylül 2026'da kurtarıldı**; web + port
      AYNI PR):** kullanıcı webde bildirdi — arka planda açık kalan uygulama
