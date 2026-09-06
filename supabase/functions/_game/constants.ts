@@ -2,7 +2,7 @@
 //
 // src/game/constants.ts'in KOPYASI (yalnızca play-ai-turn'ün ihtiyaç
 // duyduğu saf hesap fonksiyonları/sabitleri) — bkz. types.ts'teki not.
-import type { BonusType, CellKey } from './types.ts';
+import type { AiLevel, BonusType, CellKey } from './types.ts';
 
 /** Tahta 13x13. */
 export const SIZE = 13;
@@ -15,6 +15,12 @@ export const BINGO_BONUS = 25;
 
 /** Rafta tutulan taş sayısı. */
 export const RACK_SIZE = 7;
+
+/**
+ * YZ seviyesi → "en iyi N'den rastgele" kadranı — src/game/constants.ts'teki
+ * AI_LEVEL_TOP_N'in kopyası (`verify-edge-engine-parity` eşitliği kilitler).
+ */
+export const AI_LEVEL_TOP_N: Record<AiLevel, number> = { kolay: 4, normal: 1, zor: 1 };
 
 /** Köşe indeksinin satır/sütun aralığını döndürür. */
 export function cornerBounds(corner: number): {

@@ -1,7 +1,7 @@
 // Kelimeki — Supabase şema tipleri (elle yazıldı; MCP erişimi açılınca
 // `generate_typescript_types` ile otomatik üretilebilir).
 
-import type { BonusType, GameState, HistoryEntry, Tile } from '../game/types';
+import type { AiLevel, BonusType, GameState, HistoryEntry, Tile } from '../game/types';
 
 export type GameResult = 'win' | 'lose' | 'tie';
 
@@ -410,14 +410,15 @@ export interface Game {
 }
 
 /**
- * YZ zorluk seviyesi (ROADMAP #23). Normal = bugünkü motor (N=1); Kolay =
- * aynı motor, en iyi N=4 hamleden rastgele (Faz 0 ölçtü); Zor = Faz 5'in
- * yeni motoru. k-lig puanı seviyeye göre (23.0 tablosu): 1. sıra 1/2/4,
+ * YZ zorluk seviyesi (ROADMAP #23) — tanımı MOTORDA (`src/game/types.ts`,
+ * Faz 2'de oraya taşındı; Edge kopyası ve Dart portu aynı üçlüyü taşıyor).
+ * Buradan yeniden dışa aktarılıyor ki sunucu tiplerini okuyan kod tek
+ * yerden alsın. k-lig puanı seviyeye göre (23.0 tablosu): 1. sıra 1/2/4,
  * 2. sıra (yalnız 4 kişilikte) 0/1/2, teslim her seviyede -2. Sunucudaki
  * `games.ai_level` check kısıtı ve `league_points_for()` bu üç değeri
  * tanır; `npm run verify-league-points` tabloyu SQL ↔ TS ↔ Dart kilitler.
  */
-export type AiLevel = 'kolay' | 'normal' | 'zor';
+export type { AiLevel };
 
 /**
  * `get_shared_game` RPC'sinin döndürdüğü, herkese açık (girişsiz dahil)

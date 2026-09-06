@@ -19,6 +19,15 @@ const int bingoBonus = 25;
 /// Rafta tutulan taş sayısı. (TS: RACK_SIZE)
 const int rackSize = 7;
 
+/// YZ seviyesi → "en iyi N hamleden rastgele biri" kadranı.
+/// (TS: AI_LEVEL_TOP_N — golden `ai_level.json` üçlüyü kilitler.) Kolay = 4
+/// Faz 0'ın 200 oyunluk ölçümü; Zor Faz 5'e kadar Normal (N=1).
+const Map<AiLevel, int> aiLevelTopN = {
+  AiLevel.kolay: 4,
+  AiLevel.normal: 1,
+  AiLevel.zor: 1,
+};
+
 /// Renk paleti uzunluğu (TS: PLAYER_COLORS.length) — startGame'deki
 /// `colorIndex: i % PLAYER_COLORS.length` hesabının core'daki karşılığı.
 const int playerColorCount = 4;

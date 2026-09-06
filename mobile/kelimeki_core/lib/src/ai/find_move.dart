@@ -11,6 +11,7 @@ import '../model/player.dart';
 import '../model/results.dart';
 import '../model/tile.dart';
 import '../model/types.dart';
+import '../rng.dart';
 import '../rules/board.dart';
 import '../rules/validator.dart';
 import '../text/turkish.dart';
@@ -51,8 +52,34 @@ List<Tile>? _consumeRack(List<String> letters, List<String> rackLetters, int own
   return tiles;
 }
 
-/// Sırası gelen YZ oyuncusu için en iyi hamle (yoksa null → pas/değişim).
-AIMove? findAIMove(
+/// Sınırlı en-iyi listesinin bir satırı (TS: Ranked).
+class _Ranked {
+  final AIMove move;
+
+  /// Sıralama anahtarı: güvenli listede ham puan, vergili listede YZ'ye kalan.
+  final int rank;
+  const _Ranked(this.move, this.rank);
+}
+
+/// Azalan `rank` sırasıyla, eşitte SONA (ilk bulunan önde) ekler; boyutu n'de
+/// tutar. Eski tek-en-iyi `>` karşılaştırmasının liste karşılığı — `sort`
+/// bilerek YOK (kararlılık garantisi yok; ROADMAP 23.4). TS `insertBounded`
+/// ile adım adım aynı.
+void _insertBounded(List<_Ranked> list, _Ranked item, int n) {
+  var i = 0;
+  while (i < list.length && list[i].rank >= item.rank) {
+    i++;
+  }
+  if (i >= n) return;
+  list.insert(i, item);
+  if (list.length > n) list.removeRange(n, list.length);
+}
+
+/// Sırası gelen YZ oyuncusu için en iyi [n] hamle, iyiden kötüye sıralı (boş
+/// liste → pas/değişim). Vergisiz hamle varsa liste YALNIZCA onlardan oluşur;
+/// yoksa vergili hamlelerden, YZ'ye kalacak puana göre. Rastgele değer
+/// TÜKETMEZ — seçim [pickTopMove]/[findAIMove]'un işi. (TS: findAIMoves)
+List<AIMove> findAIMoves(
   Board board,
   List<Tile> rack,
   Map<String, BonusType> bonuses,
@@ -61,6 +88,7 @@ AIMove? findAIMove(
   bool isFirstMove,
   List<Player> players,
   WordSource words,
+  int n,
 ) {
   final rackLetters = [for (final t in rack) t.letter];
   final pool = _getWordPool(words);
@@ -87,9 +115,11 @@ AIMove? findAIMove(
     return cached;
   }
 
-  AIMove? bestSafe;
-  AIMove? bestAny;
-  num bestAnyEffective = double.negativeInfinity;
+  // İki sınırlı liste: `safe` vergisiz hamleler, `any` (YZ'ye kalacak puana
+  // göre) tüm hamleler — TS'teki aynı adlar. Faz 2'ye kadar iki TEK en-iyi
+  // tutuluyordu; n=1'de liste başı eskisiyle birebir aynı hamle.
+  final safe = <_Ranked>[];
+  final any = <_Ranked>[];
 
   final territories = computeAllTerritories(board, players);
 
@@ -118,35 +148,27 @@ AIMove? findAIMove(
         (p.r, p.c - 1),
         (p.r, p.c + 1),
       ];
-      for (final n in neighbors) {
-        if (n.$1 < 0 || n.$1 >= boardSize || n.$2 < 0 || n.$2 >= boardSize) {
+      for (final nb in neighbors) {
+        if (nb.$1 < 0 || nb.$1 >= boardSize || nb.$2 < 0 || nb.$2 >= boardSize) {
           continue;
         }
-        addIfForeign(n.$1, n.$2);
+        addIfForeign(nb.$1, nb.$2);
       }
     }
     final score = calcScore(board, placed, bonuses);
+    final move = AIMove(word: word, score: score, placements: placements);
     if (touchedIdx.isEmpty) {
-      if (bestSafe == null || score > bestSafe!.score) {
-        bestSafe = AIMove(word: word, score: score, placements: placements);
-      }
-      if (score > bestAnyEffective) {
-        bestAnyEffective = score;
-        bestAny = AIMove(word: word, score: score, placements: placements);
-      }
+      _insertBounded(safe, _Ranked(move, score), n);
+      _insertBounded(any, _Ranked(move, score), n);
       return;
     }
     // Paylaşım sonrası YZ'ye kalacak puan — computeInvasionSplit ile aynı
     // formül; territories önbelleğinden yararlanmak için split fonksiyonunun
     // kendisi çağrılmaz (TS'teki aynı gerekçe), pay hesabı ortak
     // `invasionShare`den gelir.
-    final n = touchedIdx.length;
-    final share = invasionShare(score, n);
-    final effective = score - share * n;
-    if (effective > bestAnyEffective) {
-      bestAnyEffective = effective;
-      bestAny = AIMove(word: word, score: score, placements: placements);
-    }
+    final k = touchedIdx.length;
+    final share = invasionShare(score, k);
+    _insertBounded(any, _Ranked(move, score - share * k), n);
   }
 
   // Verilen köşeden, mevcut taşlardan bağımsız yeni kelimeyle başlayan tüm
@@ -200,7 +222,7 @@ AIMove? findAIMove(
     for (final homeCorner in corners) {
       tryCornerStart(homeCorner);
     }
-    return bestSafe;
+    return [for (final x in safe) x.move];
   }
 
   // ── Çapalı hamleler: tahtadaki her taşı eksen alarak dene ────────────────
@@ -268,5 +290,35 @@ AIMove? findAIMove(
     tryCornerStart(homeCorner);
   }
 
-  return bestSafe ?? bestAny;
+  return [for (final x in (safe.isNotEmpty ? safe : any)) x.move];
 }
+
+/// Sıralı listeden oynanacak hamle — RASTGELELİK SÖZLEŞMESİ (TS pickTopMove
+/// ile birebir; golden'lar buna dayanır): boş → null; tek eleman → o eleman,
+/// [rng] ÇAĞRILMAZ; birden fazla → TEK `nextDouble()`, `floor(r * length)`.
+AIMove? pickTopMove(List<AIMove> list, Rng rng) {
+  if (list.isEmpty) return null;
+  if (list.length == 1) return list[0];
+  return list[(rng.nextDouble() * list.length).floor()];
+}
+
+/// Sırası gelen YZ oyuncusu için oynanacak hamle (yoksa null → pas/değişim).
+/// [level] `aiLevelTopN` üzerinden N'e çevrilir; Normal (N=1) hiç rastgele
+/// değer tüketmez (TS: findAIMove).
+AIMove? findAIMove(
+  Board board,
+  List<Tile> rack,
+  Map<String, BonusType> bonuses,
+  int owner,
+  List<int> corners,
+  bool isFirstMove,
+  List<Player> players,
+  WordSource words, {
+  AiLevel level = AiLevel.normal,
+  required Rng rng,
+}) =>
+    pickTopMove(
+      findAIMoves(board, rack, bonuses, owner, corners, isFirstMove, players,
+          words, aiLevelTopN[level]!),
+      rng,
+    );

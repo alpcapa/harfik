@@ -21,7 +21,8 @@ import {
   isFirstMove,
   type Action,
 } from '../src/game/gameReducer';
-import type { GameState, HistoryEntry, Player, Tile } from '../src/game/types';
+import type { AiLevel, GameState, HistoryEntry, Player, Tile } from '../src/game/types';
+import { AI_LEVEL_TOP_N } from '../src/game/constants';
 import { setRandomSource } from '../src/utils/random';
 import { findAIMove } from '../src/utils/ai';
 import { calcScore, calcWordRawScores, computeAllTerritories } from '../src/utils/validator';
@@ -122,6 +123,9 @@ function serState(s: GameState): Record<string, unknown> {
     messageType: s.messageType,
     lastMoveCells: s.lastMoveCells,
     moveHistory: s.moveHistory.map(serHistory),
+    // Web JSON.stringify'ı gibi: alan yoksa anahtar da yok (Normal oyunlar
+    // Faz 2 öncesiyle bayt-eş kalsın — Dart codec'i aynı sözleşmeyi uygular).
+    ...(s.aiLevel !== undefined ? { aiLevel: s.aiLevel } : {}),
   };
 }
 
@@ -211,11 +215,24 @@ function findEmptyCell(s: GameState): [number, number] {
 }
 
 // ── Senaryolar ───────────────────────────────────────────────────────────────
-function aiScenario(name: string, seed: number, playerCount: 2 | 4, surrenderAt?: number): void {
+/**
+ * Tam YZ oyunu. `level` verilirse START payload'ına girer (Kolay: her hamlede
+ * en iyi 4'ten tohumlu seçim — `pickTopMove` tek `nextRandom()` çağrısı yapar,
+ * torbanın karıştırmasıyla AYNI akıştan; Dart replay'i bu sırayı birebir
+ * tüketmeli). Verilmezse payload'da yok = Normal, eski fixture'lar değişmez.
+ */
+function aiScenario(
+  name: string,
+  seed: number,
+  playerCount: 2 | 4,
+  surrenderAt?: number,
+  level?: AiLevel,
+): void {
   const run = new Runner(seed, 5);
   run.dispatch({
     type: 'START',
     players: Array.from({ length: playerCount }, () => ({ name: '', isAI: true })),
+    ...(level ? { aiLevel: level } : {}),
   });
   let moves = 0;
   while (!run.state.isGameOver && moves < 400) {
@@ -738,6 +755,12 @@ function invasionFormulaVectors(): void {
   console.log('invasion_formula: 3×1501 değer');
 }
 
+/** YZ seviye kadranı: web `AI_LEVEL_TOP_N` ↔ Dart `aiLevelTopN` kilidi. */
+function aiLevelVectors(): void {
+  writeFileSync(join(GOLDENS, 'ai_level.json'), JSON.stringify({ topN: AI_LEVEL_TOP_N }));
+  console.log(`ai_level: ${Object.keys(AI_LEVEL_TOP_N).length} seviye`);
+}
+
 function rankingVectors(): void {
   const rnd = mulberry32(4242);
   const cases: Record<string, unknown>[] = [];
@@ -873,12 +896,16 @@ async function main(): Promise<void> {
   writeDictionaryAsset();
   turkishVectors();
   invasionFormulaVectors();
+  aiLevelVectors();
   territoryVectors();
   rankingVectors();
   scoringVectors();
   remainingTilesVectors();
   aiScenario('reducer_ai2', 12345, 2);
   aiScenario('reducer_ai4', 99, 4, 8); // 8. hamleden önce 2. koltuk teslim olur
+  // Kolay (N=4): iki YZ de en iyi 4'ten tohumlu seçer — `pickTopMove`ün
+  // rastgelelik sözleşmesini ve Dart'ın sıralı ekleme paritesini kanıtlar.
+  aiScenario('reducer_ai2_kolay', 2026, 2, undefined, 'kolay');
   humanScenario();
   craftedFinishScenario();
   craftedBingoScenario();

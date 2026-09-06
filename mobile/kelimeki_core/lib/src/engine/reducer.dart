@@ -306,7 +306,7 @@ class GameEngine {
 
   GameEngine({required this.words, required this.rng, required this.nowIso});
 
-  GameState _startGame(List<PlayerSetup> setup) {
+  GameState _startGame(List<PlayerSetup> setup, AiLevel? aiLevel) {
     final count = setup.length;
     final corners = cornersFor(count);
     final bag = buildBag(rng);
@@ -355,6 +355,7 @@ class GameEngine {
       messageType: MessageKind.none,
       lastMoveCells: const [],
       moveHistory: const [],
+      aiLevel: aiLevel,
     );
   }
 
@@ -363,9 +364,9 @@ class GameEngine {
       case AbandonAction():
         return createInitialState();
 
-      case StartAction(players: final setup):
+      case StartAction(players: final setup, aiLevel: final aiLevel):
         if (setup.length != 2 && setup.length != 4) return state;
-        return _startGame(setup);
+        return _startGame(setup, aiLevel);
 
       case ResumeSavedAction(state: final saved):
         return saved;
@@ -692,6 +693,8 @@ class GameEngine {
       isFirstMove(state),
       state.players,
       words,
+      level: state.aiLevel ?? AiLevel.normal,
+      rng: rng,
     );
 
     // Geçerli hamle yoksa: torbada taş varsa rafı değiştir, boşsa pas.

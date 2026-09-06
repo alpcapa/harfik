@@ -927,6 +927,18 @@ bağlı değil.)
   - `reducer_ai4.json` — 4 kişilik tam YZ oyunu + 8. hamlede SURRENDER
     (kademeli teslim: raf→torba, skor sıfırlama, oyun devam) + bingo + bölge
     vergileri, doğal bitiş.
+  - `reducer_ai2_kolay.json` — 2 kişilik tam YZ oyunu, `START`
+    payload'ında `aiLevel: 'kolay'` (ROADMAP #23 Faz 2, 6 Eylül 2026): iki
+    YZ de her hamlede en iyi 4'ten tohumlu seçer. `pickTopMove`ün
+    rastgelelik sözleşmesini (tek elemanda çağrı YOK, çoklu listede TEK
+    `nextDouble()`, torbayla AYNI `rng`) ve `_insertBounded`'ın "eşitte ilk
+    bulunan önde" sıralı eklemesini kilitler — `sort` kullanılsaydı eşit
+    puanlı adaylar yer değiştirip bu fixture düşerdi. Normal oyunlarda
+    `aiLevel` anahtarı JSON'a hiç yazılmaz (web `JSON.stringify` +
+    `codec.dart`ın `if (s.aiLevel != null)` sözleşmesi); eski fixture'lar bu
+    sayede Faz 2'de bayt-eş kaldı.
+  - `ai_level.json` — `AI_LEVEL_TOP_N` ↔ `aiLevelTopN` (Kolay 4 · Normal 1 ·
+    Zor 1) kilidi; üçüncü kopya (Edge) `verify-edge-engine-parity`de.
   - `reducer_human2.json` — insan aksiyonlarının tamamı: seçim toggle'ı,
     yerleştir/geri al, TÜM doğrulama hataları (hizasız/boşluklu/köşesiz/
     sözlükte olmayan kelime), gerçek kelime oynama, karıştır, yeniden

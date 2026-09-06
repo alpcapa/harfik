@@ -1,4 +1,10 @@
 // Kelimeki — rastgelelik yardımcıları
+//
+// src/utils/random.ts'in KOPYASI — bkz. types.ts'teki not. `play-ai-turn`
+// yalnızca Normal oynatır (rastgele değer hiç tüketilmez); kopya burada
+// çünkü `_game/ai.ts` `nextRandom`u import ediyor ve Faz 2'den sonra üç
+// kopyanın DAVRANIŞI eşit olmalı (`verify-edge-engine-parity` Kolay'ı da
+// tohumlayarak karşılaştırır).
 
 let randomSource: () => number = Math.random;
 

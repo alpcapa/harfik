@@ -37,6 +37,11 @@ class GameState {
   final List<Cell> lastMoveCells;
   final List<HistoryEntry> moveHistory;
 
+  /// YZ zorluk seviyesi — `StartAction` ile bir kez yazılır, değiştiren action
+  /// YOK. null = Normal: eski kayıtlar, web'in Normal'de yazmadığı alan ve
+  /// Canlı oyunlar (TS: `GameState.aiLevel?`).
+  final AiLevel? aiLevel;
+
   const GameState({
     required this.phase,
     required this.startedAt,
@@ -58,6 +63,7 @@ class GameState {
     required this.messageType,
     required this.lastMoveCells,
     required this.moveHistory,
+    this.aiLevel,
   });
 
   static const Object _unset = Object();
@@ -83,6 +89,7 @@ class GameState {
     MessageKind? messageType,
     List<Cell>? lastMoveCells,
     List<HistoryEntry>? moveHistory,
+    AiLevel? aiLevel,
   }) =>
       GameState(
         phase: phase ?? this.phase,
@@ -106,5 +113,6 @@ class GameState {
         messageType: messageType ?? this.messageType,
         lastMoveCells: lastMoveCells ?? this.lastMoveCells,
         moveHistory: moveHistory ?? this.moveHistory,
+        aiLevel: aiLevel ?? this.aiLevel,
       );
 }

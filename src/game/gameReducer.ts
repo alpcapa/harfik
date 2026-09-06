@@ -8,7 +8,7 @@ import {
   cornersFor,
   jokerFinishBonus,
 } from './constants';
-import type { GameState, HistoryEntry, Owner, Player, Tile } from './types';
+import type { AiLevel, GameState, HistoryEntry, Owner, Player, Tile } from './types';
 import type { OnlineGameStatePublic } from '../lib/database.types';
 import { buildBag, drawTiles } from '../utils/bag';
 import { shuffle } from '../utils/random';
@@ -35,7 +35,7 @@ export interface PlayerSetup {
 
 export type Action =
   | { type: 'ABANDON' }
-  | { type: 'START'; players: PlayerSetup[] }
+  | { type: 'START'; players: PlayerSetup[]; aiLevel?: AiLevel }
   | { type: 'SELECT_TILE'; index: number }
   | { type: 'PLACE_TILE'; r: number; c: number; wildLetter?: string; rackIndex?: number }
   | { type: 'MOVE_PLACED_TILE'; from: { r: number; c: number }; to: { r: number; c: number } }
@@ -86,8 +86,12 @@ export function createInitialState(): GameState {
   };
 }
 
-/** Oyuncu ayarlarından (2 ya da 4) oyunu kurar ve ilk taşları dağıtır. */
-function startGame(setup: PlayerSetup[]): GameState {
+/**
+ * Oyuncu ayarlarından (2 ya da 4) oyunu kurar ve ilk taşları dağıtır.
+ * `aiLevel` verilmezse state'e YAZILMAZ (= Normal) — bugüne kadarki her
+ * kayıt ve golden vector böyle; bkz. `GameState.aiLevel`.
+ */
+function startGame(setup: PlayerSetup[], aiLevel?: AiLevel): GameState {
   const count = setup.length;
   const corners = cornersFor(count);
   const bag = buildBag();
@@ -133,6 +137,7 @@ function startGame(setup: PlayerSetup[]): GameState {
     messageType: '',
     lastMoveCells: [],
     moveHistory: [],
+    ...(aiLevel !== undefined ? { aiLevel } : {}),
   };
 }
 
@@ -445,7 +450,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
 
     case 'START': {
       if (action.players.length !== 2 && action.players.length !== 4) return state;
-      return startGame(action.players);
+      return startGame(action.players, action.aiLevel);
     }
 
     case 'RESUME_SAVED':
@@ -748,6 +753,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         me.corners,
         isFirstMove(state),
         state.players,
+        state.aiLevel ?? 'normal',
       );
 
       // Geçerli hamle yoksa: torbada taş varsa rafını değiştirir (aksi halde

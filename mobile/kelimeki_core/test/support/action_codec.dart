@@ -9,13 +9,16 @@ GameAction decodeAction(Map<String, Object?> j) {
     case 'ABANDON':
       return const AbandonAction();
     case 'START':
-      return StartAction([
-        for (final p in j['players'] as List)
-          PlayerSetup(
-            name: (p as Map)['name'] as String,
-            isAI: p['isAI'] as bool,
-          ),
-      ]);
+      return StartAction(
+        [
+          for (final p in j['players'] as List)
+            PlayerSetup(
+              name: (p as Map)['name'] as String,
+              isAI: p['isAI'] as bool,
+            ),
+        ],
+        aiLevel: AiLevelJson.parseOrNull(j['aiLevel'] as String?),
+      );
     case 'SELECT_TILE':
       return SelectTileAction(j['index'] as int);
     case 'PLACE_TILE':

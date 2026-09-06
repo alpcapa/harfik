@@ -8,7 +8,7 @@
 library kelimeki_core;
 
 export 'src/actions.dart';
-export 'src/ai/find_move.dart' show findAIMove;
+export 'src/ai/find_move.dart' show findAIMove, findAIMoves, pickTopMove;
 export 'src/constants.dart';
 export 'src/data/tiles.dart';
 export 'src/dictionary/word_source.dart';

@@ -21,7 +21,11 @@ class AbandonAction extends GameAction {
 
 class StartAction extends GameAction {
   final List<PlayerSetup> players;
-  const StartAction(this.players);
+
+  /// YZ zorluk seviyesi; null = state'e yazılmaz (= Normal). Web'in
+  /// `{ type: 'START', players, aiLevel? }` payload'ının karşılığı.
+  final AiLevel? aiLevel;
+  const StartAction(this.players, {this.aiLevel});
 }
 
 class SelectTileAction extends GameAction {

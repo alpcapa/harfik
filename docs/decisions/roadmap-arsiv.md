@@ -21,6 +21,7 @@
 
 | Ne | Kapanış |
 |---|---|
+| Madde 23 · Faz 2 — motor: `findAIMoves`/`pickTopMove`/`AI_LEVEL_TOP_N` üç kopyada, `GameState.aiLevel`, golden sıfır fark + `reducer_ai2_kolay` | 6 Eylül 2026 |
 | Madde 23 · Faz 1 — sunucu: `games.ai_level` + k-lig formülü TEK SQL fonksiyonu (`league_points_for`), `verify-league-points` | 6 Eylül 2026 |
 | Madde 23 · Faz 0 — YZ seviye kadranının ölçüm aleti (`simulate-ai-levels`), Kolay N=4 | 6 Eylül 2026 |
 | Hata avı geçişi (incelemenin 2. geçişi) | 5 Eylül 2026 |
@@ -2294,3 +2295,88 @@ uygulandı, `list_migrations` ile dosya adı eşleştirildi.
   etiket bugünkü gibi, Kolay/Zor gelince " · Kolay"/" · Zor" eklenir.
 - Port ETKİLENMEDİ: `get_shared_game`/`admin_ai_balance` portta
   çağrılmıyor; view kolon listeleri değişmedi.
+
+---
+
+## 23 · Faz 2 — Motor · ✅ YAPILDI (6 Eylül 2026)
+
+`ROADMAP.md` madde 23'ün (Seviyeli YZ) ikinci fazı; madde AÇIK, yalnızca
+bu faz kapandı. Faz metni buraya `ROADMAP.md` 23.3'ten taşındı.
+
+**Faz 2 — Motor (web + port + Edge kopyası AYNI PR).** Model: Opus 5,
+efor `high` — parite işi.
+- `findAIMove(..., level: AiLevel = 'normal')`: `consider` iki en-iyi yerine
+  iki **sınırlı liste** tutar (güvenli / vergili, boyut N, sıralama: puan
+  azalan, eşitte ilk bulunan önde — bugünkü `>` kuralının liste karşılığı).
+  Dönüş: güvenli liste boş değilse ondan, değilse vergili listeden;
+  **N=1 → `list[0]`, rastgele ÇAĞRI YOK; N>1 → tek `randomSource()`
+  çağrısı, `floor(r * list.length)`.** Rastgele tüketim sayısı sözleşmenin
+  parçası (torba/karıştırma deseninin aynısı).
+- `AiLevel → N` eşlemesi tek yerde: `src/game/constants.ts`
+  (`AI_LEVEL_TOP_N`), Dart `constants.dart`, Edge `_game/constants.ts` —
+  `verify-edge-engine-parity` ve `verify-sql-engine-parity`'nin sabit
+  kilitleme deseniyle üçü kilitlenir.
+- Dart `findAIMove(..., {AiLevel level = AiLevel.normal, required Rng rng})`;
+  reducer kendi `rng`'sini geçer.
+- Edge `_game/ai.ts` + `constants.ts` kopyalanır; `play-ai-turn` seviye
+  vermez (Normal). Deploy öncesi `list_edge_functions` ile `verify_jwt`
+  okunur (`play-ai-turn` "false" listesinde DEĞİL → `true`).
+- **Kanıt sırası:** (1) `generate-golden-vectors` → **sıfır fark** (N=1 yolu
+  bayt-eş); (2) sonra `reducer_ai2_kolay.json` (tohumlu, `aiLevel:'kolay'`)
+  eklenir, Dart `run_all.dart` yeşil; (3) `verify-edge-engine-parity` yeşil
+  (Normal'de değişmedi; ayrıca Kolay için aynı tohumla iki motoru
+  karşılaştıran bir adım eklenir — Edge'e `random.ts` kopyası girer, çünkü
+  B'de bile kopyanın DAVRANIŞI eşit olmalı, sadece çağrılmıyor).
+- Ürün yüzeyi YOK; kullanıcı hiçbir fark görmez.
+
+**Nasıl yapıldı (6 Eylül 2026):**
+- **Web (`src/utils/ai.ts`):** eski `bestSafe`/`bestAny` çifti iki sınırlı
+  listeye (`safe`/`any`, `insertBounded`: azalan `rank`, eşitte ilk bulunan
+  önde, `sort` YOK) çevrildi; `findAIMoves(..., n)` listeyi döndürür,
+  `pickTopMove(list)` rastgelelik sözleşmesini uygular (boş → null; tek
+  eleman → o, `nextRandom()` ÇAĞRILMAZ; birden fazla → TEK çağrı,
+  `floor(r·len)`), `findAIMove(..., level = 'normal')` ikisini
+  `AI_LEVEL_TOP_N[level]` ile bağlar. `random.ts`e `nextRandom()` eklendi
+  (torbayla AYNI enjekte edilebilir kaynak). `AiLevel` tipi
+  `database.types.ts`ten `src/game/types.ts`e taşındı (motor `lib/`
+  import edemez; `database.types.ts` yeniden dışa aktarıyor).
+- **Plandan sapma — `GameState.aiLevel` Faz 3'ten Faz 2'ye çekildi:**
+  reducer düzeyinde bir Kolay golden'ı (`reducer_ai2_kolay`) seviyeyi ancak
+  state'ten alabilir; action'a taşımak Faz 3'te tekrar değişecek bir şekil
+  yaratırdı. Alan OPSİYONEL ve **Normal'de yazılmaz** (web `JSON.stringify`
+  `undefined`ı atar; golden `serState` ve Dart `gameStateToJson` aynı
+  sözleşmeyi uygular, `codec.dart` `as String?` ile toleranslı okur) — bu
+  seçim sayesinde "sıfır fark" kanıtı state alanına rağmen ayakta kaldı ve
+  `STORAGE_VERSION` bump edilmedi. `START` payload'ı `aiLevel?` alır;
+  `AI_PLAY` `state.aiLevel ?? 'normal'` geçirir.
+- **Kanıt sırası plandaki gibi:** (1) üretici DEĞİŞMEDEN
+  `generate-golden-vectors` koşuldu → `git status` goldens'ta BOŞ (N=1 yolu
+  bayt-eş). (2) Üreticiye `aiScenario(..., level)` + `aiLevelVectors()`
+  eklendi → `reducer_ai2_kolay.json` (tohum 2026, 44 adım) +
+  `ai_level.json`; `dart run test/run_all.dart` **6871 kontrol, 0 hata**.
+  (3) `verify-edge-engine-parity`: `AI_LEVEL_TOP_N` web ↔ edge eşitliği ve
+  her adımda aynı tohumlu LCG takılarak Kolay seçimi karşılaştırması (32
+  pozisyon, sıfır fark) + duyarlılık kontrolü (Kolay 32 adımın 24'ünde
+  Normal'den farklı hamle seçti — seviye parametresi bir yerde kaybolursa
+  bu satır düşer).
+- **Dart (`mobile/kelimeki_core`):** `AiLevel` enum + `AiLevelJson`
+  (`parse` bilinmeyeni Normal'e, `parseOrNull` codec için),
+  `aiLevelTopN`, `_Ranked`/`_insertBounded`, `findAIMoves`,
+  `pickTopMove(list, rng)`, `findAIMove(..., {level, required rng})`;
+  reducer kendi `rng`'sini geçer, `StartAction(players, {aiLevel})`,
+  `GameState.aiLevel` (ctor'da opsiyonel — uygulamadaki `GameState(` çağrı
+  yerleri değişmedi). `flutter analyze` (app) temiz.
+- **Edge (`supabase/functions/_game/`):** `ai.ts` src'den import yolları
+  çevrilerek yeniden kopyalandı (yorumlar artık kırpılmıyor — kopya
+  src'yle satır satır aynı, fark yalnızca import'lar); `types.ts`e
+  `AiLevel`, `constants.ts`e `AI_LEVEL_TOP_N`, yeni `random.ts`.
+  `play-ai-turn/index.ts` DEĞİŞMEDİ (seviye vermez → Normal); yalnızca
+  kopyayı eşitlemek için yeniden deploy edildi, `list_edge_functions`
+  önce okundu (`verify_jwt: true`) ve aynı değer geçildi.
+- **Ölçüm aleti (`scripts/simulate-ai-levels.ts`):** motor kopyası ve
+  `--dogrula` silindi; top-N tarafı üretimin `findAIMoves`+`pickTopMove`
+  çiftiyle oynuyor (Kolay = N=4 satırı artık üretim yolunun ta kendisi).
+  `web-ci.yml`deki "kopya ayrışmadı mı" adımı kaldırıldı — kanıt artık
+  golden'lar + Edge paritesi.
+- **Ürün yüzeyi YOK:** hiçbir ekran `aiLevel` geçirmiyor, her oyun Normal;
+  `npm run build` + 65 Playwright testi yeşil, `npm run lint` temiz.

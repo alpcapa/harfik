@@ -35,7 +35,7 @@ import {
 } from '../src/utils/validator';
 import { findAIMove as webAI } from '../src/utils/ai';
 import { createEmptyBoard } from '../src/utils/board';
-import { buildInitialBonuses, cornersFor } from '../src/game/constants';
+import { AI_LEVEL_TOP_N as webTopN, buildInitialBonuses, cornersFor } from '../src/game/constants';
 import { letterPoints } from '../src/data/tiles';
 import { preloadWordSet, getWordSet } from '../src/data/wordSetLoader';
 import { gameReducer, createInitialState, type Action } from '../src/game/gameReducer';
@@ -48,6 +48,8 @@ import {
   calcScore as edgeScore,
 } from '../supabase/functions/_game/validator.ts';
 import { findAIMove as edgeAI } from '../supabase/functions/_game/ai.ts';
+import { AI_LEVEL_TOP_N as edgeTopN } from '../supabase/functions/_game/constants.ts';
+import { setRandomSource as edgeSetRandomSource } from '../supabase/functions/_game/random.ts';
 import { loadWordSet } from '../supabase/functions/_game/wordSet.ts';
 
 let failures = 0;
@@ -231,6 +233,70 @@ async function main(): Promise<void> {
     }
     check(`YZ hamlesi: ${sorulan} gerçek tahta pozisyonunun tamamı aynı`, ayrisan === 0);
     setRandomSource();
+  }
+
+  // ── 6. YZ seviye kadranı — sabit kilidi ────────────────────────────────────
+  // `AI_LEVEL_TOP_N` üç kopyada yaşıyor (web · Dart · Edge); Dart'ı golden
+  // `ai_level.json` kilitler, Edge'i burası. `play-ai-turn` hep Normal verir,
+  // ama kopyanın SABİTİ de eşit olmalı — yoksa bir gün seviye geçirildiğinde
+  // Canlı YZ sessizce farklı oynar.
+  check(
+    'AI_LEVEL_TOP_N (kolay/normal/zor) web ↔ edge aynı',
+    JSON.stringify(webTopN) === JSON.stringify(edgeTopN),
+    `web ${JSON.stringify(webTopN)} ↔ edge ${JSON.stringify(edgeTopN)}`,
+  );
+
+  // ── 7. Kolay seviyesi — aynı tohumla iki motor aynı hamleyi seçer mi ────────
+  // B kararında (ROADMAP 23.2) Canlı YZ Normal kalıyor, yani bu dal canlıda
+  // ÇAĞRILMIYOR; yine de kopyanın DAVRANIŞI eşit olmalı (sıralı liste + tek
+  // `nextRandom()` çağrısı). Her adımda iki motora aynı tohumlu kaynak
+  // takılır; oyun Normal `AI_PLAY` ile ilerletilir (tohum yalnızca seçime
+  // gider). Ayrıca Kolay'ın Normal'den gerçekten SAPTIĞI adım sayılır — sıfır
+  // çıkarsa seviye parametresi bir yerde kayboluyor demektir.
+  {
+    let s: GameState = gameReducer(createInitialState(), {
+      type: 'START',
+      players: [{ name: 'A', isAI: true }, { name: 'B', isAI: true }],
+    } as Action);
+    let ayrisan = 0;
+    let sorulan = 0;
+    let normaldenFarkli = 0;
+    const lcg = (seed0: number) => () => {
+      seed0 = (seed0 * 1103515245 + 12345) & 0x7fffffff;
+      return seed0 / 0x7fffffff;
+    };
+    for (let adim = 0; adim < 40 && !s.isGameOver; adim++) {
+      const me = s.players[s.current];
+      const firstMove = !s.board.some((row) => row.some((t) => t && t.owner === s.current));
+      const seed = 777 + adim;
+      setRandomSource(lcg(seed));
+      const w = webAI(s.board, me.rack, s.bonuses, s.current, me.corners, firstMove, s.players, 'kolay');
+      edgeSetRandomSource(lcg(seed));
+      const e = edgeAI(s.board, me.rack, s.bonuses, s.current, me.corners, firstMove, s.players, 'kolay');
+      setRandomSource();
+      edgeSetRandomSource();
+      const n = webAI(s.board, me.rack, s.bonuses, s.current, me.corners, firstMove, s.players);
+      sorulan++;
+      if (w?.word !== e?.word || JSON.stringify(w?.placements) !== JSON.stringify(e?.placements)) {
+        ayrisan++;
+        if (ayrisan === 1) {
+          check(
+            `YZ Kolay hamlesi (adım ${adim})`,
+            false,
+            `web ${w ? `"${w.word}" ${w.score}p` : 'yok'} ↔ edge ${e ? `"${e.word}" ${e.score}p` : 'yok'}`,
+          );
+        }
+      }
+      if (w?.word !== n?.word || JSON.stringify(w?.placements) !== JSON.stringify(n?.placements)) {
+        normaldenFarkli++;
+      }
+      s = gameReducer(s, { type: 'AI_PLAY' });
+    }
+    check(`YZ Kolay (N=${webTopN.kolay}): ${sorulan} pozisyonda aynı tohumla aynı seçim`, ayrisan === 0);
+    check(
+      `YZ Kolay, Normal'den gerçekten sapıyor (${normaldenFarkli}/${sorulan} adım)`,
+      normaldenFarkli > 0,
+    );
   }
 
   console.log('');

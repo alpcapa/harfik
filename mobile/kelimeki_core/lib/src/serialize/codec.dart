@@ -40,6 +40,8 @@ Map<String, Object?> gameStateToJson(GameState s) => {
         for (final c in s.lastMoveCells) [c.$1, c.$2],
       ],
       'moveHistory': [for (final h in s.moveHistory) h.toJson()],
+      // Web JSON.stringify'ı `undefined` alanı hiç yazmaz — aynı sözleşme.
+      if (s.aiLevel != null) 'aiLevel': s.aiLevel!.json,
     };
 
 GameState gameStateFromJson(Map<String, Object?> j) => GameState(
@@ -89,4 +91,6 @@ GameState gameStateFromJson(Map<String, Object?> j) => GameState(
         for (final h in j['moveHistory'] as List)
           HistoryEntry.fromJson((h as Map).cast<String, Object?>()),
       ],
+      // Toleranslı: eski web/port kayıtlarında alan yok → null (= Normal).
+      aiLevel: AiLevelJson.parseOrNull(j['aiLevel'] as String?),
     );
