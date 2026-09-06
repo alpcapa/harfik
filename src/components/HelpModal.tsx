@@ -320,6 +320,15 @@ export function DetailedRules() {
           Beraberlikte aynı sırayı paylaşan oyuncuların hepsi o sıranın puanını alır.
         </P>
         <P>
+          Yapay Zeka'ya karşı oynarken oyunun başında bir <strong>zorluk</strong> seçersin:
+          Kolay, Normal ya da Zor. Yukarıdaki puanlar Normal içindir. Kolay'da birinci{' '}
+          <strong>+1</strong> alır, 4 kişilik oyunda ikinci puan almaz; Zor'da birinci{' '}
+          <strong>+4</strong>, 4 kişilik oyunda ikinci <strong>+2</strong> alır. Zorluk oyun
+          boyunca değişmez ve 4 kişilik oyunda üç Yapay Zeka'ya birden uygulanır. Canlı
+          oyunlarda zorluk seçimi yoktur; oradaki Yapay Zeka Normal oynar ve puanlar Normal
+          tablosuna göre verilir.
+        </P>
+        <P>
           Puan kaybettiğin tek durum var: bir oyunu <strong>süresi içinde
           bitirmemek</strong>. Canlı bir oyunda sıran sana geçtikten sonra 48 saat
           hamle yapmazsan, Yapay Zeka'ya karşı devam eden bir oyuna da 7 gün

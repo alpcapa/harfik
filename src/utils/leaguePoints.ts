@@ -1,16 +1,36 @@
 // Kelimeki — bir oyun sonucundan k-lig (SL) puanı hesaplama
 // GameHistoryModal ve SharedGamePage arasında paylaşılan tek kaynak.
-import type { GamePlayerSnapshot } from '../lib/database.types';
+import type { AiLevel, GamePlayerSnapshot } from '../lib/database.types';
 
 /**
- * Bir oyuncunun bu oyundan kazandığı k-lig puanı — leaderboard/
- * player_stats view'larıyla aynı formül: teslim → -2, 1. → +2, 2. (yalnızca
- * 2 kişilik değilse) → +1, diğerleri 0.
+ * Bir oyuncunun bu oyundan kazandığı k-lig puanı — sunucudaki
+ * `league_points_for()` SQL fonksiyonuyla ve portun `league_points.dart`ıyla
+ * AYNI tablo (ROADMAP 23.0; `npm run verify-league-points` üçünü kilitler):
+ *
+ *   | Seviye | 1. sıra | 2. sıra (yalnız 4 kişilik) | Teslim |
+ *   | Kolay  |   1     |   0                        |  -2    |
+ *   | Normal |   2     |   1                        |  -2    |
+ *   | Zor    |   4     |   2                        |  -2    |
+ *
+ * `level` yoksa (`undefined`/`null` — seviyesiz eski kayıtlar, TÜM Canlı
+ * oyunlar) Normal: sunucunun `coalesce(p_ai_level, 'normal')` sözleşmesi.
+ * ⚠ `level`e VARSAYILAN DEĞER VERME (`level = 'normal'`): `verify-league-points`
+ * ariteyi `leaguePoints.length` ile okuyor ve JS varsayılanlı parametreyi
+ * saymaz — betik "Faz 3 öncesi" sanıp seviyeleri sınamaz.
+ * ⚠ Gövde Dart eşiyle SATIR SATIR aynı dallanma: betik iki dosyanın sayı
+ * dizisini karşılaştırıyor.
  */
-export function leaguePoints(rank: number, playerCount: number, surrendered?: boolean): number {
+export function leaguePoints(
+  rank: number,
+  playerCount: number,
+  surrendered?: boolean,
+  level?: AiLevel | null,
+): number {
   if (surrendered) return -2;
-  if (rank === 1) return 2;
-  if (rank === 2 && playerCount !== 2) return 1;
+  const kolay = level === 'kolay';
+  const zor = level === 'zor';
+  if (rank === 1) return kolay ? 1 : zor ? 4 : 2;
+  if (rank === 2 && playerCount !== 2) return kolay ? 0 : zor ? 2 : 1;
   return 0;
 }
 

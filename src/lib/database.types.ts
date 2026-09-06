@@ -402,8 +402,9 @@ export interface Game {
    * oyunlar (Canlı'da seviye yok) — k-lig puanında **Normal** sayılır;
    * sunucudaki `league_points_for()` null'ı o dala düşürür. Oyun BAŞINDA
    * kilitlenir, oyun içinde değiştirilemez; 4 kişilikte üç YZ'ye birden
-   * uygulanır. İstemci Faz 3'ten itibaren yazar (`buildGameRecord`);
-   * o güne kadar her yeni satır da null (= Normal) kalır.
+   * uygulanır. İstemci Faz 3'ten (6 Eylül 2026) beri yazar
+   * (`buildGameRecord`) — ama yalnızca Kolay/Zor'u: Normal seçilen oyun da
+   * `GameState.aiLevel` taşımadığından (Faz 2 sözleşmesi) null yazılır.
    */
   ai_level: AiLevel | null;
   created_at: string;
@@ -431,7 +432,7 @@ export interface SharedGameData {
   players: GamePlayerSnapshot[] | null;
   player_count: number;
   created_at: string;
-  /** Bkz. `Game.ai_level` — RPC 6 Eylül 2026'dan beri döndürüyor; `SharedGamePage` Faz 3'te okuyacak. */
+  /** Bkz. `Game.ai_level` — RPC 6 Eylül 2026'dan beri döndürüyor; `SharedGamePage` puanı ve rozeti bununla çizer. */
   ai_level: AiLevel | null;
 }
 
@@ -519,9 +520,9 @@ export type NewGame = Pick<
   platform?: ClientPlatform;
   /**
    * Bkz. `Game.ai_level`. Sunucuda kolon + `insert (ai_level)` grant'i
-   * 6 Eylül 2026'dan beri VAR; istemci Faz 3'e kadar bu alanı GÖNDERMEZ
-   * (null = Normal = bugünkü puan). `platform`dan farkı: SELECT de verildi,
-   * çünkü geçmiş kartları puanı bununla hesaplayacak.
+   * 6 Eylül 2026'dan beri VAR; `buildGameRecord` yalnızca Kolay/Zor'da
+   * gönderir (Normal = alan yok = null = bugünkü puan). `platform`dan farkı:
+   * SELECT de verildi, çünkü geçmiş kartları puanı bununla hesaplıyor.
    */
   ai_level?: AiLevel;
 };
@@ -541,15 +542,14 @@ export type GameHistoryEntry = Pick<
   | 'message_count'
   | 'has_moves'
   | 'user_id'
-> & {
   /**
-   * Bkz. `Game.ai_level`. **Opsiyonel, çünkü iki kaynaktan biri henüz
-   * vermiyor:** `fetchMyGames`in `cols` dizesi 6 Eylül 2026'dan beri
-   * seçiyor, `list_liked_games` RPC'si (beğenilenler sekmesi) ise
-   * DÖNDÜRMÜYOR — Faz 3'te kartlar puanı seviyeyle hesaplarken o RPC'ye de
-   * eklenmeli; o güne kadar `undefined`/`null` = Normal.
+   * Bkz. `Game.ai_level`. İKİ kaynak da veriyor (6 Eylül 2026, Faz 3):
+   * `fetchMyGames`in `cols` dizesi ve `list_liked_games` RPC'si
+   * (`20260906130756`, dönüş tipi değiştiği için drop+create). Kartlar
+   * puanı `leaguePoints(..., ai_level)` ile hesaplar; null = Normal.
    */
-  ai_level?: AiLevel | null;
+  | 'ai_level'
+> & {
   /**
    * Bu isteği yapan (oturum açan) kullanıcının bu oyunu beğenip beğenmediği —
    * `game_likes` tablosu üzerinden, hedef kullanıcıdan (kartı görüntülenen

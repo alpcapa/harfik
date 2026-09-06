@@ -2380,3 +2380,101 @@ efor `high` — parite işi.
   golden'lar + Edge paritesi.
 - **Ürün yüzeyi YOK:** hiçbir ekran `aiLevel` geçirmiyor, her oyun Normal;
   `npm run build` + 65 Playwright testi yeşil, `npm run lint` temiz.
+
+## 23 · Faz 3 — Web ürün yüzeyi · ✅ YAPILDI (6 Eylül 2026)
+
+`ROADMAP.md` madde 23'ün (Seviyeli YZ) üçüncü fazı; madde AÇIK (Faz 4 port,
+Faz 5 Zor motoru), yalnızca bu faz kapandı. Faz metni buraya `ROADMAP.md`
+23.3'ten taşındı. Yayın kanıtı (23.5: `curl kelimeki.com | grep
+kelimeki-build` = `main` başı; Kolay'da biten oyunun kartı +1) merge
+SONRASI okunur — kod tarafı burada.
+
+**Faz 3 — Web ürün yüzeyi (merge → Vercel).** Model: Sonnet 5, efor
+`medium`; Opus'a yükselt: `Setup.tsx` 1137 satır ve iki sekmeli.
+- ~~`GameState.aiLevel` + `START` payload'ı~~ → **Faz 2 yaptı** (opsiyonel
+  alan, yoksa Normal; `gameStorage` eski kaydı olduğu gibi okur, VERSION
+  sabit). Kalan: Setup seçiminin payload'a geçmesi; `cloudSaveMirror`/
+  `gameSync` jsonb'yi olduğu gibi taşıdığından ek iş yok — ama
+  `verify-cloud-save-mirror` fixture'ına alan eklenir.
+- `Setup.tsx` "+ Yeni Yapay Zeka Oyunu" formu: `OYUNCU SAYISI`'nın altına
+  `ZORLUK` — üç seçenek, varsayılan Normal, misafirde de var (misafir de
+  YZ'ye karşı oynuyor; kaydı yok, puanı yok, seçim yine anlamlı). Zor, Faz
+  5 bitene kadar **gösterilmez**.
+- `list_liked_games` RPC'sine `ai_level` (Faz 1 eklemedi — dönüş tipi
+  değişir, drop+create+grant; `GameHistoryEntry.ai_level` o güne kadar
+  opsiyonel).
+- `buildGameRecord` → `ai_level`; `leaguePoints(rank, count, surrendered, level)`
+  + dört çağıran; kartlarda rozet (`KOLAY`/`ZOR`, Normal'de yok — bugünkü
+  kart aynen); Setup "devam eden oyun" kartına küçük etiket (aynı düzeni
+  paylaşan `LiveGamesTab` kartı ETKİLENMEZ — o Canlı).
+- `HelpModal` k-lig paragrafı: tabloyu anlat; `/nasil-oynanir/` ve
+  `hukuki metin tek kaynak` testleri kendiliğinden kapsar.
+- `tests/smoke.spec.ts`: "Kolay seçilip 2 kişilik oyun başlar, YZ hamle
+  yapar" (mevcut ilk testin kopyası + seçici).
+- `TESTING.md` §10'a "seviyeye göre puan" kontrol satırları; `README.md`
+  + kök `CLAUDE.md` (Oyun Mekaniği'ne "YZ seviyesi" maddesi, Klasör
+  Yapısı'na yeni script/fixture).
+- ⚠ **Sıra tuzağı:** Faz 3 canlıya çıkınca web `kolay`/`zor` satırı
+  yazmaya başlar; **eski port sürümü** o satırı okur ve puanı Normal
+  formülüyle GÖSTERİR (sunucu doğru sayar, yalnızca gösterim yanlış), bulut
+  kaydındaki `aiLevel`'i de yok sayıp YZ'yi N=1 oynatır. Pencere Faz 4
+  sürümüne kadar; kabul edilebilir ama Faz 3 ve 4'ü aynı sürüm haftasına
+  denk getirmek daha temiz.
+
+**Nasıl yapıldı (6 Eylül 2026):**
+- **Ürün sözlüğü tek dosyada — `src/utils/aiLevel.ts`:** `AI_LEVEL_LABEL`
+  (Kolay/Normal/Zor), `SELECTABLE_AI_LEVELS` (`['kolay','normal']` — Zor
+  Faz 5'e kadar listede YOK; o gün tek satır eklenir), `aiLevelOf` (null/
+  bilinmeyen → Normal, sunucunun `coalesce`inin istemci eşi),
+  `aiLevelBadgeLabel` (Normal → `null`). Terminoloji 23.4'ün önerisi:
+  **Zorluk: Kolay · Normal · Zor**, üçüncü ifade yok.
+- **Setup (`Setup.tsx`):** "Oyuncu sayısı" bloğunun ikizi bir `Zorluk`
+  radyogrubu (`role="radiogroup"`/`radio` + `aria-checked` — smoke testi
+  bununla seçiyor), Kolay seçilince tek cümlelik açıklama. `onStart(players,
+  showTutorial, aiLevel)`; `SavedGameRow`a `aiLevel` prop'u, rozet
+  avatarların altında (misafir localStorage kartı + girişli `cloudSaves`
+  satırları). `LiveGamesTab` kartına dokunulmadı.
+- **`App.startLocalGame(players, aiLevel?)`:** payload'a yalnızca
+  Kolay/Zor girer — **Normal `'normal'` olarak YAZILMAZ** (Faz 2 sözleşmesi
+  "alan yok = Normal"; iki biçim üretmemek için). Rövanş `state.aiLevel`i
+  taşır. `GameOver`a `aiLevel` prop'u.
+- **Kayıt/puan:** `buildGameRecord` `state.aiLevel` varsa `ai_level`
+  gönderir (Normal → alansız → null). `leaguePoints(rank, playerCount,
+  surrendered?, level?)` — `level`e **JS varsayılanı bilerek verilmedi**:
+  `verify-league-points` ariteyi `leaguePoints.length` ile okuyor ve
+  varsayılanlı parametre sayılmaz, betik sessizce "Faz 3 öncesi"ne
+  dönerdi (ölçüldü). Dart `leaguePoints(..., {surrendered, AiLevel?
+  aiLevel})` aynı PR'da, gövde satır satır aynı dallanma. Betik güncellendi:
+  sayı dizisi artık her `return` ifadesindeki TÜM tamsayılar (ternary
+  sabitleri dahil) ve dizi kanonik tabloyla da karşılaştırılıyor; ayrıca
+  "eksik seviye (undefined/null) Normal" kontrolü. Çıktı: "3 seviye", tümü
+  yeşil.
+- **Dört kart:** `GameOver` (başlık altında `sm` rozet), `GameHistoryModal`
+  ("Yapay Zeka" rozetinin sağında), `RecentGamesSection` (tarihin yanında),
+  `SharedGamePage` ("N Oyunculu"nun yanında) — hepsi `AiLevelBadge`
+  (`src/components/AiLevelBadge.tsx`; altın, `GameHistoryModal`ın 7px
+  rozet diliyle aynı; Normal'de `null` döner, `gap` bile açılmaz).
+- **Sunucu:** `20260906130756_list_liked_games_ai_level` — dönüş tipine
+  `ai_level text` (`coalesce(mine.ai_level, g.ai_level)`), drop + create +
+  revoke/grant, INVOKER korundu. Canlıya MCP ile uygulandı; doğrulama:
+  `prosecdef=false`, sonuç tipinin son kolonu `ai_level`, ve `set_config
+  ('request.jwt.claims', …)` + `set local role authenticated` ile gerçek
+  bir kullanıcının 6 beğenisi kolonla döndü (hepsi null = Normal).
+  `list_migrations` versiyonu `130756` ↔ dosya adı `130703` idi → dosya
+  yeniden adlandırıldı (CLAUDE.md adım 5). `GameHistoryEntry.ai_level`
+  artık `Pick`in içinde (zorunlu, `AiLevel | null`).
+- **Kanıtlar:** `npm run verify-league-points` (3 seviye) ·
+  `verify-cloud-save-mirror` (+2 kontrol: Kolay `aiLevel` aynadan dönerken
+  korunur, Normal'de anahtar yok) · `generate-golden-vectors` → **sıfır
+  fark** (`leaguePoints` motor listesinde; `ranking.json` üç parametreli
+  çağrıdan üretiliyor) · Dart `run_all.dart` 6871 kontrol 0 hata, `dart
+  analyze` + `flutter analyze` temiz · `tests/smoke.spec.ts` +2 test
+  (Kolay: radyogrup varsayılanı Normal, Zor yok, seçim sonrası
+  `localStorage`'daki `kelimeki:game-state` payload'ında `aiLevel:'kolay'`,
+  YZ hamle yapar, seviye sabit kalır; Normal: kayıtta anahtar YOK) ·
+  `tsc` temiz.
+- **Dokunulmayan:** `TermsModal`/`PrivacyModal` (seviye kişisel veri
+  değil), `submit_move`/SQL motor aynası, `create_online_game`, bildirim
+  zinciri, `logGameStart` telemetrisi (seviye kırılımı `admin_ai_balance`ta
+  zaten var), `Landing.tsx` (k-lig bölümü sayı vermiyor, yeni terim
+  gerekmedi).

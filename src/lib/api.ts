@@ -801,9 +801,9 @@ export async function fetchMyGames(
   if (!targetUid) return { games: [], hasMore: false, failed: !!sessionError };
 
   // `ai_level` 6 Eylül 2026'dan beri seçiliyor (ROADMAP #23 Faz 1; SELECT
-  // grant'i o migration'da verildi) — kartlar Faz 3'te puanı bununla
-  // hesaplayacak. Beğenilenler dalı (`list_liked_games`) bunu HENÜZ
-  // döndürmüyor, bkz. `GameHistoryEntry.ai_level`.
+  // grant'i o migration'da verildi) — kartlar puanı bununla hesaplıyor
+  // (Faz 3). Beğenilenler dalı (`list_liked_games`) da aynı gün döndürmeye
+  // başladı (`20260906130756`), iki dal aynı `Row` şeklini paylaşıyor.
   const cols =
     'id, created_at, player_count, players, player_score, ai_score, rank, surrendered, online_game_id, user_id, ai_level';
   type Row = Omit<GameHistoryEntry, 'liked_by_me' | 'like_count'>;

@@ -36,7 +36,9 @@ const NOW = 1_760_000_000_000;
 const CUTOFF = NOW - 7 * DAY;
 
 /** Karar fonksiyonlarının OKUDUĞU alanlar kadarıyla bir GameState. */
-function st(opts: { turnCount?: number; over?: boolean; setup?: boolean } = {}): GameState {
+function st(
+  opts: { turnCount?: number; over?: boolean; setup?: boolean; aiLevel?: GameState['aiLevel'] } = {},
+): GameState {
   return {
     phase: opts.setup ? 'setup' : 'play',
     isGameOver: opts.over ?? false,
@@ -44,6 +46,11 @@ function st(opts: { turnCount?: number; over?: boolean; setup?: boolean } = {}):
     startedAt: new Date(NOW - 10 * DAY).toISOString(),
     multiSession: false,
     players: [{}, {}],
+    // ROADMAP #23 Faz 3: seviye alanı state'in İÇİNDE yolculuk eder — ayna
+    // ve sunucu satırı jsonb'yi olduğu gibi taşır. Normal'de alan YOK
+    // (`undefined`), Kolay/Zor'da yazılı; karar mantığı ona bakmaz ama
+    // seçilen state'le birlikte kaybolmadan dönmesi gerekir.
+    ...(opts.aiLevel ? { aiLevel: opts.aiLevel } : {}),
   } as unknown as GameState;
 }
 
@@ -132,6 +139,23 @@ console.log('mergeOfflineCloudSaves');
   // 13 — bitmiş oyun offline listede de görünmez.
   const d = mergeOfflineCloudSaves([{ id: 'a', state: st({ over: true }), updatedAt: NOW }], [], CUTOFF);
   check('bitmiş oyun offline listede yok', d !== null && d.length === 0);
+
+  // 14 — ROADMAP #23 Faz 3: Kolay bir oyunun `aiLevel`i aynadan ve sunucudan
+  // gelen state'te KORUNUR; Normal oyun alansız kalır (sözleşme: alan yok =
+  // Normal, `STORAGE_VERSION` bump edilmedi).
+  const e = mergeOfflineCloudSaves(
+    [{ id: 'k', state: st({ turnCount: 3, aiLevel: 'kolay' }), updatedAt: NOW - 2 * DAY },
+     { id: 'n', state: st({ turnCount: 3 }), updatedAt: NOW - 2 * DAY }],
+    [mir('k', NOW - 1 * DAY, st({ turnCount: 7, aiLevel: 'kolay' }))],
+    CUTOFF,
+  );
+  const eK = e?.find((x) => x.id === 'k');
+  const eN = e?.find((x) => x.id === 'n');
+  check("Kolay oyunun aiLevel'i ayna kazanınca da state'te kalır",
+    eK?.state.aiLevel === 'kolay' && eK.state.turnCount === 7,
+    `aiLevel=${eK?.state.aiLevel} turnCount=${eK?.state.turnCount}`);
+  check("Normal oyunun state'inde aiLevel anahtarı YOK",
+    !!eN && !('aiLevel' in eN.state));
 }
 
 console.log('');

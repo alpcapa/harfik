@@ -1,11 +1,20 @@
 // Kelimeki core — k-lig puanı (src/utils/leaguePoints.ts portu).
+import '../model/types.dart';
 
-/// Bir oyuncunun bu oyundan kazandığı k-lig puanı: teslim → -2, 1. → +2,
-/// 2. (yalnızca 2 kişilik değilse) → +1, diğerleri 0.
-int leaguePoints(int rank, int playerCount, {bool surrendered = false}) {
+/// Bir oyuncunun bu oyundan kazandığı k-lig puanı — web `leaguePoints.ts`
+/// ve sunucu `league_points_for()` ile AYNI tablo (ROADMAP 23.0):
+/// teslim -2; 1. sıra Kolay 1 / Normal 2 / Zor 4; 2. sıra yalnız 4
+/// kişilikte Kolay 0 / Normal 1 / Zor 2; diğer 0. `aiLevel` null = Normal
+/// (seviyesiz eski kayıtlar, tüm Canlı oyunlar).
+/// ⚠ Gövde TS eşiyle satır satır aynı dallanma — `npm run
+/// verify-league-points` iki dosyanın sayı dizisini karşılaştırıyor.
+int leaguePoints(int rank, int playerCount,
+    {bool surrendered = false, AiLevel? aiLevel}) {
   if (surrendered) return -2;
-  if (rank == 1) return 2;
-  if (rank == 2 && playerCount != 2) return 1;
+  final kolay = aiLevel == AiLevel.kolay;
+  final zor = aiLevel == AiLevel.zor;
+  if (rank == 1) return kolay ? 1 : zor ? 4 : 2;
+  if (rank == 2 && playerCount != 2) return kolay ? 0 : zor ? 2 : 1;
   return 0;
 }
 

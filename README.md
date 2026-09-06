@@ -9,6 +9,7 @@
 - **Genişleyen bölge** — Bir oyuncunun bölgesi 4×4 köşeyle sınırlı değil; köşesinden başlayıp yalnızca kendi taşlarıyla ortogonal olarak bağlı hücrelere doğru genişler, her hamleden sonra yeniden hesaplanır. Rakip bölgesine vergi ödeyerek konan bir taş, kendi zincirine bağlıysa artık oynayanın bölgesine geçer.
 - **Bölge vergisi** — Bir hamle rakip bölgesinin içine düşerse (girme) ya da dışarıdan sınırına bitişik olursa (değme), hamlenin puanından bir pay bölge sahibine aktarılır. Etkileşilen rakip bölge sayısına (n) göre: n=1'de 2/3 oynayanda kalır, 1/3 bölge sahibine gider; n=2'de yarısı oynayanda kalır, kalan yarısı iki sahip arasında eşit bölünür (kişi başı 1/4); n=3'te 1/3 oynayanda kalır, kalan 2/3 üç sahip arasında eşit bölünür (kişi başı 2/9) — genel formül `basePts*(n+1)/(6n)`. Hamle öncesinde onay penceresi gösterilir.
 - **Akıllı YZ** — Rafından heceleyebildiği, sözlükçe geçerli en yüksek puanlı hamleyi arar; çapraz kelimeleri de doğrular.
+- **Zorluk (Kolay · Normal · Zor)** — Yapay Zeka oyununun başında seçilir ve oyun boyunca değişmez (4 kişilikte üç YZ'ye birden). Normal = en iyi hamle; Kolay = en iyi 4 hamleden rastgele biri; Zor henüz seçilemiyor (yeni motoru ROADMAP #23 Faz 5'te). k-lig puanı seviyeye göre: birinci Kolay +1 / Normal +2 / Zor +4, 4 kişilikte ikinci 0 / +1 / +2, teslim her seviyede -2. Canlı oyunda seviye yok (Normal). Kartlarda yalnızca Kolay/Zor rozet taşır.
 - **Tam sözlük** — TDK Güncel Türkçe Sözlük (12. baskı) kaynaklı **~63 bin oynanabilir kelime**, anlamlarıyla birlikte.
 - **Türkçe alfabe** — Ç, Ğ, İ, Ö, Ş, Ü dahil tam harf dağılımı ve puanlar. Joker (`?`) desteklenir. Torba, oyuncu sayısından bağımsız olarak sabit 100 taş.
 - **Bingo bonusu** — 7 taşın tamamını tek hamlede kullanınca +25 puan.
@@ -142,6 +143,7 @@ src/
 │   ├── Avatar.tsx               # profil fotoğrafı bileşeni
 │   ├── PlayerAvatarRow.tsx      # oyun kartlarında "N Kişilik Oyun" başlığı yerine geçen katılımcı avatarları (YZ → robot, misafir → "?")
 │   ├── PlayerBadge.tsx          # renkli oyuncu sıra/koltuk rozeti
+│   ├── AiLevelBadge.tsx         # YZ zorluk rozeti (Kolay/Zor; Normal'de render edilmez) — 4 oyun kartı + Setup "devam eden oyun" satırı
 │   ├── LandscapeHint.tsx        # yatay modda gösterilen kapatılabilir dikey-mod önerisi banner'ı
 │   ├── ErrorBoundary.tsx        # kök seviye React crash yakalayıcı
 │   ├── LoadingNote.tsx          # ortak "Yükleniyor…" göstergesi (Flutter portundaki KLoadingNote ile birebir)
@@ -183,7 +185,8 @@ src/
 │   ├── errorReporting.ts # istemci hata telemetrisi (client_errors) — beklenen durumlar BİLEREK kaydedilmez, saatte 10 kayıt tavanı (zaman penceresi, süreç ömrü DEĞİL)
 │   ├── friendInvite.ts # bekleyen arkadaşlık davet token'ı için tek seferlik localStorage kuyruğu
 │   ├── csvExport.ts    # admin paneli tabloları/grafikleri için CSV indirme yardımcısı
-│   ├── leaguePoints.ts # k-lig puanı hesaplama (GameHistoryModal ve SharedGamePage ortak)
+│   ├── leaguePoints.ts # k-lig puanı hesaplama — (rank, count, surrendered, level); SQL league_points_for ↔ Dart ile verify-league-points kilitler
+│   ├── aiLevel.ts      # YZ zorluğunun ürün yüzü: etiketler, Setup'ta seçilebilir seviyeler (Zor Faz 5'e kadar yok), null→Normal ayrıştırma
 │   ├── leagueRank.ts   # k-lig rütbe kademeleri (Çaylak→Kozmik, 9 kademe: eşik/renk/ödül — sunucudaki _award_league_rewards VE portun league_rank.dart'ı ile ELLE senkron, üç kopya)
 │   ├── pendingLiveGames.ts # Canlı taraftaki "bekleyen iş" sayısı (bekleyen davet + sırası sende olan oyun) — Setup rozeti ve PWA ikon rozeti ortak
 │   ├── gameListOrder.ts # devam eden oyun/davet listelerinin sıralaması: "sıra bende" bitmeye en yakın ÜSTTE, "sıra rakipte" en geç ÜSTTE, son tarihi olmayan en sona (npm run verify-game-list-order; portun game_list_order.dart'ıyla senkron)

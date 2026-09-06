@@ -91,7 +91,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); **1.0.5'in tamamı 2 Eylül'de onaylandı** (zoom turu, çevrimdışı şerit, filigranlar, balon, yazı ölçeği, mesaj etiketi) — kalan iki kalem bu ikisi |
 | **Karar verilmiş, yapılmamış** | — | ✅ Kova BOŞ: **#3** hatırlatma, **#8** iPad paylaşımı (3 Eylül cihazda doğrulandı) ve **#16** kart düzeni kapandı; üçü de arşivde |
 | **Ertelendi** | #2 zorunlu güncelleme | ✅ **KAPANDI/ARŞİVDE** (2 Eylül 2026, kullanıcı: *"Artık app'de güncelleme çıkıyor, bunu görünce zaten yapar"*). ⚠ Sürüm kapısı DURUYOR ve artık KULLANILABİLİR — acil fren olarak `app_config.mobile_min_supported_version` |
-| **Seviyeli YZ** | **#23** Kolay/Normal/Zor + seviyeye göre k-lig puanı — 5 faz (sunucu → motor → web → port → Zor motoru) | ⬜ **Faz 0 ✅ · Faz 1 ✅ (6 Eylül 2026, migration canlıda, sıfır puan değişikliği ölçüldü), Faz 2 sırada**: karar verildi — Normal bugünkü motor, Kolay YZ ~%30, Zor YZ ~%70 (#23.0). Faz 0 ölçtü: **Kolay = N=4** (200 oyun/N; N=3 %36, N=4 %33, N=5 %22 — backlog notu) |
+| **Seviyeli YZ** | **#23** Kolay/Normal/Zor + seviyeye göre k-lig puanı — 5 faz (sunucu → motor → web → port → Zor motoru) | ⬜ **Faz 0-3 ✅ (6 Eylül 2026; Faz 3 = web'de Zorluk seçici + seviyeli puan, merge'le yayına çıkar), Faz 4 (port) sırada**: karar verildi — Normal bugünkü motor, Kolay YZ ~%30, Zor YZ ~%70 (#23.0). Faz 0 ölçtü: **Kolay = N=4** (200 oyun/N; N=3 %36, N=4 %33, N=5 %22 — backlog notu) |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
 | **Play Store'a girdikten sonra** | **#17 Google ile giriş** — sunucu → web → mobil; migration BLOKER (OAuth bugün `handle_new_user`'da patlar) | ⏳ ERTELENDİ — acelesi yok, çalışan kimlik akışına şimdi dokunulmuyor (2 Eylül, kullanıcı). ⚠ Sayaçla İLİŞKİSİ YOK; o bağ aynı gün koptu, gerekçe #17'de |
@@ -1149,7 +1149,7 @@ döner — o an kaydedilmezse bir daha alınamaz.
 
 ---
 
-## 23. Seviyeli YZ (Kolay / Normal / Zor) + seviyeye göre k-lig puanı — **Faz 0-2 ✅ · Faz 3 sırada** (6 Eylül 2026)
+## 23. Seviyeli YZ (Kolay / Normal / Zor) + seviyeye göre k-lig puanı — **Faz 0-3 ✅ · Faz 4 sırada** (6 Eylül 2026)
 
 Kaynak: `docs/decisions/product-backlog.md` → "YZ zorluk seviyesi" (5 Eylül
 2026; kadran ölçümü, kapsam ve KESİN puan tablosu orada — burada
@@ -1331,37 +1331,30 @@ adımı SİLİNDİ — Faz 5 Zor motorunu aynı aletle ölçer. (3) Edge'e
 tohumlu Kolay seçimini de kilitliyor, `play-ai-turn` yeniden deploy edildi
 (davranış aynı: Canlı YZ Normal).
 
-**Faz 3 — Web ürün yüzeyi (merge → Vercel).** Model: Sonnet 5, efor
-`medium`; Opus'a yükselt: `Setup.tsx` 1137 satır ve iki sekmeli.
-- ~~`GameState.aiLevel` + `START` payload'ı~~ → **Faz 2 yaptı** (opsiyonel
-  alan, yoksa Normal; `gameStorage` eski kaydı olduğu gibi okur, VERSION
-  sabit). Kalan: Setup seçiminin payload'a geçmesi; `cloudSaveMirror`/
-  `gameSync` jsonb'yi olduğu gibi taşıdığından ek iş yok — ama
-  `verify-cloud-save-mirror` fixture'ına alan eklenir.
-- `Setup.tsx` "+ Yeni Yapay Zeka Oyunu" formu: `OYUNCU SAYISI`'nın altına
-  `ZORLUK` — üç seçenek, varsayılan Normal, misafirde de var (misafir de
-  YZ'ye karşı oynuyor; kaydı yok, puanı yok, seçim yine anlamlı). Zor, Faz
-  5 bitene kadar **gösterilmez**.
-- `list_liked_games` RPC'sine `ai_level` (Faz 1 eklemedi — dönüş tipi
-  değişir, drop+create+grant; `GameHistoryEntry.ai_level` o güne kadar
-  opsiyonel).
-- `buildGameRecord` → `ai_level`; `leaguePoints(rank, count, surrendered, level)`
-  + dört çağıran; kartlarda rozet (`KOLAY`/`ZOR`, Normal'de yok — bugünkü
-  kart aynen); Setup "devam eden oyun" kartına küçük etiket (aynı düzeni
-  paylaşan `LiveGamesTab` kartı ETKİLENMEZ — o Canlı).
-- `HelpModal` k-lig paragrafı: tabloyu anlat; `/nasil-oynanir/` ve
-  `hukuki metin tek kaynak` testleri kendiliğinden kapsar.
-- `tests/smoke.spec.ts`: "Kolay seçilip 2 kişilik oyun başlar, YZ hamle
-  yapar" (mevcut ilk testin kopyası + seçici).
-- `TESTING.md` §10'a "seviyeye göre puan" kontrol satırları; `README.md`
-  + kök `CLAUDE.md` (Oyun Mekaniği'ne "YZ seviyesi" maddesi, Klasör
-  Yapısı'na yeni script/fixture).
-- ⚠ **Sıra tuzağı:** Faz 3 canlıya çıkınca web `kolay`/`zor` satırı
-  yazmaya başlar; **eski port sürümü** o satırı okur ve puanı Normal
-  formülüyle GÖSTERİR (sunucu doğru sayar, yalnızca gösterim yanlış), bulut
-  kaydındaki `aiLevel`'i de yok sayıp YZ'yi N=1 oynatır. Pencere Faz 4
-  sürümüne kadar; kabul edilebilir ama Faz 3 ve 4'ü aynı sürüm haftasına
-  denk getirmek daha temiz.
+**Faz 3 — Web ürün yüzeyi · ✅ YAPILDI (6 Eylül 2026).** Kod `main`'e
+merge'le Vercel'e çıkar; kapanış kanıtı (23.5) merge SONRASI `curl` ile
+okunur. Faz metni ve nasıl yapıldığı arşivde: `docs/decisions/roadmap-arsiv.md`
+→ "23 · Faz 3". Faz 4'e dört miras: (1) **Normal payload'a/kayda GİRMEZ** —
+`App.startLocalGame` yalnızca Kolay/Zor'u `START`a koyar, `buildGameRecord`
+yalnızca onları `games.ai_level`e yazar; port aynı sözleşmeyi taşımalı
+(`'normal'` yazan bir port sürümü webin "alan yok = Normal" kaydıyla
+çelişmez ama iki biçim yaratır). (2) `leaguePoints(rank, count, surrendered,
+level)` + Dart `leaguePoints(..., {surrendered, aiLevel})` AYNI PR'da
+değişti; portun üç kart çağıranı (`game_over_modal` · `game_history_modal`
+· `recent_games_section`) henüz `aiLevel` GEÇİRMİYOR → Faz 4 geçirir
+(`games_api.dart` `_listCols`a `ai_level`, `GameHistoryEntry` Dart eşine
+alan). (3) Web yüzeyi metinleri Faz 4'ün parite testleri için: Setup
+başlığı `Zorluk`, butonlar `Kolay`/`Normal` (`AI_LEVEL_LABEL`), Kolay
+açıklaması *"Kolay'da Yapay Zeka en iyi hamleyi değil, en iyi birkaç
+hamleden birini oynar. k-lig puanı da yarıya iner: birinci +1, 4 kişilikte
+ikinci 0."*, rozet metni `Kolay`/`Zor` (altın, Normal'de YOK), HelpModal'a
+eklenen zorluk paragrafı (`/nasil-oynanir/` kendiliğinden). (4)
+`list_liked_games` artık `ai_level` döndürüyor (`20260906130756`) —
+port Favoriler sekmesi aynı RPC'yi okuyor, kolon oradan da gelir.
+- ⚠ **Sıra tuzağı (hâlâ geçerli):** web `kolay` satırı yazmaya başladı;
+  eski port sürümü o satırı Normal formülüyle (+2) GÖSTERİR (sunucu doğru
+  sayar), bulut kaydındaki `aiLevel`i yok sayıp YZ'yi N=1 oynatır. Pencere
+  Faz 4 sürümüne kadar; kabul edildi.
 
 **Faz 4 — Port (sürüm turu).** Model: Opus 5, efor `medium`; cihaz turu
 kullanıcıda.
@@ -1421,6 +1414,6 @@ Model: Opus 5, efor `high`.
 | 0 | ✅ `simulate-ai-levels` repoda, 200 oyunluk koşum tablosu backlog notunda, Kolay **N=4** seçildi (6 Eylül 2026) |
 | 1 | ✅ migration canlıda (`20260906114252`), altı view/tablo karması öncesi/sonrası bayt-eş (953 oyun), `verify-league-points` CI'da yeşil (6 Eylül 2026) |
 | 2 | ✅ golden'lar yeni motorla yeniden üretildi → **git diff boş** (N=1 bayt-eş); `reducer_ai2_kolay` + `ai_level.json` Dart'ta yeşil (6871 kontrol); `verify-edge-engine-parity` `AI_LEVEL_TOP_N` kilidi + tohumlu Kolay adımıyla yeşil (32 pozisyon, 24'ünde Normal'den sapıyor); `play-ai-turn` deploy edildi, `verify_jwt=true` korundu (6 Eylül 2026) |
-| 3 | `curl kelimeki.com \| grep kelimeki-build` = `main` başı; Kolay'da biten oyunun kartı +1 gösteriyor ve `k_lig_siralama` aynı sayıyı veriyor |
+| 3 | ✅ kod (6 Eylül 2026): Zorluk seçici + 4 kartta seviyeli puan/rozet, `list_liked_games` canlıda, `verify-league-points` 3 seviye yeşil, golden sıfır fark, smoke Kolay/Normal testleri. **Yayın kanıtı merge sonrası:** `curl kelimeki.com \| grep kelimeki-build` = `main` başı; Kolay'da biten oyunun kartı +1 gösteriyor ve `k_lig_siralama` aynı sayıyı veriyor |
 | 4 | cihazda: portta Kolay seçilip bitirilen oyun web'de aynı puanla görünüyor ve tersi (aynı hesap, iki cihaz) |
 | 5 | Zor motoru YZ↔YZ'de Normal'i ≥%70 yeniyor + sahada iki hafta: Kolay ~%30 / Zor ~%70 YZ kazanma bandında |

@@ -2,6 +2,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GUEST_PLAYER_NAME, PLAYER_COLORS } from "../game/constants";
 import type { PlayerSetup } from "../game/gameReducer";
+import type { AiLevel } from "../game/types";
+import { AI_LEVEL_LABEL, SELECTABLE_AI_LEVELS } from "../utils/aiLevel";
+import { AiLevelBadge } from "./AiLevelBadge";
 import { useAuth } from "../hooks/useAuth";
 import { useModalA11y } from "../hooks/useModalA11y";
 import { subscribeMyOnlineGames } from "../lib/api";
@@ -170,11 +173,14 @@ function SavedGameRow({
   players,
   savedAtMs,
   willSurrender,
+  aiLevel,
   onClick,
 }: {
   players: AvatarRowPlayer[];
   savedAtMs: number;
   willSurrender: boolean;
+  /** `GameState.aiLevel` — yoksa Normal, etiket çıkmaz (ROADMAP #23 Faz 3). */
+  aiLevel?: AiLevel;
   onClick: () => void;
 }) {
   const remaining = remainingTime(savedAtMs, willSurrender);
@@ -207,6 +213,11 @@ function SavedGameRow({
             `gap-0.5` bilerek duruyor, çünkü iki kartın sol tarafı aynı
             kaptan çıkıyor. */}
           <PlayerAvatarRow players={players} />
+          {/* Zorluk etiketi (ROADMAP #23 Faz 3) — Normal'de `null`, yani
+            bugünkü kart aynen; Kolay/Zor'da avatarların altında küçük bir
+            rozet. ⚠ Aynı düzeni paylaşan `LiveGamesTab` kartı ETKİLENMEZ —
+            o Canlı, orada seviye yok (kartın "X açtı" satırı bu yerde). */}
+          <AiLevelBadge level={aiLevel} />
         </span>
         {/* Metin ve punto `LiveGamesTab`'ın aktif oyun kartıyla BİREBİR
           (30 Ağustos 2026, kullanıcı isteği) — bu kart YZ oyunu, orası
@@ -237,7 +248,8 @@ function SavedGameRow({
 interface SetupProps {
   // showTutorial: oyun ekranı açıldığında Tutorial (HelpModal) daha önce
   // görülmediyse gösterilsin mi — App.tsx bunu oyun ekranı render'ında kullanır.
-  onStart: (players: PlayerSetup[], showTutorial: boolean) => void;
+  /** `aiLevel`: formdaki ZORLUK seçimi (ROADMAP #23 Faz 3) — 4 kişilikte üç YZ'ye birden. */
+  onStart: (players: PlayerSetup[], showTutorial: boolean, aiLevel: AiLevel) => void;
   // "Oyun Tipi" seçimi (Yapay Zeka ile / Arkadaşınla) — App.tsx'te tutulur,
   // çünkü Canlı oyun tamamen ayrı bir veri kaynağından (Supabase) besleniyor;
   // Setup burada yalnızca seçiciyi gösterip görünümü değiştirir.
@@ -298,6 +310,11 @@ export function Setup({
   const accountPending = !!user && !accountName;
 
   const [count, setCount] = useState<2 | 4>(2);
+  // ZORLUK (ROADMAP #23 Faz 3) — varsayılan Normal (bugünkü motor), her yeni
+  // oyun formu açılışında Normal'e döner; misafirde de var (misafir de YZ'ye
+  // karşı oynuyor: kaydı/puanı yok ama seçim yine anlamlı). Zor, Faz 5'e
+  // kadar seçenek listesinde YOK (`SELECTABLE_AI_LEVELS`).
+  const [level, setLevel] = useState<AiLevel>("normal");
 
   // Kelime listesi main.tsx'te tetiklenen ayrı chunk'tan yükleniyor —
   // "Oyunu Başlat" hazır olana kadar devre dışı bırakılır (bkz.
@@ -627,7 +644,7 @@ export function Setup({
       return { name: `Yapay Zeka ${i + 1}`, isAI: true };
     });
     // Oyun ekranı açılınca Tutorial daha önce görülmediyse orada gösterilecek.
-    onStart(list, !hasSeenQuickStart());
+    onStart(list, !hasSeenQuickStart(), level);
   };
 
   const handleStart = () => {
@@ -838,6 +855,7 @@ export function Setup({
               players={savedGameAvatars(savedGame.state.players, null, true)}
               savedAtMs={savedGame.savedAt}
               willSurrender={false}
+              aiLevel={savedGame.state.aiLevel}
               onClick={onResumeGame}
             />
             <p className="text-[11px] text-muted font-mono leading-relaxed">
@@ -936,6 +954,7 @@ export function Setup({
                       )}
                       savedAtMs={Date.parse(save.updated_at)}
                       willSurrender={save.state.turnCount >= 2}
+                      aiLevel={save.state.aiLevel}
                       onClick={() => onResumeCloudSave(save)}
                     />
                   ))}
@@ -971,6 +990,45 @@ export function Setup({
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* ZORLUK (ROADMAP #23 Faz 3, 6 Eylül 2026) — "Oyuncu sayısı"
+              bloğunun İKİZİ: aynı başlık puntosu, aynı buton deseni, aynı
+              seçili/seçili-değil sınıfları; port `_buildNewGameForm`de
+              `OYUNCU SAYISI` bloğunun altına aynı sırayla gelir (Faz 4).
+              Terminoloji TEK: "Zorluk: Kolay · Normal · Zor" (23.4). Seviye
+              oyun BAŞINDA kilitlenir; 4 kişilikte üç YZ'ye birden uygulanır.
+              Zor Faz 5'e kadar gösterilmez — iki buton da `flex-1`, üçüncüsü
+              gelince yerleşim kendiliğinden üçe bölünür. */}
+            <div className="flex flex-col gap-2">
+              <div className="text-[10px] uppercase tracking-[1.5px] text-muted font-mono">
+                Zorluk
+              </div>
+              <div className="flex gap-2" role="radiogroup" aria-label="Zorluk">
+                {SELECTABLE_AI_LEVELS.map((lv) => (
+                  <button
+                    key={lv}
+                    role="radio"
+                    aria-checked={level === lv}
+                    onClick={() => setLevel(lv)}
+                    className={[
+                      "flex-1 py-3 rounded-md font-sans text-sm font-bold uppercase tracking-[1px] border transition-transform active:scale-[0.97]",
+                      level === lv
+                        ? "btn-raised bg-accent text-white border-accent"
+                        : "btn-raised-neutral bg-panel text-text border-border",
+                    ].join(" ")}
+                  >
+                    {AI_LEVEL_LABEL[lv]}
+                  </button>
+                ))}
+              </div>
+              {level === "kolay" && (
+                <p className="text-[11px] text-muted font-mono leading-relaxed">
+                  Kolay'da Yapay Zeka en iyi hamleyi değil, en iyi birkaç
+                  hamleden birini oynar. k-lig puanı da yarıya iner: birinci
+                  +1, 4 kişilikte ikinci 0.
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col gap-2.5">

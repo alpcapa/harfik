@@ -89,5 +89,13 @@ export function buildGameRecord(
     // app-web). Canlı oyunlarda bu satırı SUNUCU yazdığından orada null
     // kalır — platform `online_game_clients`ten çözülür.
     platform: CLIENT_PLATFORM,
+    // YZ zorluğu (ROADMAP #23, Faz 3 — 6 Eylül 2026). `GameState.aiLevel`
+    // Normal'de YOK (Faz 2 sözleşmesi: eski kayıt/golden/port hepsi alansız
+    // = Normal); burada da aynen aktarılır → kolonda `null` = Normal,
+    // sunucudaki `league_points_for` ve `admin_ai_balance` null'ı o dala
+    // düşürür. Yani Normal oyun eskisi gibi alansız yazılır, yalnızca
+    // Kolay/Zor satırı gerçekten `kolay`/`zor` taşır. Canlı oyunda bu
+    // satırı sunucu yazdığından oraya hiç girmez (Canlı'da seviye yok).
+    ...(state.aiLevel !== undefined ? { ai_level: state.aiLevel } : {}),
   };
 }
