@@ -51,7 +51,9 @@ yolu budur.
 | 1.0.3 | **449** | — | 31 Ağu 2026 (`c1c0437`) | **31 Ağu, 08:00** | yayınlandı → pasif | Telemetriden çıkan İKİ ÇÖKME (derin bağlantı rotası — 11 cihaz · rafta sınır dışı erişim) + bildirim rozetinin gerçekten sıfırlanması |
 | 1.0.4 | **467** | — | 31 Ağu 2026 (`72278c3`) | **1 Eyl, 10:25** | yayınlandı → pasif | Faz 6'nın istemci yarısı + Faz 7'nin iki çökmesi + hata hız sınırı |
 | 1.0.5 | **501** | `4a0a29b` | 1 Eyl 2026 (`f28b3da`) | **2 Eyl, 14:22** (paket) · sürüm 17:58'de güncellendi | yayınlandı → **pasif** (4 Eyl, 1.0.6 devraldı) | Tahta zoom'u + zoom tanıtım balonu + yazı ölçeği + mesaj kutusu etiketi + cihaz turu düzeltmeleri (rozet kırpması · alt şerit · çevrimdışı şerit · zoom çerçevesi · filigranlar). `.aab` 63.146.275 bayt, SHA-256 `200e82b9…451d4`. İnceleme ≈23 dk. Yayın sonrası cihazda doğrulandı (kullanıcı: *"1.0.5 turu testi tamam."*) |
-| **1.0.6** | **525** | `711eaaa` | 3 Eyl 2026 (`a33fdaa`) | **4 Eyl, 15:53** (Submission 12) | ✅ **kapalı testte YAYINDA** (Alpha) | Aşağı bkz. |
+| 1.0.6 | **525** | `711eaaa` | 3 Eyl 2026 (`a33fdaa`) | **4 Eyl, 15:53** (Submission 12) | yayınlandı → **pasif** (6 Eyl, 1.0.7 devraldı) | Aşağı bkz. |
+| **1.0.7** | **545** | `78383eb` | 6 Eyl 2026 (`78383eb`) | **6 Eyl** (gönderim saati ÖLÇÜLMEDİ — Console okunmadı) | ✅ **kapalı testte YAYINDA** (Alpha) | Seviyesiz son paket: taş değiştirme motor düzeltmesi, hesap menüsü k-lig bayatlığı, arka plandan dönüş, kafa kafaya hizası, yardım cümlesi. Aşağı bkz. |
+| **1.0.8** | merge sonrası koşu no | bu sürüm PR'ının merge commit'i | 6 Eyl 2026 | **henüz yüklenmedi** | ⏳ **HAZIR, gönderilmeyi bekliyor** | Seviyeli YZ (ROADMAP #23 Faz 2-4): ZORLUK seçici (Kolay · Normal), Kolay rozeti, seviyeye göre k-lig puanı. Aşağı bkz. |
 
 ⚠ **1.0.0/1.0.1'in `versionCode`'u hâlâ ölçülmedi** (Console'un paket
 listesi ekran görüntüsünde 435'te kesiliyordu). Ama gönderim ↔ SÜRÜM ADI
@@ -109,7 +111,68 @@ buradaki satır sayısı bilerek tutmuyor.
 ⚠ Console'un kaydı **1 Mayıs 2026'dan itibaren** tutuluyor (sayfanın kendi
 notu). Daha eskisi burada görünmez.
 
-## 1.0.6 (525) — YAYINDA (gönderim 4 Eyl 2026, 15:53 · Published 16:22'den önce)
+## 1.0.8 — HAZIR, Play'e YÜKLENMEDİ (sürüm adı 6 Eyl 2026 akşamı artırıldı)
+
+**Durum:** `pubspec.yaml` + `env.dart` 1.0.7 → 1.0.8 (tek PR, ROADMAP
+"Sıradaki sürüme binecekler"). Paket, PR `main`'e girince `mobile-build`in
+o koşusunda derlenir; `versionCode` = o koşunun numarası, derleme sha'sı =
+merge commit'i. **Bu satırı dolduracak üç şey yükleme ANINDA yazılır:** koşu
+numarası, `.aab` SHA-256'sı, gönderim saati (Console → Submission activity).
+
+**İçerik:** yalnızca ROADMAP #23 (seviyeli YZ) — üç commit, aşağıda "1.0.8 —
+3 mobil commit". Kullanıcıya görünen: Yapay Zeka oyununda **Zorluk** seçimi
+(Kolay · Normal; Zor Faz 5'e kadar yok), Kolay oyunlarda altın `Kolay`
+rozeti ve yarıya inen k-lig puanı (+1). Sahadaki 1.0.7'nin web'de başlatılan
+Kolay oyunu +2 gösterme tutarsızlığı bu sürümle kapanır (sunucu zaten doğru
+sayıyordu).
+
+**Sürüm notları — TASLAK (`tr-TR`, 367/500 karakter):**
+
+```
+Yenilikler
+• Yapay Zeka oyununda zorluk seçimi: Kolay veya Normal. Kolay'da YZ en iyi hamleyi değil, en iyi birkaç hamleden birini oynar.
+• Kolay oyunun k-lig puanı yarıya iner (birinci +1); oyun sonu, geçmiş ve son oynananlar kartlarında "Kolay" rozeti.
+• Rövanş seçilen zorluğu korur.
+
+Düzeltmeler
+• Web'de başlatılan Kolay oyunun puanı geçmişte doğru (+1) görünür.
+```
+
+**Yüklemeden önce:** cihaz turu (`mobile/TESTING.md` §13 "Seviyeye göre
+puan — Kolay" + aynı hesapla iki cihazda +1 eşleşmesi) ve kullanıcı kuralı
+*"apk ile test edip sorunsuz olduğundan emin olmadan aab yapılmayacak"*.
+Setup'taki `Derleme <sha>` merge commit'iyle aynı olmalı.
+
+---
+
+## 1.0.7 (545) — YAYINDA (gönderim 6 Eyl 2026; saat ölçülmedi)
+
+**Paket:** koşu 545, `78383eb`'den derlenmiş, `.aab` SHA-256 `4df3928c…28837`
+(kısaltılmış — tam özet kayda geçmedi), release varlığı 6 Eyl 2026 07:08:49
+UTC. Kapalı test (Alpha) kanalında yayınlandı; **gönderim ve yayın saati
+Console'dan okunmadı**, bu yüzden "İnceleme süresi" tablosunda satırı yok.
+
+⚠ Bu satır kütüğe **geç yazıldı** (6 Eyl akşamı, 1.0.8 hazırlanırken): 1.0.7
+PR'ı (#461) ROADMAP'i güncellemiş ama bu dosyaya dokunmamıştı; tur arşive
+taşınırken de (`docs/decisions/roadmap-arsiv.md` → "1.0.7 sürüm turu") kütük
+atlanmıştı. "Bir sürüm yüklendiğinde ne yapılır" listesinin 1. adımı tam
+bunu önlemek için var — arşive taşımak kütüğe yazmanın yerine geçmez.
+
+**Sürüm notları:** kayda geçmedi (Console'a ne yazıldığı bilinmiyor).
+
+⚠ **`mobile-latest`'teki paket ARTIK BU DEĞİL (6 Eyl 18:10 UTC'den beri):**
+Faz 4 merge'i (`42db22b`) `mobile-build` koşu **551**'i tetikledi ve
+prerelease'teki `.aab` üzerine yazıldı — sürüm adı hâlâ 1.0.7 (bump henüz
+yoktu) ama içerik Faz 2-4'lü, `versionCode` 551. Yani orada duran dosya ne
+sahadaki 545'tir ne de 1.0.8; 1.0.4/467 dersinin aynısı. 1.0.8 adıyla
+derlenen paket ancak sürüm PR'ı `main`'e girince oluşur.
+
+**İçerik:** aşağıda "1.0.7 — 7 mobil commit". Ağırlık hata düzeltmesi; en
+güçlüsü taş değiştirmede taslak taşların kaybolması (#452, motor).
+
+---
+
+## 1.0.6 (525) — PASİF (6 Eyl 2026'da 1.0.7 devraldı) — gönderim 4 Eyl 2026, 15:53 · Published 16:22'den önce
 
 **Paket:** `mobile-latest` prerelease'indeki `kelimeki.aab`, koşu 525,
 `711eaaa`'dan derlenmiş, release anahtarıyla imzalı (4 Eyl 10:36).
@@ -446,6 +509,56 @@ beraberlik sayılması, terk edilen oyunun yanlış güne yazılması.
 
 </details>
 
+
+### 1.0.7 — 7 mobil commit
+
+*Pencere: 4 Eyl (derleme `711eaaa` sonrası) → 6 Eyl (derleme `78383eb`)*
+
+**Düzeltmeler:** taş değiştirmede **taslak taşların yok olması** (motor,
+iki yeni golden) + senkron rafı yeniden sıralarsa seçimin düşmesi; hesap
+menüsündeki k-lig puanının oturum boyunca **donması**; arka plandan dönüşün
+"ekrana yeniden giriş" sayılması; skor kartındaki kafa kafaya çubuğunun
+hizası; Hızlı Başlangıç'ın oyun sonu cümlesi. Görünmez: erişilemez `INIT`
+action'ının kaldırılması.
+
+<details><summary>Commit dökümü (7)</summary>
+
+| sha | Tarih | Ne | Kapsam |
+|---|---|---|---|
+| `f75a12c` | 04.09.2026 | Kurtarma: PR açılmadığı için main'e hiç girmemiş iki iş (arka plandan dönüş = ekrana giriş) | web + port |
+| `19e17fe` | 04.09.2026 | Hızlı Başlangıç'ın oyun sonu cümlesi + ROADMAP: sıradaki sürüme binecekler | web + port |
+| `7312eb8` | 04.09.2026 | Kafa kafaya çubuğu: yazılar bara yaklaştı, "TÜM OYUNLAR" barın hizasına oturdu | web + port |
+| `b1b9daf` | 05.09.2026 | Taş değiştirme: taslak taşlar yok olmuyor + senkron seçimi düşürüyor | web + port |
+| `91325d5` | 05.09.2026 | İnceleme 4. geçişi (temizlik): erişilemez spectating dalı ve INIT action'ı kaldırıldı | web + port |
+| `45bec90` | 05.09.2026 | Hesap menüsündeki k-lig puanı bayat kalıyordu (menü 198 ↔ tablo 200) | web + port |
+| `78383eb` | 06.09.2026 | Sürüm 1.0.7 — kapalı teste gönderilecek paket (yalnız sürüm adı) | yalnız port |
+
+</details>
+
+### 1.0.8 — 3 mobil commit
+
+*Pencere: 6 Eyl (derleme `78383eb` sonrası) → sürüm PR'ının merge commit'i*
+
+**Yenilik — tek konu, ROADMAP #23 seviyeli YZ:** Yapay Zeka oyununda
+**Zorluk** seçici (Kolay · Normal), Kolay'da YZ en iyi 4 hamleden rastgele
+birini oynar (`aiLevelTopN`), k-lig puanı yarıya iner (+1), üç kartta ve
+devam eden oyun kartında altın `Kolay` rozeti, `games.ai_level` yazılır ve
+okunur, rövanş seviyeyi taşır, yardım ekranına zorluk paragrafı. Normal'de
+hiçbir şey değişmedi (golden'lar bayt-eş).
+
+<details><summary>Commit dökümü (3)</summary>
+
+| sha | Tarih | Ne | Kapsam |
+|---|---|---|---|
+| `fb5eb51` | 06.09.2026 | ROADMAP #23 Faz 2: YZ seviye motoru — findAIMoves/pickTopMove + aiLevelTopN, GameState.aiLevel, golden sıfır fark | web + port |
+| `a47c3d2` | 06.09.2026 | ROADMAP #23 Faz 3: web ürün yüzeyi — portta yalnızca `league_points.dart` imzası | web + port |
+| `42db22b` | 06.09.2026 | ROADMAP #23 Faz 4: YZ zorluğu portta — ZORLUK seçici, seviyeli k-lig puanı/rozet üç kartta, games.ai_level, parite testi | web + port |
+
+</details>
+
+⚠ Sürüm PR'ının kendisi (`pubspec.yaml` + `env.dart`) bu listeye
+merge'den sonra dördüncü satır olarak girer — 1.0.7'nin `78383eb` satırı
+gibi "yalnız sürüm adı".
 
 ---
 
