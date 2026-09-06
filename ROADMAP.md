@@ -198,122 +198,52 @@ Closed testing → (track) → Testers** (izin listesi) ve **Statistics**
 
 Kaynak kayıt: `marketing/play-store/console-formlari.md` §7.
 
-## Sıradaki sürüme binecekler — `main`'de var, MAĞAZADA yok (4 Eylül 2026)
+## Sıradaki sürüme binecekler — `main`'de var, MAĞAZADA yok
 
-⚠ **DURUM (6 Eylül 2026, 12:31 TSİ): 1.0.7 GÖNDERİLDİ — Play'de İNCELEMEDE.**
-Kapalı test (Alpha) kanalına yüklendi, Console'da **13 numaralı gönderim**,
-durum `In review`. **Henüz YAYINDA DEĞİL** — bu yüzden aşağıdaki liste
-BİLEREK duruyor: "mağazada yok" hâlâ doğru.
+**Kapalı testteki paket:** 1.0.7 (545) = commit `78383eb` (#461),
+6 Eylül 2026'da yayınlandı.
 
-| | |
-|---|---|
-| Sürüm adı | **1.0.7 (545)** — `versionCode` = CI koşu numarası |
-| Kaynak commit | `78383eb` |
-| AAB sha256 | `4df3928c…28837` (6 Eylül 07:08:49 UTC, koşu 545) |
+**O paketten beri porta dokunan işler:** _(şu an YOK — liste boş)_
 
-**`Published`e döndüğünde yapılacak:** aşağıdaki liste SIFIRLANIR ve
-"Kapalı testteki paket" satırı `1.0.7 (545) = 78383eb` olur. O ana kadar
-liste, gönderilmiş ama henüz yayınlanmamış içeriği gösteriyor.
-
-Karar 5 Eylül akşamı DEĞİŞTİ. Bekletme kararı 4 Eylül'de *"sürüme
-gönderme, daha üzerine yeni işler gelecek"* diyordu ve 5 Eylül'de bir kez
-tekrarlandı (*"sürümü çıkartmaya değecek önemde değil bence, sürümü
-bekletelim"* — o an tablo üç satır görünüyordu). Tablo ÖLÇÜLÜP eksik iki
-satır eklenince kullanıcı kararı çevirdi: *"Aslında bayağı dolmuş. O zaman
-bunu yarın yeni sürüm ile gönderelim."* Yani karar tabloyu düzeltmenin
-doğrudan sonucu — bayat bir liste, bir sürümün gecikmesine mal oluyordu.
-
-Aşağıdaki liste bu sürümün içeriğidir. Ağırlık merkezi hata düzeltmesi;
-en güçlü gerekçe **#452** (taş değiştirmede taslak taşların kaybolması,
-motor katmanı).
-
-`main` ile mağazadaki paket bilerek ayrışıyor; bu bölüm o farkı görünür
+`main` ile mağazadaki paket bilerek ayrışabilir; bu bölüm o farkı görünür
 tutuyor, çünkü fark tam da unutulmaya müsait yerde duruyor — `main` yeşil,
 web canlı, CI derlemesi hazır, ama Play'e giden hiçbir otomatik yol YOK
 (gönderim elle).
 
-✅ **"Yeni sürüm 14 gün sayacını sıfırlar mı?" — SIFIRLAMIYOR, deponun kendi
-geçmişiyle kanıtlı (6 Eylül 2026).** Bu bir oturumda "ölçülmemiş açık soru"
-diye gündeme getirilmiş ve göndermeden önce Console'dan teyit edilmesi
-istenmişti. Kullanıcı itiraz etti (*"14 gün sayacının yeni sürümle alakası
-ne. Her gün neredeyse sürüm çıktık daha önce, bunu hiç sormadın?"*) ve
-haklı çıktı — cevap zaten repodaydı:
+⚠ **Listeye GÜVENME, komutu koş.** Bu tablo iki kez eksik yakalandı: bir kez
+bölümü yazan PR kendi diff'ini saymamıştı (4 Eylül), bir kez de porta dokunan
+iki commit hiç eklenmemişti (5 Eylül — `#452` ve `#457`). İkincisinin bedeli
+ölçüldü: eksik liste yüzünden sürüm bir gün gecikti, üstelik eksiklerden biri
+gerçek bir hata düzeltmesiydi. Refleks:
 
-| Sürüm | Tarih |
-|---|---|
-| 1.0.1 | 29 Ağustos |
-| 1.0.2 | 30 Ağustos |
-| 1.0.3 · 1.0.4 | 31 Ağustos |
-| 1.0.5 | 1 Eylül |
-| 1.0.6 | 3 Eylül |
+```
+git log --oneline <mağazadaki-paketin-commiti>..origin/main -- mobile/app mobile/kelimeki_core
+```
 
-Sayaç 27/28 Ağustos'ta başladı; bu ALTI sürüm pencerenin içinde çıktı ve
-kart saymaya devam etti (26 Ağustos'ta 10, 28 Ağustos'tan beri 12). Sürüm
-göndermek sayacı sıfırlasaydı 10. güne hiç gelinemezdi.
+⚠ **Kendi PR'ını da say** — kapanan işi arşive taşırken tabloyu da güncelle.
 
-**İkinci ve bağımsız kanıt (6 Eylül, Console → Publishing overview →
-Submission activity):** pencerenin içinde 30 Ağustos · 31 Ağustos · 1 Eylül ·
-2 Eylül · 4 Eylül tarihli beş gönderim var ve **hepsi `Published`**. Yani
-tez artık yalnızca repo geçmişine değil, Play'in kendi gönderim kaydına da
-dayanıyor. **Yeni bir sürüm
-bu yüzden bekletilmez; kapı YOK.**
+⚠ **Play Console hakkında bir şey yazmadan ÖNCE SOR.** Bu oturumların Play
+Console erişimi YOK. 6 Eylül 2026'da iki yanlış hüküm kuruldu (uydurma bir
+"14 gün sayacı sıfırlanır mı" gönderim kapısı ve "12 tavan mı" sorusu için
+gerçekleşmesi imkânsız bir ayırt etme yöntemi). Kayıt:
+`docs/decisions/roadmap-arsiv.md` → "1.0.7 sürüm turu".
 
-⚠ Ders, "12 gerçek sayı mı" açık sorusunun tam TERSİ yönde: orada kayıt
-ölçülmemiş bir iddiayı ölçülmüş gibi yazıyordu. Burada ise ölçülmüş bir
-şey (kendi sürüm geçmişimiz) *"ölçülmedi"* diye işaretlendi ve gereksiz
-bir gönderim kapısı üretti. **Bir Console iddiasını "bilinmiyor" ilan
-etmeden önce deponun kendi geçmişine bak** — `git log -p --
-mobile/app/pubspec.yaml` sürüm tarihçesini tek komutta veriyor.
-
-**Test penceresi:** 5 Eylül itibarıyla **10. gün**, 14. gün ≈ 10 Eylül.
+**Test penceresi:** 6 Eylül itibarıyla **11. gün**, 14. gün ≈ 10 Eylül.
 
 **Kalan günler için kullanıcının niyeti (KARAR DEĞİL, tartışma açık):**
-seviyeli YZ oyununu kalan günlere koymak. Ajanın çekincesi kayda geçsin —
-madde `docs/decisions/product-backlog.md`'de duruyor ve dördü de oradan
-çıkıyor: (1) zorluk algoritmasının kendisi kullanıcı kararıyla BİLEREK
-ertelenmiş (*"Zorluk algoritmasını yaptığımız zaman değerlendiririz"*),
-(2) migration ŞART (puan `leaderboard`/`player_stats` view'larında
-hesaplandığından `games`e seviye alanı gerekiyor), (3) YZ motorun ÜÇ
-kopyasında yaşıyor (`src/utils/ai.ts` · `_game/ai.ts` ·
-`kelimeki_core/find_move.dart`) + golden vector'lar, (4) kaydın kendi
-uyarısı: yerel oyun skorları k-lig'e aktığından YZ'nin gücü değişince
-lider tablosunda eski/yeni dönem karışır ve bu *"bir sürüm sınırına denk
-getirilmeli"* — test penceresinin ortası bunun tersi. Ajanın önerisi:
-üretime çıkıştan sonraki İLK özellik yapmak, kalan günleri ise başvuruyu
-bekleyen iki işe ayırmak (`Preview questions` + tester'lardan YAZILI geri
-bildirim; ikisi de yukarıda açık). **Kullanıcı bu öneriye henüz yanıt
-vermedi.**
-
-**Kapalı testteki paket:** 1.0.6 (525) = commit `711eaaa` (#431).
-**O paketten beri porta dokunan işler:**
-
-| Commit | Ne |
-|---|---|
-| `f75a12c` (#441) | arka plandan dönüş artık "ekrana giriş" sayılıyor — `away_return.dart` yeni, `setup_screen.dart` + `live_games_tab.dart` bağlandı |
-| `19e17fe` (#443) | Hızlı Başlangıç'ın oyun sonu cümlesi tek cümleye indi ve kazananı söylüyor — `help_modal.dart` + `help_modal_test.dart` |
-| `7312eb8` (#447) | Skor kartındaki kafa kafaya çubuğunun yazıları bara yaklaştı (10 → 2 px) ve "TÜM OYUNLAR" butonu barın hizasına oturdu — `player_score_card_modal.dart` |
-| `b1b9daf` (#452) | Taş değiştirmede taslak taşlar yok olmuyor + senkron rafı yeniden sıralarsa seçim düşüyor — `kelimeki_core/engine/reducer.dart` (motor düzeltmesi, iki yeni golden) |
-| `91325d5` (#457) | Temizlik: erişilemez `INIT` action'ı kaldırıldı — `kelimeki_core/actions.dart` + `reducer.dart` (davranış değişmedi) |
-| `028a805` · `8796c6b` (#460) | Hesap menüsündeki k-lig puanı oturum boyunca donuyordu (kullanıcı bildirdi: "puanım 200 ama menüde 198") — `account_button.dart`; `Navigator.push` Setup'ı canlı tuttuğundan `initState` bir daha koşmuyor, o yüzden portta web'den ÇOK daha görünür |
-
-Yeni işler geldikçe tablo büyür.
-
-⚠ **5 Eylül 2026 — tablo YİNE eksikti ve aşağıdaki komut yakaladı.** Satır
-"bu ikisi" diyip üç commit listeliyordu; ölçünce porta dokunan beş commit
-çıktı — `#452` ve `#457` hiç eklenmemişti (ikisi de `kelimeki_core`
-motoruna dokunuyor, biri gerçek bir hata düzeltmesi). Yani bölümün kendi
-uyarısı iki kez doğrulandı: **listeye bakma, komutu koş.**
-
-⚠ **Bu tabloyu kendi PR'ın için de güncelle — bölüm ilk yazıldığında
-KENDİ değişikliğini atlamıştı.** 4 Eylül 2026'da bir sonraki oturum fark
-etti: satır *"porta dokunan tek iş #441"* diyordu, oysa bölümü yazan PR
-**#443'ün kendisiydi** ve o da porta dokunuyordu (yukarıdaki ikinci satır).
-Kendi diff'ini saymamak kolay bir hata; refleks, listeye güvenmek değil
-ölçmek:
-
-```
-git log --oneline 711eaaa..origin/main -- mobile/app mobile/kelimeki_core
-```
+seviyeli YZ oyununu kalan günlere koymak. Ajanın çekincesi: madde
+`docs/decisions/product-backlog.md`'de duruyor ve dördü de oradan çıkıyor —
+(1) zorluk algoritmasının kendisi kullanıcı kararıyla BİLEREK ertelenmiş
+(*"Zorluk algoritmasını yaptığımız zaman değerlendiririz"*), (2) migration
+ŞART (puan `leaderboard`/`player_stats` view'larında hesaplandığından
+`games`e seviye alanı gerekiyor), (3) YZ motorun ÜÇ kopyasında yaşıyor
+(`src/utils/ai.ts` · `_game/ai.ts` · `kelimeki_core/find_move.dart`) +
+golden vector'lar, (4) kaydın kendi uyarısı: yerel oyun skorları k-lig'e
+aktığından YZ'nin gücü değişince lider tablosunda eski/yeni dönem karışır ve
+bu *"bir sürüm sınırına denk getirilmeli"*. Ajanın önerisi: üretime çıkıştan
+sonraki İLK özellik yapmak, kalan günleri başvuruyu bekleyen iki işe ayırmak
+(`Preview questions` + tester'lardan YAZILI geri bildirim). **Kullanıcı bu
+öneriye henüz yanıt vermedi.**
 
 **Göndermeden önce, sırayla:**
 
