@@ -91,7 +91,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); **1.0.5'in tamamı 2 Eylül'de onaylandı** (zoom turu, çevrimdışı şerit, filigranlar, balon, yazı ölçeği, mesaj etiketi) — kalan iki kalem bu ikisi |
 | **Karar verilmiş, yapılmamış** | — | ✅ Kova BOŞ: **#3** hatırlatma, **#8** iPad paylaşımı (3 Eylül cihazda doğrulandı) ve **#16** kart düzeni kapandı; üçü de arşivde |
 | **Ertelendi** | #2 zorunlu güncelleme | ✅ **KAPANDI/ARŞİVDE** (2 Eylül 2026, kullanıcı: *"Artık app'de güncelleme çıkıyor, bunu görünce zaten yapar"*). ⚠ Sürüm kapısı DURUYOR ve artık KULLANILABİLİR — acil fren olarak `app_config.mobile_min_supported_version` |
-| **Seviyeli YZ** | **#23** Kolay/Normal/Zor + seviyeye göre k-lig puanı — 5 faz (sunucu → motor → web → port → Zor motoru) | ⬜ **Faz 0 ✅ (6 Eylül 2026), Faz 1 sırada**: karar verildi — Normal bugünkü motor, Kolay YZ ~%30, Zor YZ ~%70 (#23.0). Faz 0 ölçtü: **Kolay = N=4** (200 oyun/N; N=3 %36, N=4 %33, N=5 %22 — backlog notu) |
+| **Seviyeli YZ** | **#23** Kolay/Normal/Zor + seviyeye göre k-lig puanı — 5 faz (sunucu → motor → web → port → Zor motoru) | ⬜ **Faz 0 ✅ · Faz 1 ✅ (6 Eylül 2026, migration canlıda, sıfır puan değişikliği ölçüldü), Faz 2 sırada**: karar verildi — Normal bugünkü motor, Kolay YZ ~%30, Zor YZ ~%70 (#23.0). Faz 0 ölçtü: **Kolay = N=4** (200 oyun/N; N=3 %36, N=4 %33, N=5 %22 — backlog notu) |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
 | **Play Store'a girdikten sonra** | **#17 Google ile giriş** — sunucu → web → mobil; migration BLOKER (OAuth bugün `handle_new_user`'da patlar) | ⏳ ERTELENDİ — acelesi yok, çalışan kimlik akışına şimdi dokunulmuyor (2 Eylül, kullanıcı). ⚠ Sayaçla İLİŞKİSİ YOK; o bağ aynı gün koptu, gerekçe #17'de |
@@ -1114,7 +1114,7 @@ döner — o an kaydedilmezse bir daha alınamaz.
 
 ---
 
-## 23. Seviyeli YZ (Kolay / Normal / Zor) + seviyeye göre k-lig puanı — **Faz 0 ✅ · Faz 1 sırada** (6 Eylül 2026)
+## 23. Seviyeli YZ (Kolay / Normal / Zor) + seviyeye göre k-lig puanı — **Faz 0-1 ✅ · Faz 2 sırada** (6 Eylül 2026)
 
 Kaynak: `docs/decisions/product-backlog.md` → "YZ zorluk seviyesi" (5 Eylül
 2026; kadran ölçümü, kapsam ve KESİN puan tablosu orada — burada
@@ -1175,7 +1175,7 @@ port `fromJson` sözleşmesi.
 | **Oyun kaydı** | `buildGameRecord` (`gameRecord.ts`) → `NewGame` (`database.types.ts:459`) → `games` | Yeni kolon `games.ai_level` (nullable, check). `platform` kolonu (`20260814204059`) ŞABLON — ama ondan farklı: **SELECT de gerekli** (geçmiş kartları puanı bununla hesaplıyor) |
 | **Puan — TS** | `src/utils/leaguePoints.ts` + 4 çağıran: `GameOver.tsx:116`, `GameHistoryModal.tsx:785`, `RecentGamesSection.tsx:192`, `SharedGamePage.tsx:64` | İmzaya `level` eklenir; dört çağıran seviyeyi bilmek zorunda → `GameHistoryEntry` + `fetchMyGames`'in `cols` dizesi (`api.ts:803`) + `get_shared_game` RPC dönüşü |
 | **Puan — Dart** | `rules/league_points.dart` + `game_over_modal.dart`, `game_history_modal.dart`, `recent_games_section.dart:319`, `games_api.dart:404` `_listCols` | Aynı |
-| **Puan — SQL (DÖRT canlı nesne, formül kopya)** | `player_stats` (`20260801081924`), `player_stats_overall` (`20260811235340`), `leaderboard` (`20260812131123`), `_award_league_rewards` (`20260812125039:44`) | Dördü aynı `case` bloğunu taşıyor; `k_lig_siralama` ve `my_leaderboard_rank` `leaderboard`'dan okuduğundan kendiliğinden düzelir. **Öneri: formülü TEK `immutable` SQL fonksiyonuna indir** (`league_points_for(rank, player_count, surrendered, ai_level)`), dördü onu çağırsın — bugünkü dört kopya zaten "aynı metriğin iki yerde ayrışması" hata sınıfının adayı |
+| **Puan — SQL (DÖRT canlı nesne, formül kopya)** | `player_stats` (`20260801081924`), `player_stats_overall` (`20260811235340`), `leaderboard` (`20260812131123`), `_award_league_rewards` (`20260812125039:44`) | Dördü aynı `case` bloğunu taşıyor; `k_lig_siralama` ve `my_leaderboard_rank` `leaderboard`'dan okuduğundan kendiliğinden düzelir. **Öneri: formülü TEK `immutable` SQL fonksiyonuna indir** (`league_points_for(rank, player_count, surrendered, ai_level)`), dördü onu çağırsın — bugünkü dört kopya zaten "aynı metriğin iki yerde ayrışması" hata sınıfının adayı. **→ Faz 1 YAPTI (6 Eylül 2026): kopya DÖRT değil BEŞti** — `trg_award_league_rewards` (`rank_down_notice`, delta hesabı) yalnızca canlıdan `pg_get_functiondef` ile göründü; beşi de `league_points_for`u çağırıyor, `verify-league-points` altıncısını yakalar |
 | **Parite kapıları** | `npm run generate-golden-vectors` (`reducer_ai2/ai4` + YENİ `reducer_ai2_kolay`), `verify-edge-engine-parity` (imza), Dart `run_all.dart` | `verify-sql-engine-parity` k-lig formülünü KAPSAMIYOR (yalnızca `_km_*`) → yeni `verify-league-points` (şablon: `verify-league-tiers.mjs`, migration SQL ↔ `leaguePoints.ts` ↔ `league_points.dart` tablosunu kilitler) |
 | **Yüzey — web** | `Setup.tsx` kurulum formu (oyuncu sayısı seçicisinin altına "ZORLUK"), `GameOver`/`GameHistoryModal`/`RecentGamesSection` kartlarında seviye rozeti (Normal'de rozet YOK — bugünkü görünüm korunur), Setup "devam eden oyun" kartı, `HelpModal.tsx:313-319` k-lig paragrafı (→ `/nasil-oynanir/` aynı kaynaktan, kendiliğinden) | |
 | **Yüzey — port** | `setup_screen.dart:1705` `_buildNewGameForm` (`OYUNCU SAYISI` bloğunun ikizi), aynı üç kart, `devam_eden_govde.dart` | Web ile BİREBİR metin/sıra |
@@ -1265,32 +1265,20 @@ ve CI her PR'da kopyayı üretimle karşılaştırıyor (`web-ci.yml`, 2 oyun) �
 Faz 2 `findAIMove`'a `level` ekleyince alet o parametreyi çağırmalı, kopya
 ve CI adımı silinmeli; (2) Faz 5 Zor motorunu AYNI aletle ölçer.
 
-**Faz 1 — Sunucu (migration; anında canlı, sıfır davranış değişikliği).**
-Model: Opus 5, efor `medium`. Tek migration:
-- `games.ai_level text check (ai_level is null or ai_level in ('kolay','normal','zor'))` +
-  `comment` + **`grant insert (ai_level), select (ai_level)`** — `games`'in
-  tablo düzeyi grant'i YOK (10 Ağustos gizlilik düzeltmesi), kolon tek tek
-  verilir; `platform`'dan farkı SELECT'in de şart olması.
-- `public.league_points_for(p_rank int, p_player_count int, p_surrendered bool, p_ai_level text) returns int immutable` —
-  tablo 23.0. Dört nesne (`player_stats`, `player_stats_overall`,
-  `leaderboard`, `_award_league_rewards`) `case` bloğu yerine bunu çağırır.
-  `create or replace view` yeter (kolon listesi değişmiyor);
-  `_award_league_rewards` gövde değişikliği, imza aynı.
-- `get_shared_game`: dönüş tablosuna `ai_level` → **dönüş tipi değişir →
-  `drop function` + `create` + `revoke/grant` elle** (`20260812131123`
-  dersi). `SharedGamePage` bunu okuyacak.
-- `admin_ai_balance()`: `group by player_count, coalesce(ai_level,'normal')`
-  → aynı drop+create+grant.
-- **Kanıt (uygulamadan önce ve sonra):** `select user_id, total_score from
-  player_stats_overall` çıktısı bayt-eş olmalı (tüm satırlar `null` →
-  Normal); `k_lig_siralama` sırası değişmemeli. Bu sorgu migration'ın
-  yorumuna yazılır.
-- `list_migrations` ile dosya adı eşleştirilir; fonksiyonlar GERÇEKTEN
-  çağrılır (kural 3).
-- `database.types.ts`: `Game.ai_level`, `NewGame.ai_level?`,
-  `GameHistoryEntry` + `SharedGameData`'ya alan.
-- `scripts/verify-league-points.mjs` + `package.json` + CI'da koşum
-  (`verify-league-tiers` nasıl bağlıysa öyle).
+**Faz 1 — Sunucu · ✅ YAPILDI (6 Eylül 2026).** Migration
+`20260906114252_ai_level_and_league_points_for` CANLIDA; faz metni ve
+öncesi/sonrası kanıtı arşivde: `docs/decisions/roadmap-arsiv.md` → "23 ·
+Faz 1". Sonraki fazlara üç miras: (1) k-lig formülü sunucuda artık TEK
+fonksiyon (`league_points_for`) — 23.1'in "dört kopya"sı aslında BEŞti
+(`trg_award_league_rewards` delta hesabı canlıdan bulundu), beşi de
+fonksiyonu çağırıyor; `npm run verify-league-points` (CI'da) SQL ↔ TS ↔
+Dart tablosunu kilitliyor ve Faz 3 `leaguePoints`e `level` ekleyince
+ariteyi okuyup üç seviyeyi kendiliğinden sınıyor. (2) `GameHistoryEntry.
+ai_level` OPSİYONEL: `fetchMyGames` seçiyor ama `list_liked_games` RPC'si
+döndürmüyor — **Faz 3 o RPC'ye de kolonu eklemeli** (dönüş tipi değişir →
+drop+create+grant). (3) `admin_ai_balance` satırları artık `(players,
+ai_level)`; panel Normal'de bugünkü gibi, Kolay/Zor satırı Faz 3 yazmaya
+başlayınca kendi kutusunu açar.
 
 **Faz 2 — Motor (web + port + Edge kopyası AYNI PR).** Model: Opus 5,
 efor `high` — parite işi.
@@ -1328,6 +1316,9 @@ efor `high` — parite işi.
   `ZORLUK` — üç seçenek, varsayılan Normal, misafirde de var (misafir de
   YZ'ye karşı oynuyor; kaydı yok, puanı yok, seçim yine anlamlı). Zor, Faz
   5 bitene kadar **gösterilmez**.
+- `list_liked_games` RPC'sine `ai_level` (Faz 1 eklemedi — dönüş tipi
+  değişir, drop+create+grant; `GameHistoryEntry.ai_level` o güne kadar
+  opsiyonel).
 - `buildGameRecord` → `ai_level`; `leaguePoints(rank, count, surrendered, level)`
   + dört çağıran; kartlarda rozet (`KOLAY`/`ZOR`, Normal'de yok — bugünkü
   kart aynen); Setup "devam eden oyun" kartına küçük etiket (aynı düzeni
@@ -1402,7 +1393,7 @@ Model: Opus 5, efor `high`.
 | Faz | "Bitti" kanıtı |
 |---|---|
 | 0 | ✅ `simulate-ai-levels` repoda, 200 oyunluk koşum tablosu backlog notunda, Kolay **N=4** seçildi (6 Eylül 2026) |
-| 1 | migration canlıda, `player_stats_overall.total_score` öncesi/sonrası bayt-eş, `verify-league-points` CI'da yeşil |
+| 1 | ✅ migration canlıda (`20260906114252`), altı view/tablo karması öncesi/sonrası bayt-eş (953 oyun), `verify-league-points` CI'da yeşil (6 Eylül 2026) |
 | 2 | golden sıfır fark (N=1) + `reducer_ai2_kolay` Dart'ta yeşil + `verify-edge-engine-parity` yeşil + `play-ai-turn` deploy edildi (verify_jwt korunarak) |
 | 3 | `curl kelimeki.com \| grep kelimeki-build` = `main` başı; Kolay'da biten oyunun kartı +1 gösteriyor ve `k_lig_siralama` aynı sayıyı veriyor |
 | 4 | cihazda: portta Kolay seçilip bitirilen oyun web'de aynı puanla görünüyor ve tersi (aynı hesap, iki cihaz) |

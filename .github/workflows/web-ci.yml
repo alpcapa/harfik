@@ -173,6 +173,15 @@ jobs:
       # yalnızca migration değişen bir PR'da da koşmak ZORUNDA.
       - run: npm run verify-league-tiers
 
+      # k-lig PUAN tablosu (ROADMAP #23, seviyeye göre 1/2/4 · 0/1/2 · -2):
+      # sunucuda TEK fonksiyon (`league_points_for`, 6 Eylül 2026'ya kadar
+      # BEŞ inline kopyaydı), web'de `leaguePoints.ts`, portta
+      # `league_points.dart`. Bu adım üçünü kanonik tabloya ve birbirine
+      # kilitler; ayrıca beş sunucu nesnesinin en yeni tanımının fonksiyonu
+      # çağırdığını (altıncı kopya yok) doğrular. `supabase/migrations/**`
+      # paths listesinde zaten var.
+      - run: npm run verify-league-points
+
       # Oyun motorunun DÖRDÜNCÜ kopyası SQL'de (`submit_move` artık hamleyi
       # kendi hesaplıyor — ROADMAP #18). Metin karşılaştırması mümkün değil
       # (farklı dil), bu yüzden bu adım mekanik olanı kilitliyor: sayısal

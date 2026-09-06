@@ -236,6 +236,13 @@ gerekenler.
       paylaşma kutularının altında **ÜÇ** kutu: "2 Kişilik — İnsan Birincilik",
       "4 Kişilik — İnsan Birincilik" ve "4 Kişilik — İnsan İkincilik"
       (üçüncüsü 17 Ağustos 2026'da eklendi).
+- [ ] **Seviye kırılımı henüz GÖRÜNMEZ olmalı (6 Eylül 2026, ROADMAP #23 Faz 1).**
+      `admin_ai_balance` artık `(oyuncu sayısı, seviye)` başına satır döndürüyor
+      ama bugün tüm kayıtlar seviyesiz (= Normal), yani kutular YİNE üç ve
+      etiketlerde " · Kolay"/" · Zor" eki YOK. Ek çıkıyorsa seviye yazan bir
+      kayıt var demektir — Faz 3'ten önce bu bir hata. Faz 3 canlıya
+      çıkınca Kolay'da biten ilk oyun "2 Kişilik · Kolay — İnsan Birincilik"
+      kutusunu AÇMALI, Normal kutusunun sayıları DEĞİŞMEMELİ.
 - [ ] **2 kişilikte İKİNCİLİK kutusu OLMAMALI.** Orada rank=2 kaybetmenin
       kendisi (canlıda ölçüldü: ikincilik sayısı = kayıp sayısı) ve k-lig
       puanı getirmiyor — kutu çıkıyorsa filtre atlanmış demektir.
