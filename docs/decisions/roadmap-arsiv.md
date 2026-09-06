@@ -21,6 +21,7 @@
 
 | Ne | Kapanış |
 |---|---|
+| Madde 23 · Faz 0 — YZ seviye kadranının ölçüm aleti (`simulate-ai-levels`), Kolay N=4 | 6 Eylül 2026 |
 | Hata avı geçişi (incelemenin 2. geçişi) | 5 Eylül 2026 |
 | Performans geçişi (incelemenin 3. geçişi) | 5 Eylül 2026 |
 | Temizlik geçişi (incelemenin 4. geçişi) | 5 Eylül 2026 |
@@ -2169,3 +2170,48 @@ Gerçekten kaldırılan yalnızca hiçbir sınıfa girmeyen ikisi oldu.
   çağrılmıyor ama ÖLÜ DEĞİL — `generate-logo.mjs` gibi elle koşulan bir
   pazarlama üreticisi. Silmek yerine `docs/decisions/marketing-assets.md`'nin
   komut listesine yazıldı.
+
+---
+
+## 23 · Faz 0 — Ölçüm aleti · ✅ YAPILDI (6 Eylül 2026)
+
+`ROADMAP.md` madde 23'ün (Seviyeli YZ) sıfırıncı fazı; madde AÇIK, yalnızca
+bu faz kapandı. Faz metni buraya `ROADMAP.md` 23.3'ten taşındı, sonuç ve
+tablo `docs/decisions/product-backlog.md` → "YZ zorluk seviyesi" notunda.
+
+**Faz 0 — Ölçüm aleti (kod ürüne girmez).** Model: Opus 5, efor `medium`.
+Karar verildi (23.2: B); bu faz artık yalnızca alet + ön eleme.
+- Backlog'daki YZ↔YZ koşumu **repoya girer**: `scripts/simulate-ai-levels.ts`
+  (oyun sayısı ve N kümesi parametre; tohumlu, `setRandomSource` ile;
+  çıktı: kazanma oranı, ortalama skor, ortalama hamle puanı — backlog
+  tablosuyla aynı kolonlar ki eski ölçümle kıyaslanabilsin). "Uygulayan
+  yeniden ölçmesin" doğru, ama Faz 5'te YENİ motor için aynı alet
+  gerekecek ve bugün repoda YOK (`scripts/` tarandı).
+- İlk koşum: N ∈ {1, 2, 3, 5} — N=2 backlog tablosunda yok, Kolay'ın olası
+  ikinci adayı. Oyun sayısı 24 yerine ≥100 (24 oyunda %25 ile %30 ayrılamaz;
+  ±%9 güven aralığı — tahmin, koşum kesinleştirdi).
+- Çıktı: Kolay için N (başlangıç N=3, 23.2). Not backlog maddesine eklenir.
+
+**Nasıl yapıldı (6 Eylül 2026):**
+- `npm run simulate-ai-levels` — `-- --oyun 200 --n 1,2,3,4,5 --tohum 1
+  --dogrula 5`. Üretim tarafı reducer'ın kendi `AI_PLAY`'iyle oynuyor (yani
+  GERÇEKTEN üretim kodu); top-N tarafı `PLACE_TILE`+`PLAY` ile sürülüyor,
+  hamle yoksa YZ'yle aynı davranış (torba doluysa tüm raf değişir, boşsa
+  pas). Koltuk değişimli: çift oyunlarda top-N 2. koltukta, teklerde 1.
+- **`src/utils/ai.ts`e DOKUNULMADI.** Alet arama döngüsünün bir kopyasını
+  taşıyor; tek fark "iki en-iyi" yerine "iki sınırlı liste" (Faz 2
+  tasarımının prototipi — sıralı ekleme, `sort` yok, eşitte ilk bulunan
+  önde). Kopya ayrışmasın diye `--dogrula` her hamlede liste başını üretim
+  `findAIMove`'la karşılaştırıyor; **`web-ci.yml` bu kontrolü her PR'da 2
+  oyunla koşuyor.** Faz 2 motora `level` ekleyince alet onu çağırmalı,
+  kopya ve CI adımı SİLİNMELİ.
+- N=1'de rastgele ÇAĞRI YOK, N>1'de tek `rng()` çağrısı — Faz 2'nin "N=1
+  yolu bayt-eş kalır" sözleşmesi burada da aynen uygulandı.
+- Süre: 200 oyun ≈ 3 dk (tek çekirdek). Beş N paralel koşuldu.
+
+**Sonuç:** Kolay için **N=4** (%33; hedef ~%30). Planın N=3 tahmini 24
+oyunluk eski tablonun gürültüsüne dayanıyordu (%25 sanılan değer 200
+oyunda %36 çıktı). Ayrıca ilk koltuk avantajı ölçüldü (~12 puan; iki aynı
+motor: 1. koltuk 64/100, 2. koltuk 39/100) — insanın yerel 2 kişilik oyunda
+her zaman 1. koltukta olduğu düşünülürse sahadaki %48,7 bu avantajı zaten
+içeriyor. Tablo ve gerekçe backlog notunda.

@@ -55,6 +55,7 @@ npm run generate-store-header # marketing/store/ — mağaza başlık görseli (
 npm run generate-golden-vectors  # Flutter portu parite fixture'ları (motor değişince ZORUNLU)
 npm run generate-meanings-db     # meanings.json → portun SQLite asset'i
 npm run verify-league-tiers      # k-lig kademe/ödül tablosu: migration SQL'i ↔ TS
+npm run simulate-ai-levels       # YZ seviye kadranı: "en iyi N'den rastgele" ↔ üretim motoru, YZ↔YZ (ROADMAP #23)
 npm run generate-initial-main-view-golden # giriş sekmesi kuralı: web→port davranış golden'ı
 npm run generate-demo-board-dart # karşılama tahtası → portun tanıtım ekranı için demo_board_data.dart
 ```

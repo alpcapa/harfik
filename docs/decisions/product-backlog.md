@@ -120,6 +120,42 @@ bölümün kendi tarihli notuna taşınır.
   ertelendi** — kullanıcı: *"Zorluk algoritmasını yaptığımız zaman
   değerlendiririz."* Yukarıdaki ölçüm tablosu o değerlendirmenin girdisi.
 
+  **✅ FAZ 0 KOŞUMU (6 Eylül 2026) — alet repoda, yukarıdaki 24 oyunluk
+  tablo ARTIK GEÇERSİZ, bunu oku.** `npm run simulate-ai-levels` (ROADMAP
+  23.3 → Faz 0). N başına **200 oyun**, tohum 1-200 (her N aynı tohumlarla,
+  yani eşli karşılaştırma), **koltuk değişimli** (çift oyunlarda top-N 2.
+  koltukta/köşe 3, teklerde 1. koltukta/köşe 0). Üretim tarafı reducer'ın
+  kendi `AI_PLAY`'iyle oynadı; top-N tarafı betikteki kopya (her N'in ilk 5
+  oyununun HER hamlesinde liste başı ↔ üretim `findAIMove` birebir doğrulandı).
+
+  | N | Top-N kazanma | %95 GA | Ort. Normal | Ort. Top-N | Top-N ort. hamle puanı |
+  |---|---|---|---|---|---|
+  | 1 (bugünkü) | %52 | %45–%59 | 224 | 216 | 12,1 |
+  | 2 | %44 | %37–%51 | 229 | 207 | 11,3 |
+  | 3 | %36 | %29–%42 | 233 | 196 | 10,8 |
+  | **4** | **%33** | %27–%40 | 233 | 190 | 10,4 |
+  | 5 | %22 | %17–%28 | 244 | 178 | 9,7 |
+
+  (N=1'de 2 berabere, kazanma oranı beraberlik dışı.) İki bulgu:
+
+  1. **24 oyunluk eski tablo N=3'ü fazla zayıf göstermişti:** %25 değil
+     **%36** (GA %29-42). 24 oyunun güven aralığı ±%17'ydi, yani fark
+     gürültü — ama "N=3 hedefin tam üstünde" hükmü buna dayanıyordu ve
+     YANLIŞTI. Hedef YZ ~%30 için (bugünkü motor sahada ~%51 → YZ↔YZ
+     sıfır çizgisi %52 ile ÇAKIŞIYOR, vekil doğrudan okunabilir) tabloda en
+     yakın değer **N=4 (%33)**; N=3 (%36) üstünde, N=5 (%22) altında.
+     **Kolay için başlangıç N=4.** N=3 ile N=4'ün aralıkları örtüşüyor —
+     son sözü saha (`admin_ai_balance` seviye kırılımı) söyler: Kolay'da YZ
+     %30'un belirgin üstünde kalırsa N=5, altına düşerse N=3.
+  2. **İlk koltuk avantajı ÖLÇÜLDÜ ve büyük:** N=1'de (iki aynı motor) ilk
+     koltuk **64/100**, ikinci koltuk **39/100** kazandı — ~12 puanlık fark,
+     dört N'in hepsinde aynı yönde. Yerel 2 kişilik oyunda insan HER ZAMAN
+     1. koltuktadır (köşe 0), YZ 2. (köşe 3); yani sahadaki %48,7 insan
+     oranı bu avantajı zaten İÇERİYOR. Bu yüzden Kolay'ın N'i seçilirken
+     koltuk-ortalamalı sütun okundu (delta oradan), yalnızca 2. koltuk
+     sütunu değil. Eski tabloda top-N hep 2. koltuktaydı — %25'in bir
+     bölümü koltuktan geliyordu, N'den değil.
+
   ⚠ **Sorgu tuzağı — bu maddeyi uygulayan mutlaka okusun:** `games.players`
   jsonb'si KOLTUK sırasına değil **SIRALAMAYA (rank) göre** saklanıyor.
   "Rakip YZ mi?" diye 2. elemana bakan bir analiz sorgusu yanlış sonuç
