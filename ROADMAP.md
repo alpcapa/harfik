@@ -346,6 +346,41 @@ açıktı, kanıt olarak boştu.
    ÖNCE ve KENDİ exception bloğunda artıyor; ikisi de
    `verify-sql-engine-parity`de kilitli ve negatif eşle sınandı.
 
+**Ölçüm (6 Eylül 2026, 12:25 UTC) — sapma YOK, payda hâlâ kapının ALTINDA.**
+`move_shadow_diffs`: **0 satır**. Payda (`move_shadow_coverage`):
+
+| gün | hamle | cok_oyunculu | vergi | joker | teslim_var | blokta_rakip |
+|---|---|---|---|---|---|---|
+| 6 Eylül | 27 | 0 | 3 | 0 | 0 | 7 |
+| 5 Eylül | 23 | 0 | 4 | 1 | 0 | 2 |
+| **toplam** | **50** | **0** | **7** | **1** | **0** | **9** |
+
+**Kapsamanın 1:1 olduğu ÖLÇÜLDÜ** — bu, yukarıdaki negatif eşin yanında
+sensörün canlı olduğuna dair İKİNCİ ve sürekli kanıt, çünkü tek seferlik
+değil her gün yeniden okunabiliyor: bugünkü `online_game_moves` `play`
+sayısı **27**, sayaç da **27**; 5 Eylül'de sayaç migration'ından
+(18:58 UTC) sonraki play **23**, sayaç da **23**. Yani gerçek hamlelerin
+tamamı gölge kontrolünden geçiyor, "0 sapma" gerçekten uyuşma demek.
+(5 Eylül 17:51–18:58 arasındaki 10 hamle gölgeden geçti ama sayaç henüz
+yoktu — gerçek gölge paydası 60, sayılan 50.)
+
+**Kapının neresindeyiz** (1. maddedeki sayısal ölçüte göre):
+- ✅ `vergi` (7) · `joker` (1) · `blokta_rakip` (9) — üçü de sıfırdan çıktı,
+  yani 24 Ağustos "iletken hücre" kuralının ön koşulu artık yükte.
+- ❌ `hamle` **50**, ölçüt "birkaç yüz". Gerçek trafik ~100 play/gün
+  (4 Eylül 91, 5 Eylül 105) → 300'e **~3 gün**.
+- ⚠ `cok_oyunculu` ve `teslim_var` hâlâ **0**; gerçek trafikte
+  birikmeyebilirler, tek kanıtları 2. maddedeki cihaz turu. Payda beklerken
+  o tur PARALEL yürüyebilir — sıralı değiller.
+
+Ayna tarafında drift yok: `npm run verify-sql-engine-parity` yeşil, canlıdaki
+`_km_shadow_check` ve `submit_move` repodaki migration'larla tutuyor.
+
+**Sıradaki değerlendirme: 9 Eylül 2026** (kullanıcı isteğiyle hatırlatma
+kuruldu). O gün yalnızca iki sorunun cevabı gerekiyor: `move_shadow_diffs`
+hâlâ boş mu, ve `hamle` birkaç yüze ulaştı mı. İkisi de evetse zorlama
+fazının önündeki tek engel cihaz turu kalır.
+
 **Madde ölçünce BÜYÜDÜ.** İlk yazımda üç eksik sayılıyordu (sözlük yok, harf
 puanı yeniden hesaplanmıyor, tavan yok). Fonksiyonun tamamı okununca iki şey
 daha çıktı:
