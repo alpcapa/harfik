@@ -2127,9 +2127,10 @@ class _SavedGameRow extends StatelessWidget {
     return (text: text, urgent: days < 1);
   }
 
-  /// Sol sütun: avatar şeridi + altında zorluk rozeti (ROADMAP #23 Faz 4 —
-  /// web `SavedGameRow`ın `flex-col gap-0.5` bloğu). Yerel kayıt her zaman
-  /// YZ oyunu → rozet her seviyede (6 Eylül 2026: Normal turuncu da çizilir).
+  /// Sol sütun: avatar şeridi + hemen sağında zorluk rozeti (ROADMAP #23
+  /// Faz 4 — web `SavedGameRow`ın `flex items-center gap-1.5` bloğu; 6 Eylül
+  /// gece: alt satırdaydı, kullanıcı "avatarların yanına" dedi). Yerel kayıt
+  /// her zaman YZ oyunu → rozet her seviyede (Normal turuncu da çizilir).
   /// ⚠ Aynı gövdeyi paylaşan Canlı oyun kartı (`live_games_tab.dart`)
   /// ETKİLENMEZ — orada seviye yok.
   Widget _solBlok() {
@@ -2144,12 +2145,11 @@ class _SavedGameRow extends StatelessWidget {
           avatarUrl: p.isAI ? null : accountAvatarUrl,
         ),
     ]);
-    return Column(
+    return Row(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         avatarlar,
-        const SizedBox(height: 2), // web gap-0.5
+        const SizedBox(width: 6), // web gap-1.5
         AiLevelBadge(level: aiLevelForBadge(state.aiLevel, isAiGame: true)),
       ],
     );

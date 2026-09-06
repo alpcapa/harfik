@@ -38,8 +38,9 @@
        ve rozet 48px sınıfı taşımıyor).
      - **Seçici:** `_zorlukBtn` = `_localSubTabBtn`in rozetsiz ikizi (11px,
        dikey 10 dolgu, aynı gölgeler); web `Setup.tsx` `LiveGamesTab`
-       alt-sekme sınıf dizesine geçti. `_SavedGameRow._solBlok` artık her
-       zaman `Column` (Normal'de de rozet var).
+       alt-sekme sınıf dizesine geçti. `_SavedGameRow._solBlok` avatarların
+       SAĞINA rozet koyan bir `Row` (önce alt satırdaydı; Preview'da rozet
+       `flex-col` çocuğu olarak tam genişliğe uzadı, kullanıcı gördü).
      - **Doğrulama:** `flutter analyze` temiz; `ai_level_test` (Kolay
        yeşil/+1, Normal turuncu/+2, Canlı rozetsiz — GameOver · Tüm Oyunlarım
        · Son Oynadıklarım), `ai_level_parity_test` (`aiLevelForBadge` dört

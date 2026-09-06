@@ -812,7 +812,7 @@ gerekiyor).
       değilim… birincilik 1 puan kazandırır."; 4 Oyunculu'ya geçince cümleye
       ikincilik eklenir (Kolay: "ikincilik puan kazandırmaz", Normal:
       "birincilik 2, ikincilik 1 puan kazandırır"). Oyunu başlat, Setup'a
-      dönüp "Devam Edenler"e bak: kartta avatarların ALTINDA küçük YEŞİL
+      dönüp "Devam Edenler"e bak: kartta avatarların hemen SAĞINDA küçük YEŞİL
       `Kolay` rozeti (Normal oyun kartında TURUNCU `Normal`; 6 Eylül gece
       kuralı: Kolay yeşil · Normal turuncu · Zor kırmızı, YZ oyununda her
       seviyede; Canlı kartında HİÇ rozet yok). Zorluk butonları Arkadaşınla

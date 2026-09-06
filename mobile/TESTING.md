@@ -1282,7 +1282,7 @@ listesi kök `TESTING.md` bölüm 10.
       kazandırır."; 4 OYUNCULU'ya geçince cümleye ikincilik eklenir (Kolay:
       "ikincilik puan kazandırmaz", Normal: "birincilik 2, ikincilik 1 puan
       kazandırır"). Oyunu başlat, "← Geri" ile Setup'a dön: "DEVAM
-      EDEN OYUNLAR" kartında avatarların ALTINDA küçük YEŞİL `Kolay` rozeti
+      EDEN OYUNLAR" kartında avatarların hemen SAĞINDA küçük YEŞİL `Kolay` rozeti
       (Normal oyun kartında TURUNCU `Normal`; kural: Kolay yeşil · Normal
       turuncu · Zor kırmızı, YZ oyununda her seviyede; Canlı kartında HİÇ
       rozet yok — web ile aynı). ZORLUK butonları Arkadaşınla sekmesinin

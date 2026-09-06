@@ -199,7 +199,10 @@ function SavedGameRow({
           1,0'da bile. Şimdi üst satır sol=oyuncular / sağ=durum, süre altta
           tam genişlik (sağa yaslı — görsel çapa değişmedi). */}
       <span className="flex items-center gap-2.5">
-        <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+        {/* Avatar şeridi + zorluk rozeti YAN YANA (6 Eylül 2026 gece, kullanıcı:
+            rozet alt satırda tam genişliğe uzuyordu — `flex-col` çocuğu
+            yatayda geriliyor; satırda rozet kendi eninde kalır). */}
+        <span className="flex-1 min-w-0 flex items-center gap-1.5">
           {/* "N Kişilik Oyun" başlığının yerine katılımcı avatarları —
             `LiveGamesTab`'daki Canlı oyun kartlarıyla BİREBİR AYNI desen
             (kullanıcı isteği: YZ oyunlarında da Canlı'daki gibi avatar).
@@ -214,7 +217,7 @@ function SavedGameRow({
             kaptan çıkıyor. */}
           <PlayerAvatarRow players={players} />
           {/* Zorluk rozeti (ROADMAP #23 Faz 3; 6 Eylül 2026'dan beri Normal
-            de çizilir, turuncu) — avatarların altında. ⚠ Aynı düzeni
+            de çizilir, turuncu) — avatarların hemen sağında. ⚠ Aynı düzeni
             paylaşan `LiveGamesTab` kartı ETKİLENMEZ — o Canlı, orada seviye
             yok (kartın "X açtı" satırı bu yerde). */}
           <AiLevelBadge level={aiLevel} />
