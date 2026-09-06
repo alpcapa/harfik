@@ -33,6 +33,7 @@ npm run verify-rematch-slots     # Rövanş kadrosu: ilk koltuk çağıran, YZ'l
 npm run verify-head-to-head      # Kafa kafaya oran çubuğu: üç dilim TAM 100 eder mi (kümülatif yuvarlama)
 npm run verify-fetch-my-games    # Oyun geçmişi: ağ hatası ↔ boş liste ayrımı (sahte Supabase ucu)
 npm run verify-league-tiers      # k-lig kademe/ödül tablosu: migration SQL'i ↔ leagueRank.ts
+npm run verify-league-points     # k-lig PUAN tablosu (seviyeye göre): league_points_for SQL ↔ leaguePoints.ts ↔ league_points.dart
 npm run verify-sql-engine-parity # motorun DÖRDÜNCÜ (SQL) kopyası ↔ src/ sabitleri ve hata metinleri
 npm run simulate-ai-levels       # YZ↔YZ kadran ölçümü (ROADMAP #23): "en iyi N'den rastgele" ↔ üretim; `-- --oyun 200 --n 2,3`
 npm run generate-initial-main-view-golden # Giriş sekmesi kuralı: web→port davranış golden'ı (CI tazeliği zorluyor)
@@ -115,6 +116,7 @@ koptu" (bkz. "Belgeleri Güncel Tutma").
 | Motorun **DÖRDÜNCÜ** kopyası: `supabase/migrations/`'deki `_km_*` fonksiyonları (`submit_move` hamleyi kendi hesaplıyor) | `src/`'deki kural değişirse SQL aynası da ELLE güncellenmeli. **`npm run verify-sql-engine-parity` sabitleri ve hata metinlerini kilitler** (CI'da); davranış paritesi ayrı kanıtlandı (2.641 gerçek hamle yeniden oynatıldı) ve `move_shadow_diffs` tablosu sürekli ölçüyor |
 | Motorun **ÜÇÜNCÜ** kopyası: `supabase/functions/_game/` (`ai.ts`/`validator.ts`/`board.ts`/`constants.ts`/`types.ts`/`turkish.ts`/`tiles.ts`) | `src/`'deki eşi değişirse ELLE kopyala **ve** `play-ai-turn`'ü yeniden deploy et. **`npm run verify-edge-engine-parity` bu ayrışmayı yakalar** (CI'da koşuyor) — golden vector'lar GÖREMEZ (yalnızca web↔port'u kanıtlar), derleyici de göremez (`tsconfig.json` yalnızca `src`'i içeriyor). Kapı 5 Eylül 2026'da, iki motor değişikliği (YZ köşe açılışı · bölge "iletken hücre" kuralı) buraya hiç işlenmediği ve aylarca CANLIDA kaldığı için eklendi |
 | `src/data/meanings.json` | `npm run generate-meanings-db` |
+| k-lig PUAN formülü (`league_points_for` SQL · `leaguePoints.ts` · `league_points.dart`) | Üçü birlikte + `npm run verify-league-points` (CI'da). Sunucuda formülü ASLA inline `case` olarak yeniden yazma — 6 Eylül 2026'ya kadar BEŞ kopyaydı (biri yalnızca canlıdan görülebiliyordu), betik altıncısını yakalar |
 | `LogoMark`/`KLigMark` | `npm run generate-logo-paths` / `generate-klig-paths` (ikisi de web+Dart yazar) |
 | Canlı oyun / mesajlaşma / e-posta özelliği | `TESTING.md` (elle koşulan liste) |
 | Bir sayacı/rozeti besleyen alan (`PendingLiveGameCounts` gibi) | Rozet zincirinin HER seviyesi: alt sekme → üst sekme → uygulama ikonu (`useAppIconBadge`) → giriş varsayılanı (`decideInitialMainView`). Yeni alan bunlara GİRMELİ Mİ, ayrıca karar ver — "bekleyen iş" ile "haber" aynı şey değil (3 Eylül 2026) |
@@ -450,7 +452,7 @@ olabilir — atıf bulunamazsa önce buradaki tabloya bak.
 | Bileşen post-mortem'leri — **hesap/kimlik** (RemainingTilesModal, GameOver, CountBadge, UserMenu, RelationIcons, AuthModal, AccountSettingsModal, avatar) | `docs/decisions/components-account.md` |
 | Bileşen post-mortem'leri — **skor/k-lig** (ScoreCard, k-lig rebrand'i, Leaderboard) | `docs/decisions/components-score.md` |
 | Bileşen post-mortem'leri — **oyun ekranı/kabuk** (Setup, PlayerAvatarRow, LandscapeHint, AddToHomeScreen, useAppIconBadge, Board, GameHeader, HelpModal, LogoMark, useModalA11y, TermsModal/PrivacyModal) + port dalı teslim dersi | `docs/decisions/components.md` |
-| Dokunmatik/hover hata sınıfları (ghost click, drag threshold, sticky hover) | `docs/decisions/touch-ux-bugs.md` |
+| Dokunmatik/hover hata sınıfları (ghost click, drag threshold, sticky hover) + iOS Safari form zoom post-mortem'i | `docs/decisions/touch-ux-bugs.md` |
 | PWA servis çalışanı / Android uyumluluğu | `docs/decisions/pwa-and-android.md` |
 | Sözlüğe kelime/anlam ekleme prosedürü + kelime listesi code-splitting | `docs/decisions/dictionary.md` |
 | Admin paneli (tüm sekmeler, rozet zinciri, büyüme grafikleri, kaynak hunisi, retention) | `docs/decisions/admin-panel.md` |
@@ -659,15 +661,16 @@ Tüm fontlar (`src/fonts/*.css`, `main.tsx`'te import edilir) kendi sunucumuzdan
   **1 Ağustos 2026 — Space Mono 700 örneği, yanlış teşhisin nasıl zaman kaybettirdiğine dair bir ders:** Kullanıcı, YZ'nin skor kutusunun (dar kutu, `font-mono font-bold`) her hamleden kısa bir süre sonra "1…" diye kırpılıp kendiliğinden düzeldiğini bildirdiğinde, önce `GameHeader.tsx`'teki kutu genişliği/`border` hesaplarında (bkz. "Bileşen Notları" → `GameHeader` skor kutuları, madde 3) bir hata arandı ve gerçek de bir hata bulunup (`border`→`outline`) düzeltildi — ama kullanıcı PR Preview'da (her açılış TAZE bir sayfa, önbelleksiz font) sorunun AYNEN devam ettiğini bildirince asıl kök sebebin bu maddede zaten TANIMLANMIŞ olan (o zamana kadar "henüz raporlanmadı" diye bırakılmış) Space Mono 700'ün preload edilmemesi olduğu anlaşıldı — sayfa önce geniş bir fallback monospace'le boyanıp gerçek (dar) font `swap` ile geldiğinde yeniden akıyordu, dar YZ kutusunda bu ara an tam kenardan taşıp kırpılmaya yol açıyordu. **Ders:** "kısa süre görünüp kendiliğinden düzeliyor" tarifi güçlü bir FOUT/font-swap sinyali — bu proje zaten aynı belirtiyi Caveat/Space Grotesk'te yaşamıştı, yeni bir yerde görülünce önce BU listeye (henüz preload edilmemiş ağırlıklar) bakılmalı, layout/CSS box-model hesaplarına dalmadan önce.
 - **Diğer ağırlıklar (Space Grotesk 400/500/600) ve Nunito (taş harfi fontu)** — henüz raporlanmadığından ve kritik ilk-boyama yolunda olmadığından dokunulmadı, hâlâ eski `./files/` + yalnızca-swap yolunda. Aynı şikayet başka bir ağırlıkta/yerde görülürse aynı desen uygulanmalı: dosyayı `public/fonts/`'a taşı, `index.html`'e `<link rel="preload">` ekle, `vite.config.ts`'teki `includeAssets`'e ekle (PWA precache için).
 
-## Form Input'ları — iOS Safari Zoom Bug'ı (31 Temmuz 2026)
+## Form Input'ları — iOS Safari Zoom Kuralı
 
-Kullanıcı, oyun sonrası çıkan "Görüş Bildir" formuna (`FeedbackModal`) dokununca sayfanın otomatik yakınlaştığını (zoom), formu kapattıktan sonra da bu yakınlaşmanın kendiliğinden geri açılmayıp elle (parmakla) küçültmek gerektiğini bildirdi. Kök sebep `FeedbackModal`'a özgü değildi: iOS Safari, odaklanılan bir `input`/`textarea`/`select`'in **hesaplanan font-size'ı 16px'in altındaysa** sayfayı otomatik yakınlaştırıyor — proje genelinde neredeyse tüm form alanları (`inputCls` ortak class'ı, `text-sm`=14px) hatta bazı yerlerde `text-xs`=12px (`AdminDashboard`'ın geri bildirim yanıt kutusu, `ChatModal`) kullanıyordu, yani bu yalnızca bu formda değil dokunulan HER formda (AuthModal, AccountSettingsModal, ChatModal, FriendsModal, ResetPasswordModal, MemberMessageModal, LiveGameCreateForm, AdminDashboard) yaşanan sistemik bir sorundu.
-
-**İlk düzeltme yanlış gerekçeyle işe yaramadı (31 Temmuz 2026, aynı gün ikinci değişiklik — kullanıcı formların hâlâ büyüdüğünü bildirdi):** İlk sürüm `input, textarea, select { font-size: 16px; }` kuralını `@layer` DIŞINDA (unlayered) yazıp "Tailwind'in `@tailwind base/components/utilities` çıktısı CSS Cascade Layers'a göre katmansız kurallardan her zaman daha düşük öncelikli sayılır" gerekçesine dayanıyordu. Bu gerekçe **yanlıştı**: Tailwind v3.4 (`tailwindcss: ^3.4.17`, bu projenin sürümü) `@tailwind` direktiflerini derlerken hiç native CSS `@layer` bloğu ÜRETMİYOR — `npm run build` sonrası `dist/assets/index-*.css` içinde `@layer` araması sıfır sonuç veriyor (doğrulandı). Yani "unlayered katmanlıyı ezer" mekanizması hiç devreye girmiyordu; gerçek belirleyici düz CSS **specificity**'ydi: `.text-sm`/`.text-xs` gibi bir CLASS selector (specificity 0,1,0) `input` gibi bir ELEMENT selector'dan (0,0,1) specificity'de her zaman üstündür — kaynak sırasından bağımsız olarak kazanır. Sonuç: `class="... text-sm ..."` taşıyan (ki proje genelindeki `inputCls` ortak class'ı tam olarak bunu yapıyor) input'lar hâlâ 14px/12px'te kalıyor, iOS Safari hâlâ zoom yapıyordu — kullanıcının bildirdiği tam olarak buydu.
-
-**Gerçek düzeltme:** Aynı kurala `!important` eklendi (`input, textarea, select { font-size: 16px !important; }`) — specificity yarışını tamamen devre dışı bırakıyor, class'tan bağımsız her zaman kazanıyor. Derlenmiş CSS'te (`input,textarea,select{font-size:16px!important}`) doğrulandı.
-
-Bir sonraki form/modal eklendiğinde aynı deseni (küçük punto istense bile input/textarea/select elemanının kendisi hep ≥16px kalmalı) otomatik olarak miras alıyor — ayrı bir işlem gerekmiyor, kural elemente göre (class'tan bağımsız) uygulanıyor. **Ders:** Tailwind v3'te `@layer`/cascade-layer tabanlı bir öncelik varsayımı kurmadan önce derlenmiş CSS çıktısında gerçekten `@layer` üretilip üretilmediğini doğrula — sürüme göre değişebilir, varsayımla ilerlemek (ilk sürümde olduğu gibi) sessizce işe yaramayan bir düzeltmeye yol açabilir.
+`input`/`textarea`/`select` elemanının hesaplanan font-size'ı **her zaman
+≥16px** kalmalı; kural `index.css`'te elemente göre ve `!important` ile
+uygulanıyor (`input, textarea, select { font-size: 16px !important; }`),
+yani yeni bir form/modal bunu kendiliğinden miras alır — `text-sm`/`text-xs`
+sınıfı verilse bile. Aksi hâlde iOS Safari odaklanınca sayfayı yakınlaştırır
+ve geri açmaz. Neden `!important` (ilk düzeltmenin yanlış `@layer`
+gerekçesi, Tailwind v3'ün native `@layer` üretmediğinin ölçümü):
+`docs/decisions/touch-ux-bugs.md` → "iOS Safari Zoom Bug'ı".
 
 ## Türkçe Dil Notu
 

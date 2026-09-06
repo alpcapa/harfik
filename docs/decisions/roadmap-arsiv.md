@@ -21,6 +21,7 @@
 
 | Ne | Kapanış |
 |---|---|
+| Madde 23 · Faz 1 — sunucu: `games.ai_level` + k-lig formülü TEK SQL fonksiyonu (`league_points_for`), `verify-league-points` | 6 Eylül 2026 |
 | Madde 23 · Faz 0 — YZ seviye kadranının ölçüm aleti (`simulate-ai-levels`), Kolay N=4 | 6 Eylül 2026 |
 | Hata avı geçişi (incelemenin 2. geçişi) | 5 Eylül 2026 |
 | Performans geçişi (incelemenin 3. geçişi) | 5 Eylül 2026 |
@@ -2216,3 +2217,80 @@ oyunda %36 çıktı). Ayrıca ilk koltuk avantajı ölçüldü (~12 puan; iki ay
 motor: 1. koltuk 64/100, 2. koltuk 39/100) — insanın yerel 2 kişilik oyunda
 her zaman 1. koltukta olduğu düşünülürse sahadaki %48,7 bu avantajı zaten
 içeriyor. Tablo ve gerekçe backlog notunda.
+
+---
+
+## 23 · Faz 1 — Sunucu · ✅ YAPILDI (6 Eylül 2026)
+
+`ROADMAP.md` madde 23'ün (Seviyeli YZ) birinci fazı; madde AÇIK, yalnızca
+bu faz kapandı. Faz metni buraya `ROADMAP.md` 23.3'ten taşındı.
+
+**Faz 1 — Sunucu (migration; anında canlı, sıfır davranış değişikliği).**
+Model: Opus 5, efor `medium`. Tek migration:
+- `games.ai_level text check (ai_level is null or ai_level in ('kolay','normal','zor'))` +
+  `comment` + **`grant insert (ai_level), select (ai_level)`** — `games`'in
+  tablo düzeyi grant'i YOK (10 Ağustos gizlilik düzeltmesi), kolon tek tek
+  verilir; `platform`'dan farkı SELECT'in de şart olması.
+- `public.league_points_for(p_rank int, p_player_count int, p_surrendered bool, p_ai_level text) returns int immutable` —
+  tablo 23.0. Dört nesne (`player_stats`, `player_stats_overall`,
+  `leaderboard`, `_award_league_rewards`) `case` bloğu yerine bunu çağırır.
+  `create or replace view` yeter (kolon listesi değişmiyor);
+  `_award_league_rewards` gövde değişikliği, imza aynı.
+- `get_shared_game`: dönüş tablosuna `ai_level` → **dönüş tipi değişir →
+  `drop function` + `create` + `revoke/grant` elle** (`20260812131123`
+  dersi). `SharedGamePage` bunu okuyacak.
+- `admin_ai_balance()`: `group by player_count, coalesce(ai_level,'normal')`
+  → aynı drop+create+grant.
+- **Kanıt (uygulamadan önce ve sonra):** `select user_id, total_score from
+  player_stats_overall` çıktısı bayt-eş olmalı (tüm satırlar `null` →
+  Normal); `k_lig_siralama` sırası değişmemeli. Bu sorgu migration'ın
+  yorumuna yazılır.
+- `list_migrations` ile dosya adı eşleştirilir; fonksiyonlar GERÇEKTEN
+  çağrılır (kural 3).
+- `database.types.ts`: `Game.ai_level`, `NewGame.ai_level?`,
+  `GameHistoryEntry` + `SharedGameData`'ya alan.
+- `scripts/verify-league-points.mjs` + `package.json` + CI'da koşum
+  (`verify-league-tiers` nasıl bağlıysa öyle).
+
+**Nasıl yapıldı (6 Eylül 2026):** tek migration
+`20260906114252_ai_level_and_league_points_for.sql`, MCP ile canlıya
+uygulandı, `list_migrations` ile dosya adı eşleştirildi.
+- **Kopya sayısı DÖRT değil BEŞ çıktı.** Plan `player_stats`,
+  `player_stats_overall`, `leaderboard`, `_award_league_rewards` diyordu;
+  canlıdan `pg_get_functiondef`/`pg_get_viewdef` ile `player_count <> 2`
+  aranınca `trg_award_league_rewards` de göründü — `rank_down_notice`
+  migration'ı trigger'ın içine delta hesabı için formülün bir kopyasını
+  daha koymuştu. Beşi de artık `league_points_for`u çağırıyor; canlıda
+  inline formül KALMADI (aynı arama uygulamadan sonra boş döndü).
+  `my_leaderboard_rank` ise planın dediği gibi `k_lig_siralama` →
+  `leaderboard` üzerinden okuyor, dokunulmadı.
+- **Fonksiyon önce `pg_temp`'te sınandı:** 953 canlı satırda yeni
+  fonksiyon ↔ eski `case` sıfır fark; Normal ızgarası (4 sıra × 2 mod ×
+  teslim × null/normal) sıfır fark; Kolay/Zor ızgarası 23.0 tablosunu
+  birebir verdi (Kolay 1/0, Zor 4/2, 2 kişilikte 2. sıra 0, teslim -2).
+- **Öncesi/sonrası bayt-eş:** `player_stats_overall` (30 satır,
+  `6a1c0f01…`), `player_stats` (48, `8adaa454…`), `leaderboard` (30,
+  `b0344e3d…`), `k_lig_siralama` (30, `a8a74692…`), `league_rewards` (27,
+  `0cf352bb…`) — beş karma da uygulamadan sonra aynı. `admin_ai_balance`
+  eski çıktısı (2 kişilik 620: 321G/3B/296M · 4 kişilik 115: 35G/1B/79M/24
+  ikincilik) `ai_level='normal'` etiketiyle aynen döndü.
+- **Grant ölçümü planı düzeltti:** `games`te tablo düzeyinde INSERT/UPDATE
+  zaten VAR (10 Ağustos yalnızca SELECT'i kolon kolon yapmış), yani yeni
+  kolon otomatik yazılabilir; SELECT kolon kolon ve bu kolon için ŞART
+  (`platform`ın tersi). İkisi de açıkça verildi.
+- **Tablo `(values …)` listesi olarak yazıldı**, `case` değil — böylece
+  `scripts/verify-league-points.ts` (`verify-league-tiers` deseni) onu
+  mekanik ayrıştırıyor: kanonik 23.0 tablosu ↔ SQL ↔ `leaguePoints.ts`in
+  GERÇEK çıktısı ↔ `league_points.dart`ın sabit dizisi; ayrıca beş sunucu
+  nesnesinin en yeni tanımının fonksiyonu çağırdığını doğruluyor (altıncı
+  kopya kapısı). Üç negatif dene (SQL tablosu bozuk · Dart sabiti bozuk ·
+  trigger'a inline formül eklenmiş) → üçü de düşüyor. CI `web-ci.yml`'de
+  `verify-league-tiers`in hemen altında.
+- **İstemci tarafı (davranış değişmedi):** `database.types.ts`e `AiLevel`
+  + `Game.ai_level`/`NewGame.ai_level?`/`SharedGameData.ai_level`/
+  `AdminAiBalanceRow.ai_level`; `GameHistoryEntry.ai_level` OPSİYONEL
+  çünkü `fetchMyGames` seçiyor ama `list_liked_games` döndürmüyor (Faz 3).
+  `AdminDashboard` kutuları artık `(players, ai_level)` anahtarlı — Normal'de
+  etiket bugünkü gibi, Kolay/Zor gelince " · Kolay"/" · Zor" eklenir.
+- Port ETKİLENMEDİ: `get_shared_game`/`admin_ai_balance` portta
+  çağrılmıyor; view kolon listeleri değişmedi.

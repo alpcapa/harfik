@@ -396,8 +396,28 @@ export interface Game {
    * olacak — kural her zaman "dökümü var mı", "hangi tür oyun" değil.
    */
   has_moves: boolean;
+  /**
+   * Yerel YZ oyununda seçilen zorluk (ROADMAP #23, Faz 1 — 6 Eylül 2026).
+   * `null` = seviyesiz kayıt: bu kolondan önce biten her oyun + TÜM Canlı
+   * oyunlar (Canlı'da seviye yok) — k-lig puanında **Normal** sayılır;
+   * sunucudaki `league_points_for()` null'ı o dala düşürür. Oyun BAŞINDA
+   * kilitlenir, oyun içinde değiştirilemez; 4 kişilikte üç YZ'ye birden
+   * uygulanır. İstemci Faz 3'ten itibaren yazar (`buildGameRecord`);
+   * o güne kadar her yeni satır da null (= Normal) kalır.
+   */
+  ai_level: AiLevel | null;
   created_at: string;
 }
+
+/**
+ * YZ zorluk seviyesi (ROADMAP #23). Normal = bugünkü motor (N=1); Kolay =
+ * aynı motor, en iyi N=4 hamleden rastgele (Faz 0 ölçtü); Zor = Faz 5'in
+ * yeni motoru. k-lig puanı seviyeye göre (23.0 tablosu): 1. sıra 1/2/4,
+ * 2. sıra (yalnız 4 kişilikte) 0/1/2, teslim her seviyede -2. Sunucudaki
+ * `games.ai_level` check kısıtı ve `league_points_for()` bu üç değeri
+ * tanır; `npm run verify-league-points` tabloyu SQL ↔ TS ↔ Dart kilitler.
+ */
+export type AiLevel = 'kolay' | 'normal' | 'zor';
 
 /**
  * `get_shared_game` RPC'sinin döndürdüğü, herkese açık (girişsiz dahil)
@@ -410,6 +430,8 @@ export interface SharedGameData {
   players: GamePlayerSnapshot[] | null;
   player_count: number;
   created_at: string;
+  /** Bkz. `Game.ai_level` — RPC 6 Eylül 2026'dan beri döndürüyor; `SharedGamePage` Faz 3'te okuyacak. */
+  ai_level: AiLevel | null;
 }
 
 /**
@@ -494,6 +516,13 @@ export type NewGame = Pick<
    * İstemcinin bu kolon üzerinde SELECT yetkisi YOK — yalnızca yazabilir.
    */
   platform?: ClientPlatform;
+  /**
+   * Bkz. `Game.ai_level`. Sunucuda kolon + `insert (ai_level)` grant'i
+   * 6 Eylül 2026'dan beri VAR; istemci Faz 3'e kadar bu alanı GÖNDERMEZ
+   * (null = Normal = bugünkü puan). `platform`dan farkı: SELECT de verildi,
+   * çünkü geçmiş kartları puanı bununla hesaplayacak.
+   */
+  ai_level?: AiLevel;
 };
 
 /** Oyun geçmişi listesinde gösterilecek alanlar. */
@@ -512,6 +541,14 @@ export type GameHistoryEntry = Pick<
   | 'has_moves'
   | 'user_id'
 > & {
+  /**
+   * Bkz. `Game.ai_level`. **Opsiyonel, çünkü iki kaynaktan biri henüz
+   * vermiyor:** `fetchMyGames`in `cols` dizesi 6 Eylül 2026'dan beri
+   * seçiyor, `list_liked_games` RPC'si (beğenilenler sekmesi) ise
+   * DÖNDÜRMÜYOR — Faz 3'te kartlar puanı seviyeyle hesaplarken o RPC'ye de
+   * eklenmeli; o güne kadar `undefined`/`null` = Normal.
+   */
+  ai_level?: AiLevel | null;
   /**
    * Bu isteği yapan (oturum açan) kullanıcının bu oyunu beğenip beğenmediği —
    * `game_likes` tablosu üzerinden, hedef kullanıcıdan (kartı görüntülenen
@@ -1041,6 +1078,14 @@ export interface AdminAiBalanceRow {
   ties: number;
   losses: number;
   second_places: number;
+  /**
+   * Seviye kırılımı (ROADMAP #23, Faz 1 — 6 Eylül 2026): satır artık
+   * `(players, ai_level)` başına. `games.ai_level` null olan satırlar
+   * (bu kolondan önceki HER oyun) `'normal'` altında toplanır, yani bugün
+   * oyuncu sayısı başına tek satır. Kolay ~%30 / Zor ~%70 hedefleri SAHADA
+   * yalnızca bu kırılımla ölçülecek (23.0).
+   */
+  ai_level: AiLevel;
 }
 
 /**

@@ -1223,3 +1223,20 @@ burada da değiştireyim" demek bugün bir kez zaten çalışan kodu bozmuştu.
 ⚠ Her iki iddia da FARK ölçümü: başlıktaki skor kutucuklarının zemini
 oyuncu tint'i, rozet renkleri de kutucuk kenarlıklarına yakın; mutlak sayım
 "613 piksel taşma" diye yanlış pozitif veriyor.
+
+---
+
+## Form Input'ları — iOS Safari Zoom Bug'ı (31 Temmuz 2026)
+
+> Kök `CLAUDE.md`'den taşındı (6 Eylül 2026, dosya `auto` sınıfının 80 KB
+> uyarı bandına girince). Kural orada kaldı ("Form Input'ları — iOS Safari
+> Zoom Kuralı"); burası neden böyle olduğunun kaydı. Satırlar
+> değiştirilmedi.
+
+Kullanıcı, oyun sonrası çıkan "Görüş Bildir" formuna (`FeedbackModal`) dokununca sayfanın otomatik yakınlaştığını (zoom), formu kapattıktan sonra da bu yakınlaşmanın kendiliğinden geri açılmayıp elle (parmakla) küçültmek gerektiğini bildirdi. Kök sebep `FeedbackModal`'a özgü değildi: iOS Safari, odaklanılan bir `input`/`textarea`/`select`'in **hesaplanan font-size'ı 16px'in altındaysa** sayfayı otomatik yakınlaştırıyor — proje genelinde neredeyse tüm form alanları (`inputCls` ortak class'ı, `text-sm`=14px) hatta bazı yerlerde `text-xs`=12px (`AdminDashboard`'ın geri bildirim yanıt kutusu, `ChatModal`) kullanıyordu, yani bu yalnızca bu formda değil dokunulan HER formda (AuthModal, AccountSettingsModal, ChatModal, FriendsModal, ResetPasswordModal, MemberMessageModal, LiveGameCreateForm, AdminDashboard) yaşanan sistemik bir sorundu.
+
+**İlk düzeltme yanlış gerekçeyle işe yaramadı (31 Temmuz 2026, aynı gün ikinci değişiklik — kullanıcı formların hâlâ büyüdüğünü bildirdi):** İlk sürüm `input, textarea, select { font-size: 16px; }` kuralını `@layer` DIŞINDA (unlayered) yazıp "Tailwind'in `@tailwind base/components/utilities` çıktısı CSS Cascade Layers'a göre katmansız kurallardan her zaman daha düşük öncelikli sayılır" gerekçesine dayanıyordu. Bu gerekçe **yanlıştı**: Tailwind v3.4 (`tailwindcss: ^3.4.17`, bu projenin sürümü) `@tailwind` direktiflerini derlerken hiç native CSS `@layer` bloğu ÜRETMİYOR — `npm run build` sonrası `dist/assets/index-*.css` içinde `@layer` araması sıfır sonuç veriyor (doğrulandı). Yani "unlayered katmanlıyı ezer" mekanizması hiç devreye girmiyordu; gerçek belirleyici düz CSS **specificity**'ydi: `.text-sm`/`.text-xs` gibi bir CLASS selector (specificity 0,1,0) `input` gibi bir ELEMENT selector'dan (0,0,1) specificity'de her zaman üstündür — kaynak sırasından bağımsız olarak kazanır. Sonuç: `class="... text-sm ..."` taşıyan (ki proje genelindeki `inputCls` ortak class'ı tam olarak bunu yapıyor) input'lar hâlâ 14px/12px'te kalıyor, iOS Safari hâlâ zoom yapıyordu — kullanıcının bildirdiği tam olarak buydu.
+
+**Gerçek düzeltme:** Aynı kurala `!important` eklendi (`input, textarea, select { font-size: 16px !important; }`) — specificity yarışını tamamen devre dışı bırakıyor, class'tan bağımsız her zaman kazanıyor. Derlenmiş CSS'te (`input,textarea,select{font-size:16px!important}`) doğrulandı.
+
+Bir sonraki form/modal eklendiğinde aynı deseni (küçük punto istense bile input/textarea/select elemanının kendisi hep ≥16px kalmalı) otomatik olarak miras alıyor — ayrı bir işlem gerekmiyor, kural elemente göre (class'tan bağımsız) uygulanıyor. **Ders:** Tailwind v3'te `@layer`/cascade-layer tabanlı bir öncelik varsayımı kurmadan önce derlenmiş CSS çıktısında gerçekten `@layer` üretilip üretilmediğini doğrula — sürüme göre değişebilir, varsayımla ilerlemek (ilk sürümde olduğu gibi) sessizce işe yaramayan bir düzeltmeye yol açabilir.

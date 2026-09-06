@@ -508,6 +508,12 @@ const HINTS: Record<string, { title: string; body: ReactNode }> = {
         (2 kişilikte ikinci olmak kaybetmekle aynı şey, puan getirmez). Dengeyi asıl anlatan sayı
         bu ikisinin TOPLAMI: insan "puan alan" ilk iki dereceye ne sıklıkla giriyor? Rastgele bir
         sonuçta bu %50 olurdu — birincilik ve ikincilik yüzdelerini toplayıp o değerle karşılaştır.
+        <br />
+        <br />
+        <b>Seviye kırılımı:</b> kutular oyuncu sayısı × YZ seviyesi başına. Seviyesiz (eski)
+        kayıtlar Normal'dir ve etiketsiz kutuda toplanır; Kolay/Zor oynanmaya başlayınca kendi
+        kutusunu açar. Hedefler YZ'nin kazanma oranı olarak Kolay ~%30, Normal ~%51, Zor ~%70 —
+        yani insan birinciliği Kolay'da ~%70, Zor'da ~%30 bandında olmalı.
       </>
     ),
   },
@@ -1769,17 +1775,23 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
     const cards: { key: string; rate: number | null; label: string; detail: string }[] = [];
     for (const r of aiBalance ?? []) {
       const baseline = Math.round(100 / r.players);
+      // Seviye kırılımı (ROADMAP #23, Faz 1): satırlar artık (oyuncu
+      // sayısı, seviye) başına. Normal'de etiket BUGÜNKÜ gibi (tüm eski
+      // kayıtlar orada), Kolay/Zor satırı ancak Faz 3 o değeri yazmaya
+      // başlayınca gelir ve kendi kutusunu açar — anahtar da seviyeyi
+      // içeriyor, yoksa iki satır aynı `key`de çakışırdı.
+      const level = r.ai_level === 'kolay' ? ' · Kolay' : r.ai_level === 'zor' ? ' · Zor' : '';
       cards.push({
-        key: `${r.players}-first`,
+        key: `${r.players}-${r.ai_level}-first`,
         rate: r.games > 0 ? Math.round((100 * r.wins) / r.games) : null,
-        label: `${r.players} Kişilik — İnsan Birincilik`,
+        label: `${r.players} Kişilik${level} — İnsan Birincilik`,
         detail: `${r.wins}G / ${r.ties}B / ${r.losses}M · rastgele %${baseline}`,
       });
       if (r.players > 2) {
         cards.push({
-          key: `${r.players}-second`,
+          key: `${r.players}-${r.ai_level}-second`,
           rate: r.games > 0 ? Math.round((100 * r.second_places) / r.games) : null,
-          label: `${r.players} Kişilik — İnsan İkincilik`,
+          label: `${r.players} Kişilik${level} — İnsan İkincilik`,
           detail: `${r.second_places}/${r.games} · rastgele %${baseline}`,
         });
       }
