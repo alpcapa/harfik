@@ -213,13 +213,32 @@ tutuyor, çünkü fark tam da unutulmaya müsait yerde duruyor — `main` yeşil
 web canlı, CI derlemesi hazır, ama Play'e giden hiçbir otomatik yol YOK
 (gönderim elle).
 
-⚠ **Göndermeden ÖNCE doğrulanacak açık soru:** yeni bir sürüm yayınlamak
-14 gün sayacını sıfırlıyor mu? Beklenen cevap HAYIR (şart "12 tester'ın 14
-gün kesintisiz opt-in kalması", build güncellemek bunu bozmaz) ama bu
-**ölçülmedi** ve bu oturumun Play Console erişimi yok — deponun Console
-iddialarını ölçmeden yazmama kuralı burada da geçerli (bkz. yukarıdaki
-*"12 gerçek sayı mı, tavan mı"* açık sorusu). Kartın kendi metninden
-teyit et; sıfırlıyorsa yarınki sürüm pencereyi 5 gün geri atar.
+✅ **"Yeni sürüm 14 gün sayacını sıfırlar mı?" — SIFIRLAMIYOR, deponun kendi
+geçmişiyle kanıtlı (6 Eylül 2026).** Bu bir oturumda "ölçülmemiş açık soru"
+diye gündeme getirilmiş ve göndermeden önce Console'dan teyit edilmesi
+istenmişti. Kullanıcı itiraz etti (*"14 gün sayacının yeni sürümle alakası
+ne. Her gün neredeyse sürüm çıktık daha önce, bunu hiç sormadın?"*) ve
+haklı çıktı — cevap zaten repodaydı:
+
+| Sürüm | Tarih |
+|---|---|
+| 1.0.1 | 29 Ağustos |
+| 1.0.2 | 30 Ağustos |
+| 1.0.3 · 1.0.4 | 31 Ağustos |
+| 1.0.5 | 1 Eylül |
+| 1.0.6 | 3 Eylül |
+
+Sayaç 27/28 Ağustos'ta başladı; bu ALTI sürüm pencerenin içinde çıktı ve
+kart saymaya devam etti (26 Ağustos'ta 10, 28 Ağustos'tan beri 12). Sürüm
+göndermek sayacı sıfırlasaydı 10. güne hiç gelinemezdi. **Yeni bir sürüm
+bu yüzden bekletilmez; kapı YOK.**
+
+⚠ Ders, "12 gerçek sayı mı" açık sorusunun tam TERSİ yönde: orada kayıt
+ölçülmemiş bir iddiayı ölçülmüş gibi yazıyordu. Burada ise ölçülmüş bir
+şey (kendi sürüm geçmişimiz) *"ölçülmedi"* diye işaretlendi ve gereksiz
+bir gönderim kapısı üretti. **Bir Console iddiasını "bilinmiyor" ilan
+etmeden önce deponun kendi geçmişine bak** — `git log -p --
+mobile/app/pubspec.yaml` sürüm tarihçesini tek komutta veriyor.
 
 **Test penceresi:** 5 Eylül itibarıyla **10. gün**, 14. gün ≈ 10 Eylül.
 
