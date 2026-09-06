@@ -293,6 +293,9 @@ mobile/
                              # avatarı: eşleme OYUNLA sınırlı (donmuş `players`
                              # anlık görüntüsü `user_id` taşımaz, isimle eşleme
                              # yanlış yüz gösterirdi) — web `recentGameAvatars.ts`
+      util/score_line.dart   # kart altı puan satırı (devam eden + son oynanan):
+                             # koltuk sırasıyla puanlar " - " ile — web
+                             # `scoreLine.ts` ikizi, metin birebir (Parça 192)
       util/head_to_head.dart # skor kartındaki kafa kafaya oran çubuğunun
                              # dilimleri — KÜMÜLATİF yuvarlama (üç bağımsız
                              # yuvarlama 33+33+33=99 verir), web `headToHead.ts`

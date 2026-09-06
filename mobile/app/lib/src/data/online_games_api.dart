@@ -1,6 +1,6 @@
 // Canlı oyun davet/kabul veri katmanı — web `src/lib/api.ts`'in
 // `listMyOnlineGames`/`createOnlineGame`/`respondToGameInvite`/
-// `fetchOnlineGameTurns`/`fetchOnlineGameDeadlines`/
+// `fetchOnlineGameTurns`/`fetchOnlineGameGlances`/
 // `checkOnlineGameTurnTimeout`/`checkInviteExpiry`/`subscribeMyOnlineGames`
 // bölümünün portu (GamesRepo'daki gateway/repo bölünmesiyle). Oynanış
 // (submit_move + state senkronu) `online_api.dart`ta — o dosya Canlı oyun
@@ -171,8 +171,23 @@ class OnlineGamesSnapshot {
   /// gameId → sıradaki oyuncunun zaman aşımı son tarihi (ISO) — null olabilir.
   final Map<String, String?> deadlines;
 
-  const OnlineGamesSnapshot(this.games, this.turns, this.deadlines);
+  /// gameId → koltuk sırasıyla anlık puanlar (`online_game_states.players[]
+  /// .score`) — kartın avatar şeridinin altındaki puan satırı (6 Eylül 2026,
+  /// web `OnlineGameGlance.scores`). `deadlines` ile AYNI satırdan, tek
+  /// istekle geliyor (`gateway.deadlines` seçimine `players` eklendi).
+  final Map<String, List<int>> scores;
+
+  const OnlineGamesSnapshot(this.games, this.turns, this.deadlines,
+      [this.scores = const {}]);
 }
+
+/// `online_game_states.players` jsonb'sinden koltuk sırasıyla puanlar.
+/// Eksik/bozuk eleman 0 sayılır (web `typeof p.score === 'number' ? … : 0`).
+List<int> scoresFromPlayersJson(Object? players) => [
+      if (players is List)
+        for (final p in players)
+          p is Map && p['score'] is num ? (p['score'] as num).toInt() : 0,
+    ];
 
 /// `online_game_moves` satırı (web OnlineMoveRow) — oynanış ekranının hamle
 /// geçmişi ve "son hamle" mesajı bu satırlardan türetilir.
@@ -417,7 +432,9 @@ class SupabaseOnlineGamesGateway implements OnlineGamesGateway {
   Future<List<Map<String, Object?>>> deadlines(List<String> gameIds) async =>
       _rows(await client
           .from('online_game_states')
-          .select('online_game_id, turn_deadline')
+          // `players` da burada (6 Eylül 2026): puan satırı için üçüncü
+          // bir `online_game_states` isteği açmak yerine aynı satırdan.
+          .select('online_game_id, turn_deadline, players')
           .inFilter('online_game_id', gameIds));
 
   @override
@@ -652,7 +669,11 @@ class OnlineGamesRepo {
       for (final r in results[1])
         r['online_game_id'] as String: r['turn_deadline'] as String?,
     };
-    return OnlineGamesSnapshot(games, turns, deadlines);
+    final scores = <String, List<int>>{
+      for (final r in results[1])
+        r['online_game_id'] as String: scoresFromPlayersJson(r['players']),
+    };
+    return OnlineGamesSnapshot(games, turns, deadlines, scores);
   }
 
   /// Web `createOnlineGame`: RPC + davetlilere e-posta (fire-and-forget).

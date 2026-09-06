@@ -15,6 +15,7 @@ import { leaguePoints, formatLeaguePoints } from '../utils/leaguePoints';
 import { GameHistoryModal } from './GameHistoryModal';
 import { PlayerAvatarRow } from './PlayerAvatarRow';
 import { AiLevelBadge } from './AiLevelBadge';
+import { scoreLine } from '../utils/scoreLine';
 import { aiLevelForBadge } from '../utils/aiLevel';
 
 function formatDate(iso: string): string {
@@ -206,6 +207,20 @@ export function RecentGamesSection({
               <span
                 className={`min-w-0 flex flex-col gap-0.5 ${onlineOnly ? '' : 'flex-1'}`}
               >
+                {/* 6 Eylül 2026 — TARİH (+ zorluk rozeti) AVATARLARIN ÜSTÜNE
+                    çıktı, altına PUAN SATIRI girdi (kullanıcı isteği: *"Son
+                    oynananlarda da aynı şekilde bitiş puanlarını koy. Oradaki
+                    tarihi avatarların üstüne koy. (Kutu biraz büyüyebilir,
+                    sorun değil)"*). Devam eden kartlarla aynı düzen: yüzler,
+                    hemen altında koltuk sırasıyla puanlar. Port ikizi
+                    `_RecentRow`. */}
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[9px] font-mono text-muted truncate">{formatDate(g.created_at)}</span>
+                  {/* Zorluk rozeti (ROADMAP #23 Faz 3): tarihin yanında, YZ
+                      oyununda her seviyede (Normal turuncu); Canlı kartlarda
+                      hiç çıkmaz. */}
+                  <AiLevelBadge level={aiLevelForBadge(g.ai_level, !g.online_game_id)} />
+                </span>
                 {/* Rakip isimlerinin yerine katılımcı avatarları.
                     ⚠ 2 EYLÜL 2026'DA DEĞİŞTİ. Burada şu yazılıydı:
                     "dondurulmuş `players` snapshot'ı avatar_url TAŞIMIYOR
@@ -256,13 +271,16 @@ export function RecentGamesSection({
                 ) : (
                   <span className="font-sans text-[12px] font-bold text-text truncate">{titleFor(g)}</span>
                 )}
-                <span className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[9px] font-mono text-muted truncate">{formatDate(g.created_at)}</span>
-                  {/* Zorluk rozeti (ROADMAP #23 Faz 3): tarihin yanında, YZ
-                      oyununda her seviyede (Normal turuncu); Canlı kartlarda
-                      hiç çıkmaz. */}
-                  <AiLevelBadge level={aiLevelForBadge(g.ai_level, !g.online_game_id)} />
-                </span>
+                {/* Bitiş puanları — snapshot sırası avatar sırasıyla AYNI
+                    dizi (`g.players`), yani N'inci sayı N'inci yüzün
+                    altında. Punto devam-eden kartların kalan-süre satırıyla
+                    aynı (`utils/scoreLine.ts`). Snapshot'sız eski kayıtta
+                    satır çizilmez (avatar da yok, başlık metni var). */}
+                {g.players && g.players.length > 0 && (
+                  <span className="text-[8px] font-mono tracking-[0.5px] text-muted truncate">
+                    {scoreLine(g.players.map((p) => p.score))}
+                  </span>
+                )}
               </span>
               {/* "Oyun Bitti" — 3 Eylül 2026, kullanıcı isteği.
                   ⚠ YALNIZCA Canlı tarafta. YZ oyunları senin cihazında

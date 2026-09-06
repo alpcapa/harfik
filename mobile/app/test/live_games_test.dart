@@ -26,6 +26,7 @@ import 'package:kelimeki/src/data/online_games_api.dart';
 import 'package:kelimeki/src/ui/live/live_game_create_form.dart';
 import 'package:kelimeki/src/ui/devam_eden_govde.dart';
 import 'package:kelimeki/src/ui/live/live_games_tab.dart';
+import 'package:kelimeki/src/ui/game/player_avatar_row.dart';
 import 'package:kelimeki_core/kelimeki_core.dart' show SetWordSource, trUpper;
 
 import 'package:kelimeki/src/data/push_repo.dart';
@@ -826,7 +827,8 @@ void main() {
     // geometrisi. Buraya ikinci bir eşik yazmak, kimsenin ölçmediği bir
     // sayıyı depoya sokmak olurdu (kök `CLAUDE.md`, kural 4).
     testWidgets(
-        'Devam Edenler kartı: durum satırda kalır, süre "X açtı"nın ALTINA iner',
+        'Devam Edenler kartı: durum satırda kalır, puan satırı avatarların '
+        'altında, süre onun ALTINA iner ("X açtı" yok)',
         (tester) async {
       final deadline =
           DateTime.now().toUtc().add(const Duration(hours: 30, minutes: 5));
@@ -836,7 +838,16 @@ void main() {
           {'online_game_id': 'mine', 'current': 1}, // self indeksi 1
         ]
         ..deadlineRows = [
-          {'online_game_id': 'mine', 'turn_deadline': iso(deadline)},
+          {
+            'online_game_id': 'mine',
+            'turn_deadline': iso(deadline),
+            // Puan satırı (6 Eylül 2026): koltuk sırasıyla — Esiner 45,
+            // Ironman (ben) 38.
+            'players': [
+              {'score': 45},
+              {'score': 38},
+            ],
+          },
         ];
 
       // En dar desteklenen telefon: sıkışma burada en sert, üstelik
@@ -871,10 +882,21 @@ void main() {
         final sol = tester.getRect(find.byKey(kDevamEdenSolKey));
         final durum = tester.getRect(find.textContaining('SIRA SENDE'));
         final sure = tester.getRect(find.textContaining('SONRA TESLİM'));
+        // "X açtı" KALKTI (6 Eylül 2026), yerine puan satırı — avatarların
+        // altında, sürenin üstünde, sol alanın içinde.
+        expect(find.textContaining('açtı'), findsNothing);
+        final puan = tester.getRect(find.text('45 - 38'));
+        final avatar = tester.getRect(find.descendant(
+            of: find.byKey(kDevamEdenSolKey),
+            matching: find.byType(PlayerAvatarRow)));
+        expect(puan.top, greaterThanOrEqualTo(avatar.bottom),
+            reason: 'puan satırı avatar şeridinin ALTINDA olmalı');
+        expect(sure.top, greaterThanOrEqualTo(puan.bottom),
+            reason: 'süre puan satırının ALTINDA olmalı');
         return (
           // durum oyuncu satırıyla DİKEYDE örtüşüyor mu (aynı satır mı)
           durum.top < sol.bottom && durum.bottom > sol.top,
-          sure.top >= sol.bottom, // süre "X açtı" satırının ALTINDA mı
+          sure.top >= sol.bottom, // süre sol alanın (avatar+puan) ALTINDA mı
         );
       }
 
@@ -885,9 +907,9 @@ void main() {
       expect(satirdaTavan, isTrue,
           reason: 'ölçek ${kMaxTextScale}te de durum satırda KALMALI');
       expect(altaNormal, isTrue,
-          reason: 'süre "X açtı" satırına biniyor — bildirilen hata bu');
+          reason: 'süre sol alana (avatar + puan) biniyor — bildirilen hata bu');
       expect(altaTavan, isTrue,
-          reason: 'süre tavanda da "X açtı" satırının altında olmalı');
+          reason: 'süre tavanda da sol alanın altında olmalı');
 
       // Bu dosyadaki kalıp: iki kez pump edilen testler ağacı boşaltarak
       // bitiyor (asılı zamanlayıcı/istek kalmasın).

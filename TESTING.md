@@ -1709,10 +1709,20 @@ Bitirme modalı **otomatik ölçülüyor** (`npm run test` →
       sağında, kalan süre altta tam genişlik satırda (2 Eylül 2026'da
       portla birlikte değişti). Avatarların altında `Sıra: X` YAZMAMALI.
 - [ ] **İki sekmeyi yan yana karşılaştır** ("Yapay Zeka" ↔ "Arkadaşınla"):
-      Canlı oyun kartında da kalan süre **"X açtı" yazısının ALTINDAKİ**
-      kendi satırında olmalı, o yazıya binmemeli (2 Eylül 2026'da bu iki
-      kart AYRIŞMIŞTI). ⚠ "X açtı" satırı KALIR. `SIRA SENDE`/
-      `SIRA RAKİPTE` puntosu 15 px — iki kartta da aynı.
+      Canlı oyun kartında da kalan süre **puan satırının ALTINDAKİ**
+      kendi satırında olmalı, o satıra binmemeli (2 Eylül 2026'da bu iki
+      kart AYRIŞMIŞTI). `SIRA SENDE`/`SIRA RAKİPTE` puntosu 15 px — iki
+      kartta da aynı.
+- [ ] **Kart altı PUAN SATIRI** (6 Eylül 2026, kullanıcı isteği): iki
+      sekmedeki devam eden oyun kartlarında avatarların hemen altında
+      koltuk sırasıyla anlık puanlar (`45 - 38`; 4 kişilikte dört sayı) —
+      N'inci sayı N'inci yüzün altında, punto/harf aralığı kalan-süre
+      satırıyla AYNI (8 px mono). ⚠ Canlı kartında **"X açtı" satırı
+      ARTIK YOK** (kurucu zaten ilk avatar). Rakip hamle yapınca puanlar
+      oyuna girmeden tazelenmeli (Realtime → liste yeniden çekilir).
+      "Son Oynananlar"da (iki sekme): **tarih (+ zorluk rozeti) avatarların
+      ÜSTÜNDE**, bitiş puanları altında — snapshot sırasıyla; sağdaki kendi
+      puanın/k-lig sütunları yerinde. Port ile birebir.
 - [ ] **Board altındaki şerit** (Hamleler · Mesajlaşma · **Yardım**) →
       punto 11 ve TEK SATIR; portla AYNI olmak zorunda. Etiket 2 Eylül
       2026'da `Nasıl Oynanır?`dan kısaltıldı (şerit tavanda iki satıra

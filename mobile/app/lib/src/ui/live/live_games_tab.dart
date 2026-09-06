@@ -47,6 +47,7 @@ import '../loading_note.dart';
 import '../game/neo_box.dart';
 import '../../util/away_return.dart';
 import '../../util/offline_notice.dart';
+import '../../util/score_line.dart';
 
 const Color _text = kText;
 const Color _muted = kMuted;
@@ -420,6 +421,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
     final games = snap?.games ?? const <OnlineGame>[];
     final turns = snap?.turns ?? const <String, int>{};
     final deadlines = snap?.deadlines ?? const <String, String?>{};
+    final scores = snap?.scores ?? const <String, List<int>>{};
     final invites = inviteBucket(games);
     final active = activeBucket(games, turns, deadlines: deadlines);
     final waiting = waitingBucket(games);
@@ -518,6 +520,7 @@ class _LiveGamesTabState extends State<LiveGamesTab>
                         game: g,
                         isMyTurn: turns[g.id] == g.mySlotIndex,
                         deadline: deadlines[g.id],
+                        scores: scores[g.id],
                         onOpen: () => _openGame(g),
                       ),
                   ]),
@@ -741,18 +744,23 @@ class _LiveGamesTabState extends State<LiveGamesTab>
       );
 }
 
-/// Web GameRow'un aktif oyun hâli — avatar şeridi + "X açtı" + durum +
+/// Web GameRow'un aktif oyun hâli — avatar şeridi + puan satırı + durum +
 /// (yalnız sıra çağırandaysa) kalan süre.
 class _GameRow extends StatelessWidget {
   final OnlineGame game;
   final bool isMyTurn;
   final String? deadline;
+
+  /// Koltuk sırasıyla anlık puanlar (`OnlineGamesSnapshot.scores`); null =
+  /// henüz yüklenmedi → puan satırı çizilmez.
+  final List<int>? scores;
   final VoidCallback onOpen;
   const _GameRow({
     super.key,
     required this.game,
     required this.isMyTurn,
     required this.deadline,
+    required this.scores,
     required this.onOpen,
   });
 
@@ -787,14 +795,22 @@ class _GameRow extends StatelessWidget {
                       : AvatarRowPlayer(
                           name: s.name ?? 'Oyuncu', avatarUrl: s.avatarUrl),
               ]),
-              const SizedBox(height: 2),
-              // ⚠ Setup'ın YZ kartındaki "Sıra: X" 2 Eylül'de KALKTI (durum
-              // etiketiyle aynı şeyi söylüyordu); bu satır ona BENZEMEZ ve
-              // KALIR — kimin açtığını söylüyor, sıra bilgisi değil.
-              Text('${game.creatorSlot?.name ?? 'Bir arkadaşın'} açtı',
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontFamily: 'SpaceMono', fontSize: 9, color: _muted)),
+              // 6 Eylül 2026 — "X açtı" satırı KALKTI, yerine PUAN SATIRI
+              // (kullanıcı: *"Ironman açtı kalksın çünkü zaten ilk baştaki
+              // her zaman oyunu başlatan oluyor"* — `slots[0]` her zaman
+              // kurucu, avatar şeridi o bilgiyi zaten taşıyor). Puanlar
+              // koltuk sırasıyla, yani N'inci sayı N'inci yüzün altında;
+              // stil alttaki kalan-süre satırıyla AYNI (`devamEdenSureStil`
+              // — kullanıcı: "font kalan süre ile aynı olsun"). Setup'ın YZ
+              // kartı ve "Son Oynananlar" aynı satırı çiziyor
+              // (`util/score_line.dart`); web ikizi `LiveGamesTab` GameRow.
+              if (scores case final s? when s.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(scoreLine(s),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: devamEdenSureStil(_muted)),
+              ],
             ],
           ),
           durum: Text.rich(

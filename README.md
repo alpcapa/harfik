@@ -190,6 +190,7 @@ src/
 │   ├── leagueRank.ts   # k-lig rütbe kademeleri (Çaylak→Kozmik, 9 kademe: eşik/renk/ödül — sunucudaki _award_league_rewards VE portun league_rank.dart'ı ile ELLE senkron, üç kopya)
 │   ├── pendingLiveGames.ts # Canlı taraftaki "bekleyen iş" sayısı (bekleyen davet + sırası sende olan oyun) — Setup rozeti ve PWA ikon rozeti ortak
 │   ├── gameListOrder.ts # devam eden oyun/davet listelerinin sıralaması: "sıra bende" bitmeye en yakın ÜSTTE, "sıra rakipte" en geç ÜSTTE, son tarihi olmayan en sona (npm run verify-game-list-order; portun game_list_order.dart'ıyla senkron)
+│   ├── scoreLine.ts    # kart altı puan satırı (devam eden + son oynanan kartlar): koltuk sırasıyla puanlar " - " ile — portun score_line.dart'ıyla metin birebir
 │   ├── recentGameAvatars.ts # "Son Oynananlar" satırındaki rakip avatarının çözümü — eşleme OYUNLA sınırlı (donmuş players anlık görüntüsü user_id taşımadığından isimle eşleme yanlış yüz gösterebilirdi)
 │   ├── headToHead.ts   # skor kartındaki kafa kafaya oran çubuğunun dilimleri — kümülatif yuvarlama, üç dilim TAM 100 eder (npm run verify-head-to-head; portun head_to_head.dart'ıyla senkron)
 │   ├── rematchSlots.ts # "Tekrar Oyna" kadrosu: ilk koltuk ÇAĞIRAN, YZ'ler SONDA (create_online_game'in üç kısıtı) — oyun ekranı ve oyun geçmişi ORTAK kullanır (npm run verify-rematch-slots; portun rematchSlots'uyla senkron)

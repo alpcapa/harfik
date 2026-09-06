@@ -970,7 +970,9 @@ void main() {
             friends: FriendsRepo(FakeFriendsGateway())));
     expect(tester.widget<CountBadge>(arkadaslaRozeti()).count, 1);
 
-    await tester.tap(find.text('Esiner açtı'));
+    // "Esiner açtı" satırı 6 Eylül 2026'da kalktı (yerine puan satırı);
+    // kart artık anahtarıyla bulunuyor.
+    await tester.tap(find.byKey(const ValueKey('game-g1')));
     await tester.pumpAndSettle();
     // `skipOffstage: false` ZORUNLU: push edilen rota üsttekini sahne dışına
     // alır ama SÖKMEZ — hatanın kaynağı zaten tam olarak bu (Setup mount'ta
@@ -1048,6 +1050,12 @@ void main() {
         await tester.pump();
       }
       expect(find.text('DEVAM EDEN OYUN'), findsOneWidget);
+      // PUAN SATIRI (6 Eylül 2026): avatarların altında, koltuk sırasıyla
+      // ("0 - N" — insan pas geçti, YZ oynadı), sol alanın İÇİNDE.
+      final puan = find.descendant(
+          of: find.byKey(kDevamEdenSolKey),
+          matching: find.textContaining(RegExp(r'^0 - \d+$')));
+      expect(puan, findsOneWidget, reason: 'puan satırı avatarların altında');
       // Ölçülen şey avatar dizisi DEĞİL, onu barındıran sol ALANIN eni:
       // `Expanded` düzeninde sağdakinden artakalan alan bu.
       //
@@ -1070,6 +1078,11 @@ void main() {
           matching: find.byType(PlayerAvatarRow)));
       final durum = tester.getRect(find.textContaining('SIRA SENDE'));
       final sure = tester.getRect(find.textContaining('SONRA'));
+      final puanRect = tester.getRect(puan);
+      expect(puanRect.top, greaterThanOrEqualTo(avatar.bottom),
+          reason: 'puan satırı avatar şeridinin ALTINDA olmalı');
+      expect(sure.top, greaterThanOrEqualTo(puanRect.bottom),
+          reason: 'kalan süre puan satırının ALTINDA olmalı');
       return (
         isim.width,
         avatar.width,

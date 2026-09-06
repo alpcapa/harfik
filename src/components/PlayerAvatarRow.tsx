@@ -3,7 +3,8 @@
 // "Son Oynananlar" listesinde, önceden "2/4 Kişilik Oyun" ya da rakip
 // isimlerinin yazdığı KALIN BAŞLIK SATIRININ yerine geçer (3 Ağustos 2026,
 // kullanıcı isteği) — kartlardaki diğer tüm metinler (durum, kalan süre,
-// "X açtı", tarih, skor, k-lig puanı) olduğu gibi kalır.
+// tarih, skor, k-lig puanı) olduğu gibi kalır; 6 Eylül 2026'dan beri hemen
+// altında koltuk sırasıyla puan satırı var (`utils/scoreLine.ts`).
 //
 // Avatar sayısı eski "N Kişilik" bilgisinin yerini tuttuğundan çağıranlar
 // oyuncuların TAMAMINI (çağıran dahil) geçer — yalnızca rakipleri göstermek

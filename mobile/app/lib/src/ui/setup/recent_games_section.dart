@@ -14,6 +14,8 @@ import '../../util/recent_game_avatars.dart';
 import '../game/player_avatar_row.dart';
 import '../ai_level_badge.dart';
 import '../../util/ai_level.dart';
+import '../../util/score_line.dart';
+import '../devam_eden_govde.dart' show devamEdenSureStil;
 import '../text_scale.dart';
 import '../score/game_history_modal.dart';
 import '../tap_target.dart';
@@ -362,6 +364,29 @@ class _RecentRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 6 Eylül 2026 — TARİH (+ zorluk rozeti) AVATARLARIN
+                  // ÜSTÜNE çıktı, altına PUAN SATIRI girdi (kullanıcı: *"Son
+                  // oynananlarda da aynı şekilde bitiş puanlarını koy.
+                  // Oradaki tarihi avatarların üstüne koy. (Kutu biraz
+                  // büyüyebilir, sorun değil)"*). Devam eden kartlarla aynı
+                  // düzen; web ikizi `RecentGamesSection.tsx`.
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(_formatDate(entry.createdAt),
+                        style: const TextStyle(
+                            fontFamily: 'SpaceMono',
+                            fontSize: 9,
+                            color: _muted)),
+                    // Zorluk rozeti (ROADMAP #23 Faz 4): tarihin yanında, YZ
+                    // oyununda her seviyede (Normal turuncu); Canlı kartlarda
+                    // hiç çıkmaz.
+                    if (entry.onlineGameId == null) ...[
+                      const SizedBox(width: 6), // web gap-1.5
+                      AiLevelBadge(
+                          level: aiLevelForBadge(entry.aiLevel,
+                              isAiGame: true)),
+                    ],
+                  ]),
+                  const SizedBox(height: 2),
                   if (entry.players.isNotEmpty)
                     PlayerAvatarRow(players: [
                       for (final p in entry.players)
@@ -402,23 +427,17 @@ class _RecentRow extends StatelessWidget {
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: _text)),
-                  const SizedBox(height: 2),
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text(_formatDate(entry.createdAt),
-                        style: const TextStyle(
-                            fontFamily: 'SpaceMono',
-                            fontSize: 9,
-                            color: _muted)),
-                    // Zorluk rozeti (ROADMAP #23 Faz 4): tarihin yanında, YZ
-                    // oyununda her seviyede (Normal turuncu); Canlı kartlarda
-                    // hiç çıkmaz.
-                    if (entry.onlineGameId == null) ...[
-                      const SizedBox(width: 6), // web gap-1.5
-                      AiLevelBadge(
-                          level: aiLevelForBadge(entry.aiLevel,
-                              isAiGame: true)),
-                    ],
-                  ]),
+                  // Bitiş puanları — snapshot sırası avatar sırasıyla AYNI
+                  // dizi (`entry.players`), yani N'inci sayı N'inci yüzün
+                  // altında; stil devam-eden kartların kalan-süre satırıyla
+                  // aynı. Snapshot'sız eski kayıtta satır çizilmez.
+                  if (entry.players.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(scoreLine([for (final p in entry.players) p.score]),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: devamEdenSureStil(_muted)),
+                  ],
                 ],
               ),
             ),

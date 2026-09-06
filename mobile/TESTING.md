@@ -1303,6 +1303,16 @@ listesi kök `TESTING.md` bölüm 10.
       cihaz); portta Kolay başlatılıp bulut kaydına düşen oyun web'de devam
       ettirilince YZ Kolay oynamalı (Setup kartında rozet) ve tersi. Canlı
       oyun kartlarında rozet HİÇBİR koşulda çıkmaz.
+- [ ] **Kart altı PUAN SATIRI** (6 Eylül 2026, kullanıcı isteği; web ile
+      birebir): Yapay Zeka ↔ Arkadaşınla sekmelerindeki devam eden oyun
+      kartlarında avatarların hemen altında koltuk sırasıyla anlık puanlar
+      (`45 - 38`; 4 kişilikte dört sayı), stil kalan-süre satırıyla AYNI
+      (`devamEdenSureStil`, 8 px SpaceMono). ⚠ Canlı kartında **"X açtı"
+      satırı ARTIK YOK**. Rakip hamle yapınca puan oyuna girmeden
+      tazelenmeli (Realtime → `_reload`). "Son Oynadıklarım"da tarih
+      (+ zorluk rozeti) avatarların ÜSTÜNDE, bitiş puanları altında; sağdaki
+      puan/k-lig sütunları (`ScaledCell`) yerinde. Yazı ölçeği tavanında
+      (1,3) puan satırı kırpılmadan tek satır kalmalı (üç nokta ile).
 - [ ] **Web ↔ mobil aynı toplam.** Aynı hesabın "Genel" lig puanı iki
       platformda BİREBİR aynı olmalı ("Genel = 2 kişilik + 4 kişilik +
       eşik ödülü" — mod bazlı sekmelerin toplamı ödül kadar EKSİK olur,

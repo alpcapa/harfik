@@ -20,6 +20,37 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 192 — kart altı PUAN SATIRI + "X açtı" kalktı + Son
+     Oynananlar'da tarih üste (6 Eylül 2026, kullanıcı isteği; web + port
+     aynı PR):** *"Canlı ve YZ bekleyen oyunlarda avatarların altına
+     kişilerin o anki puanlarını yazalım. Sayılar çok yakınsa araya tire
+     koyalım. Ironman açtı kalksın … Font kalan süre ile aynı olsun. Son
+     oynananlarda da aynı şekilde bitiş puanlarını koy. Oradaki tarihi
+     avatarların üstüne koy."*
+     - **Tek kaynak metin:** `util/score_line.dart` ↔ web `scoreLine.ts`
+       — koltuk/snapshot sırasıyla `join(' - ')`. Sıra AVATAR sırası (rank
+       değil): N'inci sayı N'inci yüzün altında. Ayırıcı her zaman tire
+       (boşluk "45 38"i tek sayı gibi okutuyor).
+     - **Veri:** Canlı puanları `online_game_states.players[].score`tan;
+       `gateway.deadlines` seçimine `players` eklendi (üçüncü bir istek
+       açılmadı), `OnlineGamesSnapshot.scores` (4. pozisyonel, varsayılan
+       boş — fake gateway'ler değişmedi), `scoresFromPlayersJson` bozuk
+       elemanı 0 sayar (web `typeof p.score === 'number'` ikizi). YZ kartı
+       `state.players`, Son Oynananlar `entry.players` snapshot'ından.
+     - **Düzen:** `_SavedGameRow._solBlok` Row → Column (üst satır avatar +
+       rozet, altında puan); `_GameRow` "X açtı" Text'i puan satırıyla yer
+       değiştirdi (kurucu zaten `slots[0]`, ilk avatar); `_RecentRow` sol
+       sütun tarih(+rozet) → avatar → puan. Stil üçünde de
+       `devamEdenSureStil(_muted)` (kullanıcı: "font kalan süre ile aynı").
+     - **Testler:** `score_line_test.dart` (metin sözleşmesi + JSON ayrıştırma
+       + Son Oynananlar dikey sırası), `live_games_test` "Devam Edenler kartı"
+       (puan avatar altında, süre puanın altında, `açtı` yok),
+       `setup_screen_test` "DEVAM EDEN OYUN" (`^0 - \d+$` sol alanın içinde,
+       aynı dikey sıra) — kartı açan test artık `ValueKey('game-g1')` ile
+       dokunuyor. Tam takım yeşil (`flutter test`).
+     - **Doğrulama sınırı:** gerçek `online_game_states` satırının `players`
+       jsonb'si sahte uçla temsil edildi; cihazda `mobile/TESTING.md`
+       "Kart altı PUAN SATIRI" maddesi (Realtime tazelenmesi dahil).
    - ✅ **Parça 191 — zorluk rozeti üç renk + tahta şeridinde + seçici
      alt-sekme stilinde (6 Eylül 2026 gece, kullanıcı isteği; web + port
      aynı PR):** *"kolay rozeti yeşil, normal turuncu, zor kırmızı olsun;

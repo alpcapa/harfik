@@ -4,6 +4,7 @@ import { GUEST_PLAYER_NAME, PLAYER_COLORS } from "../game/constants";
 import type { PlayerSetup } from "../game/gameReducer";
 import type { AiLevel } from "../game/types";
 import { AI_LEVEL_LABEL, SELECTABLE_AI_LEVELS, aiLevelDescription, aiLevelOf } from "../utils/aiLevel";
+import { scoreLine } from "../utils/scoreLine";
 import { AiLevelBadge } from "./AiLevelBadge";
 import { useAuth } from "../hooks/useAuth";
 import { useModalA11y } from "../hooks/useModalA11y";
@@ -174,6 +175,7 @@ function SavedGameRow({
   savedAtMs,
   willSurrender,
   aiLevel,
+  scores,
   onClick,
 }: {
   players: AvatarRowPlayer[];
@@ -181,6 +183,8 @@ function SavedGameRow({
   willSurrender: boolean;
   /** `aiLevelOf(GameState.aiLevel)` — yerel kayıt her zaman YZ oyunu, rozet her seviyede (Normal turuncu). */
   aiLevel: AiLevel;
+  /** Koltuk sırasıyla anlık puanlar (`state.players[].score`) — avatarların altındaki puan satırı. */
+  scores: number[];
   onClick: () => void;
 }) {
   const remaining = remainingTime(savedAtMs, willSurrender);
@@ -202,25 +206,32 @@ function SavedGameRow({
         {/* Avatar şeridi + zorluk rozeti YAN YANA (6 Eylül 2026 gece, kullanıcı:
             rozet alt satırda tam genişliğe uzuyordu — `flex-col` çocuğu
             yatayda geriliyor; satırda rozet kendi eninde kalır). */}
-        <span className="flex-1 min-w-0 flex items-center gap-1.5">
+        <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+          <span className="flex items-center gap-1.5">
           {/* "N Kişilik Oyun" başlığının yerine katılımcı avatarları —
             `LiveGamesTab`'daki Canlı oyun kartlarıyla BİREBİR AYNI desen
             (kullanıcı isteği: YZ oyunlarında da Canlı'daki gibi avatar).
             Avatar sayısı zaten oyuncu sayısını gösterdiğinden metin bilgi
             kaybettirmiyor. */}
           {/* 2 Eylül 2026 — altındaki "Sıra: X" satırı KALDIRILDI (kullanıcı
-            isteği): yanındaki `SIRA SENDE` ile aynı şeyi söylüyordu. ⚠ Canlı
-            oyun kartının (`LiveGamesTab`) aynı yerdeki "X açtı" satırı buna
-            BENZEMEZ ve KALIR — o kimin açtığını söylüyor, sıra bilgisi
-            değil. Sol sütun burada tek çocukla kalıyor; `flex flex-col` ve
-            `gap-0.5` bilerek duruyor, çünkü iki kartın sol tarafı aynı
-            kaptan çıkıyor. */}
+            isteği): yanındaki `SIRA SENDE` ile aynı şeyi söylüyordu. Canlı
+            oyun kartının (`LiveGamesTab`) aynı yerdeki "X açtı" satırı da 6
+            Eylül 2026'da kalktı (kurucu zaten ilk avatar); iki kartın sol
+            sütunu artık aynı: avatar şeridi + altında PUAN SATIRI. */}
           <PlayerAvatarRow players={players} />
           {/* Zorluk rozeti (ROADMAP #23 Faz 3; 6 Eylül 2026'dan beri Normal
             de çizilir, turuncu) — avatarların hemen sağında. ⚠ Aynı düzeni
             paylaşan `LiveGamesTab` kartı ETKİLENMEZ — o Canlı, orada seviye
-            yok (kartın "X açtı" satırı bu yerde). */}
+            yok. */}
           <AiLevelBadge level={aiLevel} />
+          </span>
+          {/* PUAN SATIRI (6 Eylül 2026, kullanıcı isteği) — koltuk sırasıyla,
+            N'inci sayı N'inci yüzün altında; punto/harf aralığı alttaki
+            kalan-süre satırıyla AYNI. Canlı kartı (`LiveGamesTab`) ve "Son
+            Oynananlar" da aynı satırı çiziyor (`utils/scoreLine.ts`). */}
+          <span className="text-[8px] font-mono tracking-[0.5px] text-muted truncate">
+            {scoreLine(scores)}
+          </span>
         </span>
         {/* Metin ve punto `LiveGamesTab`'ın aktif oyun kartıyla BİREBİR
           (30 Ağustos 2026, kullanıcı isteği) — bu kart YZ oyunu, orası
@@ -859,6 +870,7 @@ export function Setup({
               savedAtMs={savedGame.savedAt}
               willSurrender={false}
               aiLevel={aiLevelOf(savedGame.state.aiLevel)}
+              scores={savedGame.state.players.map((p) => p.score)}
               onClick={onResumeGame}
             />
             <p className="text-[11px] text-muted font-mono leading-relaxed">
@@ -958,6 +970,7 @@ export function Setup({
                       savedAtMs={Date.parse(save.updated_at)}
                       willSurrender={save.state.turnCount >= 2}
                       aiLevel={aiLevelOf(save.state.aiLevel)}
+                      scores={save.state.players.map((p) => p.score)}
                       onClick={() => onResumeCloudSave(save)}
                     />
                   ))}

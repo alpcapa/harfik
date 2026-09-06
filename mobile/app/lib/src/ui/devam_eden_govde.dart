@@ -43,6 +43,9 @@ TextStyle devamEdenDurumStil(Color renk) => TextStyle(
     );
 
 /// Alttaki kalan-süre satırının stili (web `text-[8px] tracking-[0.5px]`).
+/// Avatarların altındaki PUAN SATIRI da bu stili kullanır (6 Eylül 2026,
+/// kullanıcı: "font kalan süre ile aynı olsun") — üç kartta da
+/// (`_SavedGameRow` · `_GameRow` · `_RecentRow`).
 TextStyle devamEdenSureStil(Color renk) => TextStyle(
       fontFamily: 'SpaceMono',
       fontSize: 8,
@@ -72,7 +75,8 @@ const Key kDevamEdenSolKey = Key('devam-eden-sol');
 /// yalnızca etikete düşer; süre hâlâ sağ kenara yaslı olduğundan görsel
 /// çapa değişmez.
 class DevamEdenGovde extends StatelessWidget {
-  /// Sol taraf: avatar şeridi (+ Canlı kartında "X açtı" satırı).
+  /// Sol taraf: avatar şeridi + altında puan satırı (6 Eylül 2026'ya kadar
+  /// Canlı kartında "X açtı" satırıydı; kurucu zaten `slots[0]`, kalktı).
   final Widget sol;
 
   /// Sağ üstteki durum etiketi.
