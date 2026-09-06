@@ -1276,8 +1276,12 @@ listesi kök `TESTING.md` bölüm 10.
       web'in aynı listesi kök `TESTING.md` §10).** Girişli hesapla Yapay
       Zeka sekmesi → "+ Yeni" → `OYUNCU SAYISI`nın ALTINDA **ZORLUK**
       satırı: `KOLAY` · `NORMAL`, Normal seçili; `ZOR` GÖRÜNMEMELİ (Faz
-      5'e kadar). KOLAY'a dokun: altında "k-lig puanı da yarıya iner"
-      açıklaması çıkmalı. Oyunu başlat, "← Geri" ile Setup'a dön: "DEVAM
+      5'e kadar). Seçicinin altında seçili seviyenin açıklaması, web ile
+      BİREBİR: Normal'de "Orta-iyi seviye bir oyuncuyum… birincilik 2 puan
+      kazandırır.", KOLAY'a dokununca "Çok iyi değilim… birincilik 1 puan
+      kazandırır."; 4 OYUNCULU'ya geçince cümleye ikincilik eklenir (Kolay:
+      "ikincilik puan kazandırmaz", Normal: "birincilik 2, ikincilik 1 puan
+      kazandırır"). Oyunu başlat, "← Geri" ile Setup'a dön: "DEVAM
       EDEN OYUNLAR" kartında avatarların ALTINDA küçük altın `Kolay` rozeti
       (Normal oyun kartında rozet YOK, bugünkü gibi). Oyunu birinci bitir:
       oyun sonu penceresinde başlığın altında `Kolay` rozeti ve k-lig

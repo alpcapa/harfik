@@ -113,8 +113,13 @@ test('Zorluk: Kolay seçilip 2 kişilik oyun başlar, YZ hamle yapar, seviye kay
   const zorluk = page.getByRole('radiogroup', { name: 'Zorluk' });
   await expect(zorluk.getByRole('radio', { name: 'Normal' })).toHaveAttribute('aria-checked', 'true');
   await expect(zorluk.getByRole('radio', { name: 'Zor' })).toHaveCount(0);
+  // Seçili seviyenin açıklaması + puanı (2 kişilik → yalnızca birincilik).
+  // Tam metinler portun ai_level_parity_test'iyle aynı — iki taraf ayrışırsa
+  // biri burada, öteki orada düşer.
+  await expect(page.getByText('Orta-iyi seviye bir oyuncuyum, sıradan oyunculardan biraz daha iyiyim diyorsanız burası size göre. Bu seviyede birincilik 2 puan kazandırır.')).toBeVisible();
   await zorluk.getByRole('radio', { name: 'Kolay' }).click();
   await expect(zorluk.getByRole('radio', { name: 'Kolay' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByText('Çok iyi değilim, daha yeni yeni alışıyorum, karşımda o kadar zor bir rakip istemiyorum diyorsanız doğru yerdesiniz. Bu seviyede birincilik 1 puan kazandırır.')).toBeVisible();
 
   await page.getByText('OYUNU BAŞLAT').click();
   const devamButton = page

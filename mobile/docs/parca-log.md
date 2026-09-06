@@ -20,6 +20,44 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 190 — Zorluk seçicisinin açıklama metni: her seviyede,
+     kullanıcıya hitapla, puanı `leaguePoints`ten (6 Eylül 2026 akşamı, web +
+     port AYNI PR):** kullanıcı Kolay'ın altındaki *"en iyi birkaç hamleden
+     birini oynar"* cümlesini gördü: *"bilimsel iş yapmıyoruz, kullanıcıya
+     bunu söylemeye gerek yok"* — üç seviyenin metnini kendisi verdi ve 4
+     kişilikte puan bilgisinin genişlemesini istedi. Kaynak web
+     `src/utils/aiLevel.ts` (`AI_LEVEL_PITCH` + `aiLevelDescription`) →
+     port `util/ai_level.dart` (`aiLevelPitch` + `aiLevelDescription`);
+     `setup_screen.dart`te açıklama artık `_level == kolay` koşulsuz, seçili
+     seviye + `_count` ile her zaman çizilir (web `Setup.tsx` aynı).
+     - **Yorum:** kullanıcının "beraberlik puanları" dediği şey puan
+       tablosunda 4 kişiliğe özgü tek satır olan **ikincilik** puanı olarak
+       okundu (Kolay 0 → "ikincilik puan kazandırmaz", Normal 1, Zor 2);
+       beraberlik zaten aynı sırayı paylaşarak birincilik puanını verir.
+     - **Neden metin değil fonksiyon:** sayılar `leaguePoints` tablosundan
+       türetiliyor (web `leaguePoints.ts`, port core `league_points.dart`) —
+       tablo değişirse metin kendiliğinden değişir, dördüncü bir kopya
+       açılmadı (ROADMAP 23.4 "dokuz kopya" dersi). Zor'un metni bugünden
+       hazır; Faz 5 `selectableAiLevels`e `zor`u ekleyince kendiliğinden
+       görünür.
+     - **Kapı:** `ai_level_parity_test` artık hitap cümlelerini web
+       kaynağından okuyup karşılaştırıyor + altı bileşimi (3 seviye × 2/4
+       kişi) TAM metinle kilitliyor; web `tests/smoke.spec.ts` aynı metinleri
+       Setup'ta görüyor (iki taraf ayrışırsa biri orada, öteki burada
+       düşer). `setup_screen_test` ZORLUK testi üç seviye/iki sayı geçişini
+       sınıyor.
+     - **Yan etki (test):** açıklama her seviyede görününce misafir formu
+       900 px'lik test ekranında uzadı ve "Neden Ücretsiz Üye Olmalıyım?"
+       testinin `GİRİŞ YAP / KAYIT OL` dokunuşu ekran dışına düştü —
+       `ensureVisible` eklendi. Cihazda karşılığı yok (form zaten
+       kaydırılabilir).
+     - **Doğrulama:** `flutter analyze` temiz; `flutter test` tam takım
+       yeşil; web `npm run lint` + Playwright Zorluk testleri (2) yeşil.
+       **Sınır:** metin cihazda okunmadı — `mobile/TESTING.md` §13 maddesi
+       yeni metinlere göre güncellendi, 1.0.8 turunda okunur. ⚠ 1.0.8 Play'e
+       yüklenmediyse bu değişiklik o pakete biner (`mobile-latest` yeniden
+       derlenir, kütükteki koşu no/SHA-256 bayatlar).
+
    - ✅ **Parça 189 — YZ zorluğu portta: ZORLUK seçici + seviyeli k-lig
      puanı/rozet üç kartta (6 Eylül 2026, ROADMAP #23 Faz 4 — web Faz 3'ün
      ikizi):** kaynak `Setup.tsx` / `AiLevelBadge.tsx` / `aiLevel.ts` /
