@@ -200,12 +200,20 @@ Kaynak kayıt: `marketing/play-store/console-formlari.md` §7.
 
 ## Sıradaki sürüme binecekler — `main`'de var, MAĞAZADA yok (4 Eylül 2026)
 
-⚠ **DURUM (6 Eylül 2026): sürüm 1.0.7 HAZIR, Play'e GÖNDERİLMEYİ BEKLİYOR.**
-Sürüm adı iki dosyada birden 1.0.6 → **1.0.7** yapıldı (`pubspec.yaml` +
-`env.dart`); `versionCode`u CI `--build-number` ile basıyor. Paketi
-kullanıcı ELLE yükleyecek — bu satır "gönderildi" demek DEĞİL. Gönderim
-tamamlandığında aşağıdaki liste sıfırlanmalı ve "Kapalı testteki paket"
-satırı 1.0.7 + yeni commit ile güncellenmeli.
+⚠ **DURUM (6 Eylül 2026, 12:31 TSİ): 1.0.7 GÖNDERİLDİ — Play'de İNCELEMEDE.**
+Kapalı test (Alpha) kanalına yüklendi, Console'da **13 numaralı gönderim**,
+durum `In review`. **Henüz YAYINDA DEĞİL** — bu yüzden aşağıdaki liste
+BİLEREK duruyor: "mağazada yok" hâlâ doğru.
+
+| | |
+|---|---|
+| Sürüm adı | **1.0.7 (545)** — `versionCode` = CI koşu numarası |
+| Kaynak commit | `78383eb` |
+| AAB sha256 | `4df3928c…28837` (6 Eylül 07:08:49 UTC, koşu 545) |
+
+**`Published`e döndüğünde yapılacak:** aşağıdaki liste SIFIRLANIR ve
+"Kapalı testteki paket" satırı `1.0.7 (545) = 78383eb` olur. O ana kadar
+liste, gönderilmiş ama henüz yayınlanmamış içeriği gösteriyor.
 
 Karar 5 Eylül akşamı DEĞİŞTİ. Bekletme kararı 4 Eylül'de *"sürüme
 gönderme, daha üzerine yeni işler gelecek"* diyordu ve 5 Eylül'de bir kez
@@ -241,7 +249,13 @@ haklı çıktı — cevap zaten repodaydı:
 
 Sayaç 27/28 Ağustos'ta başladı; bu ALTI sürüm pencerenin içinde çıktı ve
 kart saymaya devam etti (26 Ağustos'ta 10, 28 Ağustos'tan beri 12). Sürüm
-göndermek sayacı sıfırlasaydı 10. güne hiç gelinemezdi. **Yeni bir sürüm
+göndermek sayacı sıfırlasaydı 10. güne hiç gelinemezdi.
+
+**İkinci ve bağımsız kanıt (6 Eylül, Console → Publishing overview →
+Submission activity):** pencerenin içinde 30 Ağustos · 31 Ağustos · 1 Eylül ·
+2 Eylül · 4 Eylül tarihli beş gönderim var ve **hepsi `Published`**. Yani
+tez artık yalnızca repo geçmişine değil, Play'in kendi gönderim kaydına da
+dayanıyor. **Yeni bir sürüm
 bu yüzden bekletilmez; kapı YOK.**
 
 ⚠ Ders, "12 gerçek sayı mı" açık sorusunun tam TERSİ yönde: orada kayıt
