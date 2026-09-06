@@ -135,8 +135,15 @@ bölümün kendi tarihli notuna taşınır.
   | 3 | %36 | %29–%42 | 233 | 196 | 10,8 |
   | **4** | **%33** | %27–%40 | 233 | 190 | 10,4 |
   | 5 | %22 | %17–%28 | 244 | 178 | 9,7 |
+  | 6 | %22 | %16–%28 | 247 | 178 | 9,6 |
+  | 8 | %20 | %15–%26 | 250 | 167 | 8,9 |
 
-  (N=1'de 2 berabere, kazanma oranı beraberlik dışı.) İki bulgu:
+  (N=1'de 2 berabere, kazanma oranı beraberlik dışı.) **N=6 ve N=8
+  satırları 6 Eylül 2026 gecesi eklendi** — kullanıcı Preview'da iki Kolay
+  oyun oynayıp *"bana pek kolay gelmedi"* dedi (skorlar 237-210 ve 50-47);
+  eğri 5-8 arasında %20-22'de düzleşiyor, N=10'da %8'e düşüyor. Kullanıcı
+  kararı: **N=4 kalsın**, saha ölçümü (`admin_ai_balance`) konuşsun; N=8
+  bir kademe aşağısı olarak hazır. İki bulgu:
 
   1. **24 oyunluk eski tablo N=3'ü fazla zayıf göstermişti:** %25 değil
      **%36** (GA %29-42). 24 oyunun güven aralığı ±%17'ydi, yani fark
