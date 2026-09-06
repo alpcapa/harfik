@@ -7,6 +7,7 @@ import type { GamePlayerSnapshot, SharedGameData } from '../lib/database.types';
 import { LogoMark } from './LogoMark';
 import { GameBoardPreview } from './GameBoardPreview';
 import { PlayerBadge } from './PlayerBadge';
+import { AiLevelBadge } from './AiLevelBadge';
 import { leaguePoints, formatLeaguePoints, computeRanks } from '../utils/leaguePoints';
 
 interface SharedGamePageProps {
@@ -50,7 +51,11 @@ export function SharedGamePage({ gameId }: SharedGamePageProps) {
         <div className="w-full max-w-[400px] flex flex-col gap-3">
           <div className="shadow-raised bg-bg border border-border rounded-md py-2 px-2.5 flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
-              <span>{formatDateTime(data.created_at)} · {data.player_count} Oyunculu</span>
+              <span className="flex items-center gap-1.5 min-w-0">
+                <span className="truncate">{formatDateTime(data.created_at)} · {data.player_count} Oyunculu</span>
+                {/* Zorluk rozeti — RPC 6 Eylül 2026'dan beri `ai_level` döndürüyor; Normal/null'da yok. */}
+                <AiLevelBadge level={data.ai_level} />
+              </span>
               <span className="flex items-center gap-2 shrink-0">
                 <span className="w-9 text-right">Puan</span>
                 {/* Bkz. GameHistoryModal'daki aynı sütun — "SL" yerine küçük
@@ -61,7 +66,7 @@ export function SharedGamePage({ gameId }: SharedGamePageProps) {
             </div>
             <div className="flex flex-col gap-0.5">
               {players.map((p, i) => {
-                const points = leaguePoints(ranks[i], data.player_count, p.surrendered);
+                const points = leaguePoints(ranks[i], data.player_count, p.surrendered, data.ai_level);
                 return (
                   <div key={i} className="flex items-center justify-between gap-2 text-[12px] font-mono">
                     <span className="flex items-center gap-1.5 min-w-0">

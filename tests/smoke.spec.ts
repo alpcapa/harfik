@@ -86,6 +86,86 @@ test('Setup ekranı açılır, 2 kişilik oyun başlar, YZ hamle yapar', async (
   await expect(page.getByText('Bir şeyler ters gitti')).toHaveCount(0);
 });
 
+// ROADMAP #23 Faz 3 (6 Eylül 2026) — ZORLUK seçici. İlk testin kopyası +
+// "Kolay" seçimi; ayrıca seviyenin gerçekten state'e YAZILDIĞI localStorage
+// kaydından okunuyor (`gameStorage` → `kelimeki:game-state`, payload.state).
+// ⚠ Kayıt `turnCount >= 2`'den önce YAZILMAZ (App.tsx, 31 Ağustos 2026
+// "hayalet devam eden oyun" kuralı) — okuma bu yüzden YZ hamlesinden SONRA.
+// Normal'de anahtar HİÇ yazılmaz (Faz 2 sözleşmesi) — negatif eş aşağıda.
+const GAME_STATE_KEY = 'kelimeki:game-state';
+async function kayitliSeviye(page: Page): Promise<string | undefined> {
+  return page.evaluate((key) => {
+    const raw = localStorage.getItem(key as string);
+    if (!raw) return 'KAYIT YOK';
+    const parsed = JSON.parse(raw) as { state?: { aiLevel?: string } };
+    return parsed.state?.aiLevel;
+  }, GAME_STATE_KEY);
+}
+
+test('Zorluk: Kolay seçilip 2 kişilik oyun başlar, YZ hamle yapar, seviye kayda yazılır', async ({
+  page,
+}) => {
+  page.on('dialog', (dialog) => dialog.accept());
+  await donenKullanici(page);
+  await page.goto('/');
+
+  // Seçici bir radyogrup; varsayılan Normal işaretli, Zor Faz 5'e kadar YOK.
+  const zorluk = page.getByRole('radiogroup', { name: 'Zorluk' });
+  await expect(zorluk.getByRole('radio', { name: 'Normal' })).toHaveAttribute('aria-checked', 'true');
+  await expect(zorluk.getByRole('radio', { name: 'Zor' })).toHaveCount(0);
+  await zorluk.getByRole('radio', { name: 'Kolay' }).click();
+  await expect(zorluk.getByRole('radio', { name: 'Kolay' })).toHaveAttribute('aria-checked', 'true');
+
+  await page.getByText('OYUNU BAŞLAT').click();
+  const devamButton = page
+    .getByLabel('Giriş uyarısı')
+    .getByRole('button', { name: 'Oyna', exact: true });
+  if (await devamButton.isVisible().catch(() => false)) {
+    await devamButton.click();
+  }
+  const quickstartHeading = page.getByRole('heading', { name: /hızlı başlangıç/i });
+  if (await quickstartHeading.isVisible().catch(() => false)) {
+    await page.locator('button[aria-label="Kapat"]').last().click();
+  }
+
+  const pasGecButton = page.getByRole('main').getByRole('button', { name: 'Pas Geç' });
+  await expect(pasGecButton).toBeEnabled();
+  await pasGecButton.click();
+  await page.getByLabel('Pas geçme onayı').getByRole('button', { name: 'Pas Geç' }).click();
+  await expect(pasGecButton).toBeDisabled();
+  // Kolay'da YZ `pickTopMove` ile en iyi 4'ten rastgele seçer — motor zinciri
+  // burada da ucuna kadar koşmalı.
+  await expect(pasGecButton).toBeEnabled({ timeout: 20_000 });
+  await expect(page.getByText('Bir şeyler ters gitti')).toHaveCount(0);
+
+  // turnCount artık 2 → kayıt yazıldı; seviye state'e girmiş olmalı.
+  await expect.poll(() => kayitliSeviye(page)).toBe('kolay');
+});
+
+test('Zorluk: Normal (varsayılan) kayda aiLevel YAZMAZ — eski kayıt sözleşmesi', async ({ page }) => {
+  page.on('dialog', (dialog) => dialog.accept());
+  await donenKullanici(page);
+  await page.goto('/');
+  await page.getByText('OYUNU BAŞLAT').click();
+  const devamButton = page
+    .getByLabel('Giriş uyarısı')
+    .getByRole('button', { name: 'Oyna', exact: true });
+  if (await devamButton.isVisible().catch(() => false)) {
+    await devamButton.click();
+  }
+  const quickstartHeading = page.getByRole('heading', { name: /hızlı başlangıç/i });
+  if (await quickstartHeading.isVisible().catch(() => false)) {
+    await page.locator('button[aria-label="Kapat"]').last().click();
+  }
+  const pasGecButton = page.getByRole('main').getByRole('button', { name: 'Pas Geç' });
+  await expect(pasGecButton).toBeEnabled();
+  await pasGecButton.click();
+  await page.getByLabel('Pas geçme onayı').getByRole('button', { name: 'Pas Geç' }).click();
+  await expect(pasGecButton).toBeEnabled({ timeout: 20_000 });
+  // `undefined` = kayıt var, anahtar yok; 'KAYIT YOK' = kayıt hiç yazılmamış (o da hata).
+  await expect.poll(() => kayitliSeviye(page)).toBeUndefined();
+});
+
 test('Bilinmeyen bir path da uygulamayı normal açar (SPA fallback)', async ({ page }) => {
   await page.goto('/bu-path-hic-yok');
   await expect(page.getByText('OYUNU BAŞLAT')).toBeVisible();

@@ -14,6 +14,7 @@ import type { GameHistoryEntry } from '../lib/database.types';
 import { leaguePoints, formatLeaguePoints } from '../utils/leaguePoints';
 import { GameHistoryModal } from './GameHistoryModal';
 import { PlayerAvatarRow } from './PlayerAvatarRow';
+import { AiLevelBadge } from './AiLevelBadge';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('tr-TR');
@@ -189,7 +190,7 @@ export function RecentGamesSection({
       </div>
       <div className="flex flex-col gap-2">
         {games.map((g) => {
-          const points = leaguePoints(rankFor(g), g.player_count, g.surrendered);
+          const points = leaguePoints(rankFor(g), g.player_count, g.surrendered, g.ai_level);
           return (
             <button
               key={g.id}
@@ -254,7 +255,13 @@ export function RecentGamesSection({
                 ) : (
                   <span className="font-sans text-[12px] font-bold text-text truncate">{titleFor(g)}</span>
                 )}
-                <span className="text-[9px] font-mono text-muted truncate">{formatDate(g.created_at)}</span>
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[9px] font-mono text-muted truncate">{formatDate(g.created_at)}</span>
+                  {/* Zorluk rozeti (ROADMAP #23 Faz 3): tarihin yanında,
+                      Normal'de YOK — bugünkü kart aynen. Canlı kartlarda
+                      `ai_level` her zaman null, yani orada hiç çıkmaz. */}
+                  <AiLevelBadge level={g.ai_level} />
+                </span>
               </span>
               {/* "Oyun Bitti" — 3 Eylül 2026, kullanıcı isteği.
                   ⚠ YALNIZCA Canlı tarafta. YZ oyunları senin cihazında

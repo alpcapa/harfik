@@ -23,11 +23,14 @@
 // yeni fonksiyon ↔ eski `case` sıfır fark; view karmaları öncesi/sonrası
 // bayt-eş — kayıt migration'ın başındaki yorumda).
 //
-// FAZ 3 SÖZLEŞMESİ: `leaguePoints` bugün `(rank, playerCount, surrendered)`
-// alıyor ve yalnızca Normal sütununu üretiyor. Faz 3 dördüncü parametreyi
-// (`level`) ekleyince bu betik onu KENDİLİĞİNDEN üç seviyede de sınar
-// (`leaguePoints.length` ile ariteyi okuyor) — ayrıca güncellenmesi
-// gerekmez, ama o gün çıktıda "3 seviye" yazdığını GÖR.
+// FAZ 3 (6 Eylül 2026): `leaguePoints(rank, playerCount, surrendered, level)`
+// — dördüncü parametre geldi, betik ariteyi `leaguePoints.length` ile okuyup
+// üç seviyeyi de sınıyor ("3 seviye" satırı). ⚠ TS'te `level`e JS
+// varsayılanı VERİLMEZ (`level = 'normal'` `.length`i 3'e düşürür ve betik
+// sessizce Faz 3 öncesine döner); eksik seviye gövdede `??`/karşılaştırmayla
+// Normal'e düşer. Sayı dizisi karşılaştırması da o gün "yalnızca `return N;`"
+// yerine "her `return` ifadesindeki TÜM tamsayılar" oldu — üçlü ternary'nin
+// sabitleri de kilitlensin diye.
 //
 // Koşum: npm run verify-league-points
 import { readFileSync, readdirSync } from 'node:fs';
@@ -160,18 +163,30 @@ for (const level of tsSeviyeler)
         }
       }
 check(`leaguePoints.ts ↔ kanonik tablo (${tsSeviyeler.length} seviye × 2 mod × sıra × teslim)`, tsFark === 0);
+if (tsSeviyeli) {
+  // Sunucunun `coalesce(p_ai_level, 'normal')` sözleşmesi istemcide de:
+  // seviyesiz kayıt (undefined/null) Normal sütununu almalı.
+  const eksik = [undefined, null] as unknown as Seviye[];
+  const eksikFark = eksik.some(
+    (lv) => tsFn(1, 2, false, lv) !== KANONIK.normal[1] || tsFn(2, 4, false, lv) !== KANONIK.normal[2],
+  );
+  check("TS: eksik seviye (undefined/null) Normal'e düşüyor", !eksikFark);
+}
 
 /* ── 4) Dart — kaynak metnindeki sabit dizisi TS ile aynı ─────────────────── */
 // İki dosya da `if (…) return N;` zinciri; yorumlar/boşluklar atılıp geriye
 // kalan sayı dizisi karşılaştırılır. Dallanma sırası da eşleşmek zorunda
 // (surrendered → rank 1 → rank 2 && count != 2 → 0).
+// Her `return` ifadesinin İÇİNDEKİ tamsayılar, kaynak sırasıyla — düz
+// `return 0;` de, `return kolay ? 1 : zor ? 4 : 2;` de aynı biçimde okunur.
 const sabitDizisi = (src: string) =>
-  src
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/\/\/.*$/gm, '')
-    .replace(/\/\/\/.*$/gm, '')
-    .match(/return\s+(-?\d+)\s*;/g)
-    ?.map((m) => Number(m.replace(/return\s+/, '').replace(';', '')));
+  [
+    ...src
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '')
+      .replace(/\/\/\/.*$/gm, '')
+      .matchAll(/return\s+([^;]*);/g),
+  ].flatMap((m) => (m[1].match(/-?\d+/g) ?? []).map(Number));
 const tsSrc = readFileSync(path.join(root, 'src', 'utils', 'leaguePoints.ts'), 'utf8');
 const dartSrc = readFileSync(
   path.join(root, 'mobile', 'kelimeki_core', 'lib', 'src', 'rules', 'league_points.dart'),
@@ -184,6 +199,13 @@ check('league_points.dart fonksiyon gövdesi bulundu', dartFonk.length > 0);
 const tsSabit = sabitDizisi(tsFonk);
 const dartSabit = sabitDizisi(dartFonk);
 check('TS ↔ Dart sabit dizisi aynı', J(tsSabit) === J(dartSabit), `TS ${J(tsSabit)} ≠ Dart ${J(dartSabit)}`);
+// Dizi tablonun kendisi olmalı — iki dosya aynı YANLIŞ sayıyı taşırsa
+// yukarıdaki eşitlik yakalamaz. Sıra: teslim, 1. sıra (K/Z/N), 2. sıra
+// (K/Z/N), diğer. Dallanma biçimi değişirse bu satır da güncellenir.
+const beklenen = tsSeviyeli
+  ? [TESLIM, KANONIK.kolay[1], KANONIK.zor[1], KANONIK.normal[1], KANONIK.kolay[2], KANONIK.zor[2], KANONIK.normal[2], 0]
+  : [TESLIM, KANONIK.normal[1], KANONIK.normal[2], 0];
+check('sabit dizisi ↔ kanonik tablo', J(tsSabit) === J(beklenen), `${J(tsSabit)} ≠ ${J(beklenen)}`);
 check(
   'Dart dallanma sırası: surrendered → rank 1 → rank 2 && playerCount != 2',
   /surrendered\)[\s\S]*rank == 1[\s\S]*rank == 2 && playerCount != 2/.test(dartFonk),

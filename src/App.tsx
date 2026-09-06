@@ -46,7 +46,7 @@ import { swallowNextClick } from './utils/ghostClick';
 import { useBoardZoom } from './hooks/useBoardZoom';
 import { getFormedWords, getFullWordAt, key } from './utils/board';
 import { nearbyDraftCell } from './utils/draftRescue';
-import type { GameState, Tile as TileModel } from './game/types';
+import type { AiLevel, GameState, Tile as TileModel } from './game/types';
 import { Tile } from './components/Tile';
 import { trLower } from './utils/turkish';
 import { PLAYER_COLORS, SIZE } from './game/constants';
@@ -823,8 +823,13 @@ export default function App() {
    * başlangıç değil, aksi halde aynı oyun her cihaz/oturum dönüşünde tekrar
    * sayılırdı.
    */
-  const startLocalGame = (players: PlayerSetup[]) => {
-    dispatch({ type: 'START', players });
+  const startLocalGame = (players: PlayerSetup[], aiLevel?: AiLevel) => {
+    // Zorluk (ROADMAP #23 Faz 3): Normal payload'a GİRMEZ — Faz 2 sözleşmesi
+    // "alan yok = Normal" (eski kayıtlar, golden'lar, port codec'i, bulut
+    // kaydı, `games.ai_level` null); `'normal'` yazmak aynı şeyi ikinci bir
+    // biçimde söylemek olurdu. Yalnızca Kolay/Zor state'e yazılır; oyun
+    // boyunca değişmez (değiştiren action YOK).
+    dispatch({ type: 'START', players, ...(aiLevel && aiLevel !== 'normal' ? { aiLevel } : {}) });
     // Yeni oyun/rövanş zoom'u sıfırlar (port `_handleRematch` ile aynı).
     boardZoom.reset();
     // Fire-and-forget: telemetri hatası oyunu etkilemez.
@@ -1326,8 +1331,8 @@ export default function App() {
             onResumeGame={handleResumeSavedGame}
             cloudSaves={user ? cloudSaves : null}
             onResumeCloudSave={handleResumeCloudSave}
-            onStart={(players, showTutorial) => {
-              startLocalGame(players);
+            onStart={(players, showTutorial, aiLevel) => {
+              startLocalGame(players, aiLevel);
               if (showTutorial) setShowPostStartTutorial(true);
             }}
           />
@@ -2006,7 +2011,9 @@ export default function App() {
                   // Aynı kadro: biten oyunun oyuncu adları/YZ bayrakları
                   // Setup'ın `doStart`'ının ürettiğinin AYNISI, yeniden
                   // hesaplamaya gerek yok.
-                  startLocalGame(state.players.map((p) => ({ name: p.name, isAI: p.isAI })));
+                  // Aynı ZORLUK da: rövanş biten oyunun seviyesini taşır,
+                  // Setup'a dönmeden Kolay'dan Normal'e geçilemez.
+                  startLocalGame(state.players.map((p) => ({ name: p.name, isAI: p.isAI })), state.aiLevel);
                 }}
                 className="btn-raised flex-1 py-2.5 rounded-md bg-accent text-white text-xs font-bold uppercase tracking-[1px] active:scale-[0.97] transition-transform"
               >
@@ -2084,6 +2091,7 @@ export default function App() {
         show={state.isGameOver && !gameOverDismissed}
         players={state.players}
         turnCount={state.turnCount}
+        aiLevel={state.aiLevel}
         onOpenHistory={() => setShowHistory(true)}
         onOpenFeedback={() => setShowFeedback(true)}
         onClose={() => {

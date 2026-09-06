@@ -803,6 +803,25 @@ garantisi `league_rewards.seen_at` ile cihazdan bağımsızdır. Bu zincirin
 büyük kısmı otomatik test edilemiyor (gerçek oturum + gerçek oyun bitişi
 gerekiyor).
 
+- [ ] **Seviyeye göre puan — Kolay (6 Eylül 2026, ROADMAP #23 Faz 3).**
+      Girişli hesapla Yapay Zeka sekmesi → "+ Yeni Yapay Zeka Oyunu Aç" →
+      "Oyuncu sayısı"nın ALTINDA **Zorluk** satırı: `Kolay` · `Normal`,
+      Normal seçili; `Zor` GÖRÜNMEMELİ (Faz 5'e kadar). Kolay'ı seç, altında
+      "k-lig puanı yarıya iner" açıklaması çıkmalı. Oyunu başlat, Setup'a
+      dönüp "Devam Edenler"e bak: kartta avatarların ALTINDA küçük altın
+      `Kolay` rozeti (Normal oyun kartında rozet YOK, bugünkü gibi). Oyunu
+      birinci bitir: oyun sonu ekranında başlığın altında `Kolay` rozeti ve
+      k-lig sütununda **+1** (Normal'de +2). "Son Oynadıklarım"da tarihin
+      yanında rozet ve +1; "Tüm Oyunlarım"da "Yapay Zeka" rozetinin sağında
+      `Kolay` ve +1; aynı kartı beğenip **Favoriler** sekmesinde de aç —
+      orada da +1 (bu sekme ayrı bir RPC'den okuyor, `list_liked_games`).
+      Skor Kartı/k-lig listesindeki toplam da +1 artmış olmalı (sunucu
+      `league_points_for` ile aynı sayıyı verir — kart +1 gösterirken liste
+      +2 artıyorsa iki kopya ayrışmış demektir). Oyun sonu "Tekrar Oyna" →
+      yeni oyun da Kolay (devam eden kartında rozet). 4 kişilik Kolay oyunda
+      ikinci bitir: **0** (Normal'de +1). Teslim/7 gün terk: her seviyede
+      -2. Canlı oyun kartlarında rozet HİÇBİR koşulda çıkmaz.
+
 - [ ] **k-lig'de OHP kolonu (12 Ağustos 2026).** Sıralamada "Puan"ın
       SOLUNDA bir OHP kolonu olmalı: rakamlar DÜZ GRİ ve kalın değil (Puan
       mavi/kalın kalır), biçim iki basamak ("12.78"), veri yoksa "—";

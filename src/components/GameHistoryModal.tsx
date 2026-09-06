@@ -20,6 +20,7 @@ import { useAuth } from '../hooks/useAuth';
 import { buildRematchSlots } from '../utils/rematchSlots';
 import { PLAYER_COLORS } from '../game/constants';
 import { PlayerBadge } from './PlayerBadge';
+import { AiLevelBadge } from './AiLevelBadge';
 import { GameBoardPreview } from './GameBoardPreview';
 import { ActionSheet } from './ActionSheet';
 import { Avatar } from './Avatar';
@@ -716,6 +717,11 @@ export function GameHistoryModal({
                           Yapay Zeka
                         </span>
                       )}
+                      {/* Zorluk rozeti (ROADMAP #23 Faz 3) — "Yapay Zeka"nın
+                          hemen sağında, Normal'de YOK. `ai_level` iki
+                          kaynaktan da geliyor (`fetchMyGames` cols +
+                          `list_liked_games`), eski satırlar null = Normal. */}
+                      <AiLevelBadge level={entry.ai_level} />
                       {entry.message_count > 0 && (
                         <button
                           onClick={(e) => {
@@ -782,7 +788,7 @@ export function GameHistoryModal({
                   </div>
                   <div className="flex flex-col gap-0.5">
                     {players.map((p, i) => {
-                      const points = leaguePoints(ranks[i], entry.player_count, p.surrendered);
+                      const points = leaguePoints(ranks[i], entry.player_count, p.surrendered, entry.ai_level);
                       return (
                         <div
                           key={i}

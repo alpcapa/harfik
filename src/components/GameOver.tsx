@@ -2,22 +2,25 @@
 import { Fragment } from 'react';
 import { Modal } from './Modal';
 import { PLAYER_COLORS } from '../game/constants';
-import type { Player } from '../game/types';
+import type { AiLevel, Player } from '../game/types';
 import { trUpper } from '../utils/turkish';
 import { rankPlayers } from '../utils/ranking';
 import { leaguePoints, formatLeaguePoints } from '../utils/leaguePoints';
 import { PlayerBadge } from './PlayerBadge';
+import { AiLevelBadge } from './AiLevelBadge';
 
 interface GameOverProps {
   show: boolean;
   players: Player[];
   turnCount: number;
+  /** `GameState.aiLevel` — yoksa Normal (rozet çıkmaz, puan Normal formülü). */
+  aiLevel?: AiLevel;
   onOpenHistory: () => void;
   onOpenFeedback: () => void;
   onClose: () => void;
 }
 
-export function GameOver({ show, players, turnCount, onOpenHistory, onOpenFeedback, onClose }: GameOverProps) {
+export function GameOver({ show, players, turnCount, aiLevel, onOpenHistory, onOpenFeedback, onClose }: GameOverProps) {
   if (!show) return null;
 
   const ranked = rankPlayers(players);
@@ -34,6 +37,10 @@ export function GameOver({ show, players, turnCount, onOpenHistory, onOpenFeedba
         >
           {tie ? 'BERABERE' : `${trUpper(top.player.name)} KAZANDI`}
         </div>
+        {/* Zorluk rozeti — Normal'de `null` döner ve `gap` de açılmaz; Kolay/
+            Zor'da başlığın hemen altında (aşağıdaki k-lig sütununun neden
+            +1/+4 gösterdiğini bu söylüyor). */}
+        <AiLevelBadge level={aiLevel} size="sm" />
 
         {/* ÜÇ sabit sayı kolonu + esneyen ad. Ad `flex-1 min-w-0 truncate`:
             önceden kırpılmıyordu, uzun bir ad (en sık "Yapay Zeka 1"; ayrıca
@@ -113,7 +120,7 @@ export function GameOver({ show, players, turnCount, onOpenHistory, onOpenFeedba
           {ranked.map(({ player: p, index: i, rank }) => {
             const col = PLAYER_COLORS[p.colorIndex];
             const remaining = p.rack.reduce((s, t) => s + t.pts, 0);
-            const points = leaguePoints(rank, players.length, p.surrendered);
+            const points = leaguePoints(rank, players.length, p.surrendered, aiLevel);
             return (
               <Fragment key={i}>
                 <span className="flex items-center gap-1.5 min-w-0 text-[15px]">
