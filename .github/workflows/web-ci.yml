@@ -131,14 +131,6 @@ jobs:
       # yalnızca Edge kopyası değişen bir PR'da bu iş hiç koşmazdı.
       - run: npm run verify-edge-engine-parity
 
-      # YZ seviye kadranının ölçüm aleti (ROADMAP #23, Faz 0) motorun arama
-      # döngüsünün bir KOPYASINI taşıyor (`src/utils/ai.ts`e Faz 2'ye kadar
-      # dokunulmuyor). Bu adım aleti ölçüm için DEĞİL, yalnızca kopyanın
-      # ayrışmadığını kanıtlamak için koşuyor: 2 oyunun her hamlesinde liste
-      # başı ↔ üretim `findAIMove` karşılaştırılır (saniyeler). Faz 2 motora
-      # kendi `level` parametresini eklediğinde bu adım kaldırılır.
-      - run: npm run simulate-ai-levels -- --oyun 2 --n 1 --dogrula hepsi
-
       # İstemci hata telemetrisinin karar mantığı (ROADMAP #3): tekrar
       # bastırma, hız sınırı, "beklenen durumu kaydetme" filtresi. Duman
       # testiyle sınanamıyor — modül yalnızca Supabase yapılandırılmışken

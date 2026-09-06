@@ -42,3 +42,27 @@ extension MessageKindJson on MessageKind {
         _ => MessageKind.none,
       };
 }
+
+/// YZ zorluk seviyesi (TS: AiLevel = 'kolay' | 'normal' | 'zor', ROADMAP #23).
+/// Normal = en yüksek puanlı hamle (N=1), Kolay = en iyi `aiLevelTopN` (4)
+/// hamleden rastgele biri, Zor = Faz 5'in yeni motoru (o güne kadar Normal).
+enum AiLevel { kolay, normal, zor }
+
+extension AiLevelJson on AiLevel {
+  String get json => switch (this) {
+        AiLevel.kolay => 'kolay',
+        AiLevel.normal => 'normal',
+        AiLevel.zor => 'zor',
+      };
+
+  /// Bilinmeyen/eksik değer → Normal (sunucudaki `null = Normal` sözleşmesi).
+  static AiLevel parse(String? s) => switch (s) {
+        'kolay' => AiLevel.kolay,
+        'zor' => AiLevel.zor,
+        _ => AiLevel.normal,
+      };
+
+  /// Codec için: alan YOKSA null kalır (web'in JSON'u Normal'de anahtarı
+  /// hiç yazmaz; golden derin karşılaştırması buna dayanır).
+  static AiLevel? parseOrNull(String? s) => s == null ? null : parse(s);
+}

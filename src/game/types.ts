@@ -67,6 +67,16 @@ export interface Player {
   moveScoreSum: number;
 }
 
+/**
+ * YZ zorluk seviyesi (ROADMAP #23). Normal = bugünkü motor (en yüksek puanlı
+ * hamle, N=1); Kolay = aynı motor, en iyi N=4 hamleden rastgele biri (Faz 0
+ * ölçtü, `AI_LEVEL_TOP_N`); Zor = Faz 5'in yeni motoru (o güne kadar
+ * Normal'le aynı oynar). Tanım motor katmanında (burada) çünkü Edge kopyası
+ * ve Dart portu da aynı üçlüyü taşıyor; `src/lib/database.types.ts` buradan
+ * yeniden dışa aktarır (sunucudaki `games.ai_level` aynı üç değer).
+ */
+export type AiLevel = 'kolay' | 'normal' | 'zor';
+
 /** YZ'nin bulduğu hamle. */
 export interface AIMove {
   word: string;
@@ -135,6 +145,15 @@ export interface GameState {
   lastMoveCells: [number, number][];
   /** Oyun boyunca tüm oyuncuların hamle/puan geçmişi (en yeni sonda). */
   moveHistory: HistoryEntry[];
+  /**
+   * YZ zorluk seviyesi — oyun BAŞINDA (`START`) bir kez yazılır, değiştiren
+   * action YOK (Kolay'da başlayıp son hamlede Zor'a geçmek k-lig puan oyunu
+   * olurdu, bkz. ROADMAP 23.0). Yoksa (`undefined`) Normal: bugüne kadarki
+   * her kayıt, eski sürümlerin yazdığı bulut kayıtları ve Canlı oyunlar bu
+   * alanı taşımaz — `STORAGE_VERSION` bu yüzden bump EDİLMEDİ. Dart portunun
+   * `codec.dart`'ı da aynı toleransla okur (`as String?`).
+   */
+  aiLevel?: AiLevel;
 }
 
 /** Hamle geçmişinde tek bir satır: bir oyuncunun aldığı puan ve kaynağı. */

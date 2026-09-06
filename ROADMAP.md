@@ -1114,7 +1114,7 @@ döner — o an kaydedilmezse bir daha alınamaz.
 
 ---
 
-## 23. Seviyeli YZ (Kolay / Normal / Zor) + seviyeye göre k-lig puanı — **Faz 0-1 ✅ · Faz 2 sırada** (6 Eylül 2026)
+## 23. Seviyeli YZ (Kolay / Normal / Zor) + seviyeye göre k-lig puanı — **Faz 0-2 ✅ · Faz 3 sırada** (6 Eylül 2026)
 
 Kaynak: `docs/decisions/product-backlog.md` → "YZ zorluk seviyesi" (5 Eylül
 2026; kadran ölçümü, kapsam ve KESİN puan tablosu orada — burada
@@ -1280,38 +1280,29 @@ drop+create+grant). (3) `admin_ai_balance` satırları artık `(players,
 ai_level)`; panel Normal'de bugünkü gibi, Kolay/Zor satırı Faz 3 yazmaya
 başlayınca kendi kutusunu açar.
 
-**Faz 2 — Motor (web + port + Edge kopyası AYNI PR).** Model: Opus 5,
-efor `high` — parite işi.
-- `findAIMove(..., level: AiLevel = 'normal')`: `consider` iki en-iyi yerine
-  iki **sınırlı liste** tutar (güvenli / vergili, boyut N, sıralama: puan
-  azalan, eşitte ilk bulunan önde — bugünkü `>` kuralının liste karşılığı).
-  Dönüş: güvenli liste boş değilse ondan, değilse vergili listeden;
-  **N=1 → `list[0]`, rastgele ÇAĞRI YOK; N>1 → tek `randomSource()`
-  çağrısı, `floor(r * list.length)`.** Rastgele tüketim sayısı sözleşmenin
-  parçası (torba/karıştırma deseninin aynısı).
-- `AiLevel → N` eşlemesi tek yerde: `src/game/constants.ts`
-  (`AI_LEVEL_TOP_N`), Dart `constants.dart`, Edge `_game/constants.ts` —
-  `verify-edge-engine-parity` ve `verify-sql-engine-parity`'nin sabit
-  kilitleme deseniyle üçü kilitlenir.
-- Dart `findAIMove(..., {AiLevel level = AiLevel.normal, required Rng rng})`;
-  reducer kendi `rng`'sini geçer.
-- Edge `_game/ai.ts` + `constants.ts` kopyalanır; `play-ai-turn` seviye
-  vermez (Normal). Deploy öncesi `list_edge_functions` ile `verify_jwt`
-  okunur (`play-ai-turn` "false" listesinde DEĞİL → `true`).
-- **Kanıt sırası:** (1) `generate-golden-vectors` → **sıfır fark** (N=1 yolu
-  bayt-eş); (2) sonra `reducer_ai2_kolay.json` (tohumlu, `aiLevel:'kolay'`)
-  eklenir, Dart `run_all.dart` yeşil; (3) `verify-edge-engine-parity` yeşil
-  (Normal'de değişmedi; ayrıca Kolay için aynı tohumla iki motoru
-  karşılaştıran bir adım eklenir — Edge'e `random.ts` kopyası girer, çünkü
-  B'de bile kopyanın DAVRANIŞI eşit olmalı, sadece çağrılmıyor).
-- Ürün yüzeyi YOK; kullanıcı hiçbir fark görmez.
+**Faz 2 — Motor · ✅ YAPILDI (6 Eylül 2026).** Üç kopya aynı PR'da:
+`findAIMoves` (sıralı en-iyi-N listesi) + `pickTopMove` (rastgelelik
+sözleşmesi) + `findAIMove(..., level)`; `AI_LEVEL_TOP_N` web/Dart/Edge.
+Faz metni ve kanıtlar arşivde: `docs/decisions/roadmap-arsiv.md` → "23 ·
+Faz 2". Sonraki fazlara üç miras: (1) **`GameState.aiLevel` + `START`
+payload'ı Faz 2'de yapıldı** (Faz 3'ün listesindeydi; reducer golden'ı
+seviyeyi ancak state'ten alabilirdi) — alan OPSİYONEL, yoksa Normal, web
+JSON'u ve Dart codec'i Normal'de anahtarı hiç yazmaz (eski golden'lar bu
+sayede bayt-eş kaldı); `STORAGE_VERSION` sabit. Faz 3 yalnızca Setup'tan
+payload'a `aiLevel` geçirir. (2) Ölçüm aleti artık motorun kendi
+`findAIMoves`+`pickTopMove` çiftiyle oynuyor; kopya ve CI'daki karşılaştırma
+adımı SİLİNDİ — Faz 5 Zor motorunu aynı aletle ölçer. (3) Edge'e
+`_game/random.ts` girdi; `verify-edge-engine-parity` `AI_LEVEL_TOP_N`'i ve
+tohumlu Kolay seçimini de kilitliyor, `play-ai-turn` yeniden deploy edildi
+(davranış aynı: Canlı YZ Normal).
 
 **Faz 3 — Web ürün yüzeyi (merge → Vercel).** Model: Sonnet 5, efor
 `medium`; Opus'a yükselt: `Setup.tsx` 1137 satır ve iki sekmeli.
-- `GameState.aiLevel` + `PlayerSetup`/`START` payload'ı; `gameStorage`
-  eksik alan → `'normal'` (VERSION sabit); `cloudSaveMirror`/`gameSync`
-  jsonb'yi olduğu gibi taşıdığından ek iş yok — ama `verify-cloud-save-mirror`
-  fixture'ına alan eklenir.
+- ~~`GameState.aiLevel` + `START` payload'ı~~ → **Faz 2 yaptı** (opsiyonel
+  alan, yoksa Normal; `gameStorage` eski kaydı olduğu gibi okur, VERSION
+  sabit). Kalan: Setup seçiminin payload'a geçmesi; `cloudSaveMirror`/
+  `gameSync` jsonb'yi olduğu gibi taşıdığından ek iş yok — ama
+  `verify-cloud-save-mirror` fixture'ına alan eklenir.
 - `Setup.tsx` "+ Yeni Yapay Zeka Oyunu" formu: `OYUNCU SAYISI`'nın altına
   `ZORLUK` — üç seçenek, varsayılan Normal, misafirde de var (misafir de
   YZ'ye karşı oynuyor; kaydı yok, puanı yok, seçim yine anlamlı). Zor, Faz
@@ -1394,7 +1385,7 @@ Model: Opus 5, efor `high`.
 |---|---|
 | 0 | ✅ `simulate-ai-levels` repoda, 200 oyunluk koşum tablosu backlog notunda, Kolay **N=4** seçildi (6 Eylül 2026) |
 | 1 | ✅ migration canlıda (`20260906114252`), altı view/tablo karması öncesi/sonrası bayt-eş (953 oyun), `verify-league-points` CI'da yeşil (6 Eylül 2026) |
-| 2 | golden sıfır fark (N=1) + `reducer_ai2_kolay` Dart'ta yeşil + `verify-edge-engine-parity` yeşil + `play-ai-turn` deploy edildi (verify_jwt korunarak) |
+| 2 | ✅ golden'lar yeni motorla yeniden üretildi → **git diff boş** (N=1 bayt-eş); `reducer_ai2_kolay` + `ai_level.json` Dart'ta yeşil (6871 kontrol); `verify-edge-engine-parity` `AI_LEVEL_TOP_N` kilidi + tohumlu Kolay adımıyla yeşil (32 pozisyon, 24'ünde Normal'den sapıyor); `play-ai-turn` deploy edildi, `verify_jwt=true` korundu (6 Eylül 2026) |
 | 3 | `curl kelimeki.com \| grep kelimeki-build` = `main` başı; Kolay'da biten oyunun kartı +1 gösteriyor ve `k_lig_siralama` aynı sayıyı veriyor |
 | 4 | cihazda: portta Kolay seçilip bitirilen oyun web'de aynı puanla görünüyor ve tersi (aynı hesap, iki cihaz) |
 | 5 | Zor motoru YZ↔YZ'de Normal'i ≥%70 yeniyor + sahada iki hafta: Kolay ~%30 / Zor ~%70 YZ kazanma bandında |

@@ -47,6 +47,12 @@ export interface Player {
   moveScoreSum: number;
 }
 
+/**
+ * YZ zorluk seviyesi (ROADMAP #23) — src/game/types.ts'teki tanımın kopyası.
+ * `play-ai-turn` her zaman Normal verir (Canlı oyunda seviye YOK).
+ */
+export type AiLevel = 'kolay' | 'normal' | 'zor';
+
 /** YZ'nin bulduğu hamle. */
 export interface AIMove {
   word: string;

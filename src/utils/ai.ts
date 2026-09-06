@@ -3,12 +3,13 @@
 // YZ, rafından heceleyebildiği kelimeler arasından, bölge kurallarına uyan
 // ve sözlükçe geçerli en yüksek puanlı hamleyi arar. İlk hamlesini kendi
 // köşesinden başlatır; sonra mevcut taşları çapa alarak yeni kelimeler kurar.
-import { SIZE, cornerCell } from '../game/constants';
-import type { AIMove, BonusType, Placement, Player, Tile } from '../game/types';
+import { AI_LEVEL_TOP_N, SIZE, cornerCell } from '../game/constants';
+import type { AIMove, AiLevel, BonusType, Placement, Player, Tile } from '../game/types';
 import { getWordSet } from '../data/wordSetLoader';
 import { letterPoints } from '../data/tiles';
 import { canSpell, calcScore, computeAllTerritories, freshCorners } from './validator';
 import { trLower, trUpper } from './turkish';
+import { nextRandom } from './random';
 import { getFormedWords, key, tileLetter, type Board } from './board';
 
 // WORD_SET sabit olduğundan (oyun boyunca değişmez), rafa/tahtaya/oyuncuya
@@ -55,11 +56,39 @@ function consumeRack(
   return tiles;
 }
 
+/** Sınırlı en-iyi listesinin bir satırı. */
+interface Ranked {
+  move: AIMove;
+  /** Sıralama anahtarı: güvenli listede ham puan, vergili listede YZ'ye kalan. */
+  rank: number;
+}
+
 /**
- * Sırası gelen YZ oyuncusu için en iyi hamleyi döndürür (yoksa null → pas).
- * `corners` YZ'nin köşeleri, `isFirstMove` bu oyuncunun ilk hamlesi mi.
+ * Azalan `rank` sırasıyla, eşitte SONA (yani ilk bulunan önde) ekler; listeyi
+ * `n` boyutunda tutar. Bu, eski tek-en-iyi `if (score > best.score)`
+ * karşılaştırmasının (kesin `>`: eşit puanda İLK bulunan kazanır) liste
+ * karşılığıdır — `sort` bilerek YOK: kararlılık garantisi olmayan bir sıralama
+ * eşit puanlı adayların sırasını değiştirip Dart portuyla pariteyi sessizce
+ * kırardı (ROADMAP 23.4). n=1'de liste başı, eski `bestSafe`/`bestAny` ile
+ * birebir aynı hamledir (golden vector'lar sıfır farkla kanıtladı).
  */
-export function findAIMove(
+function insertBounded(list: Ranked[], item: Ranked, n: number): void {
+  let i = 0;
+  while (i < list.length && list[i].rank >= item.rank) i++;
+  if (i >= n) return;
+  list.splice(i, 0, item);
+  if (list.length > n) list.length = n;
+}
+
+/**
+ * Sırası gelen YZ oyuncusu için en iyi `n` hamleyi, iyiden kötüye sıralı
+ * döndürür (boş liste → pas). `corners` YZ'nin köşeleri, `isFirstMove` bu
+ * oyuncunun ilk hamlesi mi. Hiçbir rakip bölgesiyle etkileşmeyen (vergisiz)
+ * en az bir hamle varsa liste YALNIZCA onlardan oluşur; yoksa vergili
+ * hamlelerden, YZ'ye paylaşım sonrası kalacak puana göre sıralı. Rastgele
+ * değer TÜKETMEZ — seçim `pickTopMove`/`findAIMove`'un işi.
+ */
+export function findAIMoves(
   board: Board,
   rack: Tile[],
   bonuses: Record<string, BonusType>,
@@ -67,7 +96,8 @@ export function findAIMove(
   corners: number[],
   isFirstMove: boolean,
   players: Player[],
-): AIMove | null {
+  n: number,
+): AIMove[] {
   const rackLetters = rack.map((t) => t.letter);
   // Yerel değişken bilerek `pool` adını taşıyor — modül seviyesindeki
   // `wordPool` önbelleğiyle (yukarı) aynı adı taşımak okunabilirliği
@@ -104,13 +134,13 @@ export function findAIMove(
   // puan paylaşılır (bkz. computeInvasionSplit) — girmek için artık hiçbir
   // ön koşul yok, her zaman serbest. YZ, mecbur kalmadıkça (böyle bir
   // paylaşım gerektirmeyen geçerli bir hamlesi varken) paylaşım yapmamalı.
-  // Bu yüzden iki ayrı en-iyi takip edilir: `bestSafe` yalnızca hiçbir rakip
-  // köşeyle etkileşmeyen hamleler için, `bestAny` (paylaşım sonrası
-  // kendisine kalacak puana göre sıralanan) tüm hamleler için. `bestSafe`
-  // varsa her zaman o tercih edilir.
-  let bestSafe: AIMove | null = null;
-  let bestAny: AIMove | null = null;
-  let bestAnyEffective = -Infinity;
+  // Bu yüzden iki ayrı sınırlı liste tutulur: `safe` yalnızca hiçbir rakip
+  // bölgesiyle etkileşmeyen hamleler için, `any` (paylaşım sonrası kendisine
+  // kalacak puana göre sıralanan) tüm hamleler için. `safe` boş değilse her
+  // zaman o tercih edilir. (Faz 2'ye kadar iki TEK en-iyi tutuluyordu —
+  // `bestSafe`/`bestAny`; n=1 aynı sonucu verir, bkz. insertBounded.)
+  const safe: Ranked[] = [];
+  const any: Ranked[] = [];
 
   // Rakiplerin bölgeleri (kendi köşelerinden, kendi taşlarıyla genişleyen
   // dinamik alan) — arama boyunca tahta sabit olduğundan bir kez hesaplanır.
@@ -146,12 +176,10 @@ export function findAIMove(
       }
     }
     const score = calcScore(board, placed, bonuses);
+    const move: AIMove = { word, score, placements };
     if (touchedIdx.size === 0) {
-      if (!bestSafe || score > bestSafe.score) bestSafe = { word, score, placements };
-      if (score > bestAnyEffective) {
-        bestAnyEffective = score;
-        bestAny = { word, score, placements };
-      }
+      insertBounded(safe, { move, rank: score }, n);
+      insertBounded(any, { move, rank: score }, n);
       return;
     }
     // Paylaşım sonrası YZ'ye kalacak gerçek puan — validator.ts'teki
@@ -163,13 +191,9 @@ export function findAIMove(
     // Önceki hâli n=2/3'te yanlış bir bölen kullanıyordu (bkz. kod
     // incelemesi) — bu, YZ'nin kârlı çoklu-bölge hamlelerini olduğundan
     // az kazançlı sanmasına yol açıyordu.
-    const n = touchedIdx.size;
-    const share = Math.round((score * (n + 1)) / (6 * n));
-    const effective = score - share * n;
-    if (effective > bestAnyEffective) {
-      bestAnyEffective = effective;
-      bestAny = { word, score, placements };
-    }
+    const k = touchedIdx.size;
+    const share = Math.round((score * (k + 1)) / (6 * k));
+    insertBounded(any, { move, rank: score - share * k }, n);
   };
 
   // Verilen köşeden, tahtadaki mevcut taşlardan bağımsız yeni bir kelimeyle
@@ -227,7 +251,7 @@ export function findAIMove(
   // ── İlk hamle: kendi köşelerinden birinden başla ────────────────────────────
   if (isFirstMove) {
     for (const homeCorner of corners) tryCornerStart(homeCorner);
-    return bestSafe;
+    return safe.map((x) => x.move);
   }
 
   // ── Çapalı hamleler: tahtadaki her taşı eksen alarak dene ────────────────────
@@ -309,9 +333,44 @@ export function findAIMove(
   }
 
   // Hiçbir rakip köşeyle etkileşmeyen geçerli bir hamle varsa, puanı
-  // paylaşmak zorunda kalmamak için o hamle her zaman tercih edilir.
+  // paylaşmak zorunda kalmamak için o hamleler her zaman tercih edilir.
   // Yalnızca hiç güvenli hamle yoksa (mecburen) rakip köşeye girilir/sınırına
-  // değilir — bu durumda da paylaşım sonrası kendisine kalacak puana göre en
-  // iyi seçenek kullanılır.
-  return bestSafe ?? bestAny;
+  // değilir — bu durumda da paylaşım sonrası kendisine kalacak puana göre
+  // sıralı seçenekler kullanılır.
+  return (safe.length > 0 ? safe : any).map((x) => x.move);
+}
+
+/**
+ * Sıralı en-iyi listesinden oynanacak hamleyi seçer — RASTGELELİK SÖZLEŞMESİ
+ * (golden vector'lar ve Dart portu buna dayanır): liste boşsa null, tek
+ * elemanlıysa o eleman ve `nextRandom()` ÇAĞRILMAZ; birden fazla elemanlıysa
+ * TEK `nextRandom()` çağrısı, `floor(r * length)`. Normal (N=1) bu yüzden
+ * hiç rastgele değer tüketmez ve eski davranışla bayt-eş kalır; Kolay
+ * yalnızca gerçekten seçenek varken tüketir (Faz 0'ın ölçüm aletiyle aynı).
+ */
+export function pickTopMove(list: AIMove[]): AIMove | null {
+  if (list.length === 0) return null;
+  if (list.length === 1) return list[0];
+  return list[Math.floor(nextRandom() * list.length)];
+}
+
+/**
+ * Sırası gelen YZ oyuncusu için oynanacak hamle (yoksa null → pas/değişim).
+ * `level` kadranı `AI_LEVEL_TOP_N` üzerinden N'e çevrilir: Normal = en iyi
+ * hamle (bugüne kadarki davranış), Kolay = en iyi 4'ten rastgele biri, Zor =
+ * Faz 5'e kadar Normal. Seviye kuralı `pickTopMove`'un sözleşmesinde.
+ */
+export function findAIMove(
+  board: Board,
+  rack: Tile[],
+  bonuses: Record<string, BonusType>,
+  owner: number,
+  corners: number[],
+  isFirstMove: boolean,
+  players: Player[],
+  level: AiLevel = 'normal',
+): AIMove | null {
+  return pickTopMove(
+    findAIMoves(board, rack, bonuses, owner, corners, isFirstMove, players, AI_LEVEL_TOP_N[level]),
+  );
 }

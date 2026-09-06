@@ -109,6 +109,21 @@ void testTerritory() {
   }
 }
 
+/// YZ seviye kadranı: `aiLevelTopN` ↔ web `AI_LEVEL_TOP_N` (golden
+/// `ai_level.json`). Kolay'ın DAVRANIŞI ayrıca `reducer_ai2_kolay`
+/// senaryosuyla kanıtlanır; bu test yalnızca üçlünün ayrışmadığını kilitler.
+void testAiLevel() {
+  final g = loadGolden('ai_level');
+  final topN = (g['topN'] as Map).cast<String, Object?>();
+  for (final level in AiLevel.values) {
+    final expected = topN[level.json];
+    check(expected == aiLevelTopN[level],
+        () => 'ai_level.topN[${level.json}]: ${aiLevelTopN[level]} != $expected');
+  }
+  check(topN.length == AiLevel.values.length,
+      () => 'ai_level.topN: ${topN.length} seviye, Dart ${AiLevel.values.length}');
+}
+
 void testInvasionFormula() {
   final g = loadGolden('invasion_formula');
   final maxBase = g['maxBase'] as int;
@@ -292,6 +307,7 @@ void main() {
   stdout.writeln('sözlük: ${words.length} kelime');
 
   testTurkish();
+  testAiLevel();
   testInvasionFormula();
   testTerritory();
   testRanking();
@@ -299,6 +315,7 @@ void main() {
   testRemainingTiles();
   for (final name in [
     'reducer_ai2',
+    'reducer_ai2_kolay',
     'reducer_ai4',
     'reducer_human2',
     'reducer_crafted_finish',

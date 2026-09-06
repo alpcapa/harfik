@@ -1,5 +1,5 @@
 // Kelimeki — tahta boyutu, bölgeler, oyuncu renkleri, bonus yerleşimi
-import type { BonusType, CellKey } from './types';
+import type { AiLevel, BonusType, CellKey } from './types';
 
 /** Tahta 13x13. */
 export const SIZE = 13;
@@ -15,6 +15,19 @@ export const BINGO_BONUS = 25;
 
 /** Rafta tutulan taş sayısı. */
 export const RACK_SIZE = 7;
+
+/**
+ * YZ seviyesi → "en iyi N hamleden rastgele biri" kadranı (ROADMAP #23).
+ * `findAIMove` N=1'de hiç rastgele değer tüketmez (Normal bayt-eş kalır),
+ * N>1'de tek `nextRandom()` çağrısıyla listeden seçer. Kolay = 4: Faz 0'ın
+ * 200 oyunluk YZ↔YZ koşumu (N=3 %36 · N=4 %33 · N=5 %22; hedef insana karşı
+ * ~%30) — saha ayarı `admin_ai_balance` kırılımına göre N=3/5. Zor bugün
+ * Normal'le aynı (N=1): Faz 5 ayrı bir motor getirene kadar seçici açılmaz.
+ * ⚠ ÜÇ kopya: Dart `constants.dart` (`aiLevelTopN`, golden `ai_level.json`
+ * kilitler) ve Edge `_game/constants.ts` (`verify-edge-engine-parity`
+ * kilitler) — biri değişirse üçü de.
+ */
+export const AI_LEVEL_TOP_N: Record<AiLevel, number> = { kolay: 4, normal: 1, zor: 1 };
 
 /**
  * Girişsiz (misafir) oyuncunun `GameState`'e gömülen adı — yerel/YZ
