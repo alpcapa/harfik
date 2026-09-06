@@ -108,6 +108,14 @@ bölümün kendi tarihli notuna taşınır.
   -2 ve revizyonda konuşulmadı. Varsayılan davranış "-2 olarak kalsın"
   olmalı; seviyeye göre ölçeklenmesi istenirse ayrıca sorulmalı.
 
+  **➜ Fazlı uygulama planı ve etki haritası: `ROADMAP.md` → madde 23 (6 Eylül
+  2026).** Karar verildi (aynı gün, kullanıcı): **Normal = bugünkü motor,
+  dokunulmuyor; Kolay'da YZ ~%30, Zor'da YZ ~%70 kazanacak** (YZ'nin insana
+  karşı oranı — bugünkü ~%51 sıfır çizgisi). Yani yukarıdaki "Zor=1,
+  Normal=3, Kolay=10" başlangıç eşlemesi GEÇERSİZ: bugünkü motor Zor değil
+  Normal; Zor için daha güçlü bir motor gerekiyor (plan Faz 5). Bu madde
+  plan kapanana kadar burada kalır.
+
   **Zorluk algoritmasının kendisi (hangi seviye = hangi N) BİLEREK
   ertelendi** — kullanıcı: *"Zorluk algoritmasını yaptığımız zaman
   değerlendiririz."* Yukarıdaki ölçüm tablosu o değerlendirmenin girdisi.

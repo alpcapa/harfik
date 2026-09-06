@@ -91,6 +91,7 @@ her şey o pencerenin içinde ya da yanında duruyor.
 | **Cihazda denenmemiş** | §3c'nin davete özgü dalları · GA4 DebugView | ⏳ bildirim→tahta DOĞRULANDI (sıcak+soğuk, 31 Ağustos); **1.0.5'in tamamı 2 Eylül'de onaylandı** (zoom turu, çevrimdışı şerit, filigranlar, balon, yazı ölçeği, mesaj etiketi) — kalan iki kalem bu ikisi |
 | **Karar verilmiş, yapılmamış** | — | ✅ Kova BOŞ: **#3** hatırlatma, **#8** iPad paylaşımı (3 Eylül cihazda doğrulandı) ve **#16** kart düzeni kapandı; üçü de arşivde |
 | **Ertelendi** | #2 zorunlu güncelleme | ✅ **KAPANDI/ARŞİVDE** (2 Eylül 2026, kullanıcı: *"Artık app'de güncelleme çıkıyor, bunu görünce zaten yapar"*). ⚠ Sürüm kapısı DURUYOR ve artık KULLANILABİLİR — acil fren olarak `app_config.mobile_min_supported_version` |
+| **Seviyeli YZ** | **#23** Kolay/Normal/Zor + seviyeye göre k-lig puanı — 5 faz (sunucu → motor → web → port → Zor motoru) | ⬜ **PLAN HAZIR, Faz 0 sırada** (6 Eylül 2026): karar verildi — Normal bugünkü motor, Kolay YZ ~%30, Zor YZ ~%70 (#23.0) |
 | **İsteğe bağlı** | #5 k-lig grafiği · #9 admin filtre · #14 tembel liste | ⬜ hiçbiri yolu tıkamıyor · **#10 hata hız sınırı ✅** ve **#11 platform filtresi ✅ YAPILDI** (31 Ağustos 2026) |
 | **Yapıldı** | #6 taranabilir `/nasil-oynanir/` sayfası | ✅ 31 Ağustos 2026 |
 | **Play Store'a girdikten sonra** | **#17 Google ile giriş** — sunucu → web → mobil; migration BLOKER (OAuth bugün `handle_new_user`'da patlar) | ⏳ ERTELENDİ — acelesi yok, çalışan kimlik akışına şimdi dokunulmuyor (2 Eylül, kullanıcı). ⚠ Sayaçla İLİŞKİSİ YOK; o bağ aynı gün koptu, gerekçe #17'de |
@@ -1110,3 +1111,298 @@ kural YOK. Günü gelince iki tuzak: kullanıcı e-postasını gizleyebilir
 (`@privaterelay.appleid.com`) ve **ad/soyad yalnızca ilk yetkilendirmede bir kez**
 döner — o an kaydedilmezse bir daha alınamaz.
 
+
+---
+
+## 23. Seviyeli YZ (Kolay / Normal / Zor) + seviyeye göre k-lig puanı — **PLAN, karar verildi, Faz 0 sırada** (6 Eylül 2026)
+
+Kaynak: `docs/decisions/product-backlog.md` → "YZ zorluk seviyesi" (5 Eylül
+2026; kadran ölçümü, kapsam ve KESİN puan tablosu orada — burada
+TEKRARLANMIYOR, yalnızca plana giren kısımları özetleniyor). Kullanıcı isteği
+(6 Eylül): *"Analizini yapıp fazlı planı çıkart."* Bu bölüm o analiz. **Kod
+yazılmadı.** Aşağıdaki her satır kaynak okunarak çıkarıldı (dosya:satır
+verilen yerler ölçüm, "tahmin" yazanlar tahmin).
+
+### 23.0 Neyin sabit olduğu (backlog'dan, değişmez)
+
+| Oyun | 1. sıra | 2. sıra | Teslim |
+|---|---|---|---|
+| Canlı 4 kişilik (YZ'li) — seviye YOK, Normal sayılır | +2 | +1 | -2 |
+| Yerel 2 kişilik — Kolay / Normal / Zor | 1 / **2** / 4 | yok | -2 |
+| Yerel 4 kişilik — Kolay / Normal / Zor | 1 / **2** / 4 | 0 / **1** / 2 | -2 |
+
+- **Normal = bugünkü değer, her hücrede.** Seviyesiz kayıt (bugüne kadarki
+  her şey + tüm Canlı oyunlar) `null` → Normal dalı; **veri taşıma YOK.**
+- Teslim her seviyede -2 (backlog: "varsayılan böyle kalsın; ölçeklenmesi
+  istenirse ayrıca sorulur").
+- Seviye seçimi yalnızca yerel YZ oyununda (2 ve 4 kişilik), 4 kişilikte
+  ÜÇ YZ'ye birden uygulanır. Canlı'ya dokunulmaz.
+- **HEDEF ORANLAR (6 Eylül 2026, kullanıcı kararı — 23.2'yi kapattı):**
+  *"Normal bugünkü gibi kalacak. Kolay daha kolay olacak (%30 gibi), zor
+  daha zor olacak (%70 gibi)."* Sayılar **YZ'nin insana karşı kazanma
+  oranı** olarak okundu — Normal bugün ~%51 (insan %48,7), yani ölçek
+  tutarlı:
+
+  | Seviye | Motor | YZ kazanma hedefi (insana karşı) | Nasıl ölçülür |
+  |---|---|---|---|
+  | Kolay | bugünkü motor, en iyi N'den rastgele | **~%30** | `admin_ai_balance` seviye kırılımı (Faz 1'de geliyor) |
+  | Normal | bugünkü motor, N=1 — DEĞİŞMEZ | ~%51 (bugünkü, 429 oyun) | aynı — sıfır çizgisi |
+  | Zor | YENİ, daha güçlü motor (Faz 5) | **~%70** | aynı |
+
+  Hedef bir SAHA ölçümü; YZ↔YZ koşumu yalnızca ön eleme (aşağı, Faz 0).
+- **Bu planın eklediği kural:** seviye oyun BAŞINDA kilitlenir, oyun içinde
+  değiştirilemez (aksi hâlde Kolay'da başlayıp son hamlede Zor'a geçmek +4
+  eder — puan oyunu). `GameState`'e bir kez yazılır, değiştiren action YOK.
+
+### 23.1 Etki haritası — kim etkileniyor
+
+Kök `CLAUDE.md` "Çalışma İlkesi"nin üç sorusu bu iş için: (1) ikinci
+okuyucu/yazar VAR — web ↔ port aynı `local_game_saves.state` jsonb'sini ve
+aynı `games` satırını yazıyor; (2) ZİNCİR halkası — k-lig puanı formülü
+**dokuz kopya** hâlinde yaşıyor (aşağıda); (3) derleyicinin göremeyeceği
+değişmezler — golden vector determinizmi, Edge kopyası, SQL view'ları,
+port `fromJson` sözleşmesi.
+
+| Katman | Dosya / nesne | Ne değişir |
+|---|---|---|
+| **Motor — web** | `src/utils/ai.ts` `findAIMove` | `bestSafe`/`bestAny` tek-en-iyi yerine **en iyi N'lik liste** tutar; N>1'de listeden TEK `randomSource()` çağrısıyla seçer. `level` parametresi eklenir |
+| **Motor — port** | `mobile/kelimeki_core/lib/src/ai/find_move.dart` | Aynı liste + `Rng` parametresi (reducer'ın zaten enjekte ettiği `rng`, `game_controller.dart:59-66`); `consider`'ın "eşitte ilk bulunan" sırası (`>` kesin) listede de korunmalı, yoksa parite sessizce kırılır |
+| **Motor — Edge** | `supabase/functions/_game/ai.ts` (+ `play-ai-turn/index.ts:180`) | Kopya imza olarak güncellenir; `play-ai-turn` her zaman Normal verir. Seçenek B'de (aşağı) davranış DEĞİŞMEZ ve yeniden deploy yalnızca kopyayı eşitlemek için |
+| **Rastgelelik** | `src/utils/random.ts` / `rng.dart` | Zaten enjekte edilebilir; YENİ kural: **N=1'de hiç rastgele değer tüketilmez** ki bugünkü `reducer_ai2/ai4` golden'ları bayt-eş kalsın |
+| **Durum** | `src/game/types.ts` `GameState` + `gameReducer.ts` `START`/`PlayerSetup` | `aiLevel: 'kolay' \| 'normal' \| 'zor'` alanı; `AI_PLAY` bunu `findAIMove`'a geçirir |
+| **Yerel kayıt** | `src/utils/gameStorage.ts` | `STORAGE_VERSION` **BUMP EDİLMEZ** (eski devam eden oyunlar sessizce silinirdi); eksik alan = `'normal'` |
+| **Bulut kaydı (SÖZLEŞME)** | `local_game_saves.state` jsonb ↔ port `codec.dart:45` | Port `fromJson` KATI (`as bool`/`as String`); yeni alan `as String? ?? 'normal'` olmak ZORUNDA — web'in yazdığı eski kayıt / eski portun yazdığı kayıt için |
+| **Oyun kaydı** | `buildGameRecord` (`gameRecord.ts`) → `NewGame` (`database.types.ts:459`) → `games` | Yeni kolon `games.ai_level` (nullable, check). `platform` kolonu (`20260814204059`) ŞABLON — ama ondan farklı: **SELECT de gerekli** (geçmiş kartları puanı bununla hesaplıyor) |
+| **Puan — TS** | `src/utils/leaguePoints.ts` + 4 çağıran: `GameOver.tsx:116`, `GameHistoryModal.tsx:785`, `RecentGamesSection.tsx:192`, `SharedGamePage.tsx:64` | İmzaya `level` eklenir; dört çağıran seviyeyi bilmek zorunda → `GameHistoryEntry` + `fetchMyGames`'in `cols` dizesi (`api.ts:803`) + `get_shared_game` RPC dönüşü |
+| **Puan — Dart** | `rules/league_points.dart` + `game_over_modal.dart`, `game_history_modal.dart`, `recent_games_section.dart:319`, `games_api.dart:404` `_listCols` | Aynı |
+| **Puan — SQL (DÖRT canlı nesne, formül kopya)** | `player_stats` (`20260801081924`), `player_stats_overall` (`20260811235340`), `leaderboard` (`20260812131123`), `_award_league_rewards` (`20260812125039:44`) | Dördü aynı `case` bloğunu taşıyor; `k_lig_siralama` ve `my_leaderboard_rank` `leaderboard`'dan okuduğundan kendiliğinden düzelir. **Öneri: formülü TEK `immutable` SQL fonksiyonuna indir** (`league_points_for(rank, player_count, surrendered, ai_level)`), dördü onu çağırsın — bugünkü dört kopya zaten "aynı metriğin iki yerde ayrışması" hata sınıfının adayı |
+| **Parite kapıları** | `npm run generate-golden-vectors` (`reducer_ai2/ai4` + YENİ `reducer_ai2_kolay`), `verify-edge-engine-parity` (imza), Dart `run_all.dart` | `verify-sql-engine-parity` k-lig formülünü KAPSAMIYOR (yalnızca `_km_*`) → yeni `verify-league-points` (şablon: `verify-league-tiers.mjs`, migration SQL ↔ `leaguePoints.ts` ↔ `league_points.dart` tablosunu kilitler) |
+| **Yüzey — web** | `Setup.tsx` kurulum formu (oyuncu sayısı seçicisinin altına "ZORLUK"), `GameOver`/`GameHistoryModal`/`RecentGamesSection` kartlarında seviye rozeti (Normal'de rozet YOK — bugünkü görünüm korunur), Setup "devam eden oyun" kartı, `HelpModal.tsx:313-319` k-lig paragrafı (→ `/nasil-oynanir/` aynı kaynaktan, kendiliğinden) | |
+| **Yüzey — port** | `setup_screen.dart:1705` `_buildNewGameForm` (`OYUNCU SAYISI` bloğunun ikizi), aynı üç kart, `devam_eden_govde.dart` | Web ile BİREBİR metin/sıra |
+| **Admin / ölçüm** | `admin_ai_balance()` (`20260817051510`) | Seviye kolonu → dönüş tipi değişir → **drop + create + grant**. Bu, kadranın sahada doğrulanacağı TEK alet — Faz 1'e giriyor |
+| **Testler / doküman** | `tests/smoke.spec.ts` (Kolay seçip başlatma), `TESTING.md` §10 k-lig, `mobile/TESTING.md` §13, `README.md`, kök `CLAUDE.md` (Oyun Mekaniği + Klasör Yapısı), `mobile/CLAUDE.md` golden envanteri | |
+| **DOKUNULMAYAN** | `TermsModal`/`PrivacyModal` (yeni kişisel veri yok — seviye bir oyun ayarı), `submit_move` + SQL motor aynası (`_km_*` hamle DOĞRULAR, YZ seçmez), `create_online_game`, `online_games`, bildirim zinciri | |
+
+⚠ **`players` jsonb SIRALAMAYA göre** (backlog'daki sorgu tuzağı) —
+seviye kolonu oyun düzeyinde (`games.ai_level`) tutulacak, oyuncu satırına
+DEĞİL; hem tuzağı baştan eler hem "4 kişilikte üç YZ'ye birden uygulanır"
+kuralıyla örtüşür.
+
+### 23.2 KARAR NOKTASI — hangi seviye hangi motor? → **KAPANDI: B** (6 Eylül 2026)
+
+**Kullanıcı B'yi seçti:** Normal = bugünkü motor, dokunulmuyor. Kolay ve
+Zor'un hedefleri 23.0'daki tabloda. Aşağıdaki A/B karşılaştırması kararın
+gerekçesi olarak duruyor, yeniden tartışılmasın.
+
+Backlog'un ölçüm tablosu (YZ↔YZ, N = "en iyi N'den biri") bir başlangıç
+eşlemesi öneriyor: *Zor=1, Normal=3, Kolay=10*. Kadranı okurken şu iki
+sayıyı yan yana koy: **N=3, N=1'e karşı oyunların %75'ini kaybediyor** ve
+**insan bugünkü motora (N=1) karşı %48,7 kazanıyor** (429 oyun). İki eşleme
+mümkün ve bedelleri çok farklı:
+
+| | **A — backlog önerisi:** Zor=N1 (bugünkü), Normal=N3, Kolay=N10 | **B — öneri:** Normal=N1 (bugünkü), Kolay=N3–5, Zor=**yeni, daha güçlü motor** |
+|---|---|---|
+| "Normal" ne demek | Bugünkünden ZAYIF bir rakip | Bugünkü rakip — insan %48,7 kazanıyor, yani başa baş; "Normal"in ders kitabı tanımı |
+| Geçmiş kayıtlar | Hepsi bugünkü (=Zor) motora karşı oynandı ama Normal (+2) sayılıyor — eski galibiyetler yeni Zor galibiyetlerinden (+4) daha az eder, **lider tablosunda dönem karışır** (backlog'un "ürün kırılması" uyarısı AYNEN gerçekleşir) | Geçmiş = Normal, doğru etiket; kırılma yok |
+| Canlı 4 kişilik YZ | "Normal" = N3 ise `play-ai-turn` da N3 olmalı → Edge kopyasına rastgelelik kaynağı + `verify-edge-engine-parity`'ye tohum enjeksiyonu; ya da Edge N1'de kalır ve Canlı'nın "Normal"i yerel Normal'den güçlü olur (tutarsız) | Edge'e DOKUNULMAZ (imza eşitleme dışında); Canlı YZ gerçekten Normal |
+| Yeni motor işi | YOK — yalnızca zayıflatma | **VAR** — Zor için bugünkünden güçlü bir motor gerekir; bugün "en yüksek puanlı hamle" zaten tavan, üstü yeni sezgisel ister (Faz 5) |
+| Zor'un anlamı | İnsanın %49 yendiği rakip "zor" mu? Tartışılır | +4'ün gerekçesi ("zoru yenmek orantısız ödül") gerçekten zor bir rakibe denk gelir |
+
+**Öneri: B.** Gerekçe tek cümle: bugünkü motor SAHADA ölçülmüş başa-baş bir
+rakip, onu "Zor" diye etiketleyip Normal'i zayıflatmak hem geçmiş kayıtları
+hem Canlı'yı tutarsızlaştırıyor; B'nin tek bedeli Zor'un ayrı bir faz olması
+ve o faz kendi başına ertelenebilir (Kolay/Normal önce çıkar, Zor seçici
+gelene kadar gösterilmez).
+
+B'de "Zor" için adaylar — hepsi ÖLÇÜLMEDEN seçilmez, hepsi aynı YZ↔YZ
+koşumuyla ve sonra sahada `admin_ai_balance` kırılımıyla ölçülür:
+
+1. **Havuz 8+ harf** — `getWordPool` 2-7 ile sınırlı (`ai.ts:26`), çapa +
+   raf 7 = 8 harf kurala uygun ama hiç denenmiyor. Arama maliyeti artar;
+   ölç.
+2. **Joker tasarrufu** — `consumeRack` jokeri İLK eksik harfte harcıyor
+   (`ai.ts:36-52`); joker 0 puan ama bingo (+25) ve uzun kelime anahtarı.
+   "Jokerli hamle, jokersiz en iyiden X puan fazla değilse jokeri sakla" gibi
+   bir eşik.
+3. **Raf-kalıntı değeri** — hamle sonrası rafta kalan harflerin
+   oynanabilirliği (sesli/sessiz dengesi, `Ğ`/`J` gibi ölü harfler).
+4. **Bölge savunması** — bugün YZ vergiden kaçınıyor ama rakibin bölgesini
+   BÜYÜTECEK hücreleri bloke etmiyor; `computeAllTerritories` zaten
+   önbellekte, fark hesaplanabilir.
+
+**Kolay için N — hedef YZ ~%30:** insan bugünkü motorla (N=1) başa baş
+olduğuna göre YZ↔YZ tablosu kaba bir vekil olarak kullanılabilir: N=3, N=1'e
+karşı **%25** kazanıyor → insana karşı **tahmin ~%25-30**, yani hedefin
+tam üstünde. **Başlangıç adayı N=3;** sahada %30'un belirgin altına düşerse
+N=2 (ölçülmedi, Faz 0 koşumu tabloya eklesin), üstüne çıkarsa N=5 (%21).
+N=10 (%8) hedefin çok altında — aday DEĞİL.
+
+**Zor için hedef YZ ~%70 — planın en zor yarısı:** bugünkü motor "en yüksek
+puanlı hamle" tavanında ve insan onu %49 yeniyor; %70'e çıkmak için motor
+GERÇEKTEN güçlenmeli, zayıflatmanın tersi tek bir kadran değil. Yukarıdaki
+dört aday tek tek YZ↔YZ'de ölçülür; Normal'i (N=1) **≥%70** yenen bir
+bileşim bulunana kadar Zor seçici AÇILMAZ. Sahada %70 tutmazsa kadran
+yeniden ayarlanır — hedef bir sürüm değil, bir ölçüm döngüsü.
+
+### 23.3 Fazlar — paketlenebilirliğe göre (bu dosyanın kendi kuralı)
+
+Sunucu anında, web merge'de, port sürüm turunda canlıya çıkıyor; fazlar buna
+göre kesildi. **Her faz tek başına geriye uyumlu** — Faz 1'den sonra hiçbir
+kullanıcı için tek bir puan değişmez, Faz 2'den sonra hiçbir YZ farklı
+oynamaz (seviye seçilemediği için hep Normal), görünür değişiklik Faz 3'te.
+
+**Faz 0 — Ölçüm aleti (kod ürüne girmez).** Model: Opus 5, efor `medium`.
+Karar verildi (23.2: B); bu faz artık yalnızca alet + ön eleme.
+- Backlog'daki YZ↔YZ koşumu **repoya girer**: `scripts/simulate-ai-levels.ts`
+  (oyun sayısı ve N kümesi parametre; tohumlu, `setRandomSource` ile;
+  çıktı: kazanma oranı, ortalama skor, ortalama hamle puanı — backlog
+  tablosuyla aynı kolonlar ki eski ölçümle kıyaslanabilsin). "Uygulayan
+  yeniden ölçmesin" doğru, ama Faz 5'te YENİ motor için aynı alet
+  gerekecek ve bugün repoda YOK (`scripts/` tarandı).
+- İlk koşum: N ∈ {1, 2, 3, 5} — N=2 backlog tablosunda yok, Kolay'ın olası
+  ikinci adayı. Oyun sayısı 24 yerine ≥100 (24 oyunda %25 ile %30 ayrılamaz;
+  ±%9 güven aralığı — tahmin, koşum kesinleştirir).
+- Çıktı: Kolay için N (başlangıç N=3, 23.2). Not backlog maddesine eklenir.
+
+**Faz 1 — Sunucu (migration; anında canlı, sıfır davranış değişikliği).**
+Model: Opus 5, efor `medium`. Tek migration:
+- `games.ai_level text check (ai_level is null or ai_level in ('kolay','normal','zor'))` +
+  `comment` + **`grant insert (ai_level), select (ai_level)`** — `games`'in
+  tablo düzeyi grant'i YOK (10 Ağustos gizlilik düzeltmesi), kolon tek tek
+  verilir; `platform`'dan farkı SELECT'in de şart olması.
+- `public.league_points_for(p_rank int, p_player_count int, p_surrendered bool, p_ai_level text) returns int immutable` —
+  tablo 23.0. Dört nesne (`player_stats`, `player_stats_overall`,
+  `leaderboard`, `_award_league_rewards`) `case` bloğu yerine bunu çağırır.
+  `create or replace view` yeter (kolon listesi değişmiyor);
+  `_award_league_rewards` gövde değişikliği, imza aynı.
+- `get_shared_game`: dönüş tablosuna `ai_level` → **dönüş tipi değişir →
+  `drop function` + `create` + `revoke/grant` elle** (`20260812131123`
+  dersi). `SharedGamePage` bunu okuyacak.
+- `admin_ai_balance()`: `group by player_count, coalesce(ai_level,'normal')`
+  → aynı drop+create+grant.
+- **Kanıt (uygulamadan önce ve sonra):** `select user_id, total_score from
+  player_stats_overall` çıktısı bayt-eş olmalı (tüm satırlar `null` →
+  Normal); `k_lig_siralama` sırası değişmemeli. Bu sorgu migration'ın
+  yorumuna yazılır.
+- `list_migrations` ile dosya adı eşleştirilir; fonksiyonlar GERÇEKTEN
+  çağrılır (kural 3).
+- `database.types.ts`: `Game.ai_level`, `NewGame.ai_level?`,
+  `GameHistoryEntry` + `SharedGameData`'ya alan.
+- `scripts/verify-league-points.mjs` + `package.json` + CI'da koşum
+  (`verify-league-tiers` nasıl bağlıysa öyle).
+
+**Faz 2 — Motor (web + port + Edge kopyası AYNI PR).** Model: Opus 5,
+efor `high` — parite işi.
+- `findAIMove(..., level: AiLevel = 'normal')`: `consider` iki en-iyi yerine
+  iki **sınırlı liste** tutar (güvenli / vergili, boyut N, sıralama: puan
+  azalan, eşitte ilk bulunan önde — bugünkü `>` kuralının liste karşılığı).
+  Dönüş: güvenli liste boş değilse ondan, değilse vergili listeden;
+  **N=1 → `list[0]`, rastgele ÇAĞRI YOK; N>1 → tek `randomSource()`
+  çağrısı, `floor(r * list.length)`.** Rastgele tüketim sayısı sözleşmenin
+  parçası (torba/karıştırma deseninin aynısı).
+- `AiLevel → N` eşlemesi tek yerde: `src/game/constants.ts`
+  (`AI_LEVEL_TOP_N`), Dart `constants.dart`, Edge `_game/constants.ts` —
+  `verify-edge-engine-parity` ve `verify-sql-engine-parity`'nin sabit
+  kilitleme deseniyle üçü kilitlenir.
+- Dart `findAIMove(..., {AiLevel level = AiLevel.normal, required Rng rng})`;
+  reducer kendi `rng`'sini geçer.
+- Edge `_game/ai.ts` + `constants.ts` kopyalanır; `play-ai-turn` seviye
+  vermez (Normal). Deploy öncesi `list_edge_functions` ile `verify_jwt`
+  okunur (`play-ai-turn` "false" listesinde DEĞİL → `true`).
+- **Kanıt sırası:** (1) `generate-golden-vectors` → **sıfır fark** (N=1 yolu
+  bayt-eş); (2) sonra `reducer_ai2_kolay.json` (tohumlu, `aiLevel:'kolay'`)
+  eklenir, Dart `run_all.dart` yeşil; (3) `verify-edge-engine-parity` yeşil
+  (Normal'de değişmedi; ayrıca Kolay için aynı tohumla iki motoru
+  karşılaştıran bir adım eklenir — Edge'e `random.ts` kopyası girer, çünkü
+  B'de bile kopyanın DAVRANIŞI eşit olmalı, sadece çağrılmıyor).
+- Ürün yüzeyi YOK; kullanıcı hiçbir fark görmez.
+
+**Faz 3 — Web ürün yüzeyi (merge → Vercel).** Model: Sonnet 5, efor
+`medium`; Opus'a yükselt: `Setup.tsx` 1137 satır ve iki sekmeli.
+- `GameState.aiLevel` + `PlayerSetup`/`START` payload'ı; `gameStorage`
+  eksik alan → `'normal'` (VERSION sabit); `cloudSaveMirror`/`gameSync`
+  jsonb'yi olduğu gibi taşıdığından ek iş yok — ama `verify-cloud-save-mirror`
+  fixture'ına alan eklenir.
+- `Setup.tsx` "+ Yeni Yapay Zeka Oyunu" formu: `OYUNCU SAYISI`'nın altına
+  `ZORLUK` — üç seçenek, varsayılan Normal, misafirde de var (misafir de
+  YZ'ye karşı oynuyor; kaydı yok, puanı yok, seçim yine anlamlı). Zor, Faz
+  5 bitene kadar **gösterilmez**.
+- `buildGameRecord` → `ai_level`; `leaguePoints(rank, count, surrendered, level)`
+  + dört çağıran; kartlarda rozet (`KOLAY`/`ZOR`, Normal'de yok — bugünkü
+  kart aynen); Setup "devam eden oyun" kartına küçük etiket (aynı düzeni
+  paylaşan `LiveGamesTab` kartı ETKİLENMEZ — o Canlı).
+- `HelpModal` k-lig paragrafı: tabloyu anlat; `/nasil-oynanir/` ve
+  `hukuki metin tek kaynak` testleri kendiliğinden kapsar.
+- `tests/smoke.spec.ts`: "Kolay seçilip 2 kişilik oyun başlar, YZ hamle
+  yapar" (mevcut ilk testin kopyası + seçici).
+- `TESTING.md` §10'a "seviyeye göre puan" kontrol satırları; `README.md`
+  + kök `CLAUDE.md` (Oyun Mekaniği'ne "YZ seviyesi" maddesi, Klasör
+  Yapısı'na yeni script/fixture).
+- ⚠ **Sıra tuzağı:** Faz 3 canlıya çıkınca web `kolay`/`zor` satırı
+  yazmaya başlar; **eski port sürümü** o satırı okur ve puanı Normal
+  formülüyle GÖSTERİR (sunucu doğru sayar, yalnızca gösterim yanlış), bulut
+  kaydındaki `aiLevel`'i de yok sayıp YZ'yi N=1 oynatır. Pencere Faz 4
+  sürümüne kadar; kabul edilebilir ama Faz 3 ve 4'ü aynı sürüm haftasına
+  denk getirmek daha temiz.
+
+**Faz 4 — Port (sürüm turu).** Model: Opus 5, efor `medium`; cihaz turu
+kullanıcıda.
+- `codec.dart` (`aiLevel` toleranslı parse), `game_controller`/reducer
+  `START` payload'ı, `setup_screen.dart` `_buildNewGameForm` seçici (web ile
+  aynı etiketler), `game_record.dart` `ai_level`, `games_api.dart`
+  `_listCols`, üç kart + `devam_eden_govde.dart`, `league_points.dart`
+  imzası + `text_wrap_test`/`layout_parity_test` etkisi (rozet genişliği
+  ölçülüyor mu, bak).
+- `mobile/TESTING.md` §13'e madde; `mobile/docs/surumler.md` paket kütüğü.
+- Parite testleri: kart metinleri web ile aynı (`icon_parity`/`layout_parity`
+  deseni).
+
+**Faz 5 — Zor motoru (kendi PR'ı; Kolay/Normal'den bağımsız çıkar).**
+Model: Opus 5, efor `high`.
+- 23.2'deki dört aday Faz 0'ın aletiyle TEK TEK, sonra bileşim hâlinde
+  YZ↔YZ ölçülür; **kapı: Normal'i (N=1) ≥%70 yenen bir bileşim.** Hiçbiri
+  yetmiyorsa bir sonraki kademe tek katlı ileri bakış (rakibin en iyi cevabını
+  düşerek puanlama) — maliyeti "düşünme süresi", ölçülmeden vaat edilmez.
+- Sonra Faz 2'nin parite zinciri aynen: üç kopya (web, port, Edge kopyası —
+  Canlı YZ Normal kaldığından Edge yalnızca kopyayı eşitler), golden'lara
+  `reducer_ai2_zor` fixture'ı, `verify-edge-engine-parity`.
+- Zor seçici web + portta aynı sürüm haftasında açılır.
+- Saha ölçümü: `admin_ai_balance` seviye kırılımı 2 hafta, hedef 23.0
+  tablosu (Kolay YZ ~%30, Normal ~%51, Zor ~%70). Sapma varsa kadran
+  (Kolay: N; Zor: sezgisel ağırlıkları) ayarlanır, motor yeniden yazılmaz.
+
+### 23.4 Tuzaklar — bu depoya özgü, planı uygulayan okusun
+
+- `STORAGE_VERSION`'ı bump ETME; eksik alan = Normal (23.1).
+- Yeni kolona SELECT vermeyi unutma; `platform` şablonu bilerek VERMİYOR,
+  buradaki ihtiyaç ters.
+- Dönüş tipi değişen her fonksiyon (`get_shared_game`, `admin_ai_balance`)
+  drop+create+grant; `create or replace` sessizce "cannot change return
+  type" verir.
+- Golden'larda ÖNCE sıfır fark kanıtı, SONRA yeni fixture — sıra tersine
+  dönerse "N=1 bayt-eş" iddiası kanıtsız kalır.
+- Dart `consider` sırası: listeye ekleme "puan eşitse ilk bulunan önde"
+  kuralını korumalı; `sort` KULLANMA (kararlılık garantisi yok), sıralı
+  ekleme yap.
+- `verify-league-points` yoksa dokuz kopya (4 SQL + TS + Dart + 3 kart
+  metni) bir sonraki dokunuşta ayrışır — Faz 1'in parçası, "sonra" değil.
+- Zor=4 eşik ödüllerini (`leagueRank.ts` kademeleri, `_award_league_rewards`)
+  hızlandırır — bilinçli, değiştirme; ama #5 k-lig grafiği yapılırsa seriyi
+  `league_points_for` ile kurmalı.
+- Kural metni üçlüsü: `HelpModal` ↔ `Landing.tsx` ("Neler var"/"Nasıl
+  oynanır") ↔ portun yardım ekranı — "bölge vergisi" terminoloji dersinin
+  aynısı, üçüncü bir ifade üretme ("kolay mod" / "zorluk seviyesi" /
+  "seviye" — TEK sözcük seç, öneri: **Zorluk: Kolay · Normal · Zor**).
+- `admin_ai_balance` bugün `not g.surrendered` filtreliyor; seviye kırılımı
+  aynı filtreyi korumalı, yoksa eski/yeni satır karşılaştırılamaz.
+
+### 23.5 Kapanış ölçütü
+
+| Faz | "Bitti" kanıtı |
+|---|---|
+| 0 | `simulate-ai-levels` repoda, ≥100 oyunluk koşum tablosu backlog notunda, Kolay N'i seçilmiş (başlangıç 3) |
+| 1 | migration canlıda, `player_stats_overall.total_score` öncesi/sonrası bayt-eş, `verify-league-points` CI'da yeşil |
+| 2 | golden sıfır fark (N=1) + `reducer_ai2_kolay` Dart'ta yeşil + `verify-edge-engine-parity` yeşil + `play-ai-turn` deploy edildi (verify_jwt korunarak) |
+| 3 | `curl kelimeki.com \| grep kelimeki-build` = `main` başı; Kolay'da biten oyunun kartı +1 gösteriyor ve `k_lig_siralama` aynı sayıyı veriyor |
+| 4 | cihazda: portta Kolay seçilip bitirilen oyun web'de aynı puanla görünüyor ve tersi (aynı hesap, iki cihaz) |
+| 5 | Zor motoru YZ↔YZ'de Normal'i ≥%70 yeniyor + sahada iki hafta: Kolay ~%30 / Zor ~%70 YZ kazanma bandında |
