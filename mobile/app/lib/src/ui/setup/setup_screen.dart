@@ -2150,7 +2150,18 @@ class _SavedGameRow extends StatelessWidget {
       children: [
         avatarlar,
         const SizedBox(width: 6), // web gap-1.5
-        AiLevelBadge(level: aiLevelForBadge(state.aiLevel, isAiGame: true)),
+        // SINIF 3 (sarma/taşma) koruması: sol sütun dar ekranda + yazı
+        // ölçeği tavanında 92 px'e iniyor (setup_screen_test "isim alanı
+        // sıkışmaz"); rozet sığmazsa `FittedBox` küçültür, satır kırmaz,
+        // taşmaz — `mobile/CLAUDE.md` "Sistem Yazı Boyutu" kuralı.
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: AiLevelBadge(
+                level: aiLevelForBadge(state.aiLevel, isAiGame: true)),
+          ),
+        ),
       ],
     );
   }

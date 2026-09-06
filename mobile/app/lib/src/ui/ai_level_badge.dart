@@ -9,7 +9,7 @@
 // `null` dönen bileşen flex `gap`i de açmıyor). Yüzeyler: GameOverModal ·
 // GameHistoryModal · RecentGamesSection · _SavedGameRow · BoardWidget alt
 // şeridi. Görsel dil `game_history_modal.dart`ın `_Badge`iyle aynı
-// (kenarlıklı, %10 zemin, 7px kalın).
+// (kenarlıklı, %10 zemin) ama daha büyük punto (9/11).
 import 'package:flutter/material.dart';
 import 'package:kelimeki_core/kelimeki_core.dart';
 
@@ -17,10 +17,11 @@ import '../util/ai_level.dart';
 import 'tokens.dart';
 
 enum AiLevelBadgeSize {
-  /// 7px — kart başlık satırı (varsayılan; web `xs`).
+  /// 9px — kart başlık satırı (varsayılan; web `xs`). 6 Eylül gece 7'den
+  /// büyütüldü (kullanıcı isteği), web ile birlikte.
   xs,
 
-  /// 9px — GameOver başlığının altı ve tahta alt şeridi (web `sm`).
+  /// 11px — GameOver başlığının altı ve tahta alt şeridi (web `sm`).
   sm,
 }
 
@@ -46,9 +47,9 @@ class AiLevelBadge extends StatelessWidget {
     final sm = size == AiLevelBadgeSize.sm;
     final color = aiLevelBadgeColor(lv);
     return Container(
-      // web: `px-[3px] py-0` (xs) · `px-1.5` (sm); dikey 1px `_Badge` ile
-      // aynı, yoksa 7px metin kenarlığa yapışıyor.
-      padding: EdgeInsets.symmetric(horizontal: sm ? 6 : 3, vertical: 1),
+      // web: `px-1` (xs) · `px-1.5` (sm); dikey 1px `_Badge` ile aynı,
+      // yoksa metin kenarlığa yapışıyor.
+      padding: EdgeInsets.symmetric(horizontal: sm ? 6 : 4, vertical: 1),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         border: Border.all(color: color.withValues(alpha: 0.4)),
@@ -59,7 +60,7 @@ class AiLevelBadge extends StatelessWidget {
         maxLines: 1,
         softWrap: false,
         style: TextStyle(
-          fontSize: sm ? 9 : 7,
+          fontSize: sm ? 11 : 9,
           fontWeight: FontWeight.bold,
           color: color,
         ),
