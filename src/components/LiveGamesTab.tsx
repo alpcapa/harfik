@@ -31,7 +31,7 @@ import { useAuth } from '../hooks/useAuth';
 import {
   checkInviteExpiry,
   checkOnlineGameTurnTimeout,
-  fetchOnlineGameDeadlines,
+  fetchOnlineGameGlances,
   fetchOnlineGameTurns,
   listMyOnlineGames,
   markGameFinishesSeen,
@@ -40,6 +40,7 @@ import {
 } from '../lib/api';
 import { ABANDON_TIMEOUT_MS } from '../utils/gameStorage';
 import type { OnlineGame, OnlineGameSlot } from '../lib/database.types';
+import type { OnlineGameGlance } from '../lib/api';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
 import { CountBadge } from './CountBadge';
@@ -52,7 +53,7 @@ import {
   RETRY_LABEL,
   STALE_DATA_NOTICE,
 } from '../utils/offlineNotice';
-import { PlayerAvatarRow } from './PlayerAvatarRow';
+import { AvatarScoreRow, PlayerAvatarRow } from './PlayerAvatarRow';
 import { FriendSuggestModal } from './FriendSuggestModal';
 import { LiveGameCreateForm } from './LiveGameCreateForm';
 import { RecentGamesSection } from './RecentGamesSection';
@@ -71,7 +72,7 @@ type SubTab = 'active' | 'invites' | 'recent';
 // veriyi çekip hem state'i hem bu önbelleği günceller.
 const liveGamesCache = new Map<
   string,
-  { games: OnlineGame[]; turns: Record<string, number>; deadlines: Record<string, string | null> }
+  { games: OnlineGame[]; turns: Record<string, number>; glances: Record<string, OnlineGameGlance> }
 >();
 
 type HumanSlot = Extract<OnlineGameSlot, { type: 'human' }>;
@@ -364,9 +365,15 @@ interface GameRowProps {
   isMyTurn?: boolean;
   /** `status==='active'` oyunlarda: sırası gelen oyuncunun zaman aşımı son tarihi. */
   deadline?: string | null;
+  /**
+   * `status==='active'` oyunlarda: koltuk sırasıyla anlık puanlar
+   * (`online_game_states.players[].score`) — avatarların altındaki puan
+   * satırı. `undefined` = henüz yüklenmedi (satır çizilmez).
+   */
+  scores?: number[];
 }
 
-function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowProps) {
+function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline, scores }: GameRowProps) {
   const isPendingInvite = game.my_role === 'invitee' && game.my_invite_status === 'pending';
 
   if (isPendingInvite && onRespond) {
@@ -394,9 +401,6 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
   // hiç görünmemesi tercih edildi.
   const remaining = isMyTurn ? remainingTimeLabel(deadline) : null;
   const Wrapper = onOpen ? 'button' : 'div';
-  const creatorName = game.slots.find(
-    (s): s is HumanSlot => s.type === 'human' && s.user_id === game.created_by,
-  )?.name;
   return (
     <Wrapper
       type={onOpen ? 'button' : undefined}
@@ -410,7 +414,7 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
           sekme AYRIŞMIŞTI (kullanıcı cihazda bildirdi, 1.0.5). Önceki
           yapıda durum ve süre TEK bir sağ sütundaydı ve o sütunun enini
           SÜRE belirliyordu — portun ikizinde ölçüldü (320 px): "SIRA SENDE"
-          89,6 px, süre satırı **194,3 px**. Yani sol sütunu ("X açtı")
+          89,6 px, süre satırı **194,3 px**. Yani sol sütunu (o gün "X açtı")
           daraltan etiket değil süreydi. Şimdi üst satır sol=oyuncular /
           sağ=durum, süre altta tam genişlik (sağa yaslı — görsel çapa
           değişmedi). Port ikizi: `devam_eden_govde.dart`. */}
@@ -428,9 +432,16 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline }: GameRowP
                 : { name: 'Yapay Zeka', isAi: true },
             )}
           />
-          <span className="text-[9px] font-mono text-muted truncate">
-            {creatorName ?? 'Bir arkadaşın'} açtı
-          </span>
+          {/* 6 Eylül 2026 — "X açtı" satırı KALKTI, yerine PUAN SATIRI
+              (kullanıcı isteği: *"Ironman açtı kalksın çünkü zaten ilk
+              baştaki her zaman oyunu başlatan oluyor"* — `slots[0]` her
+              zaman kurucu, bkz. migration `online_games_invites`; avatar
+              şeridi o bilgiyi zaten taşıyor). Puan HİZALI: her sayı kendi
+              avatarının tam altında (`AvatarScoreRow`, 6 Eylül 2026 ikinci
+              tur — tek dize hâli 4 kişilikte kayıyordu). Setup'ın YZ kartı
+              (`SavedGameRow`) ve "Son Oynananlar" aynı satırı çiziyor; port
+              ikizi `_GameRow`. */}
+          {scores && <AvatarScoreRow scores={scores} />}
         </span>
         {/* 11 → 13 px (30 Ağustos 2026) → 15 px (2 Eylül 2026, kullanıcı
             isteği: "Sıra Sende ve Sıra Rakipte fontu biraz daha büyüt").
@@ -468,13 +479,13 @@ function Section({
   games,
   onOpenGame,
   turns,
-  deadlines,
+  glances,
 }: {
   title: string;
   games: OnlineGame[];
   onOpenGame?: (game: OnlineGame) => void;
   turns?: Record<string, number>;
-  deadlines?: Record<string, string | null>;
+  glances?: Record<string, OnlineGameGlance>;
 }) {
   if (games.length === 0) return null;
   return (
@@ -487,7 +498,8 @@ function Section({
             game={g}
             onOpen={onOpenGame ? () => onOpenGame(g) : undefined}
             isMyTurn={turns ? turns[g.id] === mySlotIndex(g) : undefined}
-            deadline={deadlines ? deadlines[g.id] : undefined}
+            deadline={glances ? glances[g.id]?.deadline : undefined}
+            scores={glances ? glances[g.id]?.scores : undefined}
           />
         ))}
       </div>
@@ -550,9 +562,11 @@ export function LiveGamesTab({
   const [turns, setTurns] = useState<Record<string, number>>(
     () => (user ? (liveGamesCache.get(user.id)?.turns ?? {}) : {}),
   );
-  // gameId -> sırası gelen oyuncunun zaman aşımı son tarihi ("kalan süre" için).
-  const [deadlines, setDeadlines] = useState<Record<string, string | null>>(
-    () => (user ? (liveGamesCache.get(user.id)?.deadlines ?? {}) : {}),
+  // gameId -> sırası gelen oyuncunun zaman aşımı son tarihi ("kalan süre"
+  // için) + koltuk sırasıyla anlık puanlar (kart altı puan satırı, 6 Eylül
+  // 2026) — ikisi aynı `online_game_states` satırından, tek istekle.
+  const [glances, setGlances] = useState<Record<string, OnlineGameGlance>>(
+    () => (user ? (liveGamesCache.get(user.id)?.glances ?? {}) : {}),
   );
   // Son yükleme ağ katmanında düştü mü. `games`'i EZMİYOR: elde liste varsa
   // liste yerinde kalır ve üstünde yalnızca "Güncellenemedi" şeridi görünür;
@@ -661,33 +675,33 @@ export function LiveGamesTab({
     const activeIds = rows.filter((g) => g.status === 'active').map((g) => g.id);
     if (activeIds.length === 0 && expiredInviteIds.length === 0) {
       setTurns({});
-      setDeadlines({});
+      setGlances({});
       return;
     }
 
     // Tip açıkça yazılmak zorunda: `[{}, {}]` dalı olmasa çıkarım doğru
     // çalışırdı, onunla birlikte birleşim `{}`e düşüp indekslemeyi kırıyor.
-    const [turnMap, deadlineMap]: [
+    const [turnMap, glanceMap]: [
       Record<string, number> | null,
-      Record<string, string | null> | null,
+      Record<string, OnlineGameGlance> | null,
     ] =
       activeIds.length > 0
-        ? await Promise.all([fetchOnlineGameTurns(activeIds), fetchOnlineGameDeadlines(activeIds)])
+        ? await Promise.all([fetchOnlineGameTurns(activeIds), fetchOnlineGameGlances(activeIds)])
         : [{}, {}];
     if (cancelledRef?.current) return;
     // Liste geldi ama sıra/son tarih gelmediyse SON BİLİNENİ koru: boş
     // haritayla ezmek "sıra sende"yi sessizce "sıra rakipte"ye çevirirdi
     // (`turns[g.id] === mySlotIndex(g)` false kalır) — kullanıcıya yanlış bir
     // gerçeklik anlatıp beklemesine yol açan, listeden daha kötü bir hata.
-    if (turnMap === null || deadlineMap === null) {
+    if (turnMap === null || glanceMap === null) {
       setLoadFailed(true);
       scheduleAutoRetry();
     }
     if (turnMap !== null) setTurns(turnMap);
-    if (deadlineMap !== null) setDeadlines(deadlineMap);
+    if (glanceMap !== null) setGlances(glanceMap);
 
     const expiredTurns = activeIds.filter((id) => {
-      const d = deadlineMap?.[id];
+      const d = glanceMap?.[id]?.deadline;
       return d && new Date(d).getTime() <= Date.now();
     });
     if (expiredTurns.length === 0 && expiredInviteIds.length === 0) return;
@@ -707,20 +721,20 @@ export function LiveGamesTab({
     const activeIds2 = rows2.filter((g) => g.status === 'active').map((g) => g.id);
     if (activeIds2.length === 0) {
       setTurns({});
-      setDeadlines({});
+      setGlances({});
       return;
     }
-    const [turnMap2, deadlineMap2] = await Promise.all([
+    const [turnMap2, glanceMap2] = await Promise.all([
       fetchOnlineGameTurns(activeIds2),
-      fetchOnlineGameDeadlines(activeIds2),
+      fetchOnlineGameGlances(activeIds2),
     ]);
     if (cancelledRef?.current) return;
-    if (turnMap2 === null || deadlineMap2 === null) {
+    if (turnMap2 === null || glanceMap2 === null) {
       setLoadFailed(true);
       scheduleAutoRetry();
     }
     if (turnMap2 !== null) setTurns(turnMap2);
-    if (deadlineMap2 !== null) setDeadlines(deadlineMap2);
+    if (glanceMap2 !== null) setGlances(glanceMap2);
   };
   loadGamesRef.current = (t) => {
     void loadGames(t);
@@ -858,8 +872,8 @@ export function LiveGamesTab({
   // gösterebileceği "son bilinen" durum.
   useEffect(() => {
     if (!user || games === null) return;
-    liveGamesCache.set(user.id, { games, turns, deadlines });
-  }, [user, games, turns, deadlines]);
+    liveGamesCache.set(user.id, { games, turns, glances });
+  }, [user, games, turns, glances]);
 
   // ⚠ AŞAĞIDAKİ İKİ HOOK ERKEN `return`LERİN ÜSTÜNDE KALMAK ZORUNDA.
   // 3 Eylül 2026: eklendikleri turda dosyanın SONUNA, yani `if (creating)` /
@@ -995,14 +1009,14 @@ export function LiveGamesTab({
   //
   // Ölçüt olarak `turn_deadline` kullanılıyor: `submit_move` her hamlede onu
   // `now() + 48 saat` yapıyor, dolayısıyla deadline'ı geç olan = son
-  // oynanan. Ek bir sorgu/alan gerekmiyor, `deadlines` zaten yüklü. Null
+  // oynanan. Ek bir sorgu/alan gerekmiyor, `glances` zaten yüklü. Null
   // (henüz kurulmamış state) EN SONA düşer.
   // ⚠ Null → NULL döner, 0 DEĞİL. Eski hâli 0'dı ve yalnızca AZALAN
   // sıralamada zararsızdı (dibe düşerdi); "sıra bende" grubu 3 Eylül'de
   // ARTANA çevrilince 0 "en yakın bitiş" sanılıp EN ÜSTE çıkardı.
   // `orderActiveGames` null'ı her iki grupta da sona koyuyor.
   const sonHamle = (g: OnlineGame) => {
-    const d = deadlines[g.id];
+    const d = glances[g.id]?.deadline;
     return d ? new Date(d).getTime() : null;
   };
   const active = orderActiveGames(
@@ -1131,7 +1145,7 @@ export function LiveGamesTab({
         active.length === 0 ? (
           <p className="text-center text-xs text-muted font-mono py-8">Devam eden bir Canlı oyunun yok.</p>
         ) : (
-          <Section title="Devam Eden Oyunlar" games={active} onOpenGame={onOpenGame} turns={turns} deadlines={deadlines} />
+          <Section title="Devam Eden Oyunlar" games={active} onOpenGame={onOpenGame} turns={turns} glances={glances} />
         )
       ) : subTab === 'invites' ? (
         invites.length === 0 && acceptedWaiting.length === 0 && waiting.length === 0 ? (

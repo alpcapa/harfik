@@ -73,10 +73,14 @@ String aiLevelDescription(AiLevel level, int playerCount) {
   return '${aiLevelPitch[level]} Bu seviyede $puan.$sans';
 }
 
-/// Kartlarda rozet metni — Normal'de (ve null'da) `null`: rozet YOK, bugüne
-/// kadarki her kart aynen kalır, seviye yalnızca bugünkünden SAPINCA
-/// görünür (web `aiLevelBadgeLabel`). null = seviyesiz eski kayıt / Canlı
-/// oyun / Normal — üçü de sunucunun `coalesce(ai_level, 'normal')`
-/// sözleşmesiyle Normal.
+/// Rozette gösterilecek seviye (6 Eylül 2026, kullanıcı kararı — Kolay
+/// yeşil · Normal turuncu · Zor kırmızı, web `aiLevelForBadge`): YZ oyunuysa
+/// ham değer, null = Normal (seviyesiz eski kayıtlar dahil); Canlı oyunsa
+/// null → rozet YOK. "YZ oyunu mu" kararı çağıranda (`onlineGameId == null`,
+/// GameScreen ↔ OnlineGameScreen).
+AiLevel? aiLevelForBadge(AiLevel? raw, {required bool isAiGame}) =>
+    isAiGame ? (raw ?? AiLevel.normal) : null;
+
+/// Rozet metni — null seviye (Canlı oyun) → rozet yok (web `aiLevelBadgeLabel`).
 String? aiLevelBadgeLabel(AiLevel? level) =>
-    level == null || level == AiLevel.normal ? null : aiLevelLabel[level];
+    level == null ? null : aiLevelLabel[level];

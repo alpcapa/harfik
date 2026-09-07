@@ -21,6 +21,7 @@ import { buildRematchSlots } from '../utils/rematchSlots';
 import { PLAYER_COLORS } from '../game/constants';
 import { PlayerBadge } from './PlayerBadge';
 import { AiLevelBadge } from './AiLevelBadge';
+import { aiLevelForBadge } from '../utils/aiLevel';
 import { GameBoardPreview } from './GameBoardPreview';
 import { ActionSheet } from './ActionSheet';
 import { Avatar } from './Avatar';
@@ -718,10 +719,11 @@ export function GameHistoryModal({
                         </span>
                       )}
                       {/* Zorluk rozeti (ROADMAP #23 Faz 3) — "Yapay Zeka"nın
-                          hemen sağında, Normal'de YOK. `ai_level` iki
-                          kaynaktan da geliyor (`fetchMyGames` cols +
-                          `list_liked_games`), eski satırlar null = Normal. */}
-                      <AiLevelBadge level={entry.ai_level} />
+                          hemen sağında, YZ oyununda her seviyede (Normal
+                          turuncu); Canlı'da YOK. `ai_level` iki kaynaktan da
+                          geliyor (`fetchMyGames` cols + `list_liked_games`),
+                          eski satırlar null = Normal. */}
+                      <AiLevelBadge level={aiLevelForBadge(entry.ai_level, !isOnline)} />
                       {entry.message_count > 0 && (
                         <button
                           onClick={(e) => {

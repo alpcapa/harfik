@@ -20,6 +20,108 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 193 — puan satırı AVATAR HİZASINA oturdu + yardım metninin
+     zorluk cümlesi (6 Eylül 2026, kullanıcı iki bildirim; web + port aynı
+     PR):** *"Puanlar avatarların tam altına gelmiyor. Özellikle 4 kişilik
+     oyunda. Tire olmasa acaba nasıl olurdu?"*
+     - **Teşhis (ölçüm, yama değil):** Parça 192'nin satırı tek bir DİZEYDİ
+       (`238 - 179 - 103 - 87`). Avatarlar 6 px BİNİYOR (26 px çap → adım
+       20 px), akan metin ise kendi harf genişliğiyle ilerler — iki ritim 4
+       koltukta tamamen ayrışıyor. Yani sorun punto/boşluk ayarı değil,
+       yapısaldı; kullanıcıya üç seçenek (mevcut · tiresiz · hizalı) gerçek
+       kart stilleriyle çizilip ekran görüntüsüyle sunuldu, kullanıcı
+       **"C hizalı"** dedi.
+     - **Çözüm:** `AvatarScoreRow` (web `PlayerAvatarRow.tsx` · port
+       `ui/game/player_avatar_row.dart`) — her puan `adım` eninde kendi
+       hücresinde, satır `binişme/2` kadar kaydırılmış; cebiri
+       `util/score_line.dart` ↔ `utils/scoreLine.ts` (`scoreCellWidth`,
+       `scoreRowOffset`). Hiza gelince AYIRICI TİRE düştü. Binişme artık iki
+       tarafta da adı olan bir sabit (`kAvatarRowOverlap` /
+       `AVATAR_ROW_OVERLAP`); web'de `-space-x-1.5` sınıfının içinde gizli
+       kalsaydı biri değişince hiza sessizce kayardı.
+     - ⚠ **`ScaledCell` DEĞİL, sabit en + `FittedBox` — kuralın bilinçli
+       istisnası:** `ScaledCell` kutuyu yazı ölçeğiyle büyütür, oysa
+       AVATARLAR ölçekle büyümüyor; hücre büyüseydi hiza tam da tavanda
+       kayardı. Kuralın amacı (sarma/taşma yok) `FittedBox(scaleDown)` ile
+       karşılanıyor. `score_line_test` iddiayı ölçek 1,0 VE `kMaxTextScale`
+       için ayrı ayrı koşuyor.
+     - **Testler:** `score_line_test.dart` yeniden yazıldı — geometri cebiri
+       + 4 kişilik/üç haneli en kötü hâlde her puanın merkezi kendi
+       avatarının merkezinde (<0,5 px) ve komşusuna değmiyor. ⚠
+       `share_recent_test`in DÖRT testi düştü ve bu GERÇEK bir uyarıydı:
+       aynı sayı artık satırda iki kez var (sağdaki "kendi skorun" +
+       hizalı puan). Bulucular gevşetilmedi, `ScaledCell`e daraltıldı
+       (`sagSutunMetni`) — sağ sütun hizasını ölçen test yanlış widget'ı
+       ölçmeye devam etseydi sessizce anlamsızlaşırdı.
+     - **Yardım metni:** zorluk paragrafının son cümlesi kullanıcının
+       yazdığı biçime çekildi ("4 kişilik oyunda; Kolay'da birinci +1 k-lig
+       puanı alır, ikinci puan almaz; Zor'da birinci +4, ikinci +2 k-lig
+       puanı kazanır."), web + port BİREBİR (`ai_level_parity_test` zaten
+       paragrafı karşılaştırıyor — ikisinden biri unutulsaydı düşerdi).
+     - **Doğrulama:** `flutter test` tam takım **795 yeşil**, `dart analyze`
+       temiz; web `tsc` + `vite build` temiz, Playwright **67 yeşil**.
+       Ayrıca GERÇEK uygulamada uçtan uca doğrulandı (Chromium, 4 kişilik
+       YZ oyunu oynanıp Setup'a dönüldü): kart `0 36 43 45` puanlarını dört
+       avatarın altında hizalı çizdi.
+   - ✅ **Parça 192 — kart altı PUAN SATIRI + "X açtı" kalktı + Son
+     Oynananlar'da tarih üste (6 Eylül 2026, kullanıcı isteği; web + port
+     aynı PR):** *"Canlı ve YZ bekleyen oyunlarda avatarların altına
+     kişilerin o anki puanlarını yazalım. Sayılar çok yakınsa araya tire
+     koyalım. Ironman açtı kalksın … Font kalan süre ile aynı olsun. Son
+     oynananlarda da aynı şekilde bitiş puanlarını koy. Oradaki tarihi
+     avatarların üstüne koy."*
+     - **Tek kaynak metin:** `util/score_line.dart` ↔ web `scoreLine.ts`
+       — koltuk/snapshot sırasıyla `join(' - ')`. Sıra AVATAR sırası (rank
+       değil): N'inci sayı N'inci yüzün altında. Ayırıcı her zaman tire
+       (boşluk "45 38"i tek sayı gibi okutuyor).
+     - **Veri:** Canlı puanları `online_game_states.players[].score`tan;
+       `gateway.deadlines` seçimine `players` eklendi (üçüncü bir istek
+       açılmadı), `OnlineGamesSnapshot.scores` (4. pozisyonel, varsayılan
+       boş — fake gateway'ler değişmedi), `scoresFromPlayersJson` bozuk
+       elemanı 0 sayar (web `typeof p.score === 'number'` ikizi). YZ kartı
+       `state.players`, Son Oynananlar `entry.players` snapshot'ından.
+     - **Düzen:** `_SavedGameRow._solBlok` Row → Column (üst satır avatar +
+       rozet, altında puan); `_GameRow` "X açtı" Text'i puan satırıyla yer
+       değiştirdi (kurucu zaten `slots[0]`, ilk avatar); `_RecentRow` sol
+       sütun tarih(+rozet) → avatar → puan. Stil üçünde de
+       `devamEdenSureStil(_muted)` (kullanıcı: "font kalan süre ile aynı").
+     - **Testler:** `score_line_test.dart` (metin sözleşmesi + JSON ayrıştırma
+       + Son Oynananlar dikey sırası), `live_games_test` "Devam Edenler kartı"
+       (puan avatar altında, süre puanın altında, `açtı` yok),
+       `setup_screen_test` "DEVAM EDEN OYUN" (`^0 - \d+$` sol alanın içinde,
+       aynı dikey sıra) — kartı açan test artık `ValueKey('game-g1')` ile
+       dokunuyor. Tam takım yeşil (`flutter test`).
+     - **Doğrulama sınırı:** gerçek `online_game_states` satırının `players`
+       jsonb'si sahte uçla temsil edildi; cihazda `mobile/TESTING.md`
+       "Kart altı PUAN SATIRI" maddesi (Realtime tazelenmesi dahil).
+   - ✅ **Parça 191 — zorluk rozeti üç renk + tahta şeridinde + seçici
+     alt-sekme stilinde (6 Eylül 2026 gece, kullanıcı isteği; web + port
+     aynı PR):** *"kolay rozeti yeşil, normal turuncu, zor kırmızı olsun;
+     rozetleri boardun altındaki mesajlaşmanın olduğu yere de koyalım;
+     zorluk butonlarını Arkadaşınla alt-sekme buton stiliyle aynı yapalım."*
+     - **Kural değişti:** rozet artık YZ oyununda HER seviyede (Normal
+       turuncu da çizilir), yalnızca Canlı oyunda yok. "YZ oyunu mu" kararı
+       çağıranda: `aiLevelForBadge(raw, isAiGame:)` (web aynı ad) —
+       kartlarda `onlineGameId == null`, GameOver'da YZ ekranı geçirir /
+       Canlı ekran geçirmez (`showGameOverModal(aiLevel:)`), tahta şeridinde
+       `BoardWidget.aiLevel` yalnız `game_screen` verir. Renk
+       `aiLevelBadgeColor` (kGreen/kOrange/kRed) ↔ web `AI_LEVEL_BADGE_CLASS`.
+     - **Şerit:** rozet "Hamleler"in sağında, Canlı'daki "· Mesajlaşma"nın
+       yerinde, ayraç aynı; `TapTarget` DEĞİL — `layout_parity_test`in "üç
+       TapTarget / beş `min-h-[48px]`" sayımı bilerek korundu (web'de ayraç
+       ve rozet 48px sınıfı taşımıyor).
+     - **Seçici:** `_zorlukBtn` = `_localSubTabBtn`in rozetsiz ikizi (11px,
+       dikey 10 dolgu, aynı gölgeler); web `Setup.tsx` `LiveGamesTab`
+       alt-sekme sınıf dizesine geçti. `_SavedGameRow._solBlok` avatarların
+       SAĞINA rozet koyan bir `Row` (önce alt satırdaydı; Preview'da rozet
+       `flex-col` çocuğu olarak tam genişliğe uzadı, kullanıcı gördü).
+     - **Doğrulama:** `flutter analyze` temiz; `ai_level_test` (Kolay
+       yeşil/+1, Normal turuncu/+2, Canlı rozetsiz — GameOver · Tüm Oyunlarım
+       · Son Oynadıklarım), `ai_level_parity_test` (`aiLevelForBadge` dört
+       dalı), setup/layout/text_scale/tap_target/game_screen takımları
+       yeşil; web `tsc` + smoke Kolay/Normal yeşil. **Sınır:** cihazda
+       renklerin ve şeridin tek satırda kaldığı görülmedi — §13 maddesi.
+
    - ✅ **Parça 190 — Zorluk seçicisinin açıklama metni: her seviyede,
      kullanıcıya hitapla, puanı `leaguePoints`ten (6 Eylül 2026 akşamı, web +
      port AYNI PR):** kullanıcı Kolay'ın altındaki *"en iyi birkaç hamleden

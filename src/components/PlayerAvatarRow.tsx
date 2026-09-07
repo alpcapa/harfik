@@ -3,13 +3,26 @@
 // "Son Oynananlar" listesinde, önceden "2/4 Kişilik Oyun" ya da rakip
 // isimlerinin yazdığı KALIN BAŞLIK SATIRININ yerine geçer (3 Ağustos 2026,
 // kullanıcı isteği) — kartlardaki diğer tüm metinler (durum, kalan süre,
-// "X açtı", tarih, skor, k-lig puanı) olduğu gibi kalır.
+// tarih, skor, k-lig puanı) olduğu gibi kalır; 6 Eylül 2026'dan beri hemen
+// altında koltuk sırasıyla puan satırı var (`utils/scoreLine.ts`).
 //
 // Avatar sayısı eski "N Kişilik" bilgisinin yerini tuttuğundan çağıranlar
 // oyuncuların TAMAMINI (çağıran dahil) geçer — yalnızca rakipleri göstermek
 // 4 kişilik bir oyunda 3 avatar bırakıp oyunun kaç kişilik olduğunu
 // kaybettirirdi.
 import { Avatar } from './Avatar';
+import { scoreCellWidth, scoreRowOffset } from '../utils/scoreLine';
+
+/** Avatar çapı — `PlayerAvatarRow`un varsayılanı ve puan satırının dayanağı. */
+export const AVATAR_ROW_SIZE = 26;
+
+/**
+ * Komşu avatarların BİNİŞMESİ (px). 6 Eylül 2026'ya kadar yalnızca
+ * `-space-x-1.5` sınıfının içinde gizliydi; puan satırı hizasını buradan
+ * türettiğinden artık SAYI olarak duruyor — iki yerde iki farklı değer
+ * olması hizayı sessizce kaydırırdı (port ikizinde de `overlap = 6.0`).
+ */
+export const AVATAR_ROW_OVERLAP = 6;
 
 export interface AvatarRowPlayer {
   name: string;
@@ -66,12 +79,18 @@ export function PlayerAvatarRow({
   size?: number;
 }) {
   return (
-    <span className="flex -space-x-1.5" style={{ height: size }}>
+    <span className="flex" style={{ height: size }}>
       {players.map((p, i) => (
+        // `-space-x-1.5` yerine sayısal binişme (6 Eylül 2026): aynı değeri
+        // puan satırı da okuyor (bkz. AVATAR_ROW_OVERLAP).
         // Halka (`ring-panel`), üst üste binen avatarların birbirinden
         // ayrışmasını sağlıyor; `ring` layout'a hiç yer kaplamadığından
         // avatar boyutunu/satır yüksekliğini etkilemiyor.
-        <span key={`${p.name}-${i}`} className="inline-flex rounded-full ring-2 ring-panel">
+        <span
+          key={`${p.name}-${i}`}
+          className="inline-flex rounded-full ring-2 ring-panel shrink-0"
+          style={{ marginRight: i < players.length - 1 ? -AVATAR_ROW_OVERLAP : 0 }}
+        >
           {p.isAi ? (
             <span
               style={{ width: size, height: size, fontSize: Math.round(size * 0.55) }}
@@ -85,6 +104,43 @@ export function PlayerAvatarRow({
           ) : (
             <Avatar url={p.avatarUrl} name={p.isGuest ? '' : p.name} size={size} />
           )}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * Avatar şeridinin ALTINDAKİ puan satırı — her puan kendi avatarının tam
+ * altında (6 Eylül 2026, kullanıcı kararı "C hizalı"; gerekçe ve formül
+ * `utils/scoreLine.ts`). Üç kart da bunu kullanıyor: Setup'ın YZ kaydı,
+ * Canlı "Devam Edenler" ve "Son Oynananlar".
+ *
+ * ⚠ Ayırıcı YOK. İlk sürüm `45 - 38` diye tek bir dizeydi; tire, "45 38"in
+ * tek sayı gibi okunmasını engellemek içindi. Hizalı düzende o işi sütun
+ * yapıyor, tire yalnızca gürültü olurdu.
+ *
+ * ⚠ Harf aralığı da YOK (kalan-süre satırındaki `tracking-[0.5px]` burada
+ * uygulanmıyor): 20 px'lik hücrede ÜÇ HANELİ puanlar (238) komşusuna
+ * değmesin diye — 8 px Space Mono'da üç hane ≈ 14,4 px, aralıkla ≈ 15,9 px.
+ */
+export function AvatarScoreRow({
+  scores,
+  size = AVATAR_ROW_SIZE,
+}: {
+  scores: readonly number[];
+  size?: number;
+}) {
+  if (scores.length === 0) return null;
+  const cell = scoreCellWidth(size, AVATAR_ROW_OVERLAP);
+  return (
+    <span
+      className="flex font-mono text-[8px] text-muted"
+      style={{ marginLeft: scoreRowOffset(AVATAR_ROW_OVERLAP) }}
+    >
+      {scores.map((s, i) => (
+        <span key={i} className="shrink-0 text-center" style={{ width: cell }}>
+          {s}
         </span>
       ))}
     </span>

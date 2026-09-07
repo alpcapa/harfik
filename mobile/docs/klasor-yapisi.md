@@ -293,6 +293,13 @@ mobile/
                              # avatarı: eşleme OYUNLA sınırlı (donmuş `players`
                              # anlık görüntüsü `user_id` taşımaz, isimle eşleme
                              # yanlış yüz gösterirdi) — web `recentGameAvatars.ts`
+      util/score_line.dart   # kart altı puan satırının HİZASI (devam eden +
+                             # son oynanan): her puan kendi avatarının TAM
+                             # altında — hücre eni avatar ADIMI, kaydırma
+                             # binişmenin yarısı; web `scoreLine.ts` ikizi
+                             # (Parça 192-193). Satırı çizen widget
+                             # `ui/game/player_avatar_row.dart`ta
+                             # (`AvatarScoreRow`), geometri tek kaynak
       util/head_to_head.dart # skor kartındaki kafa kafaya oran çubuğunun
                              # dilimleri — KÜMÜLATİF yuvarlama (üç bağımsız
                              # yuvarlama 33+33+33=99 verir), web `headToHead.ts`

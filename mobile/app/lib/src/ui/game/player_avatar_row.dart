@@ -17,10 +17,21 @@
 // gelen biri kapsamı eksik ölçerdi.
 import 'package:flutter/material.dart';
 
+import '../../util/score_line.dart';
 import '../auth/k_avatar.dart';
 import '../tokens.dart';
 
 const _border = kBorder;
+const _muted = kMuted;
+
+/// Avatar çapı — `PlayerAvatarRow`un varsayılanı ve puan satırının dayanağı.
+const double kAvatarRowSize = 26;
+
+/// Komşu avatarların BİNİŞMESİ. 6 Eylül 2026'ya kadar `build`ın içinde yerel
+/// bir `const`tı; puan satırı hizasını buradan türettiğinden dosya düzeyine
+/// çıktı — iki yerde iki değer olsaydı hiza sessizce kayardı (web ikizinde
+/// de `AVATAR_ROW_OVERLAP = 6`).
+const double kAvatarRowOverlap = 6;
 
 /// Web `bg-void` — robot avatarının zemini.
 const _void = kVoid;
@@ -72,15 +83,15 @@ class PlayerAvatarRow extends StatelessWidget {
   /// birlikte hesapla.
   final double size;
 
-  const PlayerAvatarRow({super.key, required this.players, this.size = 26});
+  const PlayerAvatarRow(
+      {super.key, required this.players, this.size = kAvatarRowSize});
 
   @override
   Widget build(BuildContext context) {
     if (players.isEmpty) return SizedBox(height: size);
     // 4 → 6 (2 Eylül 2026): avatar 20 → 26 olurken şeridin toplam eni
     // sabit kalsın diye — gerekçe ve ölçüm `size` alanının yorumunda.
-    const overlap = 6.0;
-    final step = size - overlap;
+    final step = scoreCellWidth(size, kAvatarRowOverlap);
     return SizedBox(
       width: size + (players.length - 1) * step,
       height: size,
@@ -142,6 +153,62 @@ class _Avatar extends StatelessWidget {
       url: player.avatarUrl,
       name: player.isGuest ? '' : player.name,
       size: size,
+    );
+  }
+}
+
+/// Avatar şeridinin ALTINDAKİ puan satırı — her puan kendi avatarının tam
+/// altında (6 Eylül 2026, kullanıcı kararı "C hizalı"; gerekçe ve formül
+/// `util/score_line.dart`). Üç kart da bunu kullanıyor: Setup'ın YZ kaydı,
+/// Canlı "Devam Edenler" ve "Son Oynadıklarım". Web ikizi `AvatarScoreRow`.
+///
+/// ⚠ Ayırıcı YOK. İlk sürüm `45 - 38` diye tek bir dizeydi; tire, "45 38"in
+/// tek sayı gibi okunmasını engellemek içindi. Hizalı düzende o işi sütun
+/// yapıyor.
+///
+/// ⚠ **`ScaledCell` DEĞİL, sabit en + `FittedBox`** — ve bu, kök
+/// `CLAUDE.md`in "sabit genişlikli sütunda `ScaledCell` kullan" kuralının
+/// BİLİNÇLİ istisnası: `ScaledCell` kutuyu yazı ölçeğiyle büyütür, oysa
+/// üstteki AVATARLAR ölçekle büyümüyor (sabit 26 px). Hücre büyüseydi hiza
+/// tam da tavanda (`kMaxTextScale`) kayardı — yani kuralın amacı (sarma/
+/// taşma yok) burada `FittedBox(scaleDown)` ile karşılanıyor, kutuyu
+/// büyüterek değil. Ölçüm: 8 px × 1,3 = 10,4 px, üç hane ≈ 18,8 px < 20 px,
+/// yani tavanda bile küçültmeye gerek kalmıyor.
+class AvatarScoreRow extends StatelessWidget {
+  /// Koltuk sırasıyla puanlar — üstteki `PlayerAvatarRow`un dizisiyle AYNI
+  /// sıra (sıralama/rank DEĞİL).
+  final List<int> scores;
+  final double size;
+
+  const AvatarScoreRow(
+      {super.key, required this.scores, this.size = kAvatarRowSize});
+
+  @override
+  Widget build(BuildContext context) {
+    if (scores.isEmpty) return const SizedBox.shrink();
+    final cell = scoreCellWidth(size, kAvatarRowOverlap);
+    return Padding(
+      padding: EdgeInsets.only(left: scoreRowOffset(kAvatarRowOverlap)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final s in scores)
+            SizedBox(
+              width: cell,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text('$s',
+                    maxLines: 1,
+                    softWrap: false,
+                    // Harf aralığı YOK (kalan-süre satırının 0,5'i burada
+                    // uygulanmıyor): 20 px'lik hücrede üç haneli puanlar
+                    // komşusuna değmesin diye.
+                    style: const TextStyle(
+                        fontFamily: 'SpaceMono', fontSize: 8, color: _muted)),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

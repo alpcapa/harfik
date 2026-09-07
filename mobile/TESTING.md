@@ -1282,10 +1282,16 @@ listesi kök `TESTING.md` bölüm 10.
       kazandırır."; 4 OYUNCULU'ya geçince cümleye ikincilik eklenir (Kolay:
       "ikincilik puan kazandırmaz", Normal: "birincilik 2, ikincilik 1 puan
       kazandırır"). Oyunu başlat, "← Geri" ile Setup'a dön: "DEVAM
-      EDEN OYUNLAR" kartında avatarların ALTINDA küçük altın `Kolay` rozeti
-      (Normal oyun kartında rozet YOK, bugünkü gibi). Oyunu birinci bitir:
-      oyun sonu penceresinde başlığın altında `Kolay` rozeti ve k-lig
-      sütununda **+1** (Normal'de +2). "Son Oynadıklarım"da tarihin yanında
+      EDEN OYUNLAR" kartında avatarların hemen SAĞINDA küçük YEŞİL `Kolay` rozeti
+      (Normal oyun kartında TURUNCU `Normal`; kural: Kolay yeşil · Normal
+      turuncu · Zor kırmızı, YZ oyununda her seviyede; Canlı kartında HİÇ
+      rozet yok — web ile aynı). ZORLUK butonları Arkadaşınla sekmesinin
+      DEVAM EDENLER / OYUN DAVETLERİ / SON OYNANANLAR pilleriyle AYNI boy ve
+      puntoda, OYUNCU SAYISI'nın büyük butonu gibi DEĞİL. Oyun içinde
+      tahtanın altındaki şeritte "Hamleler · Kolay" (Canlı oyunda orada
+      "· Mesajlaşma" var, rozet yok; şerit tek satırda kalmalı). Oyunu
+      birinci bitir: oyun sonu penceresinde başlığın altında `Kolay` rozeti
+      ve k-lig sütununda **+1** (Normal'de turuncu rozet, +2). "Son Oynadıklarım"da tarihin yanında
       rozet ve +1; "Tüm Oyunlarım"da "Yapay Zeka" rozetinin sağında `Kolay`
       ve +1; kartı beğenip **Favoriler**'de de aç (ayrı RPC,
       `list_liked_games`) — orada da +1. Skor Kartı/k-lig listesindeki
@@ -1297,6 +1303,24 @@ listesi kök `TESTING.md` bölüm 10.
       cihaz); portta Kolay başlatılıp bulut kaydına düşen oyun web'de devam
       ettirilince YZ Kolay oynamalı (Setup kartında rozet) ve tersi. Canlı
       oyun kartlarında rozet HİÇBİR koşulda çıkmaz.
+- [ ] **Kart altı PUAN SATIRI — HİZA** (6 Eylül 2026, kullanıcı isteği; web
+      ile birebir): Yapay Zeka ↔ Arkadaşınla sekmelerindeki devam eden oyun
+      kartlarında avatarların hemen altında koltuk sırasıyla anlık puanlar,
+      **her sayı KENDİ AVATARININ TAM ALTINDA** (ayırıcı tire YOK).
+      ⚠ **Asıl kontrol 4 KİŞİLİK + üç haneli puanlar**: dört sayı da kendi
+      yüzünün altında ve birbirine değmiyor olmalı — ilk tur tek dizeydi ve
+      kullanıcı tam burada kaymayı yakaladı. ⚠ Canlı kartında **"X açtı"
+      satırı ARTIK YOK**. Rakip hamle yapınca puan oyuna girmeden
+      tazelenmeli (Realtime → `_reload`). "Son Oynadıklarım"da tarih
+      (+ zorluk rozeti) avatarların ÜSTÜNDE, bitiş puanları altında; sağdaki
+      puan/k-lig sütunları (`ScaledCell`) yerinde.
+      ⚠ **Yazı boyutunu %130'a al ve hizayı TEKRAR bak:** avatarlar
+      ölçekle büyümediğinden puan hücreleri de büyümüyor (bilinçli — bkz.
+      `AvatarScoreRow`); sayılar yine kendi yüzlerinin altında kalmalı.
+- [ ] **Yardım → zorluk paragrafı** (6 Eylül 2026, kullanıcı düzeltmesi):
+      *"4 kişilik oyunda; Kolay'da birinci +1 k-lig puanı alır, ikinci puan
+      almaz; Zor'da birinci +4, ikinci +2 k-lig puanı kazanır."* — cümle
+      web `HelpModal` ile BİREBİR (`ai_level_parity_test` kilitliyor).
 - [ ] **Web ↔ mobil aynı toplam.** Aynı hesabın "Genel" lig puanı iki
       platformda BİREBİR aynı olmalı ("Genel = 2 kişilik + 4 kişilik +
       eşik ödülü" — mod bazlı sekmelerin toplamı ödül kadar EKSİK olur,

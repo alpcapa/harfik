@@ -8,6 +8,7 @@ import { LogoMark } from './LogoMark';
 import { GameBoardPreview } from './GameBoardPreview';
 import { PlayerBadge } from './PlayerBadge';
 import { AiLevelBadge } from './AiLevelBadge';
+import { aiLevelForBadge } from '../utils/aiLevel';
 import { leaguePoints, formatLeaguePoints, computeRanks } from '../utils/leaguePoints';
 
 interface SharedGamePageProps {
@@ -53,8 +54,8 @@ export function SharedGamePage({ gameId }: SharedGamePageProps) {
             <div className="flex items-center justify-between gap-2 text-[9px] font-mono text-muted uppercase tracking-[0.5px]">
               <span className="flex items-center gap-1.5 min-w-0">
                 <span className="truncate">{formatDateTime(data.created_at)} · {data.player_count} Oyunculu</span>
-                {/* Zorluk rozeti — RPC 6 Eylül 2026'dan beri `ai_level` döndürüyor; Normal/null'da yok. */}
-                <AiLevelBadge level={data.ai_level} />
+                {/* Zorluk rozeti — RPC `ai_level` döndürüyor; YZ oyunu (kadroda YZ var) ise her seviyede, Canlı'da yok. */}
+                <AiLevelBadge level={aiLevelForBadge(data.ai_level, players.some((p) => p.is_ai))} />
               </span>
               <span className="flex items-center gap-2 shrink-0">
                 <span className="w-9 text-right">Puan</span>

@@ -13,7 +13,7 @@ interface GameOverProps {
   show: boolean;
   players: Player[];
   turnCount: number;
-  /** `GameState.aiLevel` — yoksa Normal (rozet çıkmaz, puan Normal formülü). */
+  /** YZ oyununda `aiLevelOf(state.aiLevel)` (App.tsx); Canlı ekran GEÇİRMEZ → rozet yok, puan Normal formülü. */
   aiLevel?: AiLevel;
   onOpenHistory: () => void;
   onOpenFeedback: () => void;
@@ -37,9 +37,9 @@ export function GameOver({ show, players, turnCount, aiLevel, onOpenHistory, onO
         >
           {tie ? 'BERABERE' : `${trUpper(top.player.name)} KAZANDI`}
         </div>
-        {/* Zorluk rozeti — Normal'de `null` döner ve `gap` de açılmaz; Kolay/
-            Zor'da başlığın hemen altında (aşağıdaki k-lig sütununun neden
-            +1/+4 gösterdiğini bu söylüyor). */}
+        {/* Zorluk rozeti — YZ oyununda her seviyede (Kolay yeşil · Normal
+            turuncu · Zor kırmızı) başlığın hemen altında; Canlı'da prop yok →
+            `null`, `gap` de açılmaz. */}
         <AiLevelBadge level={aiLevel} size="sm" />
 
         {/* ÜÇ sabit sayı kolonu + esneyen ad. Ad `flex-1 min-w-0 truncate`:

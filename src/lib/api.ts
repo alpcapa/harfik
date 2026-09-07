@@ -1533,32 +1533,56 @@ export async function fetchOnlineGameTurns(gameIds: string[]): Promise<Record<st
   return map;
 }
 
+/** `fetchOnlineGameGlances` çıktısındaki tek oyun — liste kartının "bakışta" gösterdikleri. */
+export interface OnlineGameGlance {
+  /** Sırası gelen oyuncunun zaman aşımı son tarihi (`turn_deadline`); state henüz kurulmadıysa null. */
+  deadline: string | null;
+  /**
+   * Koltuk sırasıyla anlık puanlar (`players[].score`) — kartın avatar
+   * şeridinin altındaki puan satırı (6 Eylül 2026, bkz. `utils/scoreLine.ts`).
+   */
+  scores: number[];
+}
+
 /**
  * Verilen aktif Canlı oyunların her biri için sırası gelen oyuncunun son
- * hamle tarihini (`turn_deadline`) döner — `LiveGamesTab`'ın "kalan süre"
- * göstergesi için. Süre dolan bir koltuk `check_turn_timeout` çağrılana
- * kadar otomatik teslim olmaz (bkz. `checkOnlineGameTurnTimeout`), bu
- * fonksiyon yalnızca OKUR, hiçbir şeyi tetiklemez.
+ * hamle tarihini (`turn_deadline`) ve koltuk sırasıyla anlık puanları
+ * (`players[].score`) döner — `LiveGamesTab`'ın "kalan süre" göstergesi ve
+ * kart altı puan satırı için. İkisi AYNI satırdan okunuyor, bu yüzden tek
+ * sorgu (6 Eylül 2026'ya kadar yalnızca `turn_deadline` seçiliyordu; puan
+ * satırı eklenirken ikinci bir `online_game_states` isteği açmak yerine
+ * seçime `players` eklendi — `fetchOnlineGameTurns` zaten aynı tabloya
+ * ayrı bir istek atıyor, üçüncüsü olmasın). Süre dolan bir koltuk
+ * `check_turn_timeout` çağrılana kadar otomatik teslim olmaz (bkz.
+ * `checkOnlineGameTurnTimeout`), bu fonksiyon yalnızca OKUR, hiçbir şeyi
+ * tetiklemez.
  */
-export async function fetchOnlineGameDeadlines(
+export async function fetchOnlineGameGlances(
   gameIds: string[],
-): Promise<Record<string, string | null> | null> {
+): Promise<Record<string, OnlineGameGlance> | null> {
   if (!supabase || gameIds.length === 0) return {};
   const client = supabase;
   const { data, error } = await retryOnNetworkFailure(() =>
     client
       .from('online_game_states')
-      .select('online_game_id, turn_deadline')
+      .select('online_game_id, turn_deadline, players')
       .in('online_game_id', gameIds),
   );
   if (error) {
-    console.error('[Kelimeki] fetchOnlineGameDeadlines hatası:', error.message);
+    console.error('[Kelimeki] fetchOnlineGameGlances hatası:', error.message);
     reportLiveListError(error, 'fetch_online_game_deadlines');
     return null;
   }
-  const map: Record<string, string | null> = {};
-  for (const row of (data ?? []) as { online_game_id: string; turn_deadline: string | null }[]) {
-    map[row.online_game_id] = row.turn_deadline;
+  const map: Record<string, OnlineGameGlance> = {};
+  for (const row of (data ?? []) as {
+    online_game_id: string;
+    turn_deadline: string | null;
+    players: { score?: number }[] | null;
+  }[]) {
+    map[row.online_game_id] = {
+      deadline: row.turn_deadline,
+      scores: (row.players ?? []).map((p) => (typeof p.score === 'number' ? p.score : 0)),
+    };
   }
   return map;
 }
