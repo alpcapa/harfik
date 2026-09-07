@@ -67,7 +67,6 @@ import '../../util/game_list_order.dart';
 import '../devam_eden_govde.dart';
 import '../ai_level_badge.dart';
 import '../../util/ai_level.dart';
-import '../../util/score_line.dart';
 import '../live/live_games_tab.dart';
 import '../rank/league_rewards_host.dart';
 import '../auth/account_button.dart';
@@ -2131,8 +2130,8 @@ class _SavedGameRow extends StatelessWidget {
   /// Sol sütun: avatar şeridi + hemen sağında zorluk rozeti (ROADMAP #23
   /// Faz 4 — web `SavedGameRow`ın `flex items-center gap-1.5` bloğu; 6 Eylül
   /// gece: alt satırdaydı, kullanıcı "avatarların yanına" dedi), altında
-  /// koltuk sırasıyla PUAN SATIRI (6 Eylül 2026, kullanıcı isteği; stil
-  /// kalan-süre satırıyla aynı — `util/score_line.dart`). Yerel kayıt
+  /// HİZALI puan satırı (6 Eylül 2026: her sayı kendi avatarının tam
+  /// altında — `AvatarScoreRow`). Yerel kayıt
   /// her zaman YZ oyunu → rozet her seviyede (Normal turuncu da çizilir).
   /// ⚠ Aynı gövdeyi paylaşan Canlı oyun kartı (`live_games_tab.dart`)
   /// rozetten ETKİLENMEZ (orada seviye yok) ama puan satırını O DA çizer.
@@ -2173,10 +2172,7 @@ class _SavedGameRow extends StatelessWidget {
       children: [
         ustSatir,
         const SizedBox(height: 2), // web gap-0.5
-        Text(scoreLine([for (final p in state.players) p.score]),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: devamEdenSureStil(_muted)),
+        AvatarScoreRow(scores: [for (final p in state.players) p.score]),
       ],
     );
   }

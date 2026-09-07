@@ -20,6 +20,49 @@
 > `npm run check-doc-size` (bkz. kök `CLAUDE.md` → "Doküman Boyutu
 > Bütçesi") — bu cilt de sınıra gelince yenisi açılır.
 
+   - ✅ **Parça 193 — puan satırı AVATAR HİZASINA oturdu + yardım metninin
+     zorluk cümlesi (6 Eylül 2026, kullanıcı iki bildirim; web + port aynı
+     PR):** *"Puanlar avatarların tam altına gelmiyor. Özellikle 4 kişilik
+     oyunda. Tire olmasa acaba nasıl olurdu?"*
+     - **Teşhis (ölçüm, yama değil):** Parça 192'nin satırı tek bir DİZEYDİ
+       (`238 - 179 - 103 - 87`). Avatarlar 6 px BİNİYOR (26 px çap → adım
+       20 px), akan metin ise kendi harf genişliğiyle ilerler — iki ritim 4
+       koltukta tamamen ayrışıyor. Yani sorun punto/boşluk ayarı değil,
+       yapısaldı; kullanıcıya üç seçenek (mevcut · tiresiz · hizalı) gerçek
+       kart stilleriyle çizilip ekran görüntüsüyle sunuldu, kullanıcı
+       **"C hizalı"** dedi.
+     - **Çözüm:** `AvatarScoreRow` (web `PlayerAvatarRow.tsx` · port
+       `ui/game/player_avatar_row.dart`) — her puan `adım` eninde kendi
+       hücresinde, satır `binişme/2` kadar kaydırılmış; cebiri
+       `util/score_line.dart` ↔ `utils/scoreLine.ts` (`scoreCellWidth`,
+       `scoreRowOffset`). Hiza gelince AYIRICI TİRE düştü. Binişme artık iki
+       tarafta da adı olan bir sabit (`kAvatarRowOverlap` /
+       `AVATAR_ROW_OVERLAP`); web'de `-space-x-1.5` sınıfının içinde gizli
+       kalsaydı biri değişince hiza sessizce kayardı.
+     - ⚠ **`ScaledCell` DEĞİL, sabit en + `FittedBox` — kuralın bilinçli
+       istisnası:** `ScaledCell` kutuyu yazı ölçeğiyle büyütür, oysa
+       AVATARLAR ölçekle büyümüyor; hücre büyüseydi hiza tam da tavanda
+       kayardı. Kuralın amacı (sarma/taşma yok) `FittedBox(scaleDown)` ile
+       karşılanıyor. `score_line_test` iddiayı ölçek 1,0 VE `kMaxTextScale`
+       için ayrı ayrı koşuyor.
+     - **Testler:** `score_line_test.dart` yeniden yazıldı — geometri cebiri
+       + 4 kişilik/üç haneli en kötü hâlde her puanın merkezi kendi
+       avatarının merkezinde (<0,5 px) ve komşusuna değmiyor. ⚠
+       `share_recent_test`in DÖRT testi düştü ve bu GERÇEK bir uyarıydı:
+       aynı sayı artık satırda iki kez var (sağdaki "kendi skorun" +
+       hizalı puan). Bulucular gevşetilmedi, `ScaledCell`e daraltıldı
+       (`sagSutunMetni`) — sağ sütun hizasını ölçen test yanlış widget'ı
+       ölçmeye devam etseydi sessizce anlamsızlaşırdı.
+     - **Yardım metni:** zorluk paragrafının son cümlesi kullanıcının
+       yazdığı biçime çekildi ("4 kişilik oyunda; Kolay'da birinci +1 k-lig
+       puanı alır, ikinci puan almaz; Zor'da birinci +4, ikinci +2 k-lig
+       puanı kazanır."), web + port BİREBİR (`ai_level_parity_test` zaten
+       paragrafı karşılaştırıyor — ikisinden biri unutulsaydı düşerdi).
+     - **Doğrulama:** `flutter test` tam takım **795 yeşil**, `dart analyze`
+       temiz; web `tsc` + `vite build` temiz, Playwright **67 yeşil**.
+       Ayrıca GERÇEK uygulamada uçtan uca doğrulandı (Chromium, 4 kişilik
+       YZ oyunu oynanıp Setup'a dönüldü): kart `0 36 43 45` puanlarını dört
+       avatarın altında hizalı çizdi.
    - ✅ **Parça 192 — kart altı PUAN SATIRI + "X açtı" kalktı + Son
      Oynananlar'da tarih üste (6 Eylül 2026, kullanıcı isteği; web + port
      aynı PR):** *"Canlı ve YZ bekleyen oyunlarda avatarların altına

@@ -4,7 +4,6 @@ import { GUEST_PLAYER_NAME, PLAYER_COLORS } from "../game/constants";
 import type { PlayerSetup } from "../game/gameReducer";
 import type { AiLevel } from "../game/types";
 import { AI_LEVEL_LABEL, SELECTABLE_AI_LEVELS, aiLevelDescription, aiLevelOf } from "../utils/aiLevel";
-import { scoreLine } from "../utils/scoreLine";
 import { AiLevelBadge } from "./AiLevelBadge";
 import { useAuth } from "../hooks/useAuth";
 import { useModalA11y } from "../hooks/useModalA11y";
@@ -24,7 +23,7 @@ import { HelpModal } from "./HelpModal";
 import { LiveGamesTab, TurnTriangle } from "./LiveGamesTab";
 import { orderByExpiry } from "../utils/gameListOrder";
 import { LogoMark } from "./LogoMark";
-import { PlayerAvatarRow, type AvatarRowPlayer } from "./PlayerAvatarRow";
+import { AvatarScoreRow, PlayerAvatarRow, type AvatarRowPlayer } from "./PlayerAvatarRow";
 import { PlayerBadge } from "./PlayerBadge";
 import { RankSeal } from "./RankSeal";
 import { useRankScores } from "../hooks/useRankScores";
@@ -225,13 +224,11 @@ function SavedGameRow({
             yok. */}
           <AiLevelBadge level={aiLevel} />
           </span>
-          {/* PUAN SATIRI (6 Eylül 2026, kullanıcı isteği) — koltuk sırasıyla,
-            N'inci sayı N'inci yüzün altında; punto/harf aralığı alttaki
-            kalan-süre satırıyla AYNI. Canlı kartı (`LiveGamesTab`) ve "Son
-            Oynananlar" da aynı satırı çiziyor (`utils/scoreLine.ts`). */}
-          <span className="text-[8px] font-mono tracking-[0.5px] text-muted truncate">
-            {scoreLine(scores)}
-          </span>
+          {/* PUAN SATIRI (6 Eylül 2026, kullanıcı isteği) — her puan kendi
+            avatarının TAM ALTINDA (`AvatarScoreRow`; hiza formülü
+            `utils/scoreLine.ts`). Canlı kartı (`LiveGamesTab`) ve "Son
+            Oynananlar" da aynı bileşeni çiziyor. */}
+          <AvatarScoreRow scores={scores} />
         </span>
         {/* Metin ve punto `LiveGamesTab`'ın aktif oyun kartıyla BİREBİR
           (30 Ağustos 2026, kullanıcı isteği) — bu kart YZ oyunu, orası

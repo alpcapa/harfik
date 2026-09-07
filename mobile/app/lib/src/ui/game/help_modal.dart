@@ -609,9 +609,9 @@ class _DetailedRules extends StatelessWidget {
           // `ai_level_parity_test.dart` cümlenin başını kilitliyor.
           _P('Yapay Zeka\'ya karşı oynarken oyunun başında bir **zorluk** '
               'seçersin: Kolay, Normal ya da Zor. Yukarıdaki puanlar Normal '
-              'içindir. Kolay\'da birinci **+1** alır, 4 kişilik oyunda ikinci '
-              'puan almaz; Zor\'da birinci **+4**, 4 kişilik oyunda ikinci '
-              '**+2** alır. Zorluk oyun boyunca değişmez ve 4 kişilik oyunda '
+              'içindir. 4 kişilik oyunda; Kolay\'da birinci **+1** k-lig puanı '
+              'alır, ikinci puan almaz; Zor\'da birinci **+4**, ikinci **+2** '
+              'k-lig puanı kazanır. Zorluk oyun boyunca değişmez ve 4 kişilik oyunda '
               'üç Yapay Zeka\'ya birden uygulanır. Canlı oyunlarda zorluk '
               'seçimi yoktur; oradaki Yapay Zeka Normal oynar ve puanlar '
               'Normal tablosuna göre verilir.'),

@@ -1303,16 +1303,24 @@ listesi kök `TESTING.md` bölüm 10.
       cihaz); portta Kolay başlatılıp bulut kaydına düşen oyun web'de devam
       ettirilince YZ Kolay oynamalı (Setup kartında rozet) ve tersi. Canlı
       oyun kartlarında rozet HİÇBİR koşulda çıkmaz.
-- [ ] **Kart altı PUAN SATIRI** (6 Eylül 2026, kullanıcı isteği; web ile
-      birebir): Yapay Zeka ↔ Arkadaşınla sekmelerindeki devam eden oyun
-      kartlarında avatarların hemen altında koltuk sırasıyla anlık puanlar
-      (`45 - 38`; 4 kişilikte dört sayı), stil kalan-süre satırıyla AYNI
-      (`devamEdenSureStil`, 8 px SpaceMono). ⚠ Canlı kartında **"X açtı"
+- [ ] **Kart altı PUAN SATIRI — HİZA** (6 Eylül 2026, kullanıcı isteği; web
+      ile birebir): Yapay Zeka ↔ Arkadaşınla sekmelerindeki devam eden oyun
+      kartlarında avatarların hemen altında koltuk sırasıyla anlık puanlar,
+      **her sayı KENDİ AVATARININ TAM ALTINDA** (ayırıcı tire YOK).
+      ⚠ **Asıl kontrol 4 KİŞİLİK + üç haneli puanlar**: dört sayı da kendi
+      yüzünün altında ve birbirine değmiyor olmalı — ilk tur tek dizeydi ve
+      kullanıcı tam burada kaymayı yakaladı. ⚠ Canlı kartında **"X açtı"
       satırı ARTIK YOK**. Rakip hamle yapınca puan oyuna girmeden
       tazelenmeli (Realtime → `_reload`). "Son Oynadıklarım"da tarih
       (+ zorluk rozeti) avatarların ÜSTÜNDE, bitiş puanları altında; sağdaki
-      puan/k-lig sütunları (`ScaledCell`) yerinde. Yazı ölçeği tavanında
-      (1,3) puan satırı kırpılmadan tek satır kalmalı (üç nokta ile).
+      puan/k-lig sütunları (`ScaledCell`) yerinde.
+      ⚠ **Yazı boyutunu %130'a al ve hizayı TEKRAR bak:** avatarlar
+      ölçekle büyümediğinden puan hücreleri de büyümüyor (bilinçli — bkz.
+      `AvatarScoreRow`); sayılar yine kendi yüzlerinin altında kalmalı.
+- [ ] **Yardım → zorluk paragrafı** (6 Eylül 2026, kullanıcı düzeltmesi):
+      *"4 kişilik oyunda; Kolay'da birinci +1 k-lig puanı alır, ikinci puan
+      almaz; Zor'da birinci +4, ikinci +2 k-lig puanı kazanır."* — cümle
+      web `HelpModal` ile BİREBİR (`ai_level_parity_test` kilitliyor).
 - [ ] **Web ↔ mobil aynı toplam.** Aynı hesabın "Genel" lig puanı iki
       platformda BİREBİR aynı olmalı ("Genel = 2 kişilik + 4 kişilik +
       eşik ödülü" — mod bazlı sekmelerin toplamı ödül kadar EKSİK olur,

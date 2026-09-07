@@ -17,6 +17,7 @@ import 'package:kelimeki/src/ui/score/game_history_modal.dart';
 import 'package:kelimeki/src/util/share_board.dart';
 import 'package:kelimeki/src/ui/score/score_box_row.dart';
 import 'package:kelimeki/src/ui/setup/recent_games_section.dart';
+import 'package:kelimeki/src/ui/text_scale.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'support/fake_games_gateway.dart';
@@ -39,6 +40,14 @@ List<Map<String, Object?>> _tiles() => [
       {'r': 0, 'c': 2, 'l': 'L', 'o': 0},
       {'r': 6, 'c': 6, 'l': 'A', 'o': 1},
     ];
+
+// 6 Eylül 2026'dan beri AYNI SAYI satırda İKİ KEZ geçebiliyor: sağdaki
+// "kendi skorun" sütunu ve avatarların altındaki hizalı PUAN SATIRI
+// (`AvatarScoreRow`). Sağ sütunları ayıran işaret `ScaledCell` — puan
+// satırının hücreleri (sabit en + `FittedBox`, avatar hizasına çapalı)
+// bilerek `ScaledCell` DEĞİL, gerekçesi `player_avatar_row.dart`ta.
+Finder sagSutunMetni(String metin) =>
+    find.descendant(of: find.byType(ScaledCell), matching: find.text(metin));
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -327,7 +336,7 @@ void main() {
     expect(find.text('TÜM OYUNLARIM'), findsOneWidget);
     expect(find.text('03.08.2026'), findsOneWidget);
     expect(find.text('01.08.2026'), findsOneWidget);
-    expect(find.text('238'), findsOneWidget);
+    expect(sagSutunMetni('238'), findsOneWidget);
     expect(find.text('+2'), findsOneWidget); // 2 kişilik birincilik
     expect(find.text('-'), findsOneWidget); // 4 kişilik 3.lük puan getirmez
     // Canlı oyun bu sekmede yok (onlineOnly filtresi sunucuda uygulanıyor).
@@ -516,7 +525,7 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('238'));
+    await tester.tap(sagSutunMetni('238'));
     await tester.pumpAndSettle();
 
     expect(find.text('TÜM OYUNLAR'), findsOneWidget);
@@ -578,8 +587,11 @@ void main() {
 
     // ⚠ Aynı metin BİRDEN FAZLA satırda olabilir ("+2" iki kez) — finder
     // tekil değil, hepsini topla.
+    // ⚠ `find.text` DEĞİL `sagSutunMetni`: aynı sayı avatarların altındaki
+    // puan satırında da geçiyor (6 Eylül 2026) ve o satır sağ kenara değil
+    // AVATARA hizalı — karıştırılırsa bu test yanlış şeyi ölçer.
     List<double> sagKenarlar(String metin) => [
-          for (final e in find.text(metin).evaluate())
+          for (final e in sagSutunMetni(metin).evaluate())
             tester.getRect(find.byWidget(e.widget)).right
         ];
 
@@ -627,7 +639,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Satır GERÇEKTEN çizilmiş olmalı — yoksa test hiçbir şey kanıtlamaz.
-    expect(find.text('238'), findsOneWidget);
+    expect(sagSutunMetni('238'), findsOneWidget);
     expect(find.text('OYUN BİTTİ'), findsNothing);
   });
 

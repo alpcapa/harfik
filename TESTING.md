@@ -1713,16 +1713,19 @@ Bitirme modalı **otomatik ölçülüyor** (`npm run test` →
       kendi satırında olmalı, o satıra binmemeli (2 Eylül 2026'da bu iki
       kart AYRIŞMIŞTI). `SIRA SENDE`/`SIRA RAKİPTE` puntosu 15 px — iki
       kartta da aynı.
-- [ ] **Kart altı PUAN SATIRI** (6 Eylül 2026, kullanıcı isteği): iki
-      sekmedeki devam eden oyun kartlarında avatarların hemen altında
-      koltuk sırasıyla anlık puanlar (`45 - 38`; 4 kişilikte dört sayı) —
-      N'inci sayı N'inci yüzün altında, punto/harf aralığı kalan-süre
-      satırıyla AYNI (8 px mono). ⚠ Canlı kartında **"X açtı" satırı
-      ARTIK YOK** (kurucu zaten ilk avatar). Rakip hamle yapınca puanlar
-      oyuna girmeden tazelenmeli (Realtime → liste yeniden çekilir).
-      "Son Oynananlar"da (iki sekme): **tarih (+ zorluk rozeti) avatarların
-      ÜSTÜNDE**, bitiş puanları altında — snapshot sırasıyla; sağdaki kendi
-      puanın/k-lig sütunları yerinde. Port ile birebir.
+- [ ] **Kart altı PUAN SATIRI — HİZA** (6 Eylül 2026, kullanıcı isteği; ilk
+      tur tek dizeydi (`45 - 38`) ve kullanıcı 4 kişilikte kaydığını
+      bildirdi): iki sekmedeki devam eden oyun kartlarında avatarların
+      hemen altında koltuk sırasıyla anlık puanlar, **her sayı KENDİ
+      AVATARININ TAM ALTINDA** (ayırıcı tire YOK — ayrımı hiza yapıyor).
+      ⚠ **Asıl kontrol 4 KİŞİLİK + üç haneli puanlar** (238 179 103 87):
+      dört sayı da kendi yüzünün altında ve birbirine değmiyor olmalı.
+      ⚠ Canlı kartında **"X açtı" satırı ARTIK YOK** (kurucu zaten ilk
+      avatar). Rakip hamle yapınca puanlar oyuna girmeden tazelenmeli
+      (Realtime → liste yeniden çekilir). "Son Oynananlar"da (iki sekme):
+      **tarih (+ zorluk rozeti) avatarların ÜSTÜNDE**, bitiş puanları
+      altında ve aynı hizada; sağdaki kendi puanın/k-lig sütunları yerinde.
+      Port ile birebir.
 - [ ] **Board altındaki şerit** (Hamleler · Mesajlaşma · **Yardım**) →
       punto 11 ve TEK SATIR; portla AYNI olmak zorunda. Etiket 2 Eylül
       2026'da `Nasıl Oynanır?`dan kısaltıldı (şerit tavanda iki satıra

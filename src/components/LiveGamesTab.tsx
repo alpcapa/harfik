@@ -41,7 +41,6 @@ import {
 import { ABANDON_TIMEOUT_MS } from '../utils/gameStorage';
 import type { OnlineGame, OnlineGameSlot } from '../lib/database.types';
 import type { OnlineGameGlance } from '../lib/api';
-import { scoreLine } from '../utils/scoreLine';
 import { Avatar } from './Avatar';
 import { AuthModal } from './AuthModal';
 import { CountBadge } from './CountBadge';
@@ -54,7 +53,7 @@ import {
   RETRY_LABEL,
   STALE_DATA_NOTICE,
 } from '../utils/offlineNotice';
-import { PlayerAvatarRow } from './PlayerAvatarRow';
+import { AvatarScoreRow, PlayerAvatarRow } from './PlayerAvatarRow';
 import { FriendSuggestModal } from './FriendSuggestModal';
 import { LiveGameCreateForm } from './LiveGameCreateForm';
 import { RecentGamesSection } from './RecentGamesSection';
@@ -437,16 +436,12 @@ function GameRow({ game, onRespond, busy, onOpen, isMyTurn, deadline, scores }: 
               (kullanıcı isteği: *"Ironman açtı kalksın çünkü zaten ilk
               baştaki her zaman oyunu başlatan oluyor"* — `slots[0]` her
               zaman kurucu, bkz. migration `online_games_invites`; avatar
-              şeridi o bilgiyi zaten taşıyor). Puanlar koltuk sırasıyla,
-              yani N'inci sayı N'inci yüzün altında; punto/harf aralığı
-              alttaki kalan-süre satırıyla AYNI (kullanıcı: "font kalan süre
-              ile aynı olsun"). Setup'ın YZ kartı (`SavedGameRow`) ve "Son
-              Oynananlar" aynı satırı çiziyor; port ikizi `_GameRow`. */}
-          {scores && scores.length > 0 && (
-            <span className="text-[8px] font-mono tracking-[0.5px] text-muted truncate">
-              {scoreLine(scores)}
-            </span>
-          )}
+              şeridi o bilgiyi zaten taşıyor). Puan HİZALI: her sayı kendi
+              avatarının tam altında (`AvatarScoreRow`, 6 Eylül 2026 ikinci
+              tur — tek dize hâli 4 kişilikte kayıyordu). Setup'ın YZ kartı
+              (`SavedGameRow`) ve "Son Oynananlar" aynı satırı çiziyor; port
+              ikizi `_GameRow`. */}
+          {scores && <AvatarScoreRow scores={scores} />}
         </span>
         {/* 11 → 13 px (30 Ağustos 2026) → 15 px (2 Eylül 2026, kullanıcı
             isteği: "Sıra Sende ve Sıra Rakipte fontu biraz daha büyüt").

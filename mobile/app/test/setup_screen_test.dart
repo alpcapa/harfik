@@ -1050,12 +1050,14 @@ void main() {
         await tester.pump();
       }
       expect(find.text('DEVAM EDEN OYUN'), findsOneWidget);
-      // PUAN SATIRI (6 Eylül 2026): avatarların altında, koltuk sırasıyla
-      // ("0 - N" — insan pas geçti, YZ oynadı), sol alanın İÇİNDE.
+      // PUAN SATIRI (6 Eylül 2026): avatarların altında, her puan kendi
+      // avatarının hizasında (hiza iddiası `score_line_test`te; burada
+      // satırın YERİ). İnsan pas geçti (0), YZ oynadı.
       final puan = find.descendant(
-          of: find.byKey(kDevamEdenSolKey),
-          matching: find.textContaining(RegExp(r'^0 - \d+$')));
+          of: find.byKey(kDevamEdenSolKey), matching: find.byType(AvatarScoreRow));
       expect(puan, findsOneWidget, reason: 'puan satırı avatarların altında');
+      expect(
+          find.descendant(of: puan, matching: find.text('0')), findsOneWidget);
       // Ölçülen şey avatar dizisi DEĞİL, onu barındıran sol ALANIN eni:
       // `Expanded` düzeninde sağdakinden artakalan alan bu.
       //

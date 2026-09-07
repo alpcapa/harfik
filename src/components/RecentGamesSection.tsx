@@ -13,9 +13,8 @@ import { fetchMyGames } from '../lib/api';
 import type { GameHistoryEntry } from '../lib/database.types';
 import { leaguePoints, formatLeaguePoints } from '../utils/leaguePoints';
 import { GameHistoryModal } from './GameHistoryModal';
-import { PlayerAvatarRow } from './PlayerAvatarRow';
+import { AvatarScoreRow, PlayerAvatarRow } from './PlayerAvatarRow';
 import { AiLevelBadge } from './AiLevelBadge';
-import { scoreLine } from '../utils/scoreLine';
 import { aiLevelForBadge } from '../utils/aiLevel';
 
 function formatDate(iso: string): string {
@@ -272,15 +271,11 @@ export function RecentGamesSection({
                   <span className="font-sans text-[12px] font-bold text-text truncate">{titleFor(g)}</span>
                 )}
                 {/* Bitiş puanları — snapshot sırası avatar sırasıyla AYNI
-                    dizi (`g.players`), yani N'inci sayı N'inci yüzün
-                    altında. Punto devam-eden kartların kalan-süre satırıyla
-                    aynı (`utils/scoreLine.ts`). Snapshot'sız eski kayıtta
-                    satır çizilmez (avatar da yok, başlık metni var). */}
-                {g.players && g.players.length > 0 && (
-                  <span className="text-[8px] font-mono tracking-[0.5px] text-muted truncate">
-                    {scoreLine(g.players.map((p) => p.score))}
-                  </span>
-                )}
+                    dizi (`g.players`), yani N'inci sayı N'inci yüzün TAM
+                    altında (`AvatarScoreRow`; hiza formülü
+                    `utils/scoreLine.ts`). Snapshot'sız eski kayıtta satır
+                    çizilmez (avatar da yok, başlık metni var). */}
+                {g.players && <AvatarScoreRow scores={g.players.map((p) => p.score)} />}
               </span>
               {/* "Oyun Bitti" — 3 Eylül 2026, kullanıcı isteği.
                   ⚠ YALNIZCA Canlı tarafta. YZ oyunları senin cihazında

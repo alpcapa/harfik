@@ -14,8 +14,6 @@ import '../../util/recent_game_avatars.dart';
 import '../game/player_avatar_row.dart';
 import '../ai_level_badge.dart';
 import '../../util/ai_level.dart';
-import '../../util/score_line.dart';
-import '../devam_eden_govde.dart' show devamEdenSureStil;
 import '../text_scale.dart';
 import '../score/game_history_modal.dart';
 import '../tap_target.dart';
@@ -429,14 +427,12 @@ class _RecentRow extends StatelessWidget {
                             color: _text)),
                   // Bitiş puanları — snapshot sırası avatar sırasıyla AYNI
                   // dizi (`entry.players`), yani N'inci sayı N'inci yüzün
-                  // altında; stil devam-eden kartların kalan-süre satırıyla
-                  // aynı. Snapshot'sız eski kayıtta satır çizilmez.
+                  // TAM altında (`AvatarScoreRow`). Snapshot'sız eski
+                  // kayıtta satır çizilmez.
                   if (entry.players.isNotEmpty) ...[
                     const SizedBox(height: 2),
-                    Text(scoreLine([for (final p in entry.players) p.score]),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: devamEdenSureStil(_muted)),
+                    AvatarScoreRow(
+                        scores: [for (final p in entry.players) p.score]),
                   ],
                 ],
               ),

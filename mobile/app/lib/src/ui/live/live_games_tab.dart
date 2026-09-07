@@ -47,7 +47,6 @@ import '../loading_note.dart';
 import '../game/neo_box.dart';
 import '../../util/away_return.dart';
 import '../../util/offline_notice.dart';
-import '../../util/score_line.dart';
 
 const Color _text = kText;
 const Color _muted = kMuted;
@@ -799,17 +798,13 @@ class _GameRow extends StatelessWidget {
               // (kullanıcı: *"Ironman açtı kalksın çünkü zaten ilk baştaki
               // her zaman oyunu başlatan oluyor"* — `slots[0]` her zaman
               // kurucu, avatar şeridi o bilgiyi zaten taşıyor). Puanlar
-              // koltuk sırasıyla, yani N'inci sayı N'inci yüzün altında;
-              // stil alttaki kalan-süre satırıyla AYNI (`devamEdenSureStil`
-              // — kullanıcı: "font kalan süre ile aynı olsun"). Setup'ın YZ
-              // kartı ve "Son Oynananlar" aynı satırı çiziyor
-              // (`util/score_line.dart`); web ikizi `LiveGamesTab` GameRow.
+              // HİZALI: her sayı kendi avatarının TAM altında
+              // (`AvatarScoreRow`, 6 Eylül 2026 ikinci tur — tek dize hâli
+              // 4 kişilikte kayıyordu, kullanıcı bildirdi). Setup'ın YZ
+              // kartı ve "Son Oynadıklarım" aynı bileşeni çiziyor.
               if (scores case final s? when s.isNotEmpty) ...[
                 const SizedBox(height: 2),
-                Text(scoreLine(s),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: devamEdenSureStil(_muted)),
+                AvatarScoreRow(scores: s),
               ],
             ],
           ),

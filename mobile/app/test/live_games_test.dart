@@ -883,9 +883,12 @@ void main() {
         final durum = tester.getRect(find.textContaining('SIRA SENDE'));
         final sure = tester.getRect(find.textContaining('SONRA TESLİM'));
         // "X açtı" KALKTI (6 Eylül 2026), yerine puan satırı — avatarların
-        // altında, sürenin üstünde, sol alanın içinde.
+        // altında, sürenin üstünde, sol alanın içinde. Hizanın kendisi
+        // `score_line_test`te; burada YERİ ölçülüyor.
         expect(find.textContaining('açtı'), findsNothing);
-        final puan = tester.getRect(find.text('45 - 38'));
+        final puan = tester.getRect(find.byType(AvatarScoreRow));
+        expect(find.text('45'), findsOneWidget);
+        expect(find.text('38'), findsOneWidget);
         final avatar = tester.getRect(find.descendant(
             of: find.byKey(kDevamEdenSolKey),
             matching: find.byType(PlayerAvatarRow)));

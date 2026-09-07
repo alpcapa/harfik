@@ -321,9 +321,9 @@ export function DetailedRules() {
         </P>
         <P>
           Yapay Zeka'ya karşı oynarken oyunun başında bir <strong>zorluk</strong> seçersin:
-          Kolay, Normal ya da Zor. Yukarıdaki puanlar Normal içindir. Kolay'da birinci{' '}
-          <strong>+1</strong> alır, 4 kişilik oyunda ikinci puan almaz; Zor'da birinci{' '}
-          <strong>+4</strong>, 4 kişilik oyunda ikinci <strong>+2</strong> alır. Zorluk oyun
+          Kolay, Normal ya da Zor. Yukarıdaki puanlar Normal içindir. 4 kişilik oyunda;
+          Kolay'da birinci <strong>+1</strong> k-lig puanı alır, ikinci puan almaz; Zor'da
+          birinci <strong>+4</strong>, ikinci <strong>+2</strong> k-lig puanı kazanır. Zorluk oyun
           boyunca değişmez ve 4 kişilik oyunda üç Yapay Zeka'ya birden uygulanır. Canlı
           oyunlarda zorluk seçimi yoktur; oradaki Yapay Zeka Normal oynar ve puanlar Normal
           tablosuna göre verilir.
